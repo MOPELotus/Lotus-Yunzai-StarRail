@@ -5,7 +5,7 @@ import { loadImage } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
 
-const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo", 风: "anemo", 火: "pyro" };
+const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo", 风: "anemo", 火: "pyro", 物理: "sr" };
 const words = new Intl.Segmenter("zh-CN", { granularity: "word" });
 
 function conditionLines(buff: string) {

@@ -3,6 +3,7 @@ import { calculateStarRailPersonalDamage, readStarRailPersonalDamage } from "../
 import { parsePanelCommand, type PanelAvatar } from "../panel-model.ts";
 import advancedFixtures from "./fixtures/panel-damage.json";
 import additionalFixtures from "./fixtures/panel-damage-additional.json";
+import physicalImaginaryFixtures from "./fixtures/panel-damage-physical-imaginary.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -68,7 +69,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures]) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -114,5 +115,16 @@ describe("common engine with original character data", () => {
       .toBe("缺少计算所需的战斗属性");
     const heal = calculateStarRailPersonalDamage(lingsha!.avatar, lingsha!.metadata, 3)!;
     expect(heal.rows[heal.selected]).toMatchObject({ title: "召唤物治疗量", metric: "heal", critical: undefined });
+  });
+
+  test("does not estimate Boothill's break without a saved break effect attribute", () => {
+    const { avatar, metadata } = physicalImaginaryFixtures.find(fixture => fixture.avatar.id === "1315")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    expect(damage.rows[damage.selected]).toMatchObject({ metric: "damage", critical: undefined });
+    const incomplete = { ...avatar, stats: avatar.stats.filter(stat => stat.key !== "stance") };
+    expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少计算所需的战斗属性");
   });
 });

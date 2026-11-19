@@ -15,11 +15,16 @@ import * as kafkaEnhanced from "./panel-damage-rules/characters/kafka-enhanced.j
 import * as jingYuan from "./panel-damage-rules/characters/jing-yuan.js";
 import * as feixiao from "./panel-damage-rules/characters/feixiao.js";
 import * as lingsha from "./panel-damage-rules/characters/lingsha.js";
+import * as yunli from "./panel-damage-rules/characters/yunli.js";
+import * as boothill from "./panel-damage-rules/characters/boothill.js";
+import * as drRatio from "./panel-damage-rules/characters/dr-ratio.js";
+import * as imbibitorLunae from "./panel-damage-rules/characters/imbibitor-lunae.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
 import preservation from "./panel-damage-rules/weapons/preservation.js";
 import abundance from "./panel-damage-rules/weapons/abundance.js";
+import destruction from "./panel-damage-rules/weapons/destruction.js";
 
 type Metadata = NonNullable<Awaited<ReturnType<typeof readPanelDamageMetadata>>>;
 type Attr = { base: number; plus: number; pct: number; inc?: number };
@@ -94,6 +99,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23031": "我将，巡征追猎", "23012": "如泥酣眠" } },
   "1222": { name: "灵砂", element: "火", path: "丰饶", traces: [101], stats: ["stance", "heal"], rule: lingsha,
     cones: { "23032": "唯有香如故" } },
+  "1221": { name: "云璃", element: "物理", path: "毁灭", traces: [103], rule: yunli,
+    cones: { "23030": "落日时起舞", "23002": "无可取代的东西" } },
+  "1315": { name: "波提欧", element: "物理", path: "巡猎", traces: [101], stats: ["stance"], rule: boothill,
+    cones: { "23027": "驶向第二次生命" } },
+  "1305": { name: "真理医生", element: "虚数", path: "巡猎", traces: [102, 103], rule: drRatio,
+    cones: { "23020": "纯粹思维的洗礼", "23016": "烦恼着，幸福着" } },
+  "1213": { name: "丹恒•饮月", element: "虚数", path: "毁灭", traces: [103], rule: imbibitorLunae,
+    cones: { "23015": "比阳光更明亮的", "23002": "无可取代的东西" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -202,6 +215,7 @@ const weaponRules: Readonly<Record<string, WeaponRules>> = {
   "巡猎": hunt(staticIndex, dynamicIndex), "虚无": nihility(staticIndex, dynamicIndex),
   "智识": erudition(staticIndex, dynamicIndex), "存护": preservation(staticIndex, dynamicIndex),
   "丰饶": abundance(staticIndex, dynamicIndex),
+  "毁灭": destruction(staticIndex, dynamicIndex),
 };
 
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {
