@@ -31,6 +31,10 @@ import * as welt from "./panel-damage-rules/characters/welt.js";
 import * as weltEnhanced from "./panel-damage-rules/characters/welt-enhanced.js";
 import * as silverWolf from "./panel-damage-rules/characters/silver-wolf.js";
 import * as jiaoqiu from "./panel-damage-rules/characters/jiaoqiu.js";
+import * as jingliu from "./panel-damage-rules/characters/jingliu.js";
+import * as jingliuEnhanced from "./panel-damage-rules/characters/jingliu-enhanced.js";
+import * as yanqing from "./panel-damage-rules/characters/yanqing.js";
+import * as misha from "./panel-damage-rules/characters/misha.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -95,6 +99,7 @@ const kafkaCones = { "23006": "只需等待", "23022": "重塑时光之忆", "24
 const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的约定" };
 const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
 const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪耀" };
+const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -143,6 +148,12 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23007": "雨一直下", "22000": "新手任务开始前" } },
   "1218": { name: "椒丘", element: "火", path: "虚无", traces: [102], stats: ["effPct"], rule: jiaoqiu,
     cones: { "23029": "那无数个春天", "21015": "决心如汗珠般闪耀" } },
+  "1212": { name: "镜流", element: "冰", path: "毁灭", traces: [103], rule: jingliu, cones: jingliuCones },
+  "2212": { name: "镜流Pro", element: "冰", path: "毁灭", traces: [101, 103], stats: ["hp"], rule: jingliuEnhanced, cones: jingliuCones },
+  "1209": { name: "彦卿", element: "冰", path: "巡猎", traces: [101, 103], rule: yanqing,
+    cones: { "23012": "如泥酣眠", "21010": "论剑" } },
+  "1312": { name: "米沙", element: "冰", path: "毁灭", traces: [102, 103], rule: misha,
+    cones: { "21042": "铭记于心的约定", "21012": "秘密誓心" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;

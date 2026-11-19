@@ -1,0 +1,871 @@
+[
+  {
+    "avatar": {
+      "id": "1212",
+      "name": "镜流",
+      "level": 80,
+      "rank": 2,
+      "element": "冰",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1212101", "active": true, "name": "", "icon": ""},
+        {"id": "1212102", "active": true, "name": "", "icon": ""},
+        {"id": "1212103", "active": true, "name": "", "icon": ""},
+        {"id": "1212201", "active": true, "name": "", "icon": ""},
+        {"id": "1212204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "hp", "base": "2600.136", "value": "3409.7414400968623"},
+        {"key": "atk", "base": "1261.26", "value": "2158.92432"},
+        {"key": "speed", "base": "96", "value": "121.032"},
+        {"key": "cpct", "base": "5", "value": "74.56000019999999%"},
+        {"key": "cdmg", "base": "50", "value": "86.96400006398125%"},
+        {"key": "ice", "base": "0", "value": "48.8803015%"}
+      ],
+      "cone": {"id": "23014", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61041",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61042",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61043",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61044",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63095",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "6",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63096",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "冰",
+        "sp": 140,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  2
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "目标伤害",
+                "values": [
+                  3
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  1.5
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "暴击率提高",
+                "values": [
+                  0.5
+                ]
+              },
+              "2": {
+                "name": "攻击力提高上限",
+                "values": [
+                  1.8
+                ]
+              }
+            }
+          },
+          "e2": {
+            "tables": {
+              "1": {
+                "name": "目标伤害",
+                "values": [
+                  2.5
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  1.25
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              20
+            ],
+            "2": [
+              14.000000000000002
+            ],
+            "3": [
+              12
+            ]
+          }
+        }
+      },
+      "conePath": "毁灭",
+      "relicMetadata": {},
+      "setNames": {"61041": "密林卧雪的猎人", "61042": "密林卧雪的猎人", "61043": "密林卧雪的猎人", "61044": "密林卧雪的猎人", "63095": "繁星竞技场", "63096": "繁星竞技场"}
+    },
+    "expected": {
+      "selected": 4,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 4619.768351398962, "avg": 3998.9656443484682},
+        {"title": "战技伤害", "dmg": 9239.536702797925, "avg": 7997.9312886969365},
+        {"title": "转魄状态·战技伤害(扩散)", "dmg": 72767.80319991014, "avg": 72767.80319991014},
+        {"title": "终结技伤害(扩散)", "dmg": 27930.59523963408, "avg": 23836.33467712002},
+        {"title": "转魄状态·终结技伤害(扩散)", "dmg": 63305.61209882291, "avg": 63305.61209882291}
+      ],
+      "swap": {"dmg": 62526.84778252406, "avg": 62526.84778252406}
+    }
+  },
+  {
+    "avatar": {
+      "id": "2212",
+      "name": "镜流Pro",
+      "level": 80,
+      "rank": 2,
+      "element": "冰",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "12212101", "active": true, "name": "", "icon": ""},
+        {"id": "12212102", "active": true, "name": "", "icon": ""},
+        {"id": "12212103", "active": true, "name": "", "icon": ""},
+        {"id": "12212201", "active": true, "name": "", "icon": ""},
+        {"id": "12212204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "hp", "base": "2600.1360000122895", "value": "6280.291584123212"},
+        {"key": "atk", "base": "1261.260000045765", "value": "1614.060000045765"},
+        {"key": "speed", "base": "96", "value": "96"},
+        {"key": "cpct", "base": "5.000000004656613", "value": "66.5600002046566%"},
+        {"key": "cdmg", "base": "50.00000004656613", "value": "86.96400011054737%"},
+        {"key": "ice", "base": "0", "value": "38.8803015%"}
+      ],
+      "cone": {"id": "23014", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61131",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61132",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61133",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61134",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63195",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "6",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63196",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "3",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "冰",
+        "sp": 140,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  0.5
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.5
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.8
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  0.9
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "暴击率提高",
+                "values": [
+                  0.5
+                ]
+              },
+              "2": {
+                "name": "暴伤提高",
+                "values": [
+                  0.44
+                ]
+              }
+            }
+          },
+          "e2": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.5
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  0.75
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              20
+            ],
+            "2": [
+              14.000000000000002
+            ],
+            "3": [
+              12
+            ]
+          }
+        }
+      },
+      "conePath": "毁灭",
+      "relicMetadata": {},
+      "setNames": {"61131": "宝命长存的莳者", "61132": "宝命长存的莳者", "61133": "宝命长存的莳者", "61134": "宝命长存的莳者", "63195": "谧宁拾骨地", "63196": "谧宁拾骨地"}
+    },
+    "expected": {
+      "selected": 0,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 12805.998807645263, "avg": 12805.998807645263},
+        {"title": "战技伤害", "dmg": 38417.99642293581, "avg": 38417.99642293581},
+        {"title": "终结技伤害(扩散)", "dmg": 102398.13145555064, "avg": 102398.13145555064},
+        {"title": "转魄·战技(5层月色, 扩散)", "dmg": 76835.99284587162, "avg": 76835.99284587162},
+        {"title": "转魄·终结技(5层月色, 扩散)", "dmg": 102398.13145555064, "avg": 102398.13145555064},
+        {"title": "1命额外伤害", "dmg": 20489.598092232423, "avg": 20489.598092232423},
+        {"title": "2命转魄·战技(5层月色, 扩散)", "dmg": 110819.1263142207, "avg": 110819.1263142207},
+        {"title": "霜魄·转魄战技(5层月色, 扩散)", "dmg": 88620.65432529977, "avg": 88620.65432529977}
+      ],
+      "swap": {"dmg": 12576.957686764486, "avg": 12576.957686764486}
+    }
+  },
+  {
+    "avatar": {
+      "id": "1209",
+      "name": "彦卿",
+      "level": 80,
+      "rank": 2,
+      "element": "冰",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1209101", "active": true, "name": "", "icon": ""},
+        {"id": "1209102", "active": true, "name": "", "icon": ""},
+        {"id": "1209103", "active": true, "name": "", "icon": ""},
+        {"id": "1209201", "active": true, "name": "", "icon": ""},
+        {"id": "1209204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "hp", "base": "1950.9840000000002", "value": "2734.62336007268"},
+        {"key": "atk", "base": "1261.26", "value": "2209.374720046985"},
+        {"key": "speed", "base": "109", "value": "134.032"},
+        {"key": "cpct", "base": "5", "value": "74.56000019999999%"},
+        {"key": "cdmg", "base": "50", "value": "91.66400008%"},
+        {"key": "ice", "base": "0", "value": "48.8803015%"}
+      ],
+      "cone": {"id": "23012", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61041",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61042",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61043",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61044",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63095",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "6",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63096",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "冰",
+        "sp": 140,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  2.2
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "暴伤提高",
+                "values": [
+                  0.5
+                ]
+              },
+              "2": {
+                "name": "技能伤害",
+                "values": [
+                  3.5
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "暴击率提高",
+                "values": [
+                  0.2
+                ]
+              },
+              "2": {
+                "name": "爆伤提高",
+                "values": [
+                  0.3
+                ]
+              },
+              "3": {
+                "name": "固定概率",
+                "values": [
+                  0.6
+                ]
+              },
+              "4": {
+                "name": "追加攻击",
+                "values": [
+                  0.5
+                ]
+              },
+              "5": {
+                "name": "回合附加伤害",
+                "values": [
+                  0.5
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              30
+            ],
+            "2": [
+              36
+            ]
+          }
+        }
+      },
+      "conePath": "巡猎",
+      "relicMetadata": {},
+      "setNames": {"61041": "密林卧雪的猎人", "61042": "密林卧雪的猎人", "61043": "密林卧雪的猎人", "61044": "密林卧雪的猎人", "63095": "繁星竞技场", "63096": "繁星竞技场"}
+    },
+    "expected": {
+      "selected": 4,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 5384.061502523488, "avg": 5209.910230251023},
+        {"title": "战技伤害", "dmg": 10353.964427929783, "avg": 10019.05813509812},
+        {"title": "天赋追加攻击", "dmg": 2920.887908529389, "avg": 2826.409725990568},
+        {"title": "天赋附加伤害", "dmg": 2920.887908529389, "avg": 2826.409725990568},
+        {"title": "终结技伤害", "dmg": 16686.58936703708, "avg": 16686.58936703708}
+      ],
+      "swap": {"dmg": 16275.073516597879, "avg": 16275.073516597879}
+    }
+  },
+  {
+    "avatar": {
+      "id": "1312",
+      "name": "米沙",
+      "level": 80,
+      "rank": 2,
+      "element": "冰",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1312101", "active": true, "name": "", "icon": ""},
+        {"id": "1312102", "active": true, "name": "", "icon": ""},
+        {"id": "1312103", "active": true, "name": "", "icon": ""},
+        {"id": "1312201", "active": true, "name": "", "icon": ""},
+        {"id": "1312204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "hp", "base": "2222.64", "value": "2928.24"},
+        {"key": "atk", "base": "1076.04", "value": "1893.6892799999998"},
+        {"key": "speed", "base": "96", "value": "121.032"},
+        {"key": "cpct", "base": "5", "value": "85.26000009999998%"},
+        {"key": "cdmg", "base": "50", "value": "61.66400008%"},
+        {"key": "ice", "base": "0", "value": "42.080301500000004%"}
+      ],
+      "cone": {"id": "21042", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61221",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61222",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61223",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61224",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63065",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "6",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63066",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "冰",
+        "sp": 100,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "单体伤害",
+                "values": [
+                  2
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  0.8
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "每段攻击伤害",
+                "values": [
+                  0.6
+                ]
+              },
+              "2": {
+                "name": "冻结概率",
+                "values": [
+                  0.2
+                ]
+              },
+              "3": {
+                "name": "附加伤害",
+                "values": [
+                  0.3
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "能量恢复",
+                "values": [
+                  2
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              28.000000000000004
+            ],
+            "2": [
+              15
+            ]
+          }
+        }
+      },
+      "conePath": "毁灭",
+      "relicMetadata": {},
+      "setNames": {"61221": "识海迷坠的学者", "61222": "识海迷坠的学者", "61223": "识海迷坠的学者", "61224": "识海迷坠的学者", "63065": "停转的萨尔索图", "63066": "停转的萨尔索图"}
+    },
+    "expected": {
+      "selected": 3,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 2522.364380390388, "avg": 2522.364380390388},
+        {"title": "战技伤害·单体", "dmg": 6642.506861182221, "avg": 6642.506861182221},
+        {"title": "战技伤害·相邻目标", "dmg": 2657.0027444728885, "avg": 2657.0027444728885},
+        {"title": "终结技伤害·10段", "dmg": 18862.335183279032, "avg": 18862.335183279032},
+        {"title": "终结技伤害·15段", "dmg": 28293.502774918554, "avg": 28293.502774918554}
+      ],
+      "swap": {"dmg": 18399.316090248845, "avg": 18399.316090248845}
+    }
+  }
+]

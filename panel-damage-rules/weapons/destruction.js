@@ -44,5 +44,17 @@ export default function (staticIdx, keyIdx) {
       staticIdx(2, 'hpPct'),
       keyIdx('受到攻击或装备者消耗自身生命值，伤害提高[dmg]%', 'dmg', 3)
     ],
+    此身为剑: [
+      staticIdx(1, 'cdmg'),
+      (tables) => {
+        return {
+          title: '3层Buff使装备者下一次攻击造成的伤害提高[dmg]%，使该次攻击无视目标[ignore]%的防御力',
+          data: {
+            dmg: tables[2] * 3,
+            ignore: tables[3]
+          }
+        }
+      }
+    ],
   }
 }

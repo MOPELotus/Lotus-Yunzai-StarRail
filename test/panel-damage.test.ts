@@ -7,6 +7,7 @@ import physicalImaginaryFixtures from "./fixtures/panel-damage-physical-imaginar
 import breakFixtures from "./fixtures/panel-damage-break-support.json";
 import healthFixtures from "./fixtures/panel-damage-hp-support.json";
 import nihilityFixtures from "./fixtures/panel-damage-nihility.json";
+import iceFixtures from "./fixtures/panel-damage-ice-state.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -72,7 +73,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures, ...nihilityFixtures]) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures, ...nihilityFixtures, ...iceFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -174,5 +175,21 @@ describe("common engine with original character data", () => {
         expect(damage.rows[damage.selected]?.average).toBeCloseTo(48708.26289070868, 7);
       }
     }
+  });
+
+  test("keeps enhanced Jingliu's personal default and Misha's eidolon-gated sequence", () => {
+    const profiles = new Map(iceFixtures.map(({ avatar, metadata }) => {
+      const { setNames, ...inputs } = metadata;
+      const sets = new Map(Object.entries(setNames));
+      return [avatar.id, { avatar, prepared: { ...inputs, setForId: (id: string) => sets.get(id) } }] as const;
+    }));
+    const jingliu = profiles.get("2212")!;
+    const result = calculateStarRailPersonalDamage(jingliu.avatar, jingliu.prepared)!;
+    expect(result.rows[result.selected]?.title).toBe("普攻伤害");
+    expect(result.rows[4]?.title).toBe("转魄·终结技(5层月色, 扩散)");
+    const misha = profiles.get("1312")!;
+    expect(readStarRailPersonalDamage({ ...misha.avatar, rank: 0 }, misha.prepared, 5).scenarioCount).toBe(4);
+    const enhanced = calculateStarRailPersonalDamage(misha.avatar, misha.prepared, 5)!;
+    expect(enhanced.rows[enhanced.selected]?.title).toBe("终结技伤害·15段");
   });
 });

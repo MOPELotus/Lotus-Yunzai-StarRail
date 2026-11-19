@@ -67,5 +67,13 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    论剑: [(tables) => {
+      return {
+        title: '连续击中5次同一个目标，伤害提高[dmg]%',
+        data: {
+          dmg: tables[1] * 5
+        }
+      }
+    }],
   }
 }
