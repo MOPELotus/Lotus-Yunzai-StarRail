@@ -1,0 +1,58 @@
+{{extend elemLayout}}
+
+{{block 'css'}}
+<link rel="stylesheet" type="text/css" href="{{_styles_path}}character/profile-detail.css"/>
+<link rel="stylesheet" type="text/css" href="{{_styles_path}}character/profile-list.css"/>
+{{if _theme_path}}
+<link rel="stylesheet" type="text/css" href="{{_theme_path}}character/profile-detail.css"/>
+<link rel="stylesheet" type="text/css" href="{{_theme_path}}character/profile-list.css"/>
+{{/if}}
+<style>body .container {width:650px} .char-item .name {overflow:hidden; text-overflow:ellipsis}</style>
+{{/block}}
+
+
+{{block 'main'}}
+{{set demo = chars[0]?.abbr || "三月七" }}
+<div class="profile-cont game-{{game}}">
+  <div class="head-box">
+    <div class="title">#面板列表
+      <div class="label">UID:{{uid}}</div>
+    </div>
+    {{if msg}}
+    <div class="label">{{msg}}</div>
+    {{/if}}
+    <div class="label">使用<span>*{{demo}}面板{{profileSuffix}}</span>查看角色详情
+    </div>
+  </div>
+  <div class="cont {{groupRank?'has-rank':'no-rank'}}">
+    <div class="char-list">
+      {{each chars char}}
+      <div class="char-item {{char.isNew&&hasNew ?'new-char':''}}">
+        <div class="item-icon char-icon star{{char.star}}">
+       <span class="img"
+             style="background-image:url({{_res_path}}{{char.face}})"></span>
+        </div>
+        <span class="name">{{char.abbr}}<span class="cons cons-{{char.cons}}">{{char.cons}}</span></span>
+        {{if char.groupRank}}
+        {{set gr = char.groupRank}}
+        {{set rank = gr.rank >= (rankCfg.number || 15) ? 10:(gr.rank <=3 ? gr.rank : 4)}}
+        <div class="group-rank rank-{{rank}} rank-type-{{gr.rankType}}">
+          <span>{{gr.rank}}</span>
+        </div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    <div class="cont-footer">
+      {{if hasNew}}
+      <span class="new-tip">本次更新角色</span>
+      {{else}}
+      <span>{{if updateTime.profile }} 更新时间：{{updateTime.profile }} {{/if}}</span>
+      {{/if}}
+      <span class="serv">
+      当前更新服务：{{servName}}
+    </span>
+    </div>
+  </div>
+</div>
+{{/block}}

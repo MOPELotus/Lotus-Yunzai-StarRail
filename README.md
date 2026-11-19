@@ -16,3 +16,15 @@
 - 深渊模板设计依据是 Miao-Yunzai `ac73baa0ca079d7fcacc158a9746774de497a102` 的 `plugins/genshin/resources/html/abyss/abyss-floor.html` 与 `abyss-floor.css`。原背景、星标及字体来自同版本 `plugins/genshin/resources/img/abyss` 与 `plugins/genshin/resources/font`，由运行方按素材授权提供。 [Miao-Yunzai](https://gitee.com/yoimiya-kokomi/Miao-Yunzai)
 - 抽卡记录版式、卡池说明及挑战角色 ID 名称表使用了 Miao-Plugin 的代码和元数据，保留原 MIT 许可。挑战名称表仅摘录 `resources/meta-sr/character/data.json` 的 ID 和名称，来源为生产旧分支固定版本。 [Miao-Plugin 角色数据](https://github.com/MOPELotus/miao-plugin/blob/2860761836069af80bacee5cb85b6dd2e91ea0b0/resources/meta-sr/character/data.json) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 - [星铁官方异相仲裁玩法说明](https://www.hoyolab.com/article/41091494)
+
+## 角色面板
+
+- `*更新面板` 从米游社读取当前档案下的国服星铁角色面板，保存新快照并返回角色列表。
+- `*面板`、`*角色面板` 查看已保存的角色列表。
+- `*三月七面板`、`*三月详情` 查看角色属性、技能、星魂、光锥和遗器。可用喵喵原有角色别名。各指令可加档案编号，例如 `*更新面板2`、`*银枝详情 2`。
+
+旧喵喵快照 `data/PlayerData/sr/<UID>.json` 可直接只读查询，也可用 `LOTUS_STAR_RAIL_LEGACY_PANEL_DIR` 指定快照目录。查询仍使用当前 QQ 档案已同步的 UID。新面板写入 `data/starrail/panels/<QQ>/<UID>.json`，保存角色面板字段。旧面板没有保留的综合属性显示为空，更新后使用米游社明细。
+
+模块保留喵喵面板列表和角色详情的 HTML/CSS 结构。可用 `LOTUS_STAR_RAIL_PANEL_THEME_DIR` 指定获准使用的原喵喵 `resources/`。默认复用 `LOTUS_STAR_RAIL_GACHA_THEME_DIR` 或 `data/starrail/miao-theme/`。原图片、字体与数据各自遵循其授权。面板拉取接受米游社官方 CDN 头像；同时存在本机主题图时优先用本机图。
+
+面板列表、详情样式、角色别名及遗器词条转换来自 Miao-Plugin `2860761836069af80bacee5cb85b6dd2e91ea0b0` 的 `apps/profile/ProfileList.js`、`models/serv/api/MysPanelHSR{Api,Data,Mappings}.js`、`models/artis/ArtisAttr.js`、`resources/character/profile-{list,detail}.{html,css}`、`resources/common/{common.css,layout/elem.html}` 及 `resources/meta-sr/character/alias.js`。保留 MIT 许可。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)

@@ -1,0 +1,238 @@
+// Field mappings and list ordering adapted from miao-plugin
+// apps/profile/ProfileList.js and models/serv/api/MysPanelHSR{Api,Data,Mappings}.js.
+import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
+import names from "./challenge-character-names.json";
+
+type Json = Record<string, unknown>;
+export const object = (value: unknown): Json | undefined =>
+  value && typeof value === "object" && !Array.isArray(value) ? value as Json : undefined;
+export const array = (value: unknown) => Array.isArray(value) ? value.map(object).filter(row => row !== undefined) : [];
+export const text = (value: unknown, limit = 100) =>
+  typeof value === "string" && value.isWellFormed() ? value.replace(/[\p{Cc}\p{Cf}]/gu, " ").trim().slice(0, limit) : "";
+export const id = (value: unknown) =>
+  typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? String(value) : typeof value === "string" && /^[1-9]\d{0,11}$/u.test(value) ? value : "";
+export function whole(value: unknown, max: number) {
+  const n = typeof value === "string" && /^\d{1,13}$/u.test(value) ? Number(value) : value;
+  return typeof n === "number" && Number.isSafeInteger(n) && n >= 0 && n <= max ? n : undefined;
+}
+
+const statMap: Readonly<Record<number, string>> = {
+  1: "hp", 2: "atk", 3: "def", 4: "speed", 5: "cpct", 6: "cdmg", 7: "heal", 9: "recharge",
+  10: "effPct", 11: "effDef", 12: "phy", 14: "fire", 16: "ice", 18: "elec", 20: "wind",
+  22: "quantum", 24: "imaginary", 27: "hp", 29: "atk", 31: "def", 32: "hpPct", 33: "atkPct",
+  34: "defPct", 51: "speed", 52: "cpct", 53: "cdmg", 54: "recharge", 55: "heal", 56: "effPct",
+  57: "effDef", 58: "stance", 59: "stance",
+};
+const remakeMap: Readonly<Record<string, string>> = {
+  普攻: "a", 战技: "e", 终结技: "q", 天赋: "t", 秘技: "z", 欢愉技: "xe", 忆灵技: "me", 忆灵天赋: "mt",
+};
+const elements: Readonly<Record<string, string>> = {
+  Physical: "物理", Fire: "火", Ice: "冰", Thunder: "雷", Wind: "风", Quantum: "量子", Imaginary: "虚数",
+};
+export const officialArtHosts = new Set(["act-webstatic.mihoyo.com", "upload-bbs.mihoyo.com", "fastcdn.mihoyo.com"]);
+const mappedNames: Readonly<Record<string, string>> = names;
+
+function safeArt(value: unknown) {
+  if (typeof value !== "string" || value.length > 2048) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && officialArtHosts.has(url.hostname) && !url.username && !url.password && !url.port ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+export function statValue(value: unknown) {
+  const match = /^([-+]?\d{1,8}(?:\.\d{1,8})?)\s*(%)?$/u.exec(text(String(value ?? ""), 35));
+  if (!match || !match[1]) return "";
+  return `${Number(match[1])}${match[2] ?? ""}`;
+}
+
+interface Stat {
+  key: string;
+  value: string;
+  base?: string;
+  times?: number;
+}
+interface Skill {
+  key: string;
+  level: number;
+  icon: string;
+}
+interface Trace {
+  id: string;
+  icon: string;
+  name: string;
+  active: boolean;
+}
+interface Cone {
+  id: string;
+  name: string;
+  rank?: number;
+  level?: number;
+  promote?: number;
+  image: string;
+  description: string;
+}
+interface Relic {
+  id: string;
+  slot: number;
+  name: string;
+  image: string;
+  level?: number;
+  rarity?: number;
+  main?: Stat;
+  subs: Stat[];
+  legacyMainId?: string;
+  legacySubIds?: string[];
+}
+
+export interface PanelAvatar {
+  id: string;
+  name: string;
+  element: string;
+  rarity?: number;
+  level?: number;
+  rank?: number;
+  path: string;
+  face: string;
+  splash: string;
+  skills: Skill[];
+  traces: Trace[];
+  stars: { image: string; active: boolean }[];
+  stats: Stat[];
+  cone?: Cone;
+  relics: Relic[];
+}
+export interface PanelSnapshot {
+  version: 1;
+  uid: string;
+  source: "miyoushe" | "miao";
+  updatedAt?: string;
+  avatars: PanelAvatar[];
+}
+export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
+
+export function parsePanelCommand(message: string) {
+  const command = /^(?:#星铁|\*)(.+?)\s*([1-9]\d{0,2})?$/u.exec(message);
+  if (!command || !command[1]) return;
+  const body = command[1].trim();
+  const profileId = Number(command[2] ?? 1);
+  if (profileId > MAX_PROFILE_ID) return;
+  if (/^(?:更新面板|面板更新|全部面板更新|更新全部面板|获取游戏角色详情)$/u.test(body))
+    return { type: "update" as const, profileId, name: "" };
+  if (/^(?:面板角色|角色面板|面板)(?:列表)?$/u.test(body))
+    return { type: "list" as const, profileId, name: "" };
+  const detail = /^([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:详细|详情|面板|面版)$/u.exec(body);
+  if (detail?.[1] && !/^(?:展板|备用|删除|加载|重载|清理|重新加载|刷新|修复|重建)|列表$/u.test(detail[1])) {
+    return { type: "detail" as const, profileId, name: detail[1].trim() };
+  }
+}
+
+function property(row: Json, highest = false): Stat | undefined {
+  const code = whole(row.property_type, 999);
+  const key = code !== undefined ? statMap[code] ?? `unknown-${code}` : "";
+  const value = statValue(highest ? row.final ?? row.value : row.value ?? row.final);
+  if (!key || !value) return;
+  const base = statValue(row.base);
+  const times = whole(row.times, 20);
+  return { key, value, ...(base && { base }), ...(times !== undefined && { times }) };
+}
+
+function relic(row: Json): Relic | undefined {
+  const slot = whole(row.pos, 6), relicId = id(row.id);
+  if (!slot || !relicId) return;
+  const main = object(row.main_property);
+  return {
+    id: relicId, slot, name: text(row.name ?? row.name_mi18n), image: safeArt(row.icon), level: whole(row.level, 15),
+    rarity: whole(row.rarity, 5), main: main && property(main),
+    subs: array(row.properties).filter(row => row.is_preview !== true).slice(0, 4).flatMap(row => property(row) ?? []),
+  };
+}
+
+function skill(row: Json): Skill | undefined {
+  const key = remakeMap[text(row.remake)];
+  const level = whole(row.level, 25);
+  if (key && level !== undefined && level > 0) return { key, level, icon: safeArt(row.icon) };
+}
+
+const enhancedIds = new Set(["1212", "1205", "1005", "1006", "1004", "1102", "1217", "1310", "1306", "1307"]);
+function officialAvatar(row: Json): PanelAvatar | undefined {
+  const original = id(row.id);
+  const level = whole(row.level, 80);
+  if (!original || !level) return;
+  const skillRows = array(row.skills);
+  const enhancedId = `2${original.slice(1)}`;
+  const enhanced = enhancedIds.has(original) && mappedNames[enhancedId] && skillRows.some(row => text(String(row.point_id)).startsWith(`1${original}`));
+  const avatarId = enhanced ? enhancedId : original;
+  const name = enhanced || original.startsWith("8") ? mappedNames[avatarId] || text(row.name ?? row.name_mi18n) : text(row.name ?? row.name_mi18n) || mappedNames[avatarId];
+  if (!name) return;
+  const eidolons = array(row.ranks);
+  const cone = object(row.equip);
+  const coneId = id(cone?.id);
+  const rawElement = text(row.element);
+  const relics = [...array(row.relics), ...array(row.ornaments)].flatMap(row => relic(row) ?? []);
+  const allSkills = [...skillRows, ...array(object(row.servant_detail)?.servant_skills)];
+  const seen = new Set();
+  return {
+    id: avatarId, name, level, rank: whole(row.rank, 6), rarity: whole(row.rarity, 5),
+    element: elements[rawElement] ?? rawElement, path: text(row.avatar_path ?? row.path), face: safeArt(row.icon ?? row.image),
+    splash: safeArt(row.large_icon ?? row.image), stats: array(row.properties).slice(0, 45).flatMap(row => property(row, true) ?? []),
+    skills: allSkills.flatMap(row => skill(row) ?? []).filter(row => !seen.has(row.key) && Boolean(seen.add(row.key))),
+    traces: allSkills.filter(row => row.point_type !== 2 && !remakeMap[text(row.remake)]).slice(0, 24).map(row => ({
+      id: id(row.point_id), icon: safeArt(row.icon), name: text(row.name ?? row.remake), active: row.is_activated === true,
+    })),
+    stars: eidolons.slice(0, 6).map(row => ({ image: safeArt(row.icon), active: row.is_unlocked === true })),
+    cone: cone && coneId ? { id: coneId, name: text(cone.name), rank: whole(cone.rank, 5), level: whole(cone.level, 80), promote: whole(cone.promote, 6),
+      image: safeArt(cone.icon), description: text(cone.desc ?? cone.description, 1200) } : undefined,
+    relics: relics.sort((a, b) => a.slot - b.slot),
+  };
+}
+
+export function normalizePanel(uid: string, source: readonly Json[], now = new Date()): PanelSnapshot {
+  const avatars = new Map<string, PanelAvatar>();
+  for (const row of source) {
+    const avatar = officialAvatar(row);
+    if (!avatar || avatars.has(avatar.id)) throw new Error("星铁面板含无效或重复的角色记录。");
+    avatars.set(avatar.id, avatar);
+  }
+  return { version: 1, uid, source: "miyoushe", updatedAt: now.toISOString(), avatars: [...avatars.values()] };
+}
+
+export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
+  const data = object(source);
+  const avatars = object(data?.avatars);
+  if (id(data?.uid) !== uid || !avatars || Object.keys(avatars).length > 256) {
+    throw new Error("旧喵喵面板档案与当前角色不匹配。");
+  }
+  const parsed: PanelAvatar[] = [];
+  for (const [key, value] of Object.entries(avatars)) {
+    const row = object(value);
+    const avatarId = id(row?.id);
+    const level = whole(row?.level, 80);
+    const name = mappedNames[avatarId] || text(row?.name);
+    const gear = object(row?.weapon), talent = object(row?.talent);
+    if (!row || key !== avatarId || !level || !name) continue;
+    // Reject rows with no recorded source.
+    const source = text(row._source);
+    if (!source) continue;
+    const coneId = id(gear?.id);
+    const skills = Object.entries(talent ?? {}).flatMap(([key, value]) => {
+      const level = whole(value, 25);
+      return level && Object.values(remakeMap).includes(key) ? [{ key, level, icon: "" }] : [];
+    });
+    const relics = Object.entries(object(row.artis) ?? {}).flatMap(([key, value]) => {
+      const part = object(value), partId = id(part?.id), slot = whole(key, 6);
+      if (!part || !partId || !slot) return [];
+      return [{ id: partId, slot, name: "", image: "", level: whole(part.level, 15), rarity: whole(part.star, 5), subs: [],
+        legacyMainId: String(part.mainId ?? ""), legacySubIds: Array.isArray(part.attrIds) ? part.attrIds.filter(id => typeof id === "string").slice(0, 4) : [] }];
+    });
+    const traces = Array.isArray(row.trees) ? row.trees.map(id).filter(Boolean).slice(0, 24).map(id => ({ id, active: true, icon: "", name: "" })) : [];
+    parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), element: text(row.elem), path: "", face: "", splash: "",
+      skills, traces, stars: [], stats: [], cone: gear && coneId ? { id: coneId, name: text(gear.name), image: "", description: "",
+        rank: whole(gear.affix, 5), level: whole(gear.level, 80), promote: whole(gear.promote, 6) } : undefined, relics });
+  }
+  const time = whole(data?._profile, 9_999_999_999_999);
+  const updatedAt = time && time >= 1_000_000_000 ? new Date(time < 1e11 ? time * 1000 : time).toISOString() : undefined;
+  return { version: 1, uid, source: "miao", updatedAt, avatars: parsed };
+}
