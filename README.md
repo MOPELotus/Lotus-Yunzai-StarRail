@@ -90,7 +90,7 @@ bun plugins/starrail/simulation/import-legacy-cli.ts --apply authorization.json
 
 `*希儿排名统计`、`#星铁老杨排名统计` 或 `#景元排名统计` 查询角色的公开伤害分布，显示十个百分位与样本数。数值和比较口径由数据服务定义。查询只发送公开角色编号、百分位参数和协议版本，不读取本地账号或面板。
 
-可用 `LOTUS_STAR_RAIL_ARK_THEME_DIR` 指定有权使用的旧主题 `resources/` 目录，结果卡会读取其中的 `graph/background.png`。缺少背景时使用内置底色。旧命令与公开统计契约参考 [Ark 上游 `e81b5ef` 的后端说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/backend.md) 和 [排名命令说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/extendMiaoRank.md)。
+排名图默认从星铁抽卡主题读取喵喵星空底图 `common/bg/bg-sr.webp`，也可用 `LOTUS_STAR_RAIL_ARK_THEME_DIR` 指定有权使用的喵喵 `resources/` 目录。缺素材时使用内置无标识底色。[Ark 上游后端说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/backend.md) · [排名命令说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/extendMiaoRank.md)
 
 ## 历史卡池
 

@@ -1,6 +1,7 @@
 import { fetchRankStats, rankPercentiles } from "../../lib/rank-statistics.ts";
 import { renderDamageRankStatsCard } from "../../packages/skia/rank-stats-card.ts";
 import characterNames from "./challenge-character-names.json";
+import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { abbr, alias } from "./panel-theme/character-alias.js";
 
 const normalize = (name: string) => name.normalize("NFKC").toLowerCase().replace(/[·・•\s]/gu, "");
@@ -27,8 +28,9 @@ export async function queryStarRailRankStats(message: string, signal: AbortSigna
   if (signal.aborted) return;
   if ("message" in result) return result.message;
   try {
-    const { png } = await renderDamageRankStatsCard(character.name, result.stats, {
-      footer: "Lotus-Yunzai · StarRail", themeDirectory: Bun.env.LOTUS_STAR_RAIL_ARK_THEME_DIR?.trim(),
+    const theme = starRailGachaThemeDirectory();
+    const { png } = await renderDamageRankStatsCard("sr", character.name, result.stats, {
+      footer: "Lotus-Yunzai · StarRail", themeDirectories: [Bun.env.LOTUS_STAR_RAIL_ARK_THEME_DIR?.trim() || theme, theme],
     });
     if (!signal.aborted) return { type: "image" as const, file: png };
   } catch {
