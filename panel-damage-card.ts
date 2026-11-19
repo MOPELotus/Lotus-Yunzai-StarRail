@@ -1,7 +1,7 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { renderPng } from "@lotus-yunzai/skia";
-import { loadImage } from "skia-canvas";
+import { Canvas, loadImage } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
 
@@ -54,9 +54,19 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const labels = damage.rows.map((row, index) => `${index + 1}. ${row.title}`);
   const rowMetrics = (["damage", "shield", "heal", "support"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
   const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
+  const baseline = damage.rows[damage.selected]!;
+  function formatSwapValue({ average, critical, percentage }: Pick<typeof baseline, "average" | "critical" | "percentage">) {
+    return percentage ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
+  }
+  const measure = new Canvas(1, 1).getContext("2d");
+  measure.font = `13px ${body}`;
+  const swapTextWidth = Math.max(...damage.swaps.flatMap(entry => entry.values.map(swap =>
+    measure.measureText(formatSwapValue(swap ?? baseline)).width,
+  )));
+  const swapCellWidth = Math.max(110, Math.ceil(swapTextWidth + 12));
   const criticalGap = Math.max(162, glyphUnits(resultHeading) * 8 + 16);
   const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.map(glyphUnits));
-  const width = Math.max(660, 210 + damage.swaps.length * 110, rowWidth);
+  const width = Math.max(660, 210 + damage.swaps.length * swapCellWidth, rowWidth);
   const listHeight = 45 + damage.rows.length * 34;
   const swapTop = 161 + listHeight, swapHeight = 110 + damage.swaps.length * 45;
   const buffTop = swapTop + swapHeight + 14;
@@ -64,7 +74,6 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const height = buffTop + 73 + buffLines.length * 25;
   const valueX = width - 46, critX = valueX - criticalGap;
   const matrixX = (index: number) => 170 + (index + 0.5) * (width - 210) / damage.swaps.length;
-  const baseline = damage.rows[damage.selected]!;
   const metricLabel = personalDamageMetricLabel[baseline.metric];
   const swapHeading = baseline.percentage !== undefined ? "词条替换 · 变化（百分点） / 辅助比例"
     : baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}`
@@ -145,13 +154,12 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
       text(`${entry.title} −${entry.amount}`, 42, y + 9, 15);
       entry.values.forEach((swap, index) => {
         const x = matrixX(index);
-        const { average, critical, percentage } = swap ?? baseline;
-        const delta = average - baseline.average;
+        const value = swap ?? baseline;
+        const delta = value.average - baseline.average;
         const deltaLabel = baseline.percentage === undefined ? number.format(delta) : delta.toFixed(1);
         const color = delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8";
         text(swap ? `${delta > 0 ? "+" : ""}${deltaLabel}` : "—", x, y, 17, color, "center");
-        const display = percentage ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
-        text(display, x, y + 19, 13, "#e1d9e8", "center");
+        text(formatSwapValue(value), x, y + 19, 13, "#e1d9e8", "center");
       });
     });
     box(buffTop, 45 + buffLines.length * 25, "计算条件");

@@ -110,5 +110,18 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    灼尽炼狱的新骸: [
+      staticIdx(1, 'hpPct'),
+      (tables) => {
+        return {
+          title: '【炼狱】状态下目标受到的暴击伤害提高[cdmgName]%，受到来自装备者的暴击伤害额外提高[_extraCdmg]%',
+          data: {
+            cdmgName: tables[2],
+            _extraCdmg: tables[2],
+            cdmg: tables[2] * 2
+          }
+        }
+      }
+    ],
   }
 }

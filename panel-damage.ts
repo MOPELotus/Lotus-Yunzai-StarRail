@@ -84,6 +84,10 @@ import * as qingque from "./panel-damage-rules/characters/qingque.js";
 import * as pela from "./panel-damage-rules/characters/pela.js";
 import * as cipher from "./panel-damage-rules/characters/cipher.js";
 import * as seeleEnhanced from "./panel-damage-rules/characters/seele-enhanced.js";
+import * as lynx from "./panel-damage-rules/characters/lynx.js";
+import * as hyacine from "./panel-damage-rules/characters/hyacine.js";
+import * as cyrene from "./panel-damage-rules/characters/cyrene.js";
+import * as mortenaxBlade from "./panel-damage-rules/characters/mortenax-blade.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -313,6 +317,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23043": "谎言在风中飘扬", "21015": "决心如汗珠般闪耀" } },
   "2102": { name: "希儿Pro", element: "量子", path: "巡猎", traces: [101, 102], rule: seeleEnhanced,
     cones: { "23001": "于夜色中", "23012": "如泥酣眠" } },
+  "1110": { name: "玲可", element: "量子", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: lynx,
+    cones: { "22001": "嘿，我在这儿", "21007": "同一种心情" } },
+  "1409": { name: "风堇", element: "风", path: "记忆", traces: [101, 103], stats: ["hp", "heal"], rule: hyacine,
+    cones: { "23042": "愿虹光永驻天空", "21054": "故事的下一页" } },
+  "1415": { name: "昔涟", element: "冰", path: "记忆", traces: [103], stats: ["hp"], rule: cyrene,
+    cones: { "23052": "爱如此刻永恒", "21050": "胜利只在朝夕间" } },
+  "1507": { name: "千冶•刃", element: "火", path: "虚无", traces: [103], stats: ["hp"], rule: mortenaxBlade,
+    cones: { "23059": "灼尽炼狱的新骸", "23029": "那无数个春天" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -462,8 +474,9 @@ function originalDamage(
   const trees = Object.fromEntries([...knownTraces].filter(([id, active]) => id && active));
   const talent = talentValues(avatar, metadata, rank);
   const { values, staticAttr } = panelValues(avatar, metadata, character);
+  const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: { ...values, staticAttr },
-    char: { elem: character.element, sp: metadata.character.sp }, weapon: { affix: avatar.cone?.rank ?? 1 } });
+    char: { elem: character.element, sp: metadata.character.sp }, weapon: { name: weapon.name, affix: weapon.affix } });
   const weaponBuffs = weaponEffects(avatar, metadata, character);
   const relics = relicEffects(avatar, metadata);
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
@@ -472,7 +485,6 @@ function originalDamage(
     throw new MissingDamageData("缺少套装所需的效果命中属性");
   }
   const buffs = [...(rule.buffs ?? []), ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
-  const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };
   const defaultParams = (typeof rule.defParams === "function" ? rule.defParams(meta as unknown as Variables) : rule.defParams) ?? {};
 

@@ -19,6 +19,7 @@ import trailblazerFixtures from "./fixtures/panel-damage-harmony-break.json";
 import preservationFixtures from "./fixtures/panel-damage-preservation.json";
 import destructionStateFixtures from "./fixtures/panel-damage-destruction-state.json";
 import critSpecialFixtures from "./fixtures/panel-damage-crit-special.json";
+import hpSpecialFixtures from "./fixtures/panel-damage-hp-special.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -86,7 +87,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -387,5 +388,28 @@ describe("common engine with original character data", () => {
     const six = calculateStarRailPersonalDamage({ ...avatar, rank: 6 }, prepared, 4)!;
     expect(six.rows[six.selected]?.title).toBe("6命乱蝶附加伤害");
     expect(six.rows[six.selected]?.critical).toBeCloseTo(six.rows[2]!.critical! * 0.3, 7);
+  });
+
+  test("uses Hyacine's verified cone name for the original drain contribution", () => {
+    const { avatar, metadata, expected } = hpSpecialFixtures.find(fixture => fixture.avatar.id === "1409")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const renamed = { ...avatar, cone: { ...avatar.cone, name: "旧面板显示名" } };
+    const damage = calculateStarRailPersonalDamage(renamed, { ...inputs, setForId: id => sets.get(id) }, 8)!;
+    expect(damage.rows[1]?.metric).toBe("heal");
+    expect(damage.rows[damage.selected]).toMatchObject({ metric: "support", average: expected.rows[7]!.avg });
+  });
+
+  test("preserves Cyrene's original additional bounce count at the first eidolon", () => {
+    const { avatar, metadata } = hpSpecialFixtures.find(fixture => fixture.avatar.id === "1415")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const title = (rank: number) => {
+      const damage = calculateStarRailPersonalDamage({ ...avatar, rank }, prepared)!;
+      return damage.rows[damage.selected]?.title;
+    };
+    expect(title(0)).toContain("3段弹射");
+    expect(title(1)).toContain("15段弹射");
   });
 });
