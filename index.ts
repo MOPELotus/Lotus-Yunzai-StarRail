@@ -24,6 +24,7 @@ import { parseChallengeQuery } from "./challenge-model.ts";
 import { queryStarRailChallenge } from "./challenge.ts";
 import { createStarRailPanel } from "./panel.ts";
 import { parsePanelCommand } from "./panel-model.ts";
+import { queryStarRailRankStats } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
 
 const updateCommand = /^#星铁更新抽卡记录([1-9]\d{0,2})?$/u;
@@ -225,6 +226,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         }
         return panel(String(userId), panelCommand);
       }
+      const rankStats = await queryStarRailRankStats(context.normalizedMessage, signal);
+      if (rankStats !== undefined) return rankStats;
       const simulated = await simulate(context.normalizedMessage, context);
       if (simulated !== undefined) return simulated;
       const fileReply = await gachaFiles(context);

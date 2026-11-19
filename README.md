@@ -85,3 +85,9 @@ bun plugins/starrail/simulation/import-legacy-cli.ts --apply authorization.json
 ```
 
 预览只输出数量，不建立存档。写入仅补充当前模拟缺少的票数和会话保底，保留来源的绝对过期时刻及北京时间 04:00 的票数日界。已存在或已经迁移的项目会跳过。只迁移仍有效的余额、四星与五星垫抽及活动保底。会话数据出现原神定轨字段时会拒绝导入。旧键不会被删除或续期。日界不符的旧余额、失效资料、星铁来源不明的数据和原神字段均留在旧处。
+
+## 角色排名统计
+
+`*希儿排名统计`、`#星铁老杨排名统计` 或 `#景元排名统计` 查询角色的公开伤害分布，显示十个百分位与样本数。数值和比较口径由数据服务定义。查询只发送公开角色编号、百分位参数和协议版本，不读取本地账号或面板。
+
+可用 `LOTUS_STAR_RAIL_ARK_THEME_DIR` 指定有权使用的旧主题 `resources/` 目录，结果卡会读取其中的 `graph/background.png`。缺少背景时使用内置底色。旧命令与公开统计契约参考 [Ark 上游 `e81b5ef` 的后端说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/backend.md) 和 [排名命令说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/extendMiaoRank.md)。
