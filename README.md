@@ -82,6 +82,11 @@
 | 素裳（1206） | 论剑、于夜色中 |
 | Archer（1015） | 理想燃烧的地狱、星海巡航 |
 | 三月七·巡猎（1224） | 论剑、星海巡航 |
+| 卢卡（1111） | 晚安与睡颜、决心如汗珠般闪耀 |
+| 桂乃芬（1210） | 晚安与睡颜、猎物的视线 |
+| 桑博（1108） | 猎物的视线、孤独的疗愈 |
+| 海瑟音（1410） | 海洋为何而歌、猎物的视线 |
+| 希露瓦（1103） | 早餐的仪式感、天才们的休憩 |
 
 成套效果已覆盖繁星璀璨的天才、熔岩锻铸的火匠、野穗伴行的快枪手、净庭教宗的圣骑士、密林卧雪的猎人、街头出身的拳王、盗匪荒漠的废土客、毁烬焚骨的大公、死水深潜的先驱、识海迷坠的学者、幽锁深牢的系囚、荡除蠹灾的铁骑、风举云飞的勇烈、流星追迹的怪盗、机心戏梦的钟表匠、宝命长存的莳者、云无留迹的过客、凯歌祝捷的英豪、哀歌覆国的诗人，以及繁星竞技场、停转的萨尔索图、太空封印站、苍穹战线格拉默、奔狼的都蓝王朝、盗贼公国塔利亚、劫火莲灯铸炼宫、不老者的仙舟、谧宁拾骨地、泛银河商业公司和渊思寂虑的巨树。查询依据档案关联的本地快照识别角色形态。必需属性、行迹或装备规则不齐时会说明原因。
 
@@ -99,7 +104,9 @@
 
 托帕默认显示负债与强化叠加时的账账伤害，貊泽默认显示天赋追加攻击。丹恒有单独的减速目标终结技场景，素裳保留战技附带一次和两次剑势的场景。Archer 第 2 项合计五次战技，巡猎三月七第 1 项为强化普攻单次伤害。
 
-引擎和原规则固定至同版 Miao-Plugin。`panel-damage-rules/` 保存 `models/dmg/{DmgAttr,DmgCalc,DmgCalcMeta,DmgMastery,AttrItem}.js`、已接入角色的 `resources/meta-sr/character/*/calc.js`、相关光锥与遗器规则摘录和遗器词条定义。忘归人战技提示已校正角色名。`panel-damage.ts` 按 `models/ProfileDmg.js`、`models/dmg/DmgBuffs.js`、`models/Weapon.js` 的流程适配当前面板。卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块，使用本地授权主题中的对应元素底图与角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
+卢卡、桂乃芬和桑博默认分别显示裂伤、灼烧和五层风化的持续伤害。桑博四魂起开放战技引爆。希露瓦分别计算秘技和战技触电。海瑟音保留原版结界内的保守估算，激活「盛会的泡沫」后可查终结技引爆。
+
+引擎和原规则固定至同版 Miao-Plugin。`panel-damage-rules/` 保存 `models/dmg/{DmgAttr,DmgCalc,DmgCalcMeta,DmgMastery,AttrItem}.js`、已接入角色的 `resources/meta-sr/character/*/calc.js`、相关光锥与遗器规则摘录和遗器词条定义。忘归人战技提示已校正角色名。迁移海瑟音时移除了原调试日志。`panel-damage.ts` 按 `models/ProfileDmg.js`、`models/dmg/DmgBuffs.js`、`models/Weapon.js` 的流程适配当前面板。卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块，使用本地授权主题中的对应元素底图与角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
 ## 遗器评分
 

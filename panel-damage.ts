@@ -56,6 +56,11 @@ import * as danHeng from "./panel-damage-rules/characters/dan-heng.js";
 import * as sushang from "./panel-damage-rules/characters/sushang.js";
 import * as archer from "./panel-damage-rules/characters/archer.js";
 import * as marchHunt from "./panel-damage-rules/characters/march-hunt.js";
+import * as luka from "./panel-damage-rules/characters/luka.js";
+import * as guinaifen from "./panel-damage-rules/characters/guinaifen.js";
+import * as sampo from "./panel-damage-rules/characters/sampo.js";
+import * as hysilens from "./panel-damage-rules/characters/hysilens.js";
+import * as serval from "./panel-damage-rules/characters/serval.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -221,6 +226,15 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23046": "理想燃烧的地狱", "24001": "星海巡航" } },
   "1224": { name: "三月七·巡猎", element: "虚数", path: "巡猎", traces: [], rule: marchHunt,
     cones: { "21010": "论剑", "24001": "星海巡航" } },
+  "1111": { name: "卢卡", element: "物理", path: "虚无", traces: [], rule: luka,
+    cones: { "21001": "晚安与睡颜", "21015": "决心如汗珠般闪耀" } },
+  "1210": { name: "桂乃芬", element: "火", path: "虚无", traces: [103], rule: guinaifen,
+    cones: { "21001": "晚安与睡颜", "21008": "猎物的视线" } },
+  "1108": { name: "桑博", element: "风", path: "虚无", traces: [], rule: sampo,
+    cones: { "21008": "猎物的视线", "24003": "孤独的疗愈" } },
+  "1410": { name: "海瑟音", element: "物理", path: "虚无", traces: [102, 103], stats: ["effPct"], rule: hysilens,
+    cones: { "23047": "海洋为何而歌", "21008": "猎物的视线" } },
+  "1103": { name: "希露瓦", element: "雷", path: "智识", traces: [103], rule: serval, cones: eruditionCones },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;

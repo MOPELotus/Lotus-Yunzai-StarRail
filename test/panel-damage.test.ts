@@ -13,6 +13,7 @@ import remembranceFixtures from "./fixtures/panel-damage-remembrance.json";
 import abundanceFixtures from "./fixtures/panel-damage-abundance.json";
 import destructionFixtures from "./fixtures/panel-damage-destruction.json";
 import huntFixtures from "./fixtures/panel-damage-hunt.json";
+import dotFixtures from "./fixtures/panel-damage-dot.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -80,7 +81,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -259,5 +260,17 @@ describe("common engine with original character data", () => {
     const secondSwordHit = damage.rows[4]!.average - damage.rows[2]!.average;
     expect(firstSwordHit).toBeGreaterThan(0);
     expect(secondSwordHit).toBeCloseTo(firstSwordHit, 7);
+  });
+
+  test("unlocks Hysilens's ultimate detonation with its original trace", () => {
+    const { avatar, metadata } = dotFixtures.find(fixture => fixture.avatar.id === "1410")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    expect(damage.rows[3]?.critical).toBeUndefined();
+    expect(damage.rows[4]?.average).toBeCloseTo(damage.rows[3]!.average * 1.5, 7);
+    const traces = avatar.traces.map(trace => trace.id.endsWith("102") ? { ...trace, active: false } : trace);
+    expect(readStarRailPersonalDamage({ ...avatar, traces }, prepared, 5).scenarioCount).toBe(4);
   });
 });
