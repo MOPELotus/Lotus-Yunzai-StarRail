@@ -3,9 +3,9 @@ import { join, sep } from "node:path";
 import { renderPng } from "@lotus-yunzai/skia";
 import { loadImage } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
-import { personalDamageEnemyLevel, type StarRailPersonalDamage } from "./panel-damage.ts";
+import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
 
-const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo" };
+const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo", 风: "anemo", 火: "pyro" };
 const words = new Intl.Segmenter("zh-CN", { granularity: "word" });
 
 function conditionLines(buff: string) {
@@ -51,7 +51,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const heading = titleFont ? `${titleFont}, ${fallback}` : fallback;
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;
   const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
-  const width = Math.max(660, 190 + damage.swaps.length * 110);
+  const width = Math.max(660, 210 + damage.swaps.length * 110);
   const listHeight = 45 + damage.rows.length * 34;
   const swapTop = 161 + listHeight, swapHeight = 110 + damage.swaps.length * 45;
   const buffTop = swapTop + swapHeight + 14;
@@ -60,7 +60,8 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const valueX = width - 46, critX = valueX - 162;
   const matrixX = (index: number) => 170 + (index + 0.5) * (width - 210) / damage.swaps.length;
   const baseline = damage.rows[damage.selected]!;
-  const shield = baseline.critical === undefined;
+  const rowMetrics = (["damage", "shield", "heal"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
+  const metricLabel = personalDamageMetricLabel[baseline.metric];
 
   return renderPng(width, height, ctx => {
     function text(value: string, x: number, y: number, size: number, color = "#f5f3f7", align: CanvasTextAlign = "left", family = body) {
@@ -119,7 +120,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
 
     box(147, listHeight, "伤害计算");
     text("暴击伤害", critX, 173, 16, "#f5f3f7", "right");
-    text(damage.rows.some(row => row.critical === undefined) ? "期望伤害 / 护盾量" : "期望伤害", valueX, 173, 16, "#f5f3f7", "right");
+    text(rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / "), valueX, 173, 16, "#f5f3f7", "right");
     for (const [index, row] of damage.rows.entries()) {
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(`${index + 1}. ${row.title}`, 42, y, 18, color);
@@ -127,7 +128,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
       text(number.format(row.average), valueX, y, 18, color, "right");
     }
 
-    box(swapTop, swapHeight, shield ? "词条替换 · 护盾量变化 / 护盾量" : "词条替换 · 期望变化 / 期望与暴击伤害");
+    box(swapTop, swapHeight, baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}` : "词条替换 · 期望变化 / 期望与暴击伤害");
     damage.swaps.forEach((entry, index) => {
       text(entry.title, matrixX(index), swapTop + 60, 15, "#e2cb9e", "center");
       text(`+${entry.amount}`, matrixX(index), swapTop + 79, 14, "#e2cb9e", "center");

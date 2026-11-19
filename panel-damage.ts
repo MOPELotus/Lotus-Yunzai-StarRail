@@ -9,10 +9,17 @@ import * as seele from "./panel-damage-rules/characters/seele.js";
 import * as acheron from "./panel-damage-rules/characters/acheron.js";
 import * as aventurine from "./panel-damage-rules/characters/aventurine.js";
 import * as theHerta from "./panel-damage-rules/characters/the-herta.js";
+import * as blackSwan from "./panel-damage-rules/characters/black-swan.js";
+import * as kafka from "./panel-damage-rules/characters/kafka.js";
+import * as kafkaEnhanced from "./panel-damage-rules/characters/kafka-enhanced.js";
+import * as jingYuan from "./panel-damage-rules/characters/jing-yuan.js";
+import * as feixiao from "./panel-damage-rules/characters/feixiao.js";
+import * as lingsha from "./panel-damage-rules/characters/lingsha.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
 import preservation from "./panel-damage-rules/weapons/preservation.js";
+import abundance from "./panel-damage-rules/weapons/abundance.js";
 
 type Metadata = NonNullable<Awaited<ReturnType<typeof readPanelDamageMetadata>>>;
 type Attr = { base: number; plus: number; pct: number; inc?: number };
@@ -27,10 +34,13 @@ type Variables = {
   trees: Record<string, boolean>;
   params: Params;
 };
-type DamageValue = { avg: number; dmg?: number };
+type DamageMetric = "damage" | "shield" | "heal";
+export const personalDamageMetricLabel: Readonly<Record<DamageMetric, string>> = { damage: "期望伤害", shield: "护盾量", heal: "治疗量" };
+type DamageValue = { avg: number; dmg?: number; metric?: DamageMetric };
 type DamageFn = ((multiplier: number, skill: string, effect?: string) => DamageValue) & {
   basic: (amount: number, skill: string) => DamageValue;
   shield: (amount: number) => DamageValue;
+  heal: (amount: number) => DamageValue;
 };
 type Buff = {
   title?: string;
@@ -45,23 +55,25 @@ type Rule = {
     title: string;
     cons?: number;
     params?: Readonly<Params>;
+    check?: (variables: Variables) => boolean;
     dmg: (variables: Variables, damage: DamageFn) => DamageValue;
   }[];
   buffs: readonly Buff[];
-  defDmgIdx: number;
+  defDmgIdx?: number;
   mainAttr: string;
-  defParams?: (variables: Variables) => Params;
+  defParams?: Params | ((variables: Variables) => Params);
 };
 type Character = {
   name: string;
   element: string;
   path: string;
   traces: readonly number[];
-  stat?: string;
+  stats?: readonly string[];
   rule: Rule;
   cones: Readonly<Record<string, string>>;
 };
 const setRules = relicRules as unknown as Readonly<Record<string, Readonly<Record<number, Buff | Buff[]>>>>;
+const kafkaCones = { "23006": "只需等待", "23022": "重塑时光之忆", "24003": "孤独的疗愈" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -71,17 +83,21 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23024": "行于流逝的岸", "21044": "无边曼舞" } },
   "1401": { name: "大黑塔", element: "冰", path: "智识", traces: [101, 102, 103], rule: theHerta,
     cones: { "23037": "向着不可追问处" } },
-  "1304": { name: "砂金", element: "虚数", path: "存护", traces: [102], stat: "def", rule: aventurine,
+  "1304": { name: "砂金", element: "虚数", path: "存护", traces: [102], stats: ["def"], rule: aventurine,
     cones: { "23023": "命运从未公平", "21043": "两个人的演唱会" } },
+  "1307": { name: "黑天鹅", element: "风", path: "虚无", traces: [103], stats: ["effPct"], rule: blackSwan, cones: kafkaCones },
+  "1005": { name: "卡芙卡", element: "雷", path: "虚无", traces: [], rule: kafka, cones: kafkaCones },
+  "2005": { name: "卡芙卡Pro", element: "雷", path: "虚无", traces: [103], stats: ["effPct"], rule: kafkaEnhanced, cones: kafkaCones },
+  "1204": { name: "景元", element: "雷", path: "智识", traces: [101, 103], rule: jingYuan,
+    cones: { "23010": "拂晓之前", "21027": "早餐的仪式感" } },
+  "1220": { name: "飞霄", element: "风", path: "巡猎", traces: [102, 103], rule: feixiao,
+    cones: { "23031": "我将，巡征追猎", "23012": "如泥酣眠" } },
+  "1222": { name: "灵砂", element: "火", path: "丰饶", traces: [101], stats: ["stance", "heal"], rule: lingsha,
+    cones: { "23032": "唯有香如故" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
 export const hasPersonalDamage = (id: string) => characters.has(id);
-
-export function personalDamageScenarios(avatar: PanelAvatar) {
-  const { rule } = characters.get(avatar.id) ?? {};
-  return rule?.details.filter(row => !row.cons || (avatar.rank !== undefined && avatar.rank >= row.cons)).length ?? 0;
-}
 
 function tableValue(values: unknown, level: number | undefined) {
   const value: unknown = Array.isArray(values) && level && values[level - 1];
@@ -89,7 +105,11 @@ function tableValue(values: unknown, level: number | undefined) {
   return value;
 }
 
-class MissingDamageData extends Error {}
+class MissingDamageData extends Error {
+  constructor(message: string, readonly scenarioCount?: number) {
+    super(message);
+  }
+}
 
 function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number): SkillValues {
   const current = new Map(avatar.skills.map(({ key, level }) => [key, level]));
@@ -130,18 +150,18 @@ function panelValues(avatar: PanelAvatar, metadata: Metadata, character: Charact
       if (typeof number === "number" && Number.isFinite(number) && number >= 0) values[field === "base" ? key + "Base" : key] = number;
     }
   }
-  for (const key of ["atk", "speed", ...(character.stat ? [character.stat] : [])]) {
+  for (const key of ["atk", "speed", ...(character.stats?.includes("def") ? ["def"] : [])]) {
     if (!values[key + "Base"] || values[key] === undefined) throw new MissingDamageData("缺少角色基础与综合属性");
   }
-  for (const key of ["cpct", "cdmg", "dmg"]) {
-    if (values[key] === undefined) throw new MissingDamageData("缺少暴击或元素伤害属性");
+  for (const key of ["cpct", "cdmg", "dmg", ...(character.stats ?? [])]) {
+    if (values[key] === undefined) throw new MissingDamageData("缺少计算所需的战斗属性");
   }
   for (const key of Object.keys(values)) {
     if (key.endsWith("Base")) continue;
     const base = values[key + "Base"] ?? 0;
     flat[key] = { base, plus: values[key]! - base, pct: 0 };
   }
-  return { ...values, staticAttr: flat };
+  return { values, staticAttr: flat };
 }
 
 function relicEffects(avatar: PanelAvatar, metadata: Metadata) {
@@ -181,6 +201,7 @@ function dynamicIndex(title: string, key: string | Numbers, idx?: number): Weapo
 const weaponRules: Readonly<Record<string, WeaponRules>> = {
   "巡猎": hunt(staticIndex, dynamicIndex), "虚无": nihility(staticIndex, dynamicIndex),
   "智识": erudition(staticIndex, dynamicIndex), "存护": preservation(staticIndex, dynamicIndex),
+  "丰饶": abundance(staticIndex, dynamicIndex),
 };
 
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {
@@ -216,16 +237,16 @@ function originalDamage(
   }
   const trees = Object.fromEntries([...knownTraces].filter(([id, active]) => id && active));
   const talent = talentValues(avatar, metadata, rank);
-  const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: panelValues(avatar, metadata, character),
+  const { values, staticAttr } = panelValues(avatar, metadata, character);
+  const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: { ...values, staticAttr },
     char: { elem: character.element, sp: metadata.character.sp }, weapon: { affix: avatar.cone?.rank ?? 1 } });
   const weaponBuffs = weaponEffects(avatar, metadata, character);
   const relics = relicEffects(avatar, metadata);
+  if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
   const buffs = [...rule.buffs, ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
-  const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon: avatar.cone };
-  const defaultParams = rule.defParams?.(meta as unknown as Variables) ?? {};
-  const details = rule.details.filter(row => !row.cons || row.cons <= rank);
-  const selected = scenario === undefined ? rule.defDmgIdx : scenario - 1;
-  if (!details[selected] || (scenario !== undefined && !Number.isInteger(scenario))) throw new MissingDamageData("伤害场景序号无效");
+  const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
+  const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };
+  const defaultParams = (typeof rule.defParams === "function" ? rule.defParams(meta as unknown as Variables) : rule.defParams) ?? {};
 
   function calculate(detail: Rule["details"][number], incAttr = "", reduceAttr = "") {
     const params = { ...defaultParams, ...detail.params };
@@ -233,33 +254,48 @@ function originalDamage(
       originalAttr, buffs, meta: { ...meta }, artis: relics.sets, params, incAttr, reduceAttr, game: "sr",
     });
     const ds = { ...DmgAttr.getDs(attr, meta, params), artis: relics.sets };
-    const damage = DmgCalc.getDmgFn({ ds, attr, level, enemyLv: personalDamageEnemyLevel, game: "sr", showDetail: false });
-    const { dmg, avg } = detail.dmg(ds as unknown as Variables, damage as unknown as DamageFn);
+    const variables = ds as unknown as Variables;
+    if (detail.check && !detail.check(variables)) return;
+    const damage = DmgCalc.getDmgFn({ ds, attr, level, enemyLv: personalDamageEnemyLevel, game: "sr", showDetail: false }) as unknown as DamageFn;
+    const { heal, shield } = damage;
+    damage.heal = amount => ({ ...heal(amount), metric: "heal" });
+    damage.shield = amount => ({ ...shield(amount), metric: "shield" });
+    const { dmg, avg, metric = "damage" } = detail.dmg(variables, damage);
     if (!Number.isFinite(avg) || (dmg !== undefined && !Number.isFinite(dmg))) throw new MissingDamageData("原规则所需数据不齐");
-    return { critical: dmg, average: avg, active: msg as string[] };
+    return { critical: dmg, average: avg, metric, active: msg as string[] };
   }
 
-  const rows = details.map((detail) => ({ title: detail.title, ...calculate(detail) }));
+  const scenarios = rule.details.flatMap((detail, index) => {
+    if (detail.cons && detail.cons > rank) return [];
+    const result = calculate(detail);
+    return result ? [{ detail, index, row: { title: detail.title, ...result } }] : [];
+  });
+  const defaultIndex = scenarios.findIndex(row => row.index === rule.defDmgIdx);
+  const selected = scenario === undefined ? Math.max(0, defaultIndex) : scenario - 1;
+  const current = scenarios[selected];
+  if (!current || (scenario !== undefined && !Number.isInteger(scenario))) {
+    throw new MissingDamageData("伤害场景序号无效", scenarios.length);
+  }
   const statKeys = rule.mainAttr.split(",") as (keyof typeof attrMap)[];
   const swaps = statKeys.map(from => ({
     title: attrMap[from].title, amount: String(attrMap[from].value) + (from === "speed" ? "" : "%"),
     values: statKeys.map(to => {
       if (from === to) return;
-      const { critical, average } = calculate(details[selected]!, to, from);
-      return { critical, average };
+      const result = calculate(current.detail, to, from);
+      return result && { critical: result.critical, average: result.average };
     }),
   }));
-  return { name: character.name, element: character.element, rows, swaps, selected, buffs: rows[selected]!.active };
+  return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };
 }
 
 export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number) {
   const character = characters.get(avatar.id);
-  if (!character) return { reason: "该星铁角色的个人伤害规则尚未接入" } as const;
+  if (!character) return { reason: "该星铁角色的个人伤害规则尚未接入", scenarioCount: undefined } as const;
   try {
     return { damage: originalDamage(avatar, metadata, scenario, character) } as const;
   } catch (error) {
     if (!(error instanceof MissingDamageData)) throw error;
-    return { reason: error.message } as const;
+    return { reason: error.message, scenarioCount: error.scenarioCount } as const;
   }
 }
 

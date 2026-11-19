@@ -133,4 +133,55 @@ export default {
       }
     }
   },
+  盗贼公国塔利亚: {
+    2: [attr('stance', 16), {
+      title: '速度大于145时，击破特攻提高20%',
+      check: ({ calc, attr }) => calc(attr.speed) > 145,
+      data: {
+        stance: 20
+      }
+    }]
+  },
+  幽锁深牢的系囚: {
+    2: attr('atkPct', 12),
+    4: {
+      title: '3层持续伤害下无视18%防御力',
+      data: {
+        ignore: 18
+      }
+    }
+  },
+  荡除蠹灾的铁骑: {
+    2: attr('stance', 16),
+    4: [{
+      title: '基于击破特攻，造成的击破伤害无视敌方[breakIgnore]%防御',
+      sort: 9,
+      data: {
+        breakIgnore: ({ attr }) => attr.stance >= 150 ? 10 : 0
+      }
+    }, {
+      title: '基于击破特攻，造成的超击破伤害无视敌方[superBreakIgnore]%防御',
+      sort: 9,
+      data: {
+        superBreakIgnore: ({ attr }) => attr.stance >= 250 ? 15 : 0
+      }
+    }]
+  },
+  风举云飞的勇烈: {
+    2: attr('atkPct', 12),
+    4: [attr('cpct', 6), {
+      title: '施放追加攻击使终结技伤害提高[qDmg]%',
+      data: {
+        qDmg: 36
+      }
+    }]
+  },
+  劫火莲灯铸炼宫: {
+    2: [attr('speedPct', 6), {
+      title: '击中火弱点的敌方时，击破特攻提高[stance]%',
+      data: {
+        stance: 40
+      }
+    }]
+  },
 }

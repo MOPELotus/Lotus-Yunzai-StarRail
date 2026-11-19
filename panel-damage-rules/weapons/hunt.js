@@ -19,5 +19,16 @@ export default function (staticIdx, keyIdx) {
     锋镝: [
       keyIdx('战斗开始时暴击率提高[cpct]%', 'cpct', 1)
     ],
+    '我将，巡征追猎': [
+      staticIdx(1, 'cpct'),
+      (tables) => {
+        return {
+          title: '2层Buff使装备者造成的终结技伤害无视目标[qIgnore]%防御力',
+          data: {
+            qIgnore: tables[2] * 2
+          }
+        }
+      }
+    ],
   }
 }

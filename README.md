@@ -33,7 +33,7 @@
 
 ## 个人伤害
 
-`*希儿伤害`、`*黄泉伤害`、`*大黑塔伤害`、`*砂金伤害` 从已保存面板计算个人伤害。直接查询使用原规则的默认场景，序号可按卡图切换词条替换场景。支持旧角色别名、`武器` 别名及空格后的档案号，例如 `*芽衣伤害4`、`*大黑塔武器2`、`*希尔伤害2 3`。卡图列出 80 级弱点敌人假设下的暴击、期望伤害或护盾量、词条替换与生效增益，星魂限定场景只在解锁时显示。
+`*角色名伤害` 从已保存面板计算个人伤害。直接查询使用原规则的默认场景，序号可按卡图切换词条替换场景。支持旧角色别名、`武器` 别名及空格后的档案号，例如 `*芽衣伤害4`、`*飞霄武器4`、`*景元伤害4 2`。景元的第 4 项是 10 层神君伤害。卡图列出 80 级弱点敌人假设下的暴击、期望伤害、护盾或治疗，以及词条替换与生效增益。星魂限定场景在解锁时显示。
 
 | 角色 | 已支持光锥 |
 | --- | --- |
@@ -41,10 +41,15 @@
 | 黄泉（1308） | 行于流逝的岸、无边曼舞 |
 | 大黑塔（1401） | 向着不可追问处 |
 | 砂金（1304） | 命运从未公平、两个人的演唱会 |
+| 黑天鹅（1307） | 重塑时光之忆、只需等待、孤独的疗愈 |
+| 卡芙卡（1005）、卡芙卡Pro（2005） | 只需等待、重塑时光之忆、孤独的疗愈 |
+| 景元（1204） | 拂晓之前、早餐的仪式感 |
+| 飞霄（1220） | 我将，巡征追猎、如泥酣眠 |
+| 灵砂（1222） | 唯有香如故 |
 
-成套效果已覆盖繁星璀璨的天才、野穗伴行的快枪手、净庭教宗的圣骑士、密林卧雪的猎人、毁烬焚骨的大公、死水深潜的先驱、识海迷坠的学者、繁星竞技场、停转的萨尔索图、太空封印站、苍穹战线格拉默和奔狼的都蓝王朝。必需属性、行迹或装备规则不齐时会说明原因。查询使用档案关联的本地快照、角色技能和装备元数据。
+成套效果已覆盖繁星璀璨的天才、野穗伴行的快枪手、净庭教宗的圣骑士、密林卧雪的猎人、毁烬焚骨的大公、死水深潜的先驱、识海迷坠的学者、幽锁深牢的系囚、荡除蠹灾的铁骑、风举云飞的勇烈，以及繁星竞技场、停转的萨尔索图、太空封印站、苍穹战线格拉默、奔狼的都蓝王朝、盗贼公国塔利亚和劫火莲灯铸炼宫。查询依据档案关联的本地快照识别角色形态。必需属性、行迹或装备规则不齐时会说明原因。
 
-引擎和原规则固定至同版 Miao-Plugin。`panel-damage-rules/` 保存 `models/dmg/{DmgAttr,DmgCalc,DmgCalcMeta,DmgMastery,AttrItem}.js`、四位角色的 `resources/meta-sr/character/*/calc.js`、相关光锥与遗器规则摘录和遗器词条定义。`panel-damage.ts` 按 `models/ProfileDmg.js`、`models/dmg/DmgBuffs.js`、`models/Weapon.js` 的流程适配当前面板。卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块，使用本地授权主题中的对应元素底图与角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
+引擎和原规则固定至同版 Miao-Plugin。`panel-damage-rules/` 保存 `models/dmg/{DmgAttr,DmgCalc,DmgCalcMeta,DmgMastery,AttrItem}.js`、已接入角色的 `resources/meta-sr/character/*/calc.js`、相关光锥与遗器规则摘录和遗器词条定义。`panel-damage.ts` 按 `models/ProfileDmg.js`、`models/dmg/DmgBuffs.js`、`models/Weapon.js` 的流程适配当前面板。卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块，使用本地授权主题中的对应元素底图与角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
 ## 遗器评分
 

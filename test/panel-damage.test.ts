@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { calculateStarRailPersonalDamage, personalDamageScenarios, readStarRailPersonalDamage } from "../panel-damage.ts";
+import { calculateStarRailPersonalDamage, readStarRailPersonalDamage } from "../panel-damage.ts";
 import { parsePanelCommand, type PanelAvatar } from "../panel-model.ts";
 import advancedFixtures from "./fixtures/panel-damage.json";
+import additionalFixtures from "./fixtures/panel-damage-additional.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -67,7 +68,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of advancedFixtures) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -89,12 +90,29 @@ describe("common engine with original character data", () => {
 
   test("filters locked scenarios and explains incomplete managed panels", () => {
     const herta = advancedFixtures.find(fixture => fixture.avatar.id === "1401")!;
-    expect(personalDamageScenarios(herta.avatar)).toBe(3);
-    expect(personalDamageScenarios({ ...herta.avatar, rank: 6 })).toBe(5);
     const { setNames, ...inputs } = herta.metadata;
     const sets = new Map(Object.entries(setNames));
-    expect(readStarRailPersonalDamage({ ...herta.avatar, traces: [] }, {
-      ...inputs, setForId: id => sets.get(id),
-    })).toEqual({ reason: "缺少对应的行迹状态" });
+    const metadata = { ...inputs, setForId: (id: string) => sets.get(id) };
+    expect(readStarRailPersonalDamage(herta.avatar, metadata, 4).scenarioCount).toBe(3);
+    expect(calculateStarRailPersonalDamage({ ...herta.avatar, rank: 6 }, metadata, 5)?.rows).toHaveLength(5);
+    expect(readStarRailPersonalDamage({ ...herta.avatar, traces: [] }, metadata).reason).toBe("缺少对应的行迹状态");
+  });
+
+  test("retains the original summon slot and distinguishes damage without crit from healing", () => {
+    const [jing, swan, lingsha] = ["1204", "1307", "1222"].map(id => {
+      const { avatar, metadata } = additionalFixtures.find(fixture => fixture.avatar.id === id)!;
+      const { setNames, ...inputs } = metadata;
+      const sets = new Map(Object.entries(setNames));
+      return { avatar, metadata: { ...inputs, setForId: (itemId: string) => sets.get(itemId) } };
+    });
+    const summon = calculateStarRailPersonalDamage({ ...jing!.avatar, rank: 6 }, jing!.metadata, 4)!;
+    expect(summon.rows).toHaveLength(4);
+    expect(summon.rows[summon.selected]?.title).toBe("10层神君单体伤害");
+    const dot = calculateStarRailPersonalDamage(swan!.avatar, swan!.metadata)!;
+    expect(dot.rows[dot.selected]).toMatchObject({ metric: "damage", critical: undefined });
+    expect(readStarRailPersonalDamage({ ...swan!.avatar, stats: swan!.avatar.stats.filter(stat => stat.key !== "effPct") }, swan!.metadata).reason)
+      .toBe("缺少计算所需的战斗属性");
+    const heal = calculateStarRailPersonalDamage(lingsha!.avatar, lingsha!.metadata, 3)!;
+    expect(heal.rows[heal.selected]).toMatchObject({ title: "召唤物治疗量", metric: "heal", critical: undefined });
   });
 });

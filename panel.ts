@@ -7,7 +7,7 @@ import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient 
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
-import { hasPersonalDamage, personalDamageNames, personalDamageScenarios, readStarRailPersonalDamage } from "./panel-damage.ts";
+import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
@@ -113,19 +113,18 @@ export function createStarRailPanel(
         await verify();
         if (!avatar) return `当前星铁面板中没有「${name}」，请用 *面板${profileId === 1 ? "" : profileId} 查看列表。`;
         if (!hasPersonalDamage(avatar.id)) return `「${avatar.name}」的星铁个人伤害规则尚未接入。当前支持${personalDamageNames}。`;
-        const scenarios = personalDamageScenarios(avatar);
-        if (command.scenario !== undefined && command.scenario > scenarios) {
-          return `${avatar.name}在当前星魂下支持 ${scenarios} 个伤害场景，可用 *${avatar.name}伤害${profileId === 1 ? "" : ` ${profileId}`} 查看编号。`;
-        }
         const metadata = await readPanelDamageMetadata(avatar, theme);
-        const result = metadata ? readStarRailPersonalDamage(avatar, metadata, command.scenario) : { reason: "角色或光锥主题数据不齐" };
+        const result = metadata ? readStarRailPersonalDamage(avatar, metadata, command.scenario) : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined };
         await verify();
+        if (result.scenarioCount !== undefined) {
+          return `${avatar.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，可用 *${avatar.name}伤害${profileId === 1 ? "" : ` ${profileId}`} 查看编号。`;
+        }
         if (!result.damage) return `${avatar.name}伤害计算暂不可用。${result.reason}。`;
         const { damage } = result;
         const card = await renderStarRailPersonalDamage(damage, theme.root).catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
-        return damage.rows.map(row => row.critical === undefined ? `${row.title} · ${Math.round(row.average)}` :
+        return damage.rows.map(row => row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${Math.round(row.average)}` :
           `${row.title} · 暴击 ${Math.round(row.critical)} · 期望 ${Math.round(row.average)}`).join("\n");
       }
       let models;
