@@ -75,6 +75,10 @@ import * as gepard from "./panel-damage-rules/characters/gepard.js";
 import * as marchPreservation from "./panel-damage-rules/characters/march-preservation.js";
 import * as preservationTrailblazer from "./panel-damage-rules/characters/preservation-trailblazer.js";
 import * as danHengPermansor from "./panel-damage-rules/characters/danheng-permansor.js";
+import * as saber from "./panel-damage-rules/characters/saber.js";
+import * as mydei from "./panel-damage-rules/characters/mydei.js";
+import * as phainon from "./panel-damage-rules/characters/phainon.js";
+import * as destructionTrailblazer from "./panel-damage-rules/characters/destruction-trailblazer.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -146,6 +150,7 @@ const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪�
 const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
 const harmonyTrailblazerCones = { "23019": "镜中故我", "21004": "记忆中的模样" };
 const preservationTrailblazerCones = { "24002": "记忆的质料", "21043": "两个人的演唱会" };
+const destructionTrailblazerCones = { "24000": "记一位星神的陨落", "23002": "无可取代的东西" };
 const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
@@ -284,6 +289,16 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     rule: preservationTrailblazer, cones: preservationTrailblazerCones },
   "1414": { name: "丹恒•腾荒", element: "物理", path: "存护", traces: [103], rule: danHengPermansor,
     cones: { "23051": "纵然山河万程", "21043": "两个人的演唱会" } },
+  "1014": { name: "Saber", element: "风", path: "毁灭", traces: [101, 103], rule: saber,
+    cones: { "23045": "没有回报的加冕", "24000": "记一位星神的陨落" } },
+  "1404": { name: "万敌", element: "虚数", path: "毁灭", traces: [103], stats: ["hp"], rule: mydei,
+    cones: { "23039": "血火啊，燃烧前路", "23009": "到不了的彼岸" } },
+  "1408": { name: "白厄", element: "物理", path: "毁灭", traces: [102, 103], rule: phainon,
+    cones: { "23044": "黎明恰如此燃烧", "24000": "记一位星神的陨落" } },
+  "8001": { name: "穹·毁灭", element: "物理", path: "毁灭", traces: [102, 103],
+    rule: destructionTrailblazer, cones: destructionTrailblazerCones },
+  "8002": { name: "星·毁灭", element: "物理", path: "毁灭", traces: [102, 103],
+    rule: destructionTrailblazer, cones: destructionTrailblazerCones },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;

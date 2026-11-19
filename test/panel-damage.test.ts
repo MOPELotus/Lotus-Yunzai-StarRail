@@ -17,6 +17,7 @@ import dotFixtures from "./fixtures/panel-damage-dot.json";
 import harmonyFixtures from "./fixtures/panel-damage-harmony.json";
 import trailblazerFixtures from "./fixtures/panel-damage-harmony-break.json";
 import preservationFixtures from "./fixtures/panel-damage-preservation.json";
+import destructionStateFixtures from "./fixtures/panel-damage-destruction-state.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -84,7 +85,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -340,5 +341,26 @@ describe("common engine with original character data", () => {
     expect(damage.rows[4]?.average).toBeCloseTo(rankOne.rows[4]!.average * 2, 7);
     expect(damage.rows[5]?.title).toContain("同袍攻击:3000");
     expect(readStarRailPersonalDamage(avatar, prepared, 7).scenarioCount).toBe(6);
+  });
+
+  test("reads Saber's damage bonus from the fixed talent metadata", () => {
+    const { avatar, metadata } = destructionStateFixtures.find(fixture => fixture.avatar.id === "1014")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const damage = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) })!;
+    expect(damage.rows[damage.selected]?.title).toBe("终结技·全体伤害");
+    expect(damage.buffs).toContain("Saber天赋：我方任意目标施放终结技时，Saber造成的伤害提高60%");
+  });
+
+  test("keeps Mydei's original eidolon-one adjacent target filtering", () => {
+    const { avatar, metadata } = destructionStateFixtures.find(fixture => fixture.avatar.id === "1404")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const base = calculateStarRailPersonalDamage({ ...avatar, rank: 0 }, prepared, 5)!;
+    const firstEidolon = calculateStarRailPersonalDamage({ ...avatar, rank: 1 }, prepared, 5)!;
+    expect(base.rows[base.selected]?.title).toBe("战技【弑神登神】伤害·相邻目标");
+    expect(firstEidolon.rows[firstEidolon.selected]?.title).toBe("终结技伤害");
+    expect(readStarRailPersonalDamage({ ...avatar, rank: 1 }, prepared, 6).scenarioCount).toBe(5);
   });
 });

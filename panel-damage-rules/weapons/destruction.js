@@ -69,5 +69,44 @@ export default function (staticIdx, keyIdx) {
         }
       }
     }],
+    '血火啊，燃烧前路': [
+      staticIdx(1, 'hpPct'),
+      (tables) => {
+        return {
+          title: '施放战技或终结技时，使本次攻击造成的伤害提高[eDmg]%',
+          data: {
+            eDmg: ({ attr, calc }) => {
+              return calc(attr.hp) * tables[3] / 100 > 500 ? tables[5] + tables[4] : tables[4]
+            },
+            qDmg: ({ attr, calc }) => {
+              return calc(attr.hp) * tables[3] / 100 > 500 ? tables[5] + tables[4] : tables[4]
+            }
+          }
+        }
+      }
+    ],
+    黎明恰如此燃烧: [
+      staticIdx(1, 'speed'),
+      keyIdx('造成伤害时无视目标[ignore]%的防御力', 'ignore', 2),
+      (tables) => {
+        return {
+          title: '装备者施放终结技后，持有【烈阳】时，装备者造成的伤害提高[dmg]%',
+          data: {
+            dmg: tables[3]
+          }
+        }
+      }
+    ],
+    没有回报的加冕: [
+      staticIdx(1, 'cdmg'),
+      (tables) => {
+        return {
+          title: '攻击力提高[atkPct]%',
+          data: {
+            atkPct: tables[2] + tables[3]
+          }
+        }
+      }
+    ],
   }
 }
