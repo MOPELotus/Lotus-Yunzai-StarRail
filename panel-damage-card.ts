@@ -7,13 +7,13 @@ import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPerso
 
 const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo", 风: "anemo", 火: "pyro", 物理: "sr" };
 const words = new Intl.Segmenter("zh-CN", { granularity: "word" });
+const glyphUnits = (value: string) => [...value].reduce((width, char) => width + (/^[\x00-\x7f]$/u.test(char) ? 1 : 2), 0);
 
 function conditionLines(buff: string) {
-  const units = (value: string) => [...value].reduce((width, char) => width + (/^[\x00-\x7f]$/u.test(char) ? 1 : 2), 0);
   const lines: string[] = [];
   let line = "";
   for (const { segment } of words.segment(buff)) {
-    if (line && units(line + segment) > 64 && !/^[，。、！？；：）】%]/u.test(segment)) {
+    if (line && glyphUnits(line + segment) > 64 && !/^[，。、！？；：）】%]/u.test(segment)) {
       lines.push(line.trim());
       line = "";
     }
@@ -51,7 +51,9 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const heading = titleFont ? `${titleFont}, ${fallback}` : fallback;
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;
   const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
-  const width = Math.max(660, 210 + damage.swaps.length * 110);
+  const labels = damage.rows.map((row, index) => `${index + 1}. ${row.title}`);
+  const rowWidth = 335 + 9 * Math.max(...labels.map(glyphUnits));
+  const width = Math.max(660, 210 + damage.swaps.length * 110, rowWidth);
   const listHeight = 45 + damage.rows.length * 34;
   const swapTop = 161 + listHeight, swapHeight = 110 + damage.swaps.length * 45;
   const buffTop = swapTop + swapHeight + 14;
@@ -98,10 +100,10 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     if (portrait) {
       ctx.save();
       ctx.beginPath();
-      ctx.rect(257, 0, width - 257, 181);
+      ctx.rect(width - 403, 0, 403, 181);
       ctx.clip();
       const zoom = 446 / portrait.width;
-      ctx.drawImage(portrait, 218, -32, 446, portrait.height * zoom);
+      ctx.drawImage(portrait, width - 442, -32, 446, portrait.height * zoom);
       ctx.restore();
     }
     const subtitle = ctx.createLinearGradient(26, 0, 440, 0);
@@ -123,7 +125,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     text(rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / "), valueX, 173, 16, "#f5f3f7", "right");
     for (const [index, row] of damage.rows.entries()) {
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
-      text(`${index + 1}. ${row.title}`, 42, y, 18, color);
+      text(labels[index]!, 42, y, 18, color);
       text(row.critical === undefined ? "—" : number.format(row.critical), critX, y, 18, color, "right");
       text(number.format(row.average), valueX, y, 18, color, "right");
     }

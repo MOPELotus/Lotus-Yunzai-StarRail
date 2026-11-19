@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { calculateStarRailPersonalDamage, readStarRailPersonalDamage } from "../panel-damage.ts";
-import { parsePanelCommand, type PanelAvatar } from "../panel-model.ts";
+import { parsePanelCommand, starRailLegacySkillLevel, type PanelAvatar } from "../panel-model.ts";
 import advancedFixtures from "./fixtures/panel-damage.json";
 import additionalFixtures from "./fixtures/panel-damage-additional.json";
 import physicalImaginaryFixtures from "./fixtures/panel-damage-physical-imaginary.json";
@@ -9,6 +9,7 @@ import healthFixtures from "./fixtures/panel-damage-hp-support.json";
 import nihilityFixtures from "./fixtures/panel-damage-nihility.json";
 import iceFixtures from "./fixtures/panel-damage-ice-state.json";
 import eruditionFixtures from "./fixtures/panel-damage-erudition.json";
+import remembranceFixtures from "./fixtures/panel-damage-remembrance.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -74,7 +75,10 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures]) {
+  for (const { avatar, metadata, expected } of [
+    ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures,
+  ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -204,5 +208,20 @@ describe("common engine with original character data", () => {
     expect(damage.buffs.some(buff => buff.includes("勇气"))).toBe(true);
     expect(readStarRailPersonalDamage(avatar, { ...prepared, character: { ...prepared.character, sp: undefined } }).reason)
       .toBe("缺少光锥所需的角色能量上限");
+  });
+
+  test("uses original memosprite eidolon increments and refuses a missing memosprite talent", () => {
+    expect(starRailLegacySkillLevel("me", 6, 6, 5)).toBe(7);
+    expect(starRailLegacySkillLevel("mt", 10, 6, 3)).toBe(10);
+    expect(starRailLegacySkillLevel("e", 10, 6, 5)).toBe(12);
+    const { avatar, metadata } = remembranceFixtures.find(fixture => fixture.avatar.id === "1402")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared, 4)!;
+    expect(damage.rows[damage.selected]?.title).toBe("Q后忆灵技伤害·主目标");
+    expect(damage.rows[damage.selected]?.average).toBeCloseTo(12637.421915703677, 7);
+    const incomplete = { ...avatar, skills: avatar.skills.filter(skill => skill.key !== "mt") };
+    expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少技能等级");
   });
 });

@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
-import { object, officialArtHosts, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
+import { object, officialArtHosts, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 
 const packagedTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
 const defaultTheme = fileURLToPath(new URL("../../data/starrail/miao-theme", import.meta.url));
@@ -19,8 +19,6 @@ const statTitles: Readonly<Record<string, string>> = {
   quantum: "量子伤害提高", imaginary: "虚数伤害提高",
 };
 const showcaseKeys = ["hp", "atk", "def", "speed", "cpct", "cdmg", "dmg", "stance", "effPct", "effDef", "heal", "joy"];
-const skillBonus: Readonly<Record<string, number>> = { a: 1, e: 2, q: 2, t: 2, xe: 1, me: 1, mt: 1 };
-const skillCap: Readonly<Record<string, number>> = { a: 10, e: 15, q: 15, t: 15, xe: 15, me: 10, mt: 10 };
 type Metadata = Awaited<ReturnType<typeof readTheme>>;
 type Json = Record<string, unknown>;
 
@@ -277,9 +275,8 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
     const upgrade = levels?.[skill.key];
     if (avatar.legacy && upgrade) {
       const rank = avatar.rank ?? 0;
-      const eligible = (Array.isArray(upgrade) ? upgrade : [upgrade]).filter(value => typeof value === "number" && value <= rank);
       talent[skill.key] = { original: skill.level,
-        level: Math.min(skillCap[skill.key] ?? 25, skill.level + eligible.length * (skillBonus[skill.key] ?? 0)) };
+        level: starRailLegacySkillLevel(skill.key, skill.level, rank, upgrade) };
     }
     imgs[skill.key] = await localArt(theme, ["character", name, "imgs", `talent-${skill.key}.webp`])
       || await remoteArt(skill.icon, artSignal);

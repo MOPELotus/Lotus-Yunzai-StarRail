@@ -26,6 +26,15 @@ const statMap: Readonly<Record<number, string>> = {
 const remakeMap: Readonly<Record<string, string>> = {
   普攻: "a", 战技: "e", 终结技: "q", 天赋: "t", 秘技: "z", 欢愉技: "xe", 忆灵技: "me", 忆灵天赋: "mt",
 };
+const skillBonus: Readonly<Record<string, number>> = { a: 1, e: 2, q: 2, t: 2, xe: 1, me: 1, mt: 1 };
+const skillCap: Readonly<Record<string, number>> = { a: 10, e: 15, q: 15, t: 15, xe: 15, me: 10, mt: 10 };
+
+/** Resolves the original level stored in the Star Rail cache using CharTalent.js. */
+export function starRailLegacySkillLevel(skill: string, level: number, rank: number, upgrades: unknown) {
+  const unlocks = Array.isArray(upgrades) ? upgrades : [upgrades];
+  const active = unlocks.filter(unlock => typeof unlock === "number" && unlock <= rank).length;
+  return Math.min(skillCap[skill] ?? 25, level + active * (skillBonus[skill] ?? 0));
+}
 const elements: Readonly<Record<string, string>> = {
   Physical: "物理", Fire: "火", Ice: "冰", Thunder: "雷", Wind: "风", Quantum: "量子", Imaginary: "虚数",
 };

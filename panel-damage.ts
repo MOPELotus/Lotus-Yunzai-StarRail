@@ -1,6 +1,6 @@
 import { calculateLegacyPanelAttributeRows, damageAttribute } from "./panel-attributes.ts";
 import type { readPanelDamageMetadata } from "./panel-card.ts";
-import { object, type PanelAvatar } from "./panel-model.ts";
+import { object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
 import DmgAttr from "./panel-damage-rules/DmgAttr.js";
 import DmgCalc from "./panel-damage-rules/DmgCalc.js";
 import { attrMap } from "./panel-damage-rules/relic-attributes.js";
@@ -39,6 +39,9 @@ import * as argenti from "./panel-damage-rules/characters/argenti.js";
 import * as herta from "./panel-damage-rules/characters/herta.js";
 import * as himeko from "./panel-damage-rules/characters/himeko.js";
 import * as jade from "./panel-damage-rules/characters/jade.js";
+import * as castorice from "./panel-damage-rules/characters/castorice.js";
+import * as aglaea from "./panel-damage-rules/characters/aglaea.js";
+import * as evernight from "./panel-damage-rules/characters/evernight.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -46,6 +49,7 @@ import preservation from "./panel-damage-rules/weapons/preservation.js";
 import abundance from "./panel-damage-rules/weapons/abundance.js";
 import destruction from "./panel-damage-rules/weapons/destruction.js";
 import harmony from "./panel-damage-rules/weapons/harmony.js";
+import remembrance from "./panel-damage-rules/weapons/remembrance.js";
 
 type Metadata = NonNullable<Awaited<ReturnType<typeof readPanelDamageMetadata>>>;
 type Attr = { base: number; plus: number; pct: number; inc?: number };
@@ -105,6 +109,7 @@ const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
 const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪耀" };
 const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
 const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪式感" };
+const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -167,6 +172,12 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23000": "银河铁道之夜", ...eruditionCones } },
   "1314": { name: "翡翠", element: "量子", path: "智识", traces: [103], rule: jade,
     cones: { "23028": "偏偏希望无价", ...eruditionCones } },
+  "1407": { name: "遐蝶", element: "量子", path: "记忆", traces: [], stats: ["hp"], rule: castorice,
+    cones: { "23040": "让告别，更美一些", ...remembranceCones } },
+  "1402": { name: "阿格莱雅", element: "雷", path: "记忆", traces: [101], rule: aglaea,
+    cones: { "23036": "将光阴织成黄金", ...remembranceCones } },
+  "1413": { name: "长夜月", element: "冰", path: "记忆", traces: [101, 103], stats: ["hp"], rule: evernight,
+    cones: { "23049": "致长夜的星光", ...remembranceCones } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -194,9 +205,7 @@ function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number): Sk
       const baseLevel = current.get(originalKey);
       if (!baseLevel || (avatar.legacy && !upgrades)) throw new MissingDamageData("缺少技能等级");
       const upgradeAt = upgrades?.[originalKey];
-      const unlocks = Array.isArray(upgradeAt) ? upgradeAt : [upgradeAt];
-      const extra = avatar.legacy ? unlocks.filter(value => typeof value === "number" && rank >= value).length * (originalKey === "a" ? 1 : 2) : 0;
-      const level = avatar.legacy ? Math.min(baseLevel + extra, originalKey === "a" ? 10 : 15) : baseLevel;
+      const level = avatar.legacy ? starRailLegacySkillLevel(originalKey, baseLevel, rank, upgradeAt) : baseLevel;
       const tables = object(object(cfg?.[key])?.tables);
       const rows = Object.values(tables ?? {}).map(object);
       return new Proxy(Object.create(null), {
@@ -277,6 +286,7 @@ const weaponRules: Readonly<Record<string, WeaponRules>> = {
   "丰饶": abundance(staticIndex, dynamicIndex),
   "毁灭": destruction(staticIndex, dynamicIndex),
   "同谐": harmony(staticIndex, dynamicIndex),
+  "记忆": remembrance(staticIndex, dynamicIndex),
 };
 
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {
