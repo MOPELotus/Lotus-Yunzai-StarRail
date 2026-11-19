@@ -7,6 +7,7 @@ import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient 
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readTheme } from "./panel-card.ts";
+import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
@@ -57,13 +58,14 @@ function managedSnapshot(uid: string, raw: unknown) {
 
 export function createStarRailPanel(
   profiles: ReturnType<typeof createProfileStore>, client: ReturnType<typeof createProfileHoyoClient>,
-  lock: AcquireRoleArchiveLock, signal: AbortSignal,
+  lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,
 ) {
   const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
   const refreshing = new Set<string>();
 
-  return async function query(qq: string, { type, profileId, name }: PanelCommand) {
+  return async function query(qq: string, { type, profileId, name }: PanelCommand, context?: StarRailGroupRankContext) {
     try {
+      const observedAt = type === "relics" && groupRank?.allows(context) ? Date.now() : undefined;
       const { role, revision: initialRevision, ...account } = await profiles.requestContext(qq, profileId, "sr");
       const { uid } = role;
       const key = `${qq}:${uid}`;
@@ -105,7 +107,7 @@ export function createStarRailPanel(
       const theme = await readTheme();
       let models;
       let selected;
-      let relicScore: { readonly mark: string; readonly markClass: string } | undefined;
+      let relicScore: { readonly mark: string; readonly markClass: string; readonly incomplete: number } | undefined;
       if (type === "detail" || type === "relics") {
         selected = findPanelAvatar(snapshot.avatars, name, theme);
         if (!selected) return `当前星铁面板中没有「${name}」，请用 *面板${profileId === 1 ? "" : profileId} 查看列表。`;
@@ -139,7 +141,15 @@ export function createStarRailPanel(
         images.push(...result.map(file => ({ type: "image" as const, file })));
       }
       await verify();
-      if (images.length === 1) return images[0];
+      if (images.length === 1) {
+        if (observedAt !== undefined && groupRank && context && context.user_id?.toString() === qq && selected && relicScore?.incomplete === 0) {
+          await groupRank.observe(context, profileId, role, {
+            characterId: selected.id, score: Number(relicScore.mark), grade: relicScore.markClass, observedAt,
+          }, verify).catch(() => undefined);
+          await verify();
+        }
+        return images[0];
+      }
       if (images.length) return { type: "forward" as const, nodes: [`UID ${uid} · ${snapshot.avatars.length} 位角色`, ...images] };
     } catch (error) {
       if (signal.aborted) return;

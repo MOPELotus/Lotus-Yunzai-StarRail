@@ -25,6 +25,7 @@ import { parseChallengeQuery } from "./challenge-model.ts";
 import { queryStarRailChallenge } from "./challenge.ts";
 import { createStarRailPanel } from "./panel.ts";
 import { parsePanelCommand } from "./panel-model.ts";
+import { createStarRailGroupRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
 
@@ -103,7 +104,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
 }) {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
   const client = createProfileHoyoClient(profiles);
-  const panel = createStarRailPanel(profiles, client, lockFile, signal);
+  const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
+  const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const simulate = createStarRailSimulation({ lockFile, signal });
   const history = createStarRailGachaHistoryStore(historyRoot, lockFile);
   const archive = createStarRailGachaRecordArchive({ directory: recordsRoot, legacyDirectory: legacyRecordsRoot }, lockFile);
@@ -210,7 +212,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
     },
-    async fallback(_message: string, context: StarRailGachaFileContext) {
+    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext) {
       const challenge = parseChallengeQuery(context.normalizedMessage);
       if (challenge) {
         const userId = context.user_id;
@@ -225,7 +227,11 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
           return "请从登录档案对应的 QQ 会话使用星铁面板。";
         }
-        return panel(String(userId), panelCommand);
+        return panel(String(userId), panelCommand, context);
+      }
+      const relicRank = await groupRank.query(context.normalizedMessage, context);
+      if (relicRank !== undefined) {
+        return relicRank;
       }
       const poolInfo = await queryStarRailPoolInfo(context.normalizedMessage, signal);
       if (poolInfo !== undefined) return poolInfo;

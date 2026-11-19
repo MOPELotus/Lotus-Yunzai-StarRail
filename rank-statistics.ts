@@ -11,8 +11,11 @@ const characters = Object.entries(characterNames).map(([id, name]) => ({ id: Num
 
 export function matchStarRailRankStats(message: string) {
   const requested = /^#(?:星铁)?([^#]{1,40}?)\s*排名统计$/u.exec(message)?.[1];
-  if (!requested) return;
-  const key = normalize(requested);
+  if (requested) return findStarRailRankCharacter(requested);
+}
+
+export function findStarRailRankCharacter(name: string) {
+  const key = normalize(name);
   if (!key) return;
   const exact = characters.filter(({ id, name }) => String(id) === key || normalize(name) === key);
   if (exact.length) return exact.length === 1 ? exact[0] : undefined;
