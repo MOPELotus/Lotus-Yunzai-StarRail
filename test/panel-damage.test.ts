@@ -4,6 +4,7 @@ import { parsePanelCommand, type PanelAvatar } from "../panel-model.ts";
 import advancedFixtures from "./fixtures/panel-damage.json";
 import additionalFixtures from "./fixtures/panel-damage-additional.json";
 import physicalImaginaryFixtures from "./fixtures/panel-damage-physical-imaginary.json";
+import breakFixtures from "./fixtures/panel-damage-break-support.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -69,7 +70,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures]) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -126,5 +127,19 @@ describe("common engine with original character data", () => {
     expect(damage.rows[damage.selected]).toMatchObject({ metric: "damage", critical: undefined });
     const incomplete = { ...avatar, stats: avatar.stats.filter(stat => stat.key !== "stance") };
     expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少计算所需的战斗属性");
+  });
+
+  test("uses the original filtered default row for six-eidolon Fugue", () => {
+    const { avatar, metadata } = breakFixtures.find(fixture => fixture.avatar.id === "1225")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const six = { ...avatar, rank: 6 };
+    const damage = calculateStarRailPersonalDamage(six, prepared)!;
+    expect(damage.rows).toHaveLength(4);
+    expect(damage.selected).toBe(3);
+    expect(damage.rows[damage.selected]?.title).toBe("持【狐祈】破韧后终结技对三伤害");
+    expect(damage.buffs.some(buff => buff.startsWith("忘归人战技："))).toBe(true);
+    expect(readStarRailPersonalDamage(six, prepared, 5).scenarioCount).toBe(4);
   });
 });

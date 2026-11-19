@@ -202,4 +202,17 @@ export default {
       }
     }
   },
+  流星追迹的怪盗: {
+    2: attr('stance', 16),
+    4: attr('stance', 16)
+  },
+  机心戏梦的钟表匠: {
+    2: attr('stance', 16),
+    4: {
+      title: '装备者对我方释放终结技时，我方全体击破特攻提高[stance]%',
+      data: {
+        stance: 30
+      }
+    }
+  },
 }

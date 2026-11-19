@@ -32,7 +32,8 @@ export function isFlatRelicAttribute(key: string) {
 export function leveledAttributes(meta: Json, level: number | undefined, promotion: number | undefined, cone: boolean) {
   if (!level || (promotion === undefined && ascensions.includes(level))) return;
   const promote = promotion ?? ascensions.filter(step => level > step).length;
-  const stats = object(object(meta.attr)?.[promote]);
+  const rows = meta.attr;
+  const stats = object(Array.isArray(rows) ? rows[promote] : object(rows)?.[promote]);
   const bases = object(stats?.attrs);
   const growths = cone ? object(meta.growAttr) : object(stats?.grow);
   if (!bases || !growths) return;

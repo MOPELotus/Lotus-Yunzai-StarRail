@@ -19,12 +19,17 @@ import * as yunli from "./panel-damage-rules/characters/yunli.js";
 import * as boothill from "./panel-damage-rules/characters/boothill.js";
 import * as drRatio from "./panel-damage-rules/characters/dr-ratio.js";
 import * as imbibitorLunae from "./panel-damage-rules/characters/imbibitor-lunae.js";
+import * as firefly from "./panel-damage-rules/characters/firefly.js";
+import * as fireflyEnhanced from "./panel-damage-rules/characters/firefly-enhanced.js";
+import * as fugue from "./panel-damage-rules/characters/fugue.js";
+import * as ruanMei from "./panel-damage-rules/characters/ruan-mei.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
 import preservation from "./panel-damage-rules/weapons/preservation.js";
 import abundance from "./panel-damage-rules/weapons/abundance.js";
 import destruction from "./panel-damage-rules/weapons/destruction.js";
+import harmony from "./panel-damage-rules/weapons/harmony.js";
 
 type Metadata = NonNullable<Awaited<ReturnType<typeof readPanelDamageMetadata>>>;
 type Attr = { base: number; plus: number; pct: number; inc?: number };
@@ -79,6 +84,7 @@ type Character = {
 };
 const setRules = relicRules as unknown as Readonly<Record<string, Readonly<Record<number, Buff | Buff[]>>>>;
 const kafkaCones = { "23006": "只需等待", "23022": "重塑时光之忆", "24003": "孤独的疗愈" };
+const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的约定" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -107,6 +113,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23020": "纯粹思维的洗礼", "23016": "烦恼着，幸福着" } },
   "1213": { name: "丹恒•饮月", element: "虚数", path: "毁灭", traces: [103], rule: imbibitorLunae,
     cones: { "23015": "比阳光更明亮的", "23002": "无可取代的东西" } },
+  "1310": { name: "流萤", element: "火", path: "毁灭", traces: [103], stats: ["stance"], rule: firefly,
+    cones: fireflyCones },
+  "2310": { name: "流萤Pro", element: "火", path: "毁灭", traces: [101, 103], stats: ["stance"], rule: fireflyEnhanced,
+    cones: fireflyCones },
+  "1225": { name: "忘归人", element: "火", path: "虚无", traces: [102], stats: ["stance"], rule: fugue,
+    cones: { "23035": "长路终有归途", "24003": "孤独的疗愈" } },
+  "1303": { name: "阮•梅", element: "冰", path: "同谐", traces: [101], stats: ["stance"], rule: ruanMei,
+    cones: { "23019": "镜中故我", "21004": "记忆中的模样" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -216,6 +230,7 @@ const weaponRules: Readonly<Record<string, WeaponRules>> = {
   "智识": erudition(staticIndex, dynamicIndex), "存护": preservation(staticIndex, dynamicIndex),
   "丰饶": abundance(staticIndex, dynamicIndex),
   "毁灭": destruction(staticIndex, dynamicIndex),
+  "同谐": harmony(staticIndex, dynamicIndex),
 };
 
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {

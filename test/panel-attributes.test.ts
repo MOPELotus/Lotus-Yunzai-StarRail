@@ -57,3 +57,10 @@ test("does not invent pre/post ascension or lose an unknown cached relic silentl
   expect(calculateLegacyPanelAttributes(avatar, { ...options, setForId: () => undefined })).toBeUndefined();
   expect(calculateLegacyPanelAttributes({ ...avatar, legacy: undefined }, options)).toBeUndefined();
 });
+
+test("reads the indexed promotion array used by the enhanced Firefly source", () => {
+  const { attr } = character;
+  const enhanced = { ...character, attr: [...Array<null>(6).fill(null), attr[6]] };
+  expect(leveledAttributes(enhanced, 80, 6, false)).toEqual(leveledAttributes(character, 80, 6, false));
+  expect(leveledAttributes(enhanced, 70, 5, false)).toBeUndefined();
+});
