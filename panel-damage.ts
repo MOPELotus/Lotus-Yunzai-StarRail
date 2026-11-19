@@ -79,6 +79,11 @@ import * as saber from "./panel-damage-rules/characters/saber.js";
 import * as mydei from "./panel-damage-rules/characters/mydei.js";
 import * as phainon from "./panel-damage-rules/characters/phainon.js";
 import * as destructionTrailblazer from "./panel-damage-rules/characters/destruction-trailblazer.js";
+import * as anaxa from "./panel-damage-rules/characters/anaxa.js";
+import * as qingque from "./panel-damage-rules/characters/qingque.js";
+import * as pela from "./panel-damage-rules/characters/pela.js";
+import * as cipher from "./panel-damage-rules/characters/cipher.js";
+import * as seeleEnhanced from "./panel-damage-rules/characters/seele-enhanced.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -299,6 +304,15 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     rule: destructionTrailblazer, cones: destructionTrailblazerCones },
   "8002": { name: "星·毁灭", element: "物理", path: "毁灭", traces: [102, 103],
     rule: destructionTrailblazer, cones: destructionTrailblazerCones },
+  "1405": { name: "那刻夏", element: "风", path: "智识", traces: [102, 103], rule: anaxa,
+    cones: { "23041": "生命当付之一炬", "21020": "天才们的休憩" } },
+  "1201": { name: "青雀", element: "量子", path: "智识", traces: [102, 103], rule: qingque, cones: eruditionCones },
+  "1106": { name: "佩拉", element: "冰", path: "虚无", traces: [101, 102, 103], rule: pela,
+    cones: { "21015": "决心如汗珠般闪耀", "22000": "新手任务开始前" } },
+  "1406": { name: "赛飞儿", element: "量子", path: "虚无", traces: [101, 103], rule: cipher,
+    cones: { "23043": "谎言在风中飘扬", "21015": "决心如汗珠般闪耀" } },
+  "2102": { name: "希儿Pro", element: "量子", path: "巡猎", traces: [101, 102], rule: seeleEnhanced,
+    cones: { "23001": "于夜色中", "23012": "如泥酣眠" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;

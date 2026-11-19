@@ -18,6 +18,7 @@ import harmonyFixtures from "./fixtures/panel-damage-harmony.json";
 import trailblazerFixtures from "./fixtures/panel-damage-harmony-break.json";
 import preservationFixtures from "./fixtures/panel-damage-preservation.json";
 import destructionStateFixtures from "./fixtures/panel-damage-destruction-state.json";
+import critSpecialFixtures from "./fixtures/panel-damage-crit-special.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -85,7 +86,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -362,5 +363,29 @@ describe("common engine with original character data", () => {
     expect(base.rows[base.selected]?.title).toBe("战技【弑神登神】伤害·相邻目标");
     expect(firstEidolon.rows[firstEidolon.selected]?.title).toBe("终结技伤害");
     expect(readStarRailPersonalDamage({ ...avatar, rank: 1 }, prepared, 6).scenarioCount).toBe(5);
+  });
+
+  test("applies Cipher's extra signature defense reduction at exactly 170 speed", () => {
+    const { avatar, metadata } = critSpecialFixtures.find(fixture => fixture.avatar.id === "1406")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const atSpeed = (value: string) => calculateStarRailPersonalDamage({
+      ...avatar, stats: avatar.stats.map(stat => stat.key === "speed" ? { ...stat, value } : stat),
+    }, prepared)!;
+    expect(atSpeed("169").buffs.some(buff => buff.includes("速度大于等于170"))).toBe(false);
+    expect(atSpeed("170").buffs.some(buff => buff.includes("速度大于等于170"))).toBe(true);
+    expect(atSpeed("170").rows[0]!.average).toBeGreaterThan(atSpeed("169").rows[0]!.average);
+  });
+
+  test("keeps enhanced Seele's six-eidolon result on the original ordinary damage path", () => {
+    const { avatar, metadata } = critSpecialFixtures.find(fixture => fixture.avatar.id === "2102")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    expect(readStarRailPersonalDamage({ ...avatar, rank: 5 }, prepared, 4).scenarioCount).toBe(3);
+    const six = calculateStarRailPersonalDamage({ ...avatar, rank: 6 }, prepared, 4)!;
+    expect(six.rows[six.selected]?.title).toBe("6命乱蝶附加伤害");
+    expect(six.rows[six.selected]?.critical).toBeCloseTo(six.rows[2]!.critical! * 0.3, 7);
   });
 });

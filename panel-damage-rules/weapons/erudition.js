@@ -60,5 +60,8 @@ export default function (staticIdx, keyIdx) {
       staticIdx(1, 'atkPct'),
       keyIdx('消灭敌方目标后爆伤提高[cdmg]%', 'cdmg', 2)
     ],
+    生命当付之一炬: [
+      keyIdx('装备者对其造成的伤害提高[dmg]%，装备者使其防御力降低[enemyDef]%', { dmg: 1, enemyDef: 2 })
+    ],
   }
 }
