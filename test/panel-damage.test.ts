@@ -14,6 +14,7 @@ import abundanceFixtures from "./fixtures/panel-damage-abundance.json";
 import destructionFixtures from "./fixtures/panel-damage-destruction.json";
 import huntFixtures from "./fixtures/panel-damage-hunt.json";
 import dotFixtures from "./fixtures/panel-damage-dot.json";
+import harmonyFixtures from "./fixtures/panel-damage-harmony.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -81,7 +82,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -93,10 +94,12 @@ describe("common engine with original character data", () => {
         const actual = damage.rows[index]!;
         expect(actual.title).toBe(row.title);
         expect(actual.average).toBeCloseTo(row.avg, 7);
+        if ("percentage" in row) expect(actual).toMatchObject({ metric: "support", percentage: row.percentage });
         if (!("dmg" in row) || row.dmg === undefined) expect(actual.critical).toBeUndefined();
         else expect(actual.critical).toBeCloseTo(row.dmg, 7);
       }
       expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(expected.swap.avg, 7);
+      if ("percentage" in expected.swap) expect(damage.swaps[0]?.values[1]?.percentage).toBe(expected.swap.percentage);
       if (!("dmg" in expected.swap) || expected.swap.dmg === undefined) expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
       else expect(damage.swaps[0]?.values[1]?.critical).toBeCloseTo(expected.swap.dmg, 7);
     });
@@ -272,5 +275,16 @@ describe("common engine with original character data", () => {
     expect(damage.rows[4]?.average).toBeCloseTo(damage.rows[3]!.average * 1.5, 7);
     const traces = avatar.traces.map(trace => trace.id.endsWith("102") ? { ...trace, active: false } : trace);
     expect(readStarRailPersonalDamage({ ...avatar, traces }, prepared, 5).scenarioCount).toBe(4);
+  });
+
+  test("separates Tingyun's flat attack bonus and percentage support from damage", () => {
+    const { avatar, metadata } = harmonyFixtures.find(fixture => fixture.avatar.id === "1202")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const damage = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) })!;
+    expect(damage.rows[0]?.metric).toBe("damage");
+    expect(damage.rows[1]?.metric).toBe("support");
+    expect(damage.rows[1]?.percentage).toBeUndefined();
+    expect(damage.rows[2]?.percentage).toBe("50.0%");
   });
 });

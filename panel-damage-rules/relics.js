@@ -294,4 +294,13 @@ export default {
       }
     }
   },
+  骇域漫游的信使: {
+    2: attr('speedPct', 6),
+    4: {
+      title: '对我方释放终结技时速度提高12%',
+      data: {
+        speedPct: 12
+      }
+    }
+  },
 }

@@ -61,6 +61,12 @@ import * as guinaifen from "./panel-damage-rules/characters/guinaifen.js";
 import * as sampo from "./panel-damage-rules/characters/sampo.js";
 import * as hysilens from "./panel-damage-rules/characters/hysilens.js";
 import * as serval from "./panel-damage-rules/characters/serval.js";
+import * as bronya from "./panel-damage-rules/characters/bronya.js";
+import * as tingyun from "./panel-damage-rules/characters/tingyun.js";
+import * as asta from "./panel-damage-rules/characters/asta.js";
+import * as robin from "./panel-damage-rules/characters/robin.js";
+import * as sparkle from "./panel-damage-rules/characters/sparkle.js";
+import * as sunday from "./panel-damage-rules/characters/sunday.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -83,9 +89,10 @@ type Variables = {
   trees: Record<string, boolean>;
   params: Params;
 };
-type DamageMetric = "damage" | "shield" | "heal";
-export const personalDamageMetricLabel: Readonly<Record<DamageMetric, string>> = { damage: "期望伤害", shield: "护盾量", heal: "治疗量" };
+type DamageMetric = "damage" | "shield" | "heal" | "support";
+export const personalDamageMetricLabel: Readonly<Record<DamageMetric, string>> = { damage: "期望伤害", shield: "护盾量", heal: "治疗量", support: "辅助效果" };
 type DamageValue = { avg: number; dmg?: number; metric?: DamageMetric };
+type RuleResult = DamageValue | { type: "text"; avg: string };
 type DamageFn = ((multiplier: number, skill: string, effect?: string) => DamageValue) & {
   basic: (amount: number, skill: string) => DamageValue;
   shield: (amount: number) => DamageValue;
@@ -105,7 +112,7 @@ type Rule = {
     cons?: number;
     params?: Readonly<Params>;
     check?: (variables: Variables) => boolean;
-    dmg: (variables: Variables, damage: DamageFn) => DamageValue;
+    dmg: (variables: Variables, damage: DamageFn) => RuleResult;
   }[];
   buffs?: readonly Buff[];
   defDmgIdx?: number;
@@ -235,6 +242,18 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1410": { name: "海瑟音", element: "物理", path: "虚无", traces: [102, 103], stats: ["effPct"], rule: hysilens,
     cones: { "23047": "海洋为何而歌", "21008": "猎物的视线" } },
   "1103": { name: "希露瓦", element: "雷", path: "智识", traces: [103], rule: serval, cones: eruditionCones },
+  "1101": { name: "布洛妮娅", element: "风", path: "同谐", traces: [101, 103], rule: bronya,
+    cones: { "23003": "但战斗还未结束", "21025": "过往未来" } },
+  "1202": { name: "停云", element: "雷", path: "同谐", traces: [102], rule: tingyun,
+    cones: { "21032": "镂月裁云之意", "21025": "过往未来" } },
+  "1009": { name: "艾丝妲", element: "火", path: "同谐", traces: [103], rule: asta,
+    cones: { "21011": "与行星相会", "21032": "镂月裁云之意" } },
+  "1309": { name: "知更鸟", element: "物理", path: "同谐", traces: [], rule: robin,
+    cones: { "23026": "夜色流光溢彩", "22002": "为了明日的旅途" } },
+  "1306": { name: "花火", element: "量子", path: "同谐", traces: [], rule: sparkle,
+    cones: { "23021": "游戏尘寰", "21025": "过往未来" } },
+  "1313": { name: "星期日", element: "虚数", path: "同谐", traces: [], rule: sunday,
+    cones: { "23038": "如果时间是一朵花", "21025": "过往未来" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -408,10 +427,14 @@ function originalDamage(
     const { heal, shield } = damage;
     damage.heal = amount => ({ ...heal(amount), metric: "heal" });
     damage.shield = amount => ({ ...shield(amount), metric: "shield" });
-    const { dmg, avg, metric = "damage" } = detail.dmg(variables, damage);
+    const result = detail.dmg(variables, damage);
+    const percentage = "type" in result ? result.avg : undefined;
+    const { dmg, avg, metric = "damage" }: DamageValue = "type" in result
+      ? { avg: result.avg.endsWith("%") ? Number(result.avg.slice(0, -1)) : NaN, metric: "support" }
+      : result;
     if (!Number.isFinite(avg) || (dmg !== undefined && !Number.isFinite(dmg))) throw new MissingDamageData("原规则所需数据不齐");
     const title = typeof detail.title === "function" ? detail.title(variables) : detail.title;
-    return { title, critical: dmg, average: avg, metric, active: msg as string[] };
+    return { title, critical: dmg, average: avg, ...(percentage === undefined ? {} : { percentage }), metric, active: msg as string[] };
   }
 
   const scenarios = rule.details.flatMap((detail, index) => {
@@ -431,7 +454,7 @@ function originalDamage(
     values: statKeys.map(to => {
       if (from === to) return;
       const result = calculate(current.detail, to, from);
-      return result && { critical: result.critical, average: result.average };
+      return result && { critical: result.critical, average: result.average, ...(result.percentage === undefined ? {} : { percentage: result.percentage }) };
     }),
   }));
   return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };

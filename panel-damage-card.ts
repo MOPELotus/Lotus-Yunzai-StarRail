@@ -52,7 +52,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;
   const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
   const labels = damage.rows.map((row, index) => `${index + 1}. ${row.title}`);
-  const rowMetrics = (["damage", "shield", "heal"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
+  const rowMetrics = (["damage", "shield", "heal", "support"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
   const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
   const criticalGap = Math.max(162, glyphUnits(resultHeading) * 8 + 16);
   const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.map(glyphUnits));
@@ -66,6 +66,9 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const matrixX = (index: number) => 170 + (index + 0.5) * (width - 210) / damage.swaps.length;
   const baseline = damage.rows[damage.selected]!;
   const metricLabel = personalDamageMetricLabel[baseline.metric];
+  const swapHeading = baseline.percentage !== undefined ? "词条替换 · 变化（百分点） / 辅助比例"
+    : baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}`
+    : "词条替换 · 期望变化 / 期望与暴击伤害";
 
   return renderPng(width, height, ctx => {
     function text(value: string, x: number, y: number, size: number, color = "#f5f3f7", align: CanvasTextAlign = "left", family = body) {
@@ -129,10 +132,10 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(labels[index]!, 42, y, 18, color);
       text(row.critical === undefined ? "—" : number.format(row.critical), critX, y, 18, color, "right");
-      text(number.format(row.average), valueX, y, 18, color, "right");
+      text(row.percentage ?? number.format(row.average), valueX, y, 18, color, "right");
     }
 
-    box(swapTop, swapHeight, baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}` : "词条替换 · 期望变化 / 期望与暴击伤害");
+    box(swapTop, swapHeight, swapHeading);
     damage.swaps.forEach((entry, index) => {
       text(entry.title, matrixX(index), swapTop + 60, 15, "#e2cb9e", "center");
       text(`+${entry.amount}`, matrixX(index), swapTop + 79, 14, "#e2cb9e", "center");
@@ -142,11 +145,12 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
       text(`${entry.title} −${entry.amount}`, 42, y + 9, 15);
       entry.values.forEach((swap, index) => {
         const x = matrixX(index);
-        const { average, critical } = swap ?? baseline;
+        const { average, critical, percentage } = swap ?? baseline;
         const delta = average - baseline.average;
+        const deltaLabel = baseline.percentage === undefined ? number.format(delta) : delta.toFixed(1);
         const color = delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8";
-        text(swap ? `${delta > 0 ? "+" : ""}${number.format(delta)}` : "—", x, y, 17, color, "center");
-        const display = number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`);
+        text(swap ? `${delta > 0 ? "+" : ""}${deltaLabel}` : "—", x, y, 17, color, "center");
+        const display = percentage ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
         text(display, x, y + 19, 13, "#e1d9e8", "center");
       });
     });
