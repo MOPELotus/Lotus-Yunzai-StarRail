@@ -22,6 +22,7 @@ import critSpecialFixtures from "./fixtures/panel-damage-crit-special.json";
 import hpSpecialFixtures from "./fixtures/panel-damage-hp-special.json";
 import breakMultiFixtures from "./fixtures/panel-damage-break-multi.json";
 import elationFixtures from "./fixtures/panel-damage-elation.json";
+import finalElationFixtures from "./fixtures/panel-damage-elation-final.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -89,7 +90,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures, ...elationFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures, ...elationFixtures, ...finalElationFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -101,11 +102,13 @@ describe("common engine with original character data", () => {
         const actual = damage.rows[index]!;
         expect(actual.title).toBe(row.title);
         expect(actual.average).toBeCloseTo(row.avg, 7);
+        if ("display" in row) expect(actual).toMatchObject({ metric: "support", display: row.display });
         if ("percentage" in row) expect(actual).toMatchObject({ metric: "support", percentage: row.percentage });
         if (!("dmg" in row) || typeof row.dmg !== "number") expect(actual.critical).toBeUndefined();
         else expect(actual.critical).toBeCloseTo(row.dmg, 7);
       }
       expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(expected.swap.avg, 7);
+      if ("display" in expected.swap && typeof expected.swap.display === "string") expect(damage.swaps[0]?.values[1]?.display).toBe(expected.swap.display);
       if ("percentage" in expected.swap) expect(damage.swaps[0]?.values[1]?.percentage).toBe(expected.swap.percentage);
       if (!("dmg" in expected.swap) || typeof expected.swap.dmg !== "number") expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
       else expect(damage.swaps[0]?.values[1]?.critical).toBeCloseTo(expected.swap.dmg, 7);
@@ -462,5 +465,25 @@ describe("common engine with original character data", () => {
     const result = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) })!;
     expect(result.rows[result.selected]?.title).toBe("强普治疗");
     expect(result.rows.every(row => row.metric === "heal" && row.critical === undefined)).toBe(true);
+  });
+
+  test("keeps Aha's original solo default and withholds the unconfigured debt scene", () => {
+    const { avatar, metadata } = finalElationFixtures.find(fixture => fixture.avatar.id === "1511")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const rankSix = { ...avatar, rank: 6, traces: [...avatar.traces, { id: "1511601", active: true, name: "", icon: "" }] };
+    const result = calculateStarRailPersonalDamage(rankSix, prepared)!;
+    expect(result.rows[result.selected]?.title).toBe("100笑点欢愉技·自身结算·单目标");
+    expect(readStarRailPersonalDamage(rankSix, prepared, 7).scenarioCount).toBe(6);
+  });
+
+  test("retains Robin's one-decimal attack support and percentage units", () => {
+    const { avatar, metadata, expected } = finalElationFixtures.find(fixture => fixture.avatar.id === "1512")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const result = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) }, 2)!;
+    expect(result.rows[result.selected]).toMatchObject({ metric: "support", display: String(expected.rows[1]!.avg) });
+    expect(result.rows[2]).toMatchObject({ metric: "support", percentage: "145.0%" });
   });
 });

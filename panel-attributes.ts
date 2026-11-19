@@ -130,6 +130,10 @@ export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
       if (key === element) key = "dmg";
       else return;
     }
+    if (key === "speedBase") {
+      base.set("speed", (base.get("speed") ?? 0) + value);
+      return;
+    }
     const multiplier = /^(hp|atk|def|speed)Pct$/u.exec(key);
     const name = multiplier?.[1] || key.replace(/Plus$/u, "");
     const target = multiplier ? multipliers : flat;

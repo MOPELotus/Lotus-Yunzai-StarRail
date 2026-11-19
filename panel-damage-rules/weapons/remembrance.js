@@ -67,5 +67,8 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    你将起身歌唱: [
+      staticIdx(1, "hpPct")
+    ],
   }
 }

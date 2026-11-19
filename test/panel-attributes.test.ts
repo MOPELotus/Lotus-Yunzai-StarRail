@@ -64,3 +64,13 @@ test("reads the indexed promotion array used by the enhanced Firefly source", ()
   expect(leveledAttributes(enhanced, 80, 6, false)).toEqual(leveledAttributes(character, 80, 6, false));
   expect(leveledAttributes(enhanced, 70, 5, false)).toBeUndefined();
 });
+
+test("includes the original Elation cone base speed before speed percent bonuses", () => {
+  const avatar = readLegacyPanel(uid, data).avatars[0]!;
+  const updated = { ...avatar, cone: { ...avatar.cone!, id: "23065" } };
+  const stats = calculateLegacyPanelAttributes(updated, {
+    ...options, character: { ...character, weapon: "欢愉" }, conePath: "欢愉",
+    cone: { ...cone, skill: { tables: { 1: [12, 14, 16, 18, 20] } } },
+  });
+  expect(stats?.find(stat => stat.key === "speed")).toEqual({ key: "speed", base: "116", value: "147.3" });
+});

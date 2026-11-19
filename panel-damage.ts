@@ -98,6 +98,12 @@ import * as yaoGuang from "./panel-damage-rules/characters/yao-guang.js";
 import * as pearl from "./panel-damage-rules/characters/pearl.js";
 import * as evanescia from "./panel-damage-rules/characters/evanescia.js";
 import elation from "./panel-damage-rules/weapons/elation.js";
+import * as himekoNova from "./panel-damage-rules/characters/himeko-nova.js";
+import * as aha from "./panel-damage-rules/characters/aha.js";
+import * as robinDahlia from "./panel-damage-rules/characters/robin-dahlia.js";
+import * as aventurineElation from "./panel-damage-rules/characters/aventurine-elation.js";
+import * as tohsakaRin from "./panel-damage-rules/characters/tohsaka-rin.js";
+import * as silverWolfElation from "./panel-damage-rules/characters/silver-wolf-elation.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -122,7 +128,7 @@ type Variables = {
 };
 type DamageMetric = "damage" | "shield" | "heal" | "support";
 export const personalDamageMetricLabel: Readonly<Record<DamageMetric, string>> = { damage: "期望伤害", shield: "护盾量", heal: "治疗量", support: "辅助效果" };
-type DamageValue = { avg: number; dmg?: number; metric?: DamageMetric };
+type DamageValue = { avg: number; dmg?: number; display?: string; metric?: DamageMetric };
 type RuleResult = DamageValue | { type: "text"; avg: string };
 type DamageFn = ((multiplier: number, skill: string, effect?: string) => DamageValue) & {
   basic: (amount: number, skill: string) => DamageValue;
@@ -355,6 +361,18 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23055": "献给明日的色彩", "21065": "今日好手气" } },
   "1505": { name: "绯英", element: "物理", path: "欢愉", traces: [101], requiresEnergy: true, stats: ["recharge"], rule: evanescia,
     cones: { "23058": "邂逅于下一个花季", "22007": "未来，有我们一起" } },
+  "1510": { name: "姬子•启行", element: "火", path: "智识", traces: [], rule: himekoNova,
+    cones: { "23060": "当一颗星照亮夜空", "21020": "天才们的休憩" } },
+  "1511": { name: "星神★阿哈", element: "量子", path: "欢愉", traces: [103], rule: aha,
+    cones: { "23065": "当第一声「阿哈」响起", "22009": "在世界尽头相会吧！" } },
+  "1512": { name: "知更鸟•晴歌", element: "风", path: "记忆", traces: [103], stats: ["hp"], rule: robinDahlia,
+    cones: { "23063": "你将起身歌唱", "21050": "胜利只在朝夕间" } },
+  "1513": { name: "砂金•戏浪", element: "量子", path: "欢愉", traces: [101, 102, 103], stats: ["hp"], rule: aventurineElation,
+    cones: { "23064": "向浪花掷下盛夏", "21064": "菇菇嘎嘎历险记" } },
+  "1508": { name: "远坂凛", element: "量子", path: "智识", traces: [101], rule: tohsakaRin,
+    cones: { "23061": "星火悄然闪耀", "21020": "天才们的休憩" } },
+  "1506": { name: "银狼LV.999", element: "虚数", path: "欢愉", traces: [101], rule: silverWolfElation,
+    cones: { "23057": "欢迎来到银河城", "21064": "菇菇嘎嘎历险记" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -516,7 +534,7 @@ function originalDamage(
   const { values, staticAttr } = panelValues(avatar, metadata, character);
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: { ...values, staticAttr },
-    char: { elem: character.element, sp: metadata.character.sp }, weapon: { name: weapon.name, affix: weapon.affix } });
+    char: { elem: character.element, sp: metadata.character.sp, weaponTypeName: character.path }, weapon: { name: weapon.name, affix: weapon.affix } });
   const weaponBuffs = weaponEffects(avatar, metadata, character);
   const relics = relicEffects(avatar, metadata);
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
@@ -542,12 +560,12 @@ function originalDamage(
     damage.shield = amount => ({ ...shield(amount), metric: "shield" });
     const result = detail.dmg(variables, damage);
     const percentage = "type" in result ? result.avg : undefined;
-    const { dmg, avg, metric = "damage" }: DamageValue = "type" in result
+    const { dmg, avg, display, metric = "damage" }: DamageValue = "type" in result
       ? { avg: result.avg.endsWith("%") ? Number(result.avg.slice(0, -1)) : NaN, metric: "support" }
       : result;
     if (!Number.isFinite(avg) || (dmg !== undefined && !Number.isFinite(dmg))) throw new MissingDamageData("原规则所需数据不齐");
     const title = typeof detail.title === "function" ? detail.title(variables) : detail.title;
-    return { title, critical: dmg, average: avg, ...(percentage === undefined ? {} : { percentage }), metric, active: msg as string[] };
+    return { title, critical: dmg, average: avg, ...(display === undefined ? {} : { display }), ...(percentage === undefined ? {} : { percentage }), metric, active: msg as string[] };
   }
 
   const scenarios = rule.details.flatMap((detail, index) => {
@@ -568,7 +586,7 @@ function originalDamage(
     values: statKeys.map(to => {
       if (from === to) return;
       const result = calculate(current.detail, to, from);
-      return result && { critical: result.critical, average: result.average, ...(result.percentage === undefined ? {} : { percentage: result.percentage }) };
+      return result && { critical: result.critical, average: result.average, ...(result.display === undefined ? {} : { display: result.display }), ...(result.percentage === undefined ? {} : { percentage: result.percentage }) };
     }),
   }));
   return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };

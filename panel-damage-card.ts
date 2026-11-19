@@ -55,8 +55,8 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const rowMetrics = (["damage", "shield", "heal", "support"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
   const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
   const baseline = damage.rows[damage.selected]!;
-  function formatSwapValue({ average, critical, percentage }: Pick<typeof baseline, "average" | "critical" | "percentage">) {
-    return percentage ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
+  function formatSwapValue({ average, critical, display, percentage }: Pick<typeof baseline, "average" | "critical" | "display" | "percentage">) {
+    return percentage ?? display ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
   }
   const measure = new Canvas(1, 1).getContext("2d");
   measure.font = `13px ${body}`;
@@ -141,7 +141,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(labels[index]!, 42, y, 18, color);
       text(row.critical === undefined ? "—" : number.format(row.critical), critX, y, 18, color, "right");
-      text(row.percentage ?? number.format(row.average), valueX, y, 18, color, "right");
+      text(row.percentage ?? row.display ?? number.format(row.average), valueX, y, 18, color, "right");
     }
 
     box(swapTop, swapHeight, swapHeading);
