@@ -118,7 +118,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         if (recordArchive) return raw.reason === "mirror"
           ? `UID:${uid} 本地只有旧显示镜像，请通过 *导入记录${profileId === 1 ? "" : profileId} 导入真实逐抽文件。`
           : `UID:${uid} 本地暂无逐抽档案，可使用 *导入记录${profileId === 1 ? "" : profileId}。`;
-        return `[荷花插件]profile ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
+        return `[starrail] profile ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
       }
       const themeDirectory = starRailGachaThemeDirectory();
       const rawArchive = raw?.status === "available" ? raw.archive : undefined;
@@ -186,8 +186,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     } catch (error) {
       if (signal.aborted) return;
       if (error instanceof ProfileError) {
-        if (error.code === "missing") return `[荷花插件]请先登录 profile ${profileId}。`;
-        if (error.code === "role-missing") return `[荷花插件]profile ${profileId} 没有同步星铁 UID。`;
+        if (error.code === "missing") return `[starrail] 请先登录 profile ${profileId}。`;
+        if (error.code === "role-missing") return `[starrail] profile ${profileId} 没有同步星铁 UID。`;
       }
       if (error instanceof StarRailGachaArchiveError) return error.message;
       return "星铁抽卡记录读取失败，请检查本地历史文件。";
@@ -204,7 +204,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const message = context.normalizedMessage;
       if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
-        ? ["[Lotus-Plugin] Gacha Log"] : [];
+        ? ["[gacha] 抽卡记录"] : [];
     },
     async fallback(_message: string, context: StarRailGachaFileContext) {
       const challenge = parseChallengeQuery(context.normalizedMessage);
@@ -237,21 +237,21 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (view) return query(qq, view, recordArchive);
       try {
         const result = await updateGacha(qq, profileId, () =>
-          context.reply(`[荷花插件]正在为 profile ${profileId} 补齐官方范围内的星铁五星与垫抽记录。`));
+          context.reply(`[starrail] 正在为 profile ${profileId} 补齐官方范围内的星铁五星与垫抽记录。`));
         if (!result) return "该档案的星铁抽卡记录正在更新，请稍后再试。";
         try {
           const { png } = await renderStarRailGachaResult(result);
           return { type: "image" as const, file: png };
         } catch {
-          return `[荷花插件]星铁抽卡记录更新完成，新增 ${result.added} 条五星记录。`;
+          return `[starrail] 星铁抽卡记录更新完成，新增 ${result.added} 条五星记录。`;
         }
       } catch (error) {
         if (signal.aborted) return;
         if (error instanceof ProfileError) {
           if (error.code === "missing" || error.code === "login-required") {
-            return `[荷花插件]请先登录 profile ${profileId}。`;
+            return `[starrail] 请先登录 profile ${profileId}。`;
           }
-          if (error.code === "role-missing") return `[荷花插件]profile ${profileId} 没有同步星铁 UID。`;
+          if (error.code === "role-missing") return `[starrail] profile ${profileId} 没有同步星铁 UID。`;
         }
         const reason = error instanceof HoyoRequestError && error.status === 429 ? "rate-limited"
           : (error instanceof ProfileError && error.code === "changed") ||
@@ -260,7 +260,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
           const { png } = await renderStarRailGachaFailure({ qq, profileId, reason });
           return { type: "image" as const, file: png };
         } catch {
-          return "[荷花插件]星铁抽卡记录更新失败，请检查档案登录状态与星铁 UID。";
+          return "[starrail] 星铁抽卡记录更新失败，请检查档案登录状态与星铁 UID。";
         }
       }
     },
