@@ -15,6 +15,7 @@ import destructionFixtures from "./fixtures/panel-damage-destruction.json";
 import huntFixtures from "./fixtures/panel-damage-hunt.json";
 import dotFixtures from "./fixtures/panel-damage-dot.json";
 import harmonyFixtures from "./fixtures/panel-damage-harmony.json";
+import trailblazerFixtures from "./fixtures/panel-damage-harmony-break.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -82,7 +83,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -286,5 +287,27 @@ describe("common engine with original character data", () => {
     expect(damage.rows[1]?.metric).toBe("support");
     expect(damage.rows[1]?.percentage).toBeUndefined();
     expect(damage.rows[2]?.percentage).toBe("50.0%");
+  });
+
+  test("keeps the original Trailblazer default and unlocks the ally ratio at eidolon four", () => {
+    const { avatar, metadata } = trailblazerFixtures.find(fixture => fixture.avatar.id === "8005")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    expect(damage.rows[damage.selected]?.title).toBe("战技伤害");
+    expect(readStarRailPersonalDamage({ ...avatar, rank: 3 }, prepared, 5).scenarioCount).toBe(4);
+    const unlocked = calculateStarRailPersonalDamage({ ...avatar, rank: 4 }, prepared, 3)!;
+    expect(unlocked.rows[unlocked.selected]).toMatchObject({ title: "4魂提高队友击破特攻", metric: "support" });
+    expect(unlocked.rows[unlocked.selected]?.percentage).toMatch(/^\d+[.]\d%$/);
+  });
+
+  test("uses the actual speed label for Hanya's original duplicated percentage", () => {
+    const { avatar, metadata } = trailblazerFixtures.find(fixture => fixture.avatar.id === "1215")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const damage = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) }, 4)!;
+    expect(damage.rows[damage.selected]?.title).toBe("终结技单体速度加成比例");
+    expect(damage.rows[damage.selected]?.percentage).toBe(damage.rows[2]?.percentage);
   });
 });

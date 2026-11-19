@@ -67,6 +67,10 @@ import * as asta from "./panel-damage-rules/characters/asta.js";
 import * as robin from "./panel-damage-rules/characters/robin.js";
 import * as sparkle from "./panel-damage-rules/characters/sparkle.js";
 import * as sunday from "./panel-damage-rules/characters/sunday.js";
+import * as hanya from "./panel-damage-rules/characters/hanya.js";
+import * as yukong from "./panel-damage-rules/characters/yukong.js";
+import * as harmonyTrailblazer from "./panel-damage-rules/characters/harmony-trailblazer.js";
+import * as fuXuan from "./panel-damage-rules/characters/fu-xuan.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -136,6 +140,7 @@ const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪�
 const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
 const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪式感" };
 const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
+const harmonyTrailblazerCones = { "23019": "镜中故我", "21004": "记忆中的模样" };
 const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
@@ -254,6 +259,16 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23021": "游戏尘寰", "21025": "过往未来" } },
   "1313": { name: "星期日", element: "虚数", path: "同谐", traces: [], rule: sunday,
     cones: { "23038": "如果时间是一朵花", "21025": "过往未来" } },
+  "1215": { name: "寒鸦", element: "物理", path: "同谐", traces: [], rule: hanya,
+    cones: { "21032": "镂月裁云之意", "21025": "过往未来" } },
+  "1207": { name: "驭空", element: "虚数", path: "同谐", traces: [101], rule: yukong,
+    cones: { "21011": "与行星相会", "21032": "镂月裁云之意" } },
+  "8005": { name: "穹·同谐", element: "虚数", path: "同谐", traces: [101, 102], stats: ["stance"],
+    rule: harmonyTrailblazer, cones: harmonyTrailblazerCones },
+  "8006": { name: "星·同谐", element: "虚数", path: "同谐", traces: [101, 102], stats: ["stance"],
+    rule: harmonyTrailblazer, cones: harmonyTrailblazerCones },
+  "1208": { name: "符玄", element: "量子", path: "存护", traces: [], stats: ["hp", "heal"], rule: fuXuan,
+    cones: { "23011": "她已闭上双眼", "24002": "记忆的质料" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
