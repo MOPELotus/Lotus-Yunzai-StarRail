@@ -123,5 +123,13 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    勿忘她的火焰: [
+      staticIdx(1, 'stance'),
+      keyIdx('装备者造成的击破伤害提高[breakEnemydmg]%', 'breakEnemydmg', 2)
+    ],
+    延长记号: [
+      staticIdx(1, 'stance'),
+      keyIdx('对触电或风化状态的敌方目标伤害提高[dmg]%', 'dmg', 2)
+    ],
   }
 }

@@ -88,6 +88,10 @@ import * as lynx from "./panel-damage-rules/characters/lynx.js";
 import * as hyacine from "./panel-damage-rules/characters/hyacine.js";
 import * as cyrene from "./panel-damage-rules/characters/cyrene.js";
 import * as mortenaxBlade from "./panel-damage-rules/characters/mortenax-blade.js";
+import * as dahlia from "./panel-damage-rules/characters/dahlia.js";
+import * as silverWolfEnhanced from "./panel-damage-rules/characters/silver-wolf-enhanced.js";
+import * as ashveil from "./panel-damage-rules/characters/ashveil.js";
+import * as gilgamesh from "./panel-damage-rules/characters/gilgamesh.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -136,7 +140,7 @@ type Rule = {
     dmg: (variables: Variables, damage: DamageFn) => RuleResult;
   }[];
   buffs?: readonly Buff[];
-  defDmgIdx?: number;
+  defDmgIdx?: number | ((meta: { cons: number }) => number);
   mainAttr: string;
   defParams?: Params | ((variables: Variables) => Params);
 };
@@ -146,6 +150,7 @@ type Character = {
   path: string;
   traces: readonly number[];
   stats?: readonly string[];
+  requiresEnergy?: boolean;
   rule: Rule;
   cones: Readonly<Record<string, string>>;
 };
@@ -325,6 +330,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23052": "爱如此刻永恒", "21050": "胜利只在朝夕间" } },
   "1507": { name: "千冶•刃", element: "火", path: "虚无", traces: [103], stats: ["hp"], rule: mortenaxBlade,
     cones: { "23059": "灼尽炼狱的新骸", "23029": "那无数个春天" } },
+  "1321": { name: "大丽花", element: "火", path: "虚无", traces: [], stats: ["stance"], rule: dahlia,
+    cones: { "23050": "勿忘她的火焰", "21022": "延长记号" } },
+  "2006": { name: "银狼Pro", element: "量子", path: "虚无", traces: [103], stats: ["effPct", "stance"], rule: silverWolfEnhanced,
+    cones: { "23007": "雨一直下", "22000": "新手任务开始前" } },
+  "1504": { name: "不死途", element: "雷", path: "巡猎", traces: [102, 103], rule: ashveil,
+    cones: { "23056": "一场谎言的终幕", "21010": "论剑" } },
+  "1509": { name: "吉尔伽美什", element: "雷", path: "毁灭", traces: [102, 103], requiresEnergy: true, rule: gilgamesh,
+    cones: { "23062": "所见即我", "24000": "记一位星神的陨落" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -465,6 +478,10 @@ function originalDamage(
   if (!avatar.level || avatar.rank === undefined || metadata.character.elem !== character.element ||
       (avatar.element && avatar.element !== character.element)) throw new MissingDamageData("缺少角色等级、星魂或元素资料");
   const { rule } = character;
+  const energy = metadata.character.sp;
+  if (character.requiresEnergy && (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {
+    throw new MissingDamageData("缺少原规则所需的角色能量上限");
+  }
   const rank = avatar.rank;
   const level = avatar.level;
   const knownTraces = new Map(avatar.traces.map(trace => [trace.id.match(/^1?\d{4}(\d{3})$/u)?.[1], trace.active]));
@@ -515,7 +532,8 @@ function originalDamage(
     const result = calculate(detail);
     return result ? [{ detail, index, row: result }] : [];
   });
-  const defaultIndex = scenarios.findIndex(row => row.index === rule.defDmgIdx);
+  const defaultScenario = typeof rule.defDmgIdx === "function" ? rule.defDmgIdx(meta) : rule.defDmgIdx;
+  const defaultIndex = scenarios.findIndex(row => row.index === defaultScenario);
   const selected = scenario === undefined ? Math.max(0, defaultIndex) : scenario - 1;
   const current = scenarios[selected];
   if (!current || (scenario !== undefined && !Number.isInteger(scenario))) {

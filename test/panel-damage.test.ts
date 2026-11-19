@@ -20,6 +20,7 @@ import preservationFixtures from "./fixtures/panel-damage-preservation.json";
 import destructionStateFixtures from "./fixtures/panel-damage-destruction-state.json";
 import critSpecialFixtures from "./fixtures/panel-damage-crit-special.json";
 import hpSpecialFixtures from "./fixtures/panel-damage-hp-special.json";
+import breakMultiFixtures from "./fixtures/panel-damage-break-multi.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -87,7 +88,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -411,5 +412,28 @@ describe("common engine with original character data", () => {
     };
     expect(title(0)).toContain("3段弹射");
     expect(title(1)).toContain("15段弹射");
+  });
+
+  test("defaults to Silver Wolf's available ultimate at the fourth eidolon boundary", () => {
+    const { avatar, metadata } = breakMultiFixtures.find(fixture => fixture.avatar.id === "2006")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const atThree = calculateStarRailPersonalDamage({ ...avatar, rank: 3 }, prepared)!;
+    const atFour = calculateStarRailPersonalDamage({ ...avatar, rank: 4 }, prepared)!;
+    expect(atThree.rows[atThree.selected]?.title).toBe("终结技伤害(3目标)");
+    expect(atThree.rows[3]?.title).toContain("击破纠缠");
+    expect(atFour.rows[atFour.selected]?.title).toBe("终结技+4命(3目标, 5层Buff)");
+    expect(atFour.rows[4]?.critical).toBeUndefined();
+  });
+
+  test("keeps Dahlia's original rounded super break rows as damage", () => {
+    const { avatar, metadata, expected } = breakMultiFixtures.find(fixture => fixture.avatar.id === "1321")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const result = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) }, 2)!;
+    expect(result.rows[result.selected]).toMatchObject({ metric: "damage", average: expected.rows[1]!.avg });
+    expect(result.rows[result.selected]?.critical).toBeUndefined();
+    expect(result.rows[result.selected]?.percentage).toBeUndefined();
   });
 });
