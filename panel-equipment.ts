@@ -25,13 +25,15 @@ const donorPattern = new RegExp(String.raw`^(${role})\s*((?:${partPattern})(?:\s
 const superimpositionPattern = /^(?:([1-5一二三四五满])(?:叠影?|精炼?)|(?:叠影?|精炼?)([1-5一二三四五]))\s*([^+]{1,64})$/u;
 const invalidTierPrefix = /^(?:[0-9零一二三四五六七八九十满])?(?:叠影?|精炼?)/u;
 const tiers = "一二三四五";
+const eidolonPattern = /^([0-6零一二三四五六满])(?:命|魂|星魂)$/u;
+const eidolonDigits = "零一二三四五六";
 
 type EquipmentCommand = {
   type: "damage" | "detail";
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: { donor: string; slots: EquipmentSlot[] } | { superimposition: number; coneName: string };
+  equipment: { donor: string; slots: EquipmentSlot[] } | { superimposition: number; coneName: string } | { eidolon: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -45,6 +47,11 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
 
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
     scenario: scenario === undefined ? undefined : Number(scenario) };
+  const eidolon = eidolonPattern.exec(request)?.[1];
+  if (eidolon !== undefined) {
+    const rank = eidolon === "满" ? 6 : eidolonDigits.includes(eidolon) ? eidolonDigits.indexOf(eidolon) : Number(eidolon);
+    return { ...command, equipment: { eidolon: rank } };
+  }
   const rankChange = superimpositionPattern.exec(request);
   if (rankChange) {
     const rankLabel = rankChange[1] ?? rankChange[2]!;

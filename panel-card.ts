@@ -271,7 +271,7 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
   const talent: Record<string, { level: number; original?: number }> = {};
   const levels = object(character.talentCons ?? meta?.talentCons);
   for (const skill of avatar.skills) {
-    talent[skill.key] = { level: skill.level };
+    talent[skill.key] = { level: skill.level, original: skill.original };
     const upgrade = levels?.[skill.key];
     if (avatar.legacy && upgrade) {
       const rank = avatar.rank ?? 0;

@@ -8,6 +8,7 @@ import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunza
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
+import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
@@ -125,7 +126,11 @@ export function createStarRailPanel(
         if ("equipment" in command) {
           const change = command.equipment;
           let replacement;
-          if ("superimposition" in change) {
+          if ("eidolon" in change) {
+            equipmentMetadata = await readPanelDamageMetadata(selected, theme);
+            await verify();
+            replacement = changePanelEidolon(selected, change.eidolon, equipmentMetadata?.character.talentCons);
+          } else if ("superimposition" in change) {
             const equipped = selected.cone && object(theme.weapons[selected.cone.id]);
             replacement = changePanelSuperimposition(selected, change.superimposition, change.coneName, text(equipped?.name));
           } else {
@@ -134,10 +139,10 @@ export function createStarRailPanel(
             replacement = replacePanelEquipment(selected, donor, change.slots);
           }
           if ("error" in replacement) return replacement.error;
-          equipmentMetadata = await readPanelDamageMetadata(replacement.avatar, theme);
+          equipmentMetadata ??= await readPanelDamageMetadata(replacement.avatar, theme);
           equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(replacement.avatar, equipmentMetadata);
           await verify();
-          if (!equipmentRows) return `「${selected.name}」换装后无法复算，缺少角色、光锥或遗器的完整数据。`;
+          if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
           equipmentLabel = replacement.label;
           selected = { ...replacement.avatar, stats: formatPanelAttributeRows(equipmentRows) };
         }
@@ -150,7 +155,7 @@ export function createStarRailPanel(
         await verify();
         if (result.scenarioCount !== undefined) {
           return equipmentLabel
-            ? `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，请调整原换装指令中的伤害序号。`
+            ? `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，请调整原试算指令中的伤害序号。`
             : `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，可用 *${selected.name}伤害${archiveSuffix} 查看编号。`;
         }
         if (!result.damage) return `${selected.name}伤害计算暂不可用。${result.reason}。`;

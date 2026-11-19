@@ -30,11 +30,25 @@ const remakeMap: Readonly<Record<string, string>> = {
 const skillBonus: Readonly<Record<string, number>> = { a: 1, e: 2, q: 2, t: 2, xe: 1, me: 1, mt: 1 };
 const skillCap: Readonly<Record<string, number>> = { a: 10, e: 15, q: 15, t: 15, xe: 15, me: 10, mt: 10 };
 
+function starRailSkillBonus(skill: string, rank: number, upgrades: unknown) {
+  const unlocks = Array.isArray(upgrades) ? upgrades : [upgrades];
+  const active = unlocks.filter(unlock => typeof unlock === "number" && unlock > 0 && unlock <= rank).length;
+  return active * (skillBonus[skill] ?? 0);
+}
+
 /** Resolves the original level stored in the Star Rail cache using CharTalent.js. */
 export function starRailLegacySkillLevel(skill: string, level: number, rank: number, upgrades: unknown) {
-  const unlocks = Array.isArray(upgrades) ? upgrades : [upgrades];
-  const active = unlocks.filter(unlock => typeof unlock === "number" && unlock <= rank).length;
-  return Math.min(skillCap[skill] ?? 25, level + active * (skillBonus[skill] ?? 0));
+  return Math.min(skillCap[skill] ?? 25, level + starRailSkillBonus(skill, rank, upgrades));
+}
+
+/** Recovers the base of an effective MiYouShe level when the result is unambiguous. */
+export function recoverStarRailSkillLevel(skill: string, effective: number, oldRank: number, rank: number, upgrades: unknown) {
+  const oldBonus = starRailSkillBonus(skill, oldRank, upgrades);
+  const cap = skillCap[skill] ?? 25;
+  const base = effective - oldBonus;
+  if (!Number.isInteger(effective) || base < 1 || effective > cap) return;
+  if (effective === cap && starRailSkillBonus(skill, rank, upgrades) < oldBonus) return;
+  return base;
 }
 const elements: Readonly<Record<string, string>> = {
   Physical: "物理", Fire: "火", Ice: "冰", Thunder: "雷", Wind: "风", Quantum: "量子", Imaginary: "虚数",
@@ -67,6 +81,7 @@ interface Stat {
 interface Skill {
   key: string;
   level: number;
+  original?: number;
   icon: string;
 }
 interface Trace {
