@@ -120,7 +120,8 @@ export function parsePanelCommand(message: string) {
   if (damage && damagedRole && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
     const profileId = Number(damage[4] ?? 1);
     if (profileId > MAX_PROFILE_ID) return;
-    return { type: "damage" as const, profileId, name: damagedRole, scenario: Number(damage[2] ?? damage[3] ?? 3) };
+    const scenario = damage[2] ?? damage[3];
+    return { type: "damage" as const, profileId, name: damagedRole, scenario: scenario === undefined ? undefined : Number(scenario) };
   }
   const command = /^(?:#星铁|\*)(.+?)\s*([1-9]\d{0,2})?$/u.exec(message);
   if (!command || !command[1]) return;

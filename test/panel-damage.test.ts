@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { calculateStarRailPersonalDamage } from "../panel-damage.ts";
+import { calculateStarRailPersonalDamage, personalDamageScenarios, readStarRailPersonalDamage } from "../panel-damage.ts";
 import { parsePanelCommand, type PanelAvatar } from "../panel-model.ts";
+import advancedFixtures from "./fixtures/panel-damage.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -29,7 +30,7 @@ const avatar: PanelAvatar = {
 
 describe("Star Rail personal damage", () => {
   test("keeps the old scenario suffix distinct from the selected profile", () => {
-    expect(parsePanelCommand("*希儿伤害")).toEqual({ type: "damage", name: "希儿", profileId: 1, scenario: 3 });
+    expect(parsePanelCommand("*希儿伤害")).toEqual({ type: "damage", name: "希儿", profileId: 1, scenario: undefined });
     expect(parsePanelCommand("#星铁希尔伤害2 3")).toEqual({ type: "damage", name: "希尔", profileId: 3, scenario: 2 });
     expect(parsePanelCommand("*希儿武器1")).toEqual({ type: "damage", name: "希儿", profileId: 1, scenario: 1 });
     expect(parsePanelCommand("*希儿武器8")).toBeUndefined();
@@ -49,7 +50,7 @@ describe("Star Rail personal damage", () => {
     expect(damage.swaps[0]?.values[0]).toBeUndefined();
     expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(5053.373023517272, 7);
     expect(damage.swaps[3]?.values[2]?.average).toBeCloseTo(5307.785353169554, 7);
-    expect(damage.buffs).toContain("繁星竞技场 · 普攻与战技伤害 +20%");
+    expect(damage.buffs.some(buff => buff.startsWith("繁星竞技场2："))).toBe(true);
   });
 
   test("withholds numbers for unsupported equipment or missing data", () => {
@@ -62,5 +63,38 @@ describe("Star Rail personal damage", () => {
     expect(calculateStarRailPersonalDamage({
       ...avatar, relics: avatar.relics.map((part, i) => i > 3 ? { ...part, id: String(i) } : part),
     }, metadata, 3)).toBeUndefined();
+  });
+});
+
+describe("common engine with original character data", () => {
+  for (const { avatar, metadata, expected } of advancedFixtures) {
+    test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
+      const { setNames, ...inputs } = metadata;
+      const sets = new Map(Object.entries(setNames));
+      const damage = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) })!;
+      expect(damage.selected).toBe(expected.selected);
+      expect(damage.rows).toHaveLength(expected.rows.length);
+      for (const [index, row] of expected.rows.entries()) {
+        const actual = damage.rows[index]!;
+        expect(actual.title).toBe(row.title);
+        expect(actual.average).toBeCloseTo(row.avg, 7);
+        if (row.dmg === undefined) expect(actual.critical).toBeUndefined();
+        else expect(actual.critical).toBeCloseTo(row.dmg, 7);
+      }
+      expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(expected.swap.avg, 7);
+      if (expected.swap.dmg === undefined) expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
+      else expect(damage.swaps[0]?.values[1]?.critical).toBeCloseTo(expected.swap.dmg, 7);
+    });
+  }
+
+  test("filters locked scenarios and explains incomplete managed panels", () => {
+    const herta = advancedFixtures.find(fixture => fixture.avatar.id === "1401")!;
+    expect(personalDamageScenarios(herta.avatar)).toBe(3);
+    expect(personalDamageScenarios({ ...herta.avatar, rank: 6 })).toBe(5);
+    const { setNames, ...inputs } = herta.metadata;
+    const sets = new Map(Object.entries(setNames));
+    expect(readStarRailPersonalDamage({ ...herta.avatar, traces: [] }, {
+      ...inputs, setForId: id => sets.get(id),
+    })).toEqual({ reason: "缺少对应的行迹状态" });
   });
 });

@@ -1,0 +1,136 @@
+let attr = (key, val) => {
+  let data = {}
+  data[key] = val
+  return {
+    isStatic: true,
+    data
+  }
+}
+export default {
+  野穗伴行的快枪手: {
+    2: attr('atkPct', 12),
+    4: [attr('speedPct', 6), {
+      title: '普攻伤害提高10%',
+      data: {
+        aDmg: 10
+      }
+    }]
+  },
+  净庭教宗的圣骑士: {
+    2: attr('defPct', 15),
+    4: {
+      title: '护盾强效提高20%',
+      data: {
+        shield: 20
+      }
+    }
+  },
+  密林卧雪的猎人: {
+    2: attr('ice', 10),
+    4: {
+      title: '释放终结技后2回合，爆伤提高25%',
+      data: {
+        cdmg: 25
+      }
+    }
+  },
+  繁星璀璨的天才: {
+    2: attr('quantum', 10),
+    4: {
+      title: '对有量子弱点的目标造成伤害时，无视其20%的防御力',
+      data: {
+        ignore: 20
+      }
+    }
+  },
+  太空封印站: {
+    2: [attr('atkPct', 12), {
+      title: '速度大于等于120提高攻击力12%',
+      check: ({ calc, attr }) => calc(attr.speed) > 120,
+      data: {
+        atkPct: 12
+      }
+    }]
+  },
+  停转的萨尔索图: {
+    2: [attr('cpct', 8), {
+      title: '终结技与追加攻击造成的伤害提高15%',
+      check: ({ attr, calc }) => {
+        return calc(attr.cpct) > 50
+      },
+      data: {
+        qDmg: 15,
+        tDmg: 15
+      }
+    }]
+  },
+  繁星竞技场: {
+    2: [attr('cpct', 8), {
+      title: '暴击率大于等于70%时，普攻和战技造成的伤害提高20%',
+      check: ({ calc, attr }) => calc(attr.cpct) >= 70,
+      data: {
+        aDmg: 20,
+        eDmg: 20
+      }
+    }]
+  },
+  毁烬焚骨的大公: {
+    2: {
+      title: '追加攻击造成的伤害提高[tDmg]%',
+      data: {
+        tDmg: 20
+      }
+    },
+    4: {
+      title: '计算[_buffCount]层，提高攻击力[atkPct]%',
+      data: {
+        _buffCount: ({ params }) => params.tArtisBuffCount || 3,
+        atkPct: ({ params }) => (params.tArtisBuffCount || 3) * 6
+      }
+    }
+  },
+  苍穹战线格拉默: {
+    2: [attr('atkPct', 12), {
+      title: '装备者速度大于[_speed]时，伤害提高[dmg]%',
+      check: ({ attr }) => attr.speed >= 135,
+      data: {
+        _speed: ({ attr }) => attr.speed < 160 ? 135 : 160,
+        dmg: ({ attr }) => attr.speed < 160 ? 12 : 18
+      }
+    }]
+  },
+  死水深潜的先驱: {
+    2: {
+      title: '对受负面状态影响的敌人造成伤害提高[dmg]%',
+      data: {
+        dmg: 12
+      }
+    },
+    4: [attr('cpct', 4), {
+      title: '对陷入不少于3个负面效果的敌方目标造成的暴击率额外提高[cpct]%，暴击伤害提高[cdmg]%',
+      data: {
+        cpct: 4,
+        cdmg: 24
+      }
+    }]
+  },
+  奔狼的都蓝王朝: {
+    2: {
+      title: '5层Buff使得装备者造成的追击伤害提高[tDmg]%，装备者的暴击伤害提高[cdmg]%',
+      data: {
+        tDmg: 25,
+        cdmg: 25
+      }
+    }
+  },
+  识海迷坠的学者: {
+    2: attr('cpct', 8),
+    4: {
+      title: '终结技造成的伤害提高[qDmg]%，施放终结技后战技伤害提高[eDmg]%',
+      data: {
+        eDmg: 45,
+        qDmg: 20
+      }
+    }
+  },
+}

@@ -31,13 +31,20 @@
 
 旧面板复算及行迹布局沿用同版 Miao-Plugin 的 `models/attr/{Attr,AttrData}.js`、`models/Character.js`、`models/character/CharTalent.js`、`models/Weapon.js`、`models/artis/ArtisAttr.js`、`apps/profile/ProfileDetail.js` 与 `resources/meta-sr/{artifact,weapon}/` 里的静态规则。打包的 `panel-theme/static-panel-rules.json` 只摘录套装静态属性键值及光锥静态叠影表索引。装备数值仍从本地授权主题元数据读取。
 
-## 希儿个人伤害
+## 个人伤害
 
-`*希儿伤害` 查看已保存面板的个人伤害。序号 `1`、`2`、`3` 分别选普攻、战技和终结技进行词条替换比较，默认选终结技。支持原角色别名和 `武器` 别名，例如 `*希尔伤害2`、`*希儿武器1 2`。后者读取档案 2。结果展示 80 级弱点敌人条件下的暴击与期望伤害、词条替换效果和生效增益。
+`*希儿伤害`、`*黄泉伤害`、`*大黑塔伤害`、`*砂金伤害` 从已保存面板计算个人伤害。直接查询使用原规则的默认场景，序号可按卡图切换词条替换场景。支持旧角色别名、`武器` 别名及空格后的档案号，例如 `*芽衣伤害4`、`*大黑塔武器2`、`*希尔伤害2 3`。卡图列出 80 级弱点敌人假设下的暴击、期望伤害或护盾量、词条替换与生效增益，星魂限定场景只在解锁时显示。
 
-此入口支持角色编号 `1102`、光锥于夜色中、锋镝、如泥酣眠，以及繁星璀璨的天才、野穗伴行的快枪手、繁星竞技场、停转的萨尔索图、太空封印站、苍穹战线格拉默的成套效果。缺少必需属性、行迹或装备规则时提示数据不齐。查询通过档案选择角色并使用本地快照与主题元数据。
+| 角色 | 已支持光锥 |
+| --- | --- |
+| 希儿（1102） | 于夜色中、锋镝、如泥酣眠 |
+| 黄泉（1308） | 行于流逝的岸、无边曼舞 |
+| 大黑塔（1401） | 向着不可追问处 |
+| 砂金（1304） | 命运从未公平、两个人的演唱会 |
 
-三种伤害场景、增益和词条替换规则依据同版 Miao-Plugin 的 `models/ProfileDmg.js`、`models/dmg/{DmgAttr,DmgCalc}.js`、`resources/meta-sr/character/希儿/calc.js`、`resources/meta-sr/weapon/巡猎/calc.js` 和 `resources/meta-sr/artifact/{calc,meta}.js`，卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块。使用本机授权主题目录中对应的量子背景和角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
+成套效果已覆盖繁星璀璨的天才、野穗伴行的快枪手、净庭教宗的圣骑士、密林卧雪的猎人、毁烬焚骨的大公、死水深潜的先驱、识海迷坠的学者、繁星竞技场、停转的萨尔索图、太空封印站、苍穹战线格拉默和奔狼的都蓝王朝。必需属性、行迹或装备规则不齐时会说明原因。查询使用档案关联的本地快照、角色技能和装备元数据。
+
+引擎和原规则固定至同版 Miao-Plugin。`panel-damage-rules/` 保存 `models/dmg/{DmgAttr,DmgCalc,DmgCalcMeta,DmgMastery,AttrItem}.js`、四位角色的 `resources/meta-sr/character/*/calc.js`、相关光锥与遗器规则摘录和遗器词条定义。`panel-damage.ts` 按 `models/ProfileDmg.js`、`models/dmg/DmgBuffs.js`、`models/Weapon.js` 的流程适配当前面板。卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块，使用本地授权主题中的对应元素底图与角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
 ## 遗器评分
 
