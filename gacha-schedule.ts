@@ -3,13 +3,15 @@ import { join } from "node:path";
 import { readMiaoArrayExport } from "@lotus-yunzai/gacha/miao-data";
 import type { StarRailGachaDetailOptions } from "./gacha-detail.ts";
 
-interface Period {
+export interface StarRailGachaPeriod {
   readonly version: string;
   readonly half: string;
   readonly from: string;
   readonly to: string;
   readonly char5: readonly string[];
+  readonly char4?: readonly string[];
   readonly weapon5: readonly string[];
+  readonly weapon4?: readonly string[];
 }
 
 const localTime = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u;
@@ -23,21 +25,22 @@ function names(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((name) => typeof name === "string" && name.trim() === name && !!name);
 }
 
-function period(row: unknown): row is Period {
+function period(row: unknown): row is StarRailGachaPeriod {
   if (!row || typeof row !== "object") return false;
-  const { version, half, from, to, char5, weapon5 } = row as Partial<Period>;
+  const { version, half, from, to, char5, char4, weapon5, weapon4 } = row as Partial<StarRailGachaPeriod>;
   return typeof version === "string" && /^\d+(?:\.\d+)+$/u.test(version) && typeof half === "string" && !!half &&
     typeof from === "string" && localTime.test(from) && typeof to === "string" && localTime.test(to) &&
-    timestamp(from) < timestamp(to) && names(char5) && names(weapon5);
+    timestamp(from) < timestamp(to) && names(char5) && names(weapon5) &&
+    (char4 === undefined || names(char4)) && (weapon4 === undefined || names(weapon4));
 }
 
 /** The original export uses literal flow collections, which can be read without running the theme's JavaScript. */
-export function parseStarRailGachaSchedule(source: string): readonly Period[] {
+export function parseStarRailGachaSchedule(source: string): readonly StarRailGachaPeriod[] {
   const periods = readMiaoArrayExport(source, "poolDetailSr");
   return periods.every(period) ? periods : [];
 }
 
-export async function readStarRailGachaSchedule(root: string): Promise<readonly Period[]> {
+export async function readStarRailGachaSchedule(root: string): Promise<readonly StarRailGachaPeriod[]> {
   try {
     const source = await readFile(join(root, "meta-sr", "info", "index.js"), "utf8");
     return parseStarRailGachaSchedule(source);
@@ -48,7 +51,7 @@ export async function readStarRailGachaSchedule(root: string): Promise<readonly 
   }
 }
 
-export function resolveStarRailDetailPool(schedule: readonly Period[]): NonNullable<StarRailGachaDetailOptions["resolvePool"]> {
+export function resolveStarRailDetailPool(schedule: readonly StarRailGachaPeriod[]): NonNullable<StarRailGachaDetailOptions["resolvePool"]> {
   const periods = schedule.map((row) => ({ ...row, start: timestamp(row.from), end: timestamp(row.to) }));
   const last = periods.at(-1);
   return ({ time, name, gacha_type }) => {

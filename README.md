@@ -91,3 +91,9 @@ bun plugins/starrail/simulation/import-legacy-cli.ts --apply authorization.json
 `*希儿排名统计`、`#星铁老杨排名统计` 或 `#景元排名统计` 查询角色的公开伤害分布，显示十个百分位与样本数。数值和比较口径由数据服务定义。查询只发送公开角色编号、百分位参数和协议版本，不读取本地账号或面板。
 
 可用 `LOTUS_STAR_RAIL_ARK_THEME_DIR` 指定有权使用的旧主题 `resources/` 目录，结果卡会读取其中的 `graph/background.png`。缺少背景时使用内置底色。旧命令与公开统计契约参考 [Ark 上游 `e81b5ef` 的后端说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/backend.md) 和 [排名命令说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/extendMiaoRank.md)。
+
+## 历史卡池
+
+`*3.8卡池` 查询整版，包括原资料里的中场。`*4.1下半卡池` 只查指定期次。`*白厄卡池`、`*舞舞舞卡池` 或不带游戏前缀的名称查询会展示历次入池及其同组角色或光锥。末尾加「详情」或「详细」可展开各期全部组。不带游戏前缀时优先查询原神，使用 `*` 可明确查询星铁。
+
+历史和复刻提示只读取现有主题目录 `meta-sr/info/index.js` 中的 `poolDetailSr`、角色及光锥图鉴。时间按北京时间解释，未公布的期次不推算。已收录的未来期次仍可查阅，未复刻天数从最近已结束的对应期次起算。公开卡池查询无需登录。旧命令与图卡以喵喵 MIT 源码的 `apps/gacha/GachaPool.js`、`apps/gacha/Gacha.js` 和 `resources/gacha/gacha-info.html` 为依据，星铁背景和头像使用现有本机主题。

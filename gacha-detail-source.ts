@@ -41,8 +41,13 @@ async function itemCatalog(root: string, category: "character" | "weapon") {
   return result;
 }
 
-export async function readStarRailRecordItems(root: string): Promise<StarRailRecordItemResolver> {
+export async function readStarRailGachaCatalog(root: string) {
   const [characters, weapons] = await Promise.all([itemCatalog(root, "character"), itemCatalog(root, "weapon")]);
+  return { characters, weapons };
+}
+
+export async function readStarRailRecordItems(root: string): Promise<StarRailRecordItemResolver> {
+  const { characters, weapons } = await readStarRailGachaCatalog(root);
   const items = new Map<string, StarRailRecordItem>();
   for (const [entries, kind] of [[characters, "char"], [weapons, "weapon"]] as const) {
     for (const item of entries.values()) {
@@ -54,7 +59,7 @@ export async function readStarRailRecordItems(root: string): Promise<StarRailRec
 }
 
 export async function readStarRailGachaItems(root: string) {
-  const [characters, weapons] = await Promise.all([itemCatalog(root, "character"), itemCatalog(root, "weapon")]);
+  const { characters, weapons } = await readStarRailGachaCatalog(root);
   const characterNames = new Map([...characters.values()].map((item) => [item.name, item]));
   const weaponNames = new Map([...weapons.values()].map((item) => [item.name, item]));
   return ({ name, item_type }: Pick<Parameters<ResolveItem>[0], "name" | "item_type">) => {

@@ -6,6 +6,7 @@ import { buildStarRailGachaDetail, type StarRailGachaDetailPool } from "./gacha-
 import { renderStarRailGachaDetail } from "./gacha-detail-card.ts";
 import { readStarRailGachaItems, readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { createStarRailGachaFiles, matchesStarRailGachaFiles, starRailLegacyArchiveTimezone, type StarRailGachaFileContext } from "./gacha-files.ts";
+import { queryStarRailPoolInfo } from "./gacha-pool-info.ts";
 import { createStarRailGachaRecordArchive, StarRailGachaArchiveError } from "./gacha-record-archive.ts";
 import { buildStarRailRecordDetail } from "./gacha-record-detail.ts";
 import { resolveStarRailRecordPool, starRailRecordDraws } from "./gacha-record-source.ts";
@@ -226,6 +227,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         }
         return panel(String(userId), panelCommand);
       }
+      const poolInfo = await queryStarRailPoolInfo(context.normalizedMessage, signal);
+      if (poolInfo !== undefined) return poolInfo;
       const rankStats = await queryStarRailRankStats(context.normalizedMessage, signal);
       if (rankStats !== undefined) return rankStats;
       const simulated = await simulate(context.normalizedMessage, context);
