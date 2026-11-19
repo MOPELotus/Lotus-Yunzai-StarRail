@@ -63,6 +63,34 @@ export function readLegacyRelicAttributes(part: Relic, meta: Json) {
   return { main: { key, value: main.base + main.step * part.level }, sub };
 }
 
+function readManagedRelicAttributes(part: Relic, meta: Json) {
+  if (!part.main || part.level === undefined || part.rarity === undefined) return;
+  const star = object(object(meta.starData)?.[part.rarity]);
+  // Reconstruct the original discrete rolls from the normalized MiYouShe values.
+  const keyFor = (key: string) => {
+    if (/^(hp|atk|def)$/u.test(key)) return key + "Plus";
+    return key.replace(/^(hp|atk|def)Pct$/u, "$1");
+  };
+  const key = keyFor(part.main.key);
+  const options = object(object(meta.mainIdx)?.[part.slot]);
+  const main = object(object(star?.main)?.[key]);
+  if (!options || !Object.values(options).includes(key) || !main || !finite(main.base) || !finite(main.step)) return;
+  const sub: Attribute[] = [];
+  const tiers = Object.values(object(star?.sub) ?? {}).map(object);
+  for (const row of part.subs) {
+    const subKey = keyFor(row.key);
+    const tier = tiers.find(entry => entry?.key === subKey);
+    const total = Number(row.value.replace(/%$/u, ""));
+    if (!tier || !finite(tier.base) || tier.base <= 0 || !finite(tier.step) || tier.step === 0 || !finite(total) || total <= 0) return;
+    const rolls = subKey === "speed" ? Math.floor(total / tier.base) || 1 : row.times;
+    if (!rolls || !Number.isInteger(rolls) || rolls > 6) return;
+    const steps = Math.round((total - rolls * tier.base) / tier.step);
+    if (steps < 0 || steps > rolls * 2) return;
+    sub.push({ key: subKey, value: rolls * tier.base + steps * tier.step });
+  }
+  return { main: { key, value: main.base + main.step * part.level }, sub };
+}
+
 type PanelAttributeMetadata = {
   readonly character: Json;
   readonly cone: Json;
@@ -111,11 +139,23 @@ export function calculateManagedElation(avatar: PanelAvatar, { character, cone, 
   return joy;
 }
 
-export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
-  character, cone, conePath, relicMetadata, setForId,
-}: PanelAttributeMetadata) {
+export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata) {
   if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR"].includes(avatar.legacy.source)) return;
-  const charStats = leveledAttributes(character, avatar.level, avatar.legacy.promote, false);
+  return calculatePanelAttributeRows(avatar, metadata, readLegacyRelicAttributes);
+}
+
+export function calculateEquipmentAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata) {
+  if (avatar.legacy) return calculateLegacyPanelAttributeRows(avatar, metadata);
+  const traces = new Set(avatar.traces.map(trace => trace.id));
+  const trees = object(metadata.character.tree);
+  if (!trees || Object.entries(trees).some(([id, trace]) => finite(object(trace)?.value) && !traces.has(id))) return;
+  return calculatePanelAttributeRows(avatar, metadata, readManagedRelicAttributes);
+}
+
+function calculatePanelAttributeRows(avatar: PanelAvatar, {
+  character, cone, conePath, relicMetadata, setForId,
+}: PanelAttributeMetadata, readRelic: typeof readLegacyRelicAttributes) {
+  const charStats = leveledAttributes(character, avatar.level, avatar.legacy?.promote, false);
   if (!charStats || primary.some(key => !finite(charStats[key]))) return;
   const trees = object(character.tree);
   if (!trees) return;
@@ -167,7 +207,7 @@ export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
   const equippedSets = new Map<string, number>();
   const slots = new Set<number>();
   for (const part of avatar.relics) {
-    const attrs = readLegacyRelicAttributes(part, relicMetadata);
+    const attrs = readRelic(part, relicMetadata);
     const setName = setForId(part.id);
     if (!attrs || !setName || !Object.hasOwn(staticSets, setName) || slots.has(part.slot)) return;
     slots.add(part.slot);
@@ -193,10 +233,15 @@ export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
   });
 }
 
-export function calculateLegacyPanelAttributes(
-  ...args: Parameters<typeof calculateLegacyPanelAttributeRows>
-): PanelAvatar["stats"] | undefined {
-  return calculateLegacyPanelAttributeRows(...args)?.map(({ key, base, value, ratio }) => ({
+export type PanelAttributeRows = NonNullable<ReturnType<typeof calculateLegacyPanelAttributeRows>>;
+
+export function formatPanelAttributeRows(rows: PanelAttributeRows): PanelAvatar["stats"] {
+  return rows.map(({ key, base, value, ratio }) => ({
     key, base: formatPanelAttribute(base, ratio), value: formatPanelAttribute(value, ratio),
   }));
+}
+
+export function calculateLegacyPanelAttributes(...args: Parameters<typeof calculateLegacyPanelAttributeRows>) {
+  const rows = calculateLegacyPanelAttributeRows(...args);
+  return rows && formatPanelAttributeRows(rows);
 }

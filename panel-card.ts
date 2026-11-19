@@ -103,7 +103,7 @@ async function localArt(theme: Metadata, paths: readonly string[]) {
 
 const maxImageBytes = 768 * 1024;
 async function remoteArt(source: string | undefined, signal: AbortSignal) {
-  if (!source) return "";
+  if (!source || signal.aborted) return "";
   const deadline = AbortSignal.any([signal, AbortSignal.timeout(4000)]);
   let response: Response | undefined;
   try {
@@ -257,8 +257,8 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
   return tree;
 }
 
-export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal) {
-  const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
+export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal, equipmentLabel?: string) {
+  const artSignal = equipmentLabel ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
@@ -313,7 +313,7 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
         ...coneDetails(cone, coneMeta) },
-      dataSource: derived ? "旧面板静态复算" : fieldsSource(snapshot), updateTime: formatDate(snapshot.updatedAt),
+      dataSource: equipmentLabel ?? (derived ? "旧面板静态复算" : fieldsSource(snapshot)), updateTime: formatDate(snapshot.updatedAt),
     },
     attr: showcase(derived ?? avatar.stats, element), artisDetail: { charWeight: {}, artis }, artisKeyTitle: statTitles,
   });

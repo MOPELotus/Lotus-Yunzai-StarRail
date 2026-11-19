@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { calculateLegacyPanelAttributes, leveledAttributes } from "../panel-attributes.ts";
+import { calculateEquipmentAttributeRows, calculateLegacyPanelAttributeRows, calculateLegacyPanelAttributes, leveledAttributes } from "../panel-attributes.ts";
 import { readLegacyPanel } from "../panel-model.ts";
 
 const uid = "100000123";
@@ -73,4 +73,20 @@ test("includes the original Elation cone base speed before speed percent bonuses
     cone: { ...cone, skill: { tables: { 1: [12, 14, 16, 18, 20] } } },
   });
   expect(stats?.find(stat => stat.key === "speed")).toEqual({ key: "speed", base: "116", value: "147.3" });
+});
+
+
+test("replays the original discrete rolls for a complete managed equipment comparison", () => {
+  const avatar = readLegacyPanel(uid, data).avatars[0]!;
+  const managed = { ...avatar, legacy: undefined, relics: avatar.relics.map((part, i) => ({
+    ...part, legacyMainId: undefined, legacySubIds: undefined,
+    main: { key: ["hp", "atk", "cpct", "speed", "phy", "stance"][i]!, value: "0" },
+    subs: part.slot === 3 ? [{ key: "speed", value: "4", times: 1 }] : [],
+  })) };
+  // For the archived conversion, an integer speed display of 4 yields two rolls with no offset.
+  const legacy = { ...avatar, relics: avatar.relics.map(part => part.slot === 3 ? { ...part, legacySubIds: ["7,2,0"] } : part) };
+  expect(calculateEquipmentAttributeRows(managed, options)).toEqual(calculateLegacyPanelAttributeRows(legacy, options));
+  expect(calculateEquipmentAttributeRows({ ...managed, level: 70 }, options)).toBeUndefined();
+  expect(calculateEquipmentAttributeRows({ ...managed, traces: [] }, options)).toBeUndefined();
+  expect(calculateEquipmentAttributeRows({ ...managed, relics: [{ ...managed.relics[0]!, main: undefined }] }, options)).toBeUndefined();
 });

@@ -7,10 +7,12 @@ import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient 
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
+import { calculateEquipmentAttributeRows, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
+import { replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
-import { id as readId, normalizePanel, object, readLegacyPanel, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
+import { id as readId, normalizePanel, object, readLegacyPanel, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
@@ -108,34 +110,57 @@ export function createStarRailPanel(
 
       if (!snapshot?.avatars.length) return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
       const theme = await readTheme();
-      if (type === "damage") {
-        const avatar = findPanelAvatar(snapshot.avatars, name, theme);
+      let selected: PanelAvatar | undefined;
+      let equipmentLabel: string | undefined;
+      let equipmentRows: PanelAttributeRows | undefined;
+      let equipmentMetadata: Awaited<ReturnType<typeof readPanelDamageMetadata>>;
+      const archiveSuffix = profileId === 1 ? "" : ` ${profileId}`;
+      if (type === "damage" || type === "detail" || type === "relics") {
+        selected = findPanelAvatar(snapshot.avatars, name, theme);
         await verify();
-        if (!avatar) return `当前星铁面板中没有「${name}」，请用 *面板${profileId === 1 ? "" : profileId} 查看列表。`;
-        if (!hasPersonalDamage(avatar.id)) return `「${avatar.name}」的星铁个人伤害规则尚未接入。当前支持${personalDamageNames}。`;
-        const metadata = await readPanelDamageMetadata(avatar, theme);
-        const result = metadata ? readStarRailPersonalDamage(avatar, metadata, command.scenario) : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined };
+        if (!selected) return `当前星铁面板中没有「${name}」，请用 *面板${archiveSuffix} 查看列表。`;
+        if (type === "damage" && !hasPersonalDamage(selected.id)) {
+          return `「${selected.name}」的星铁个人伤害规则尚未接入。当前支持${personalDamageNames}。`;
+        }
+        if ("equipment" in command) {
+          const { donor: donorName, slots } = command.equipment;
+          const donor = findPanelAvatar(snapshot.avatars, donorName, theme);
+          if (!donor) return `当前星铁面板中没有换装来源「${donorName}」。`;
+          const replacement = replacePanelEquipment(selected, donor, slots);
+          if ("error" in replacement) return replacement.error;
+          equipmentMetadata = await readPanelDamageMetadata(replacement.avatar, theme);
+          equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(replacement.avatar, equipmentMetadata);
+          await verify();
+          if (!equipmentRows) return `「${selected.name}」换装后无法复算，缺少角色、光锥或遗器的完整数据。`;
+          equipmentLabel = replacement.label;
+          selected = { ...replacement.avatar, stats: formatPanelAttributeRows(equipmentRows) };
+        }
+      }
+
+      if (type === "damage" && selected) {
+        const metadata = equipmentMetadata ?? await readPanelDamageMetadata(selected, theme);
+        const scenario = "scenario" in command ? command.scenario : undefined;
+        const result = metadata ? readStarRailPersonalDamage(selected, metadata, scenario, equipmentRows) : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined };
         await verify();
         if (result.scenarioCount !== undefined) {
-          return `${avatar.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，可用 *${avatar.name}伤害${profileId === 1 ? "" : ` ${profileId}`} 查看编号。`;
+          return equipmentLabel
+            ? `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，请调整原换装指令中的伤害序号。`
+            : `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，可用 *${selected.name}伤害${archiveSuffix} 查看编号。`;
         }
-        if (!result.damage) return `${avatar.name}伤害计算暂不可用。${result.reason}。`;
-        const { damage } = result;
+        if (!result.damage) return `${selected.name}伤害计算暂不可用。${result.reason}。`;
+        const damage = equipmentLabel ? { ...result.damage, buffs: [equipmentLabel, ...result.damage.buffs] } : result.damage;
         const card = await renderStarRailPersonalDamage(damage, theme.root).catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
-        return damage.rows.map(row => {
+        return [equipmentLabel, ...damage.rows.map(row => {
           if (row.average === undefined) return `${row.title} · ${row.note}`;
           return row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${row.percentage ?? row.display ?? Math.round(row.average)}` :
             `${row.title} · 暴击 ${Math.round(row.critical)} · 期望 ${Math.round(row.average)}`;
-        }).join("\n");
+        })].filter(Boolean).join("\n");
       }
       let models;
-      let selected;
       let relicScore: { readonly mark: string; readonly markClass: string; readonly incomplete: number } | undefined;
-      if (type === "detail" || type === "relics") {
-        selected = findPanelAvatar(snapshot.avatars, name, theme);
-        if (!selected) return `当前星铁面板中没有「${name}」，请用 *面板${profileId === 1 ? "" : profileId} 查看列表。`;
+      if (selected) {
         if (type === "relics") {
           const relics = await makePanelRelicCard(snapshot, selected, theme, signal);
           await verify();
@@ -143,7 +168,7 @@ export function createStarRailPanel(
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
-          models = [await makePanelDetailCard(snapshot, selected, theme, signal)];
+          models = [await makePanelDetailCard(snapshot, selected, theme, signal, equipmentLabel)];
         }
       } else {
         models = await makePanelListCards(snapshot, theme, profileId, signal, updated);
@@ -159,7 +184,7 @@ export function createStarRailPanel(
             if (relicScore) return `UID ${uid} · ${selected.name} · 遗器总分 ${relicScore.mark} · ${relicScore.markClass}`;
             const visible = [selected.name, selected.level && `Lv.${selected.level}`, selected.rank !== undefined && `${selected.rank}魂`,
               selected.cone?.name, ...selected.relics.map(relic => relic.name)].filter(Boolean).join(" · ");
-            return `UID ${uid}\n${visible}`;
+            return [`UID ${uid}`, equipmentLabel, visible].filter(Boolean).join("\n");
           }
           return `UID ${uid} 星铁面板 · ${snapshot.avatars.length} 位角色\n${snapshot.avatars.map(avatar => avatar.name).join("、")}`;
         }

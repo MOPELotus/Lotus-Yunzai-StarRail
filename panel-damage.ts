@@ -1,4 +1,4 @@
-import { calculateLegacyPanelAttributeRows, calculateManagedElation, damageAttribute } from "./panel-attributes.ts";
+import { calculateLegacyPanelAttributeRows, calculateManagedElation, damageAttribute, type PanelAttributeRows } from "./panel-attributes.ts";
 import type { readPanelDamageMetadata } from "./panel-card.ts";
 import { object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
 import DmgAttr from "./panel-damage-rules/DmgAttr.js";
@@ -424,8 +424,8 @@ function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number): Sk
   });
 }
 
-function panelValues(avatar: PanelAvatar, metadata: Metadata, character: Character) {
-  const attrs = avatar.legacy ? calculateLegacyPanelAttributeRows(avatar, metadata) : avatar.stats;
+function panelValues(avatar: PanelAvatar, metadata: Metadata, character: Character, rows?: PanelAttributeRows) {
+  const attrs = rows ?? (avatar.legacy ? calculateLegacyPanelAttributeRows(avatar, metadata) : avatar.stats);
   if (!attrs) throw new MissingDamageData("面板属性不齐");
   const values: Numbers = Object.create(null);
   const flat: Record<string, Attr> = Object.create(null);
@@ -525,7 +525,7 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
 
 function originalDamage(
   avatar: PanelAvatar, metadata: Metadata, scenario: number | undefined,
-  character: Character,
+  character: Character, rows?: PanelAttributeRows,
 ) {
   if (!avatar.level || avatar.rank === undefined || metadata.character.elem !== character.element ||
       (avatar.element && avatar.element !== character.element)) throw new MissingDamageData("缺少角色等级、星魂或元素资料");
@@ -542,7 +542,7 @@ function originalDamage(
   }
   const trees = Object.fromEntries([...knownTraces].filter(([id, active]) => id && active));
   const talent = talentValues(avatar, metadata, rank);
-  const { values, staticAttr } = panelValues(avatar, metadata, character);
+  const { values, staticAttr } = panelValues(avatar, metadata, character, rows);
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: { ...values, staticAttr },
     char: { elem: character.element, sp: metadata.character.sp, weaponTypeName: character.path }, weapon: { name: weapon.name, affix: weapon.affix } });
@@ -605,11 +605,11 @@ function originalDamage(
   return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };
 }
 
-export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number) {
+export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number, rows?: PanelAttributeRows) {
   const character = characters.get(avatar.id);
   if (!character) return { reason: "该星铁角色的个人伤害规则尚未接入", scenarioCount: undefined } as const;
   try {
-    return { damage: originalDamage(avatar, metadata, scenario, character) } as const;
+    return { damage: originalDamage(avatar, metadata, scenario, character, rows) } as const;
   } catch (error) {
     if (!(error instanceof MissingDamageData)) throw error;
     return { reason: error.message, scenarioCount: error.scenarioCount } as const;

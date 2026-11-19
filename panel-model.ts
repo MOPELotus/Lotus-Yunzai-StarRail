@@ -2,6 +2,7 @@
 // apps/profile/ProfileList.js and models/serv/api/MysPanelHSR{Api,Data,Mappings}.js.
 import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import names from "./challenge-character-names.json";
+import { parseEquipmentChange } from "./panel-equipment.ts";
 
 type Json = Record<string, unknown>;
 export const object = (value: unknown): Json | undefined =>
@@ -124,6 +125,8 @@ export interface PanelSnapshot {
 export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 
 export function parsePanelCommand(message: string) {
+  const equipment = parseEquipmentChange(message);
+  if (equipment) return equipment;
   const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害([1-9]\d{0,5})?|武器([1-7])?)(?:\s+([1-9]\d{0,2}))?$/u.exec(message);
   const damagedRole = damage?.[1]?.trim();
   if (damage && damagedRole && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
