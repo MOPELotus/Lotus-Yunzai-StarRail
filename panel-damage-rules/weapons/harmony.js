@@ -38,5 +38,6 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    金血铭刻的时代: [staticIdx(1, 'atkPct')],
   }
 }

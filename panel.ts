@@ -124,8 +124,11 @@ export function createStarRailPanel(
         const card = await renderStarRailPersonalDamage(damage, theme.root).catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
-        return damage.rows.map(row => row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${row.percentage ?? row.display ?? Math.round(row.average)}` :
-          `${row.title} · 暴击 ${Math.round(row.critical)} · 期望 ${Math.round(row.average)}`).join("\n");
+        return damage.rows.map(row => {
+          if (row.average === undefined) return `${row.title} · ${row.note}`;
+          return row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${row.percentage ?? row.display ?? Math.round(row.average)}` :
+            `${row.title} · 暴击 ${Math.round(row.critical)} · 期望 ${Math.round(row.average)}`;
+        }).join("\n");
       }
       let models;
       let selected;

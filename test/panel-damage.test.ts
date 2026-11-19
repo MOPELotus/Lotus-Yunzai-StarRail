@@ -23,6 +23,7 @@ import hpSpecialFixtures from "./fixtures/panel-damage-hp-special.json";
 import breakMultiFixtures from "./fixtures/panel-damage-break-multi.json";
 import elationFixtures from "./fixtures/panel-damage-elation.json";
 import finalElationFixtures from "./fixtures/panel-damage-elation-final.json";
+import cerydraFixtures from "./fixtures/panel-damage-cerydra.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -90,7 +91,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures, ...elationFixtures, ...finalElationFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures, ...elationFixtures, ...finalElationFixtures, ...cerydraFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -101,6 +102,11 @@ describe("common engine with original character data", () => {
       for (const [index, row] of expected.rows.entries()) {
         const actual = damage.rows[index]!;
         expect(actual.title).toBe(row.title);
+        if (!("avg" in row) || typeof row.avg !== "number") {
+          expect(actual.note).toBe("note" in row ? row.note : undefined);
+          expect(actual.average).toBeUndefined();
+          continue;
+        }
         expect(actual.average).toBeCloseTo(row.avg, 7);
         if ("display" in row) expect(actual).toMatchObject({ metric: "support", display: row.display });
         if ("percentage" in row) expect(actual).toMatchObject({ metric: "support", percentage: row.percentage });
@@ -269,8 +275,8 @@ describe("common engine with original character data", () => {
     const sets = new Map(Object.entries(setNames));
     const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
     const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
-    const firstSwordHit = damage.rows[2]!.average - damage.rows[1]!.average;
-    const secondSwordHit = damage.rows[4]!.average - damage.rows[2]!.average;
+    const firstSwordHit = damage.rows[2]!.average! - damage.rows[1]!.average!;
+    const secondSwordHit = damage.rows[4]!.average! - damage.rows[2]!.average!;
     expect(firstSwordHit).toBeGreaterThan(0);
     expect(secondSwordHit).toBeCloseTo(firstSwordHit, 7);
   });
@@ -282,7 +288,7 @@ describe("common engine with original character data", () => {
     const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
     const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
     expect(damage.rows[3]?.critical).toBeUndefined();
-    expect(damage.rows[4]?.average).toBeCloseTo(damage.rows[3]!.average * 1.5, 7);
+    expect(damage.rows[4]?.average).toBeCloseTo(damage.rows[3]!.average! * 1.5, 7);
     const traces = avatar.traces.map(trace => trace.id.endsWith("102") ? { ...trace, active: false } : trace);
     expect(readStarRailPersonalDamage({ ...avatar, traces }, prepared, 5).scenarioCount).toBe(4);
   });
@@ -333,7 +339,7 @@ describe("common engine with original character data", () => {
     };
     expect(shieldAt("50%").metric).toBe("shield");
     expect(shieldAt("50%").active.some(buff => buff.startsWith("筑城者的贝洛伯格"))).toBe(false);
-    expect(shieldAt("51%").average).toBeGreaterThan(shieldAt("50%").average);
+    expect(shieldAt("51%").average).toBeGreaterThan(shieldAt("50%").average!);
   });
 
   test("retains the fixed comrade attack and the original dragon spirit shield at eidolon two", () => {
@@ -345,7 +351,7 @@ describe("common engine with original character data", () => {
     const rankOne = calculateStarRailPersonalDamage({ ...avatar, rank: 1 }, prepared)!;
     expect(damage.rows[damage.selected]?.title).toBe("普攻伤害");
     expect(damage.rows[4]?.metric).toBe("shield");
-    expect(damage.rows[4]?.average).toBeCloseTo(rankOne.rows[4]!.average * 2, 7);
+    expect(damage.rows[4]?.average).toBeCloseTo(rankOne.rows[4]!.average! * 2, 7);
     expect(damage.rows[5]?.title).toContain("同袍攻击:3000");
     expect(readStarRailPersonalDamage(avatar, prepared, 7).scenarioCount).toBe(6);
   });
@@ -381,7 +387,7 @@ describe("common engine with original character data", () => {
     }, prepared)!;
     expect(atSpeed("169").buffs.some(buff => buff.includes("速度大于等于170"))).toBe(false);
     expect(atSpeed("170").buffs.some(buff => buff.includes("速度大于等于170"))).toBe(true);
-    expect(atSpeed("170").rows[0]!.average).toBeGreaterThan(atSpeed("169").rows[0]!.average);
+    expect(atSpeed("170").rows[0]!.average).toBeGreaterThan(atSpeed("169").rows[0]!.average!);
   });
 
   test("keeps enhanced Seele's six-eidolon result on the original ordinary damage path", () => {
@@ -485,5 +491,18 @@ describe("common engine with original character data", () => {
     const result = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) }, 2)!;
     expect(result.rows[result.selected]).toMatchObject({ metric: "support", display: String(expected.rows[1]!.avg) });
     expect(result.rows[2]).toMatchObject({ metric: "support", percentage: "145.0%" });
+  });
+
+  test("keeps Cerydra's note and point-valued support as selectable old scenarios", () => {
+    const { avatar, metadata, expected } = cerydraFixtures[0]!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const note = calculateStarRailPersonalDamage(avatar, prepared, 1)!;
+    expect(note.rows[note.selected]).toMatchObject({ note: "本计算中,刻律德菈无【军功】buff", metric: "support" });
+    expect(note.swaps).toEqual([]);
+    const support = calculateStarRailPersonalDamage(avatar, prepared, 5)!;
+    expect(support.rows[support.selected]).toMatchObject({ display: expected.rows[4]?.display, metric: "support" });
+    expect(support.swaps[0]?.values[1]?.display).toMatch(/^\d+点$/);
   });
 });

@@ -104,6 +104,7 @@ import * as robinDahlia from "./panel-damage-rules/characters/robin-dahlia.js";
 import * as aventurineElation from "./panel-damage-rules/characters/aventurine-elation.js";
 import * as tohsakaRin from "./panel-damage-rules/characters/tohsaka-rin.js";
 import * as silverWolfElation from "./panel-damage-rules/characters/silver-wolf-elation.js";
+import * as cerydra from "./panel-damage-rules/characters/cerydra.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -129,7 +130,15 @@ type Variables = {
 type DamageMetric = "damage" | "shield" | "heal" | "support";
 export const personalDamageMetricLabel: Readonly<Record<DamageMetric, string>> = { damage: "期望伤害", shield: "护盾量", heal: "治疗量", support: "辅助效果" };
 type DamageValue = { avg: number; dmg?: number; display?: string; metric?: DamageMetric };
-type RuleResult = DamageValue | { type: "text"; avg: string };
+type RuleResult = DamageValue | { type: "text"; avg: string } | { note: string };
+type DamageRow = {
+  title: string;
+  metric: DamageMetric;
+  active: string[];
+  critical?: number;
+  display?: string;
+  percentage?: string;
+} & ({ average: number; note?: never } | { average?: never; note: string });
 type DamageFn = ((multiplier: number, skill: string, effect?: string) => DamageValue) & {
   basic: (amount: number, skill: string) => DamageValue;
   shield: (amount: number) => DamageValue;
@@ -373,6 +382,8 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23061": "星火悄然闪耀", "21020": "天才们的休憩" } },
   "1506": { name: "银狼LV.999", element: "虚数", path: "欢愉", traces: [101], rule: silverWolfElation,
     cones: { "23057": "欢迎来到银河城", "21064": "菇菇嘎嘎历险记" } },
+  "1412": { name: "刻律德菈", element: "风", path: "同谐", traces: [101, 102, 103], rule: cerydra,
+    cones: { "23048": "金血铭刻的时代", "21032": "镂月裁云之意" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -546,7 +557,7 @@ function originalDamage(
   const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };
   const defaultParams = (typeof rule.defParams === "function" ? rule.defParams(meta as unknown as Variables) : rule.defParams) ?? {};
 
-  function calculate(detail: Rule["details"][number], incAttr = "", reduceAttr = "") {
+  function calculate(detail: Rule["details"][number], incAttr = "", reduceAttr = ""): DamageRow | undefined {
     const params = { ...defaultParams, ...detail.params };
     const { attr, msg } = DmgAttr.calcAttr({
       originalAttr, buffs, meta: { ...meta }, artis: relics.sets, params, incAttr, reduceAttr, game: "sr",
@@ -559,13 +570,15 @@ function originalDamage(
     damage.heal = amount => ({ ...heal(amount), metric: "heal" });
     damage.shield = amount => ({ ...shield(amount), metric: "shield" });
     const result = detail.dmg(variables, damage);
+    const title = typeof detail.title === "function" ? detail.title(variables) : detail.title;
+    const active = msg as string[];
+    if ("note" in result) return { title, note: result.note, metric: "support", active };
     const percentage = "type" in result ? result.avg : undefined;
     const { dmg, avg, display, metric = "damage" }: DamageValue = "type" in result
       ? { avg: result.avg.endsWith("%") ? Number(result.avg.slice(0, -1)) : NaN, metric: "support" }
       : result;
     if (!Number.isFinite(avg) || (dmg !== undefined && !Number.isFinite(dmg))) throw new MissingDamageData("原规则所需数据不齐");
-    const title = typeof detail.title === "function" ? detail.title(variables) : detail.title;
-    return { title, critical: dmg, average: avg, ...(display === undefined ? {} : { display }), ...(percentage === undefined ? {} : { percentage }), metric, active: msg as string[] };
+    return { title, critical: dmg, average: avg, ...(display === undefined ? {} : { display }), ...(percentage === undefined ? {} : { percentage }), metric, active };
   }
 
   const scenarios = rule.details.flatMap((detail, index) => {
@@ -581,12 +594,12 @@ function originalDamage(
     throw new MissingDamageData("伤害场景序号无效", scenarios.length);
   }
   const statKeys = rule.mainAttr.split(",") as (keyof typeof attrMap)[];
-  const swaps = statKeys.map(from => ({
+  const swaps = current.row.average === undefined ? [] : statKeys.map(from => ({
     title: attrMap[from].title, amount: String(attrMap[from].value) + (from === "speed" ? "" : "%"),
     values: statKeys.map(to => {
       if (from === to) return;
       const result = calculate(current.detail, to, from);
-      return result && { critical: result.critical, average: result.average, ...(result.display === undefined ? {} : { display: result.display }), ...(result.percentage === undefined ? {} : { percentage: result.percentage }) };
+      return result?.average !== undefined ? { critical: result.critical, average: result.average, ...(result.display === undefined ? {} : { display: result.display }), ...(result.percentage === undefined ? {} : { percentage: result.percentage }) } : undefined;
     }),
   }));
   return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };

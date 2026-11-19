@@ -56,20 +56,23 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
   const baseline = damage.rows[damage.selected]!;
   function formatSwapValue({ average, critical, display, percentage }: Pick<typeof baseline, "average" | "critical" | "display" | "percentage">) {
+    if (average === undefined) return "—";
     return percentage ?? display ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
   }
   const measure = new Canvas(1, 1).getContext("2d");
   measure.font = `13px ${body}`;
-  const swapTextWidth = Math.max(...damage.swaps.flatMap(entry => entry.values.map(swap =>
+  const swapTextWidth = Math.max(0, ...damage.swaps.flatMap(entry => entry.values.map(swap =>
     measure.measureText(formatSwapValue(swap ?? baseline)).width,
   )));
   const swapCellWidth = Math.max(110, Math.ceil(swapTextWidth + 12));
   const criticalGap = Math.max(162, glyphUnits(resultHeading) * 8 + 16);
   const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.map(glyphUnits));
-  const width = Math.max(660, 210 + damage.swaps.length * swapCellWidth, rowWidth);
+  const noteWidth = Math.max(...damage.rows.map((row, index) => row.note ? 112 + 9 * glyphUnits(labels[index]! + row.note) : 0));
+  const width = Math.max(660, 210 + damage.swaps.length * swapCellWidth, rowWidth, noteWidth);
   const listHeight = 45 + damage.rows.length * 34;
-  const swapTop = 161 + listHeight, swapHeight = 110 + damage.swaps.length * 45;
-  const buffTop = swapTop + swapHeight + 14;
+  const swapTop = 161 + listHeight;
+  const swapHeight = damage.swaps.length ? 110 + damage.swaps.length * 45 : 0;
+  const buffTop = swapTop + (swapHeight ? swapHeight + 14 : 0);
   const buffLines = damage.buffs.flatMap(conditionLines);
   const height = buffTop + 73 + buffLines.length * 25;
   const valueX = width - 46, critX = valueX - criticalGap;
@@ -140,28 +143,34 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     for (const [index, row] of damage.rows.entries()) {
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(labels[index]!, 42, y, 18, color);
-      text(row.critical === undefined ? "—" : number.format(row.critical), critX, y, 18, color, "right");
-      text(row.percentage ?? row.display ?? number.format(row.average), valueX, y, 18, color, "right");
+      if (row.note === undefined) {
+        text(row.critical === undefined ? "—" : number.format(row.critical), critX, y, 18, color, "right");
+      }
+      const value = row.note ?? row.percentage ?? row.display ?? (row.average === undefined ? "—" : number.format(row.average));
+      text(value, valueX, y, 18, color, "right");
     }
 
-    box(swapTop, swapHeight, swapHeading);
-    damage.swaps.forEach((entry, index) => {
-      text(entry.title, matrixX(index), swapTop + 60, 15, "#e2cb9e", "center");
-      text(`+${entry.amount}`, matrixX(index), swapTop + 79, 14, "#e2cb9e", "center");
-    });
-    damage.swaps.forEach((entry, column) => {
-      const y = swapTop + 111 + column * 45;
-      text(`${entry.title} −${entry.amount}`, 42, y + 9, 15);
-      entry.values.forEach((swap, index) => {
-        const x = matrixX(index);
-        const value = swap ?? baseline;
-        const delta = value.average - baseline.average;
-        const deltaLabel = baseline.percentage === undefined ? number.format(delta) : delta.toFixed(1);
-        const color = delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8";
-        text(swap ? `${delta > 0 ? "+" : ""}${deltaLabel}` : "—", x, y, 17, color, "center");
-        text(formatSwapValue(value), x, y + 19, 13, "#e1d9e8", "center");
+    const baselineAverage = baseline.average;
+    if (baselineAverage !== undefined && swapHeight) {
+      box(swapTop, swapHeight, swapHeading);
+      damage.swaps.forEach((entry, index) => {
+        text(entry.title, matrixX(index), swapTop + 60, 15, "#e2cb9e", "center");
+        text(`+${entry.amount}`, matrixX(index), swapTop + 79, 14, "#e2cb9e", "center");
       });
-    });
+      damage.swaps.forEach((entry, column) => {
+        const y = swapTop + 111 + column * 45;
+        text(`${entry.title} −${entry.amount}`, 42, y + 9, 15);
+        entry.values.forEach((swap, index) => {
+          const x = matrixX(index);
+          const value = swap ?? baseline;
+          const delta = (value.average ?? baselineAverage) - baselineAverage;
+          const deltaLabel = baseline.percentage === undefined ? number.format(delta) : delta.toFixed(1);
+          const color = delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8";
+          text(swap ? `${delta > 0 ? "+" : ""}${deltaLabel}` : "—", x, y, 17, color, "center");
+          text(formatSwapValue(value), x, y + 19, 13, "#e1d9e8", "center");
+        });
+      });
+    }
     box(buffTop, 45 + buffLines.length * 25, "计算条件");
     buffLines.forEach((buff, i) => text(buff, 42, buffTop + 58 + i * 25, 17));
     text("Lotus-Yunzai · StarRail", width / 2, height - 12, 13, "#fff", "center");
