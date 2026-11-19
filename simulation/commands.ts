@@ -1,13 +1,9 @@
-import { fileURLToPath } from "node:url";
-import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
-import { emptyPity, simulateWarps, type WarpPity, type WarpPull } from "./draw.ts";
+import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
+import { emptyPity, simulateWarps, type WarpPull } from "./draw.ts";
 import { createWarpPoolSource, type WarpKind } from "./pools.ts";
 import { renderWarpCard } from "./card.ts";
+import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory } from "./store.ts";
 
-const stateDirectory = fileURLToPath(new URL("../../../data/starrail/simulation/", import.meta.url));
-const states = ["character", "cone", "standard"] as const;
-const oneDay = 86_400_000;
-const privateOrGroup = /^(?:private|[1-9]\d*)$/u;
 const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星轨通|星轨|专属|普通|专|通)?票?$/u;
 const help = /^#星铁模拟(?:抽卡|跃迁)(?:帮助)?$/u;
 const drawCommand = /^#星铁(?<before>角色池?|光锥池?|武器池?|常驻池?)?(?<size>单抽|(?:[一二三四五六七八九]?十|百|10)[连抽卡奖]|抽[卡奖])(?<after>角色池?|光锥池?|武器池?|常驻池?)?(?:池?(?<slot>[1-4]))?$/u;
@@ -21,41 +17,6 @@ export function parseWarpCommand(message: string) {
   const multiple = "一二三四五六七八九".indexOf(size[0]!) + 1;
   const count = size === "单抽" ? 1 : size.startsWith("百") ? 100 : (multiple || 1) * 10;
   return { kind, slot: Number(slot ?? 1), count };
-}
-
-interface Balance {
-  day: number;
-  special: number;
-  regular: number;
-}
-interface Conversation {
-  lastDay: number;
-  readonly pity: Record<WarpKind, WarpPity>;
-}
-interface Account {
-  readonly version: 1;
-  balance: Balance;
-  readonly conversations: Record<string, Conversation>;
-}
-
-function integer(value: unknown, upper = Number.MAX_SAFE_INTEGER): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= upper;
-}
-
-function readAccount(data: unknown): Account {
-  if (data === null) return { version: 1, balance: { day: 0, special: 0, regular: 0 }, conversations: {} };
-  if (typeof data !== "object") throw new TypeError("模拟跃迁存档格式无效。");
-  const { version, balance, conversations } = data as Partial<Account>;
-  if (version !== 1 || !balance || !integer(balance.day) || !integer(balance.special) || !integer(balance.regular) ||
-      !conversations || typeof conversations !== "object" || Array.isArray(conversations)) throw new TypeError("模拟跃迁存档格式无效。");
-  for (const [key, state] of Object.entries(conversations)) {
-    if (!privateOrGroup.test(key) || !state || !integer(state.lastDay) || !state.pity || states.some((kind) => {
-      const p = state.pity[kind];
-      return !p || !integer(p.fiveMisses, kind === "cone" ? 79 : 89) || !integer(p.fourOrBetterMisses, 9) ||
-        typeof p.nextFiveFeatured !== "boolean" || typeof p.nextFourFeatured !== "boolean";
-    })) throw new TypeError("模拟跃迁保底格式无效。");
-  }
-  return { version, balance, conversations };
 }
 
 interface WarpContext {
@@ -73,7 +34,7 @@ function format(pull: WarpPull) {
 }
 
 export function createStarRailSimulation({
-  lockFile, signal, directory = Bun.env.LOTUS_STAR_RAIL_WARP_STATE_DIR?.trim() || stateDirectory,
+  lockFile, signal, directory = warpStateDirectory(),
   poolSource = createWarpPoolSource(), now = Date.now, random = Math.random, render = renderWarpCard,
 }: {
   readonly lockFile: AcquireRoleArchiveLock;
@@ -84,9 +45,7 @@ export function createStarRailSimulation({
   readonly random?: () => number;
   readonly render?: typeof renderWarpCard;
 }) {
-  const archive = createRoleJsonArchive(directory, lockFile, {
-    subject: "星铁模拟跃迁", lockSuffix: "warp-lock", maxBytes: 1024 * 1024, rejectNull: true,
-  });
+  const archive = createWarpArchive(directory, lockFile);
 
   return async (message: string, context: WarpContext): Promise<WarpReply | undefined> => {
     if (signal.aborted) return;
@@ -102,13 +61,13 @@ export function createStarRailSimulation({
     const qq = String(context.user_id);
     const group = integer(context.group_id) && context.group_id > 0 ? String(context.group_id) : "private";
     const time = now();
-    const day = Math.floor((time + 14_400_000) / oneDay);
+    const day = warpDay(time);
     try {
       const pool = draw && await poolSource(draw.kind, draw.slot, time);
       if (draw && !pool) return "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
       const result = await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
-        const account = readAccount(raw);
-        const issued = account.balance.day !== day;
+        const account = readWarpAccount(raw);
+        const issued = account.balance.day !== day || (account.balance.expiresAt !== undefined && time >= account.balance.expiresAt);
         if (issued) account.balance = { day, special: 100, regular: 10 };
         const balance = account.balance;
         if (!draw || !pool) {
@@ -121,13 +80,16 @@ export function createStarRailSimulation({
           return issued ? { document: account, result } : { result };
         }
         balance[ticket] = context.isMaster ? Math.min(Number.MAX_SAFE_INTEGER, balance[ticket] + draw.count) : balance[ticket] - draw.count;
+        delete balance.expiresAt;
         for (const [key, conversation] of Object.entries(account.conversations)) {
-          if (day - conversation.lastDay >= 14) delete account.conversations[key];
+          const expired = conversation.expiresAt === undefined ? day - conversation.lastDay >= warpRetentionDays : time >= conversation.expiresAt;
+          if (expired) delete account.conversations[key];
         }
         const conversation = account.conversations[group] ?? {
           lastDay: day, pity: { character: emptyPity(), cone: emptyPity(), standard: emptyPity() },
         };
         conversation.lastDay = day;
+        delete conversation.expiresAt;
         account.conversations[group] = conversation;
         const pity = conversation.pity[pool.kind];
         const pulls = simulateWarps(pool, pity, draw.count, random);

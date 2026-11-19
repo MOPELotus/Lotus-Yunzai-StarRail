@@ -6,6 +6,7 @@ import { lockFile } from "../../../lib/file-lock.ts";
 import { createStarRailSimulation, parseWarpCommand } from "../simulation/commands.ts";
 import { emptyPity, simulateWarps } from "../simulation/draw.ts";
 import { createWarpPoolSource } from "../simulation/pools.ts";
+import { createWarpArchive, warpDay } from "../simulation/store.ts";
 
 const active = Date.parse("2026-11-20T09:00:00+08:00");
 
@@ -91,5 +92,33 @@ test("concurrent replies debit one wallet, leave each conversation isolated, and
     expect(doc.conversations.private.pity.cone.fiveMisses).toBe(1);
     expect(await simulation("#星铁十连4", {})).toContain("QQ 会话");
     expect(await simulation("#星铁抽卡记录", group)).toBeUndefined();
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("restored simulation wallet and conversation expire at their saved absolute times after restart", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-legacy-expiry-test-"));
+  try {
+    let now = Date.parse("2026-11-20T10:00:00+08:00");
+    const oldPity = { ...emptyPity(), fiveMisses: 89, nextFiveFeatured: true };
+    await createWarpArchive(directory, lockFile).update({ qq: "42", uid: "1" }, async () => {}, () => ({
+      document: { version: 1, balance: { day: warpDay(now), special: 12, regular: 3, expiresAt: now + 1000 },
+        legacy: { balance: true, conversations: ["77", "private"] }, conversations: {
+          "77": { lastDay: warpDay(now), expiresAt: now + 2000, pity: { character: oldPity, cone: emptyPity(), standard: emptyPity() } },
+          private: { lastDay: warpDay(now), expiresAt: now + 2000, pity: { character: oldPity, cone: emptyPity(), standard: emptyPity() } },
+        } }, result: null,
+    }));
+    const make = () => createStarRailSimulation({ directory, lockFile, signal: new AbortController().signal, now: () => now,
+      poolSource: createWarpPoolSource(""), random: () => 0.99, render: async () => { throw new Error("unavailable"); } });
+    expect(await make()("#星铁我的星轨票", { user_id: 42 })).toContain("12 张星轨专票和 3 张");
+    now += 1000;
+    expect(await make()("#星铁我的星轨票", { user_id: 42 })).toContain("100 张星轨专票和 10 张");
+    expect(await make()("#星铁单抽", { user_id: 42, group_id: 77 })).toContain("5★ 星神★阿哈 UP（第 90 抽）");
+    now += 1000;
+    expect(await make()("#星铁单抽", { user_id: 42 })).toContain("3★");
+    const result = JSON.parse(await readFile(join(directory, "42", "1.json"), "utf8"));
+    expect(result.conversations["77"].expiresAt).toBeUndefined();
+    expect(result.conversations["77"].pity.character.fiveMisses).toBe(0);
+    expect(result.conversations.private.pity.character.fiveMisses).toBe(1);
+    expect(result.legacy).toEqual({ balance: true, conversations: ["77", "private"] });
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

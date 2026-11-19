@@ -42,7 +42,7 @@
 - `*单抽`、`*十连`、`*百连` 进入当前角色活动跃迁。可用 `*单抽2`、`*十连光锥2` 选择当期指定卡池，也可用 `*十连常驻` 进行群星跃迁。
 - `*我的星轨票` 查询模拟票数。默认每天北京时间 04:00 补至 100 张专票和 10 张通票。每个 QQ 共用票数，同一会话内的同类活动卡池共用保底，角色、光锥和常驻各有独立保底。真实账号及抽卡档案无需绑定。
 - 模拟使用基础概率、硬保底和近似软保底。内置 4.7 第一期官方 UP 与一套固定常驻名单，供聊天内娱乐使用。自选非 UP、积分、商城及游戏内持有情况不参与模拟。当前期次结束时，活动卡池等待配置更新，常驻池仍可用。
-- 模拟存档默认写入宿主 `data/starrail/simulation/<QQ>/1.json`，可用 `LOTUS_STAR_RAIL_WARP_STATE_DIR` 指定目录。旧模拟 Redis 余额和保底可保留作原部署备份，本模块从自己的存档读写。
+- 模拟存档默认写入宿主 `data/starrail/simulation/<QQ>/1.json`，可用 `LOTUS_STAR_RAIL_WARP_STATE_DIR` 指定目录。旧模拟 Redis 余额和保底可按下文显式迁移。
 - `LOTUS_STAR_RAIL_WARP_BANNERS` 可指向 UTF-8 JSON 文件，替换内置活动日历。每项包含 `slot`（1–4）、`start` 和 `end`（带时区的 ISO 时间）、`character`、`cone`、四星角色数组 `characters4` 和四星光锥数组 `cones4`。同一编号的有效区间不能重叠，结束时刻不再开放。单个卡池可按以下格式配置。
 
   ```json
@@ -60,3 +60,28 @@
   ```
 
 模拟逻辑和结果图由 Lotus-Yunzai 编写。角色和光锥插图按现有本机主题目录读取，发行仓只包含渲染代码。内置活动数据来自游戏发布方的 [4.7 版本活动跃迁](https://www.taptap.cn/moment/868905398936014841) 与 [4.7 版本更新说明](https://www.taptap.cn/moment/869248465039788964)。首日开始时间按公告预计维护完成时刻配置。
+
+### 迁移旧模拟票数和保底
+
+旧星铁扩展与旧原神模拟写入相同的 Redis 键名。票数键为 `Yz:flower-plugin:coin:<QQ>`，保底键为 `Yz:flower-plugin:gacha:<群号或private>:<QQ>`，旧数据没有统一的游戏标识。仅使用已经核实来源的星铁专用副本。混用的数据库只有在能独立证实单个键来自星铁时，才可把这些键另行整理进副本。来源不明的键留在原处。旧源码参考 [StarRail 扩展 `7ce226b`](https://github.com/jiuyixian/StarRail/tree/7ce226b6c2374996249ca54ac2acac1a549bb860/model)。
+
+在授权 JSON 中逐项声明要读取的余额与会话，私聊需明确列出 `"private"`。省略 `balance` 只读列出的保底，省略 `conversations` 只读授权的票数。
+
+```json
+{
+  "source": "starrail-only-copy",
+  "accounts": [
+    { "qq": "100001", "balance": true, "conversations": ["200001", "private"] },
+    { "qq": "100002", "conversations": ["200002"] }
+  ]
+}
+```
+
+先把 `LOTUS_STAR_RAIL_WARP_LEGACY_REDIS_URL` 设为旧副本的 `redis://` 或 `rediss://` 连接地址。Valkey 或 Redis 需要支持 `PEXPIRETIME`。可以给迁移账号分配 `GET`、`PEXPIRETIME` 及连接命令的权限，键权限限定为上述清单。以下两条命令分别预览和写入，省略末尾目录时使用当前模拟存档目录。
+
+```sh
+bun plugins/starrail/simulation/import-legacy-cli.ts authorization.json
+bun plugins/starrail/simulation/import-legacy-cli.ts --apply authorization.json
+```
+
+预览只输出数量，不建立存档。写入仅补充当前模拟缺少的票数和会话保底，保留来源的绝对过期时刻及北京时间 04:00 的票数日界。已存在或已经迁移的项目会跳过。只迁移仍有效的余额、四星与五星垫抽及活动保底。会话数据出现原神定轨字段时会拒绝导入。旧键不会被删除或续期。日界不符的旧余额、失效资料、星铁来源不明的数据和原神字段均留在旧处。
