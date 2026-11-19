@@ -13,6 +13,17 @@ export interface StarRailGachaFileContext extends GachaFileImportContext {
   readonly uploadFile?: (file: { readonly name: string; readonly bytes: Uint8Array }) => Promise<"confirmed" | "rejected" | "unknown">;
 }
 
+export function matchesStarRailGachaFiles(context: StarRailGachaFileContext): boolean {
+  const imported = importCommand.exec(context.normalizedMessage);
+  if (imported) return Number(imported[2] ?? 1) <= MAX_PROFILE_ID;
+  const validId = (value: number | undefined) => value !== undefined && Number.isSafeInteger(value) && value > 0;
+  if (context.attachment && /\.json$/iu.test(context.attachment.name) &&
+      validId(context.self_id) && validId(context.user_id) &&
+      (context.message_type === "private" || (context.message_type === "group" && validId(context.group_id)))) return true;
+  const exported = exportCommand.exec(context.normalizedMessage);
+  return !!exported && Number(exported[3] ?? 1) <= MAX_PROFILE_ID;
+}
+
 export function starRailLegacyArchiveTimezone(role: GameRole) {
   if (role.region === "prod_gf_cn" || role.region === "prod_qd_cn" || (!role.region && /^[125]\d{8}$/u.test(role.uid))) return 8;
 }

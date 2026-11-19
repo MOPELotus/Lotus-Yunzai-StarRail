@@ -5,7 +5,7 @@ import { createProfileHoyoClient, HoyoRequestError } from "@lotus-yunzai/hoyo-cl
 import { buildStarRailGachaDetail, type StarRailGachaDetailPool } from "./gacha-detail.ts";
 import { renderStarRailGachaDetail } from "./gacha-detail-card.ts";
 import { readStarRailGachaItems, readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
-import { createStarRailGachaFiles, starRailLegacyArchiveTimezone, type StarRailGachaFileContext } from "./gacha-files.ts";
+import { createStarRailGachaFiles, matchesStarRailGachaFiles, starRailLegacyArchiveTimezone, type StarRailGachaFileContext } from "./gacha-files.ts";
 import { createStarRailGachaRecordArchive, StarRailGachaArchiveError } from "./gacha-record-archive.ts";
 import { buildStarRailRecordDetail } from "./gacha-record-detail.ts";
 import { resolveStarRailRecordPool, starRailRecordDraws } from "./gacha-record-source.ts";
@@ -80,6 +80,17 @@ function matchGachaQuery(message: string): { profileId: number; view: GachaView;
   const view = pool[4] === "统计" ? { version: versionPools.get(name) ?? "up" }
     : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
   return { profileId: Number(pool[5] ?? 1), view, all: !!(pool[1] || pool[3]) };
+}
+
+function matchGachaCommand(message: string) {
+  const matched = updateCommand.exec(message);
+  const recordArchive = message.startsWith(recordPrefix);
+  const suffix = recordArchive ? message.slice(recordPrefix.length) : "";
+  const queryMessage = recordArchive ? `#星铁${recordDefault.test(suffix) ? "抽卡" : ""}${suffix}` : message;
+  const query = matched ? undefined : matchGachaQuery(queryMessage);
+  if (!matched && !query) return;
+  const profileId = query?.profileId ?? Number(matched?.[1] ?? 1);
+  if (profileId <= MAX_PROFILE_ID) return { profileId, query, recordArchive };
 }
 
 export function createModule({ signal, lockFile, runtimeVersion }: {
@@ -189,6 +200,12 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const result = await updateGacha(qq, profileId);
       return result && { uid: result.log.uid };
     },
+    fallbackFeatures(context: StarRailGachaFileContext) {
+      const message = context.normalizedMessage;
+      if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
+      return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
+        ? ["[Lotus-Plugin] Gacha Log"] : [];
+    },
     async fallback(_message: string, context: StarRailGachaFileContext) {
       const challenge = parseChallengeQuery(context.normalizedMessage);
       if (challenge) {
@@ -209,14 +226,9 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const fileReply = await gachaFiles(context);
       if (fileReply !== undefined) return fileReply;
       if (helpCommand.test(context.normalizedMessage)) return help;
-      const matched = updateCommand.exec(context.normalizedMessage);
-      const recordArchive = context.normalizedMessage.startsWith(recordPrefix);
-      const suffix = recordArchive ? context.normalizedMessage.slice(recordPrefix.length) : "";
-      const queryMessage = recordArchive ? `#星铁${recordDefault.test(suffix) ? "抽卡" : ""}${suffix}` : context.normalizedMessage;
-      const view = matched ? undefined : matchGachaQuery(queryMessage);
-      if (!matched && !view) return;
-      const profileId = view?.profileId ?? Number(matched?.[1] ?? 1);
-      if (profileId > MAX_PROFILE_ID) return;
+      const command = matchGachaCommand(context.normalizedMessage);
+      if (!command) return;
+      const { profileId, query: view, recordArchive } = command;
       const { user_id } = context;
       if (typeof user_id !== "number" || !Number.isSafeInteger(user_id) || user_id < 1) {
         return "请从登录档案对应的 QQ 会话使用星铁抽卡记录。";
