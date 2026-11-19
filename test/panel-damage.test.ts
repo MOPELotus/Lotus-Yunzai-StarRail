@@ -8,6 +8,7 @@ import breakFixtures from "./fixtures/panel-damage-break-support.json";
 import healthFixtures from "./fixtures/panel-damage-hp-support.json";
 import nihilityFixtures from "./fixtures/panel-damage-nihility.json";
 import iceFixtures from "./fixtures/panel-damage-ice-state.json";
+import eruditionFixtures from "./fixtures/panel-damage-erudition.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -73,7 +74,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures, ...nihilityFixtures, ...iceFixtures]) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -191,5 +192,17 @@ describe("common engine with original character data", () => {
     expect(readStarRailPersonalDamage({ ...misha.avatar, rank: 0 }, misha.prepared, 5).scenarioCount).toBe(4);
     const enhanced = calculateStarRailPersonalDamage(misha.avatar, misha.prepared, 5)!;
     expect(enhanced.rows[enhanced.selected]?.title).toBe("终结技伤害·15段");
+  });
+
+  test("requires Argenti's original energy cap for the signature cone", () => {
+    const { avatar, metadata } = eruditionFixtures.find(fixture => fixture.avatar.id === "1302")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    expect(damage.rows[damage.selected]?.title).toBe("强化终结技总伤害");
+    expect(damage.buffs.some(buff => buff.includes("勇气"))).toBe(true);
+    expect(readStarRailPersonalDamage(avatar, { ...prepared, character: { ...prepared.character, sp: undefined } }).reason)
+      .toBe("缺少光锥所需的角色能量上限");
   });
 });

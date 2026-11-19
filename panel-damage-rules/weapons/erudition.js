@@ -19,5 +19,46 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    银河铁道之夜: [
+      (tables) => {
+        return {
+          title: '3个敌方目标提高攻击力[atkPct]%，弱点击破时伤害提高[dmg]%',
+          data: {
+            atkPct: tables[1] * 3,
+            dmg: tables[2]
+          }
+        }
+      }
+    ],
+    '片刻，留在眼底': [
+      staticIdx(1, 'cdmg'),
+      (tables) => {
+        return {
+          title: '根据装备者的能量上限提高伤害[qDmg]%',
+          data: {
+            qDmg: ({ attr }) => tables[2] * Math.min(attr.sp, 180)
+          }
+        }
+      }
+    ],
+    偏偏希望无价: [
+      staticIdx(1, 'cpct'),
+      (tables) => {
+        return {
+          check: ({ attr }) => attr.cdmg > 120,
+          title: '基于暴击伤害，追加攻击伤害提高[tDmg]%，终结技或追加攻击伤害无视[qIgnore]%防御',
+          sort: 9,
+          data: {
+            tDmg: ({ attr }) => Math.min(Math.floor((attr.cdmg - 120) / 20), 4) * tables[2],
+            qIgnore: tables[3],
+            tIgnore: tables[3]
+          }
+        }
+      }
+    ],
+    天才们的休憩: [
+      staticIdx(1, 'atkPct'),
+      keyIdx('消灭敌方目标后爆伤提高[cdmg]%', 'cdmg', 2)
+    ],
   }
 }

@@ -1,0 +1,793 @@
+[
+  {
+    "avatar": {
+      "id": "1302",
+      "name": "银枝",
+      "level": 80,
+      "rank": 2,
+      "element": "物理",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1302101", "active": true, "name": "", "icon": ""},
+        {"id": "1302102", "active": true, "name": "", "icon": ""},
+        {"id": "1302103", "active": true, "name": "", "icon": ""},
+        {"id": "1302201", "active": true, "name": "", "icon": ""},
+        {"id": "1302204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "atk", "base": "1319.472", "value": "2295.0627840491543"},
+        {"key": "speed", "base": "103", "value": "128.032"},
+        {"key": "cpct", "base": "5", "value": "82.56000019999999%"},
+        {"key": "cdmg", "base": "50", "value": "97.66400008%"},
+        {"key": "phy", "base": "0", "value": "38.8803015%"}
+      ],
+      "cone": {"id": "23018", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61221",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61222",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61223",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61224",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63065",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63066",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "物理",
+        "sp": 180,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.2
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.6
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "暴击率提高",
+                "values": [
+                  0.025
+                ]
+              }
+            }
+          },
+          "q2": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  2.8
+                ]
+              },
+              "2": {
+                "name": "额外随机伤害",
+                "values": [
+                  0.95
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              36
+            ],
+            "2": [
+              0.36000002
+            ]
+          }
+        }
+      },
+      "conePath": "智识",
+      "relicMetadata": {},
+      "setNames": {"61221": "识海迷坠的学者", "61222": "识海迷坠的学者", "61223": "识海迷坠的学者", "61224": "识海迷坠的学者", "63065": "停转的萨尔索图", "63066": "停转的萨尔索图"}
+    },
+    "expected": {
+      "selected": 3,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 3777.0567956399314, "avg": 3777.0567956399314},
+        {"title": "战技伤害", "dmg": 5857.920892879144, "avg": 5857.920892879144},
+        {"title": "终结技伤害", "dmg": 12253.797388483155, "avg": 12253.797388483155},
+        {"title": "强化终结技总伤害", "dmg": 65098.29862631675, "avg": 65098.29862631675}
+      ],
+      "swap": {"dmg": 63783.78370966922, "avg": 63783.78370966922}
+    }
+  },
+  {
+    "avatar": {
+      "id": "1013",
+      "name": "黑塔",
+      "level": 80,
+      "rank": 2,
+      "element": "冰",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1013101", "active": true, "name": "", "icon": ""},
+        {"id": "1013102", "active": true, "name": "", "icon": ""},
+        {"id": "1013103", "active": true, "name": "", "icon": ""},
+        {"id": "1013201", "active": true, "name": "", "icon": ""},
+        {"id": "1013204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "atk", "base": "1164.2399999999998", "value": "2019.9916799999996"},
+        {"key": "speed", "base": "100", "value": "125.032"},
+        {"key": "cpct", "base": "5", "value": "77.26000015362013%"},
+        {"key": "cdmg", "base": "50", "value": "61.66400008%"},
+        {"key": "ice", "base": "0", "value": "52.080301489010395%"}
+      ],
+      "cone": {"id": "23000", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61041",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61042",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61043",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61044",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63065",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "6",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63066",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "冰",
+        "sp": 110,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  2
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  0.4
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              9
+            ],
+            "2": [
+              30
+            ]
+          }
+        }
+      },
+      "conePath": "智识",
+      "relicMetadata": {},
+      "setNames": {"61041": "密林卧雪的猎人", "61042": "密林卧雪的猎人", "61043": "密林卧雪的猎人", "61044": "密林卧雪的猎人", "63065": "停转的萨尔索图", "63066": "停转的萨尔索图"}
+    },
+    "expected": {
+      "selected": 2,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 4282.517190498754, "avg": 4128.62441606781},
+        {"title": "战技伤害", "dmg": 5340.914348216967, "avg": 5148.987943608789},
+        {"title": "终结技伤害", "dmg": 10211.429959670284, "avg": 9844.480986088252},
+        {"title": "追加攻击", "dmg": 1854.1264972285967, "avg": 1787.498236765921}
+      ],
+      "swap": {"dmg": 10028.00866402094, "avg": 9818.498372197557}
+    }
+  },
+  {
+    "avatar": {
+      "id": "1003",
+      "name": "姬子",
+      "level": 80,
+      "rank": 2,
+      "element": "火",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1003101", "active": true, "name": "", "icon": ""},
+        {"id": "1003102", "active": true, "name": "", "icon": ""},
+        {"id": "1003103", "active": true, "name": "", "icon": ""},
+        {"id": "1003201", "active": true, "name": "", "icon": ""},
+        {"id": "1003204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "atk", "base": "1338.8759999999997", "value": "2270.0704319999995"},
+        {"key": "speed", "base": "96", "value": "121.032"},
+        {"key": "cpct", "base": "5", "value": "66.56000019999999%"},
+        {"key": "cdmg", "base": "50", "value": "61.66400008%"},
+        {"key": "fire", "base": "0", "value": "42.080301489010395%"}
+      ],
+      "cone": {"id": "23000", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61151",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61152",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61153",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61154",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63155",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "5",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63156",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "火",
+        "sp": 120,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "主目标伤害",
+                "values": [
+                  2
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  0.8
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  2.3
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.4
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              9
+            ],
+            "2": [
+              30
+            ]
+          }
+        }
+      },
+      "conePath": "智识",
+      "relicMetadata": {},
+      "setNames": {"61151": "毁烬焚骨的大公", "61152": "毁烬焚骨的大公", "61153": "毁烬焚骨的大公", "61154": "毁烬焚骨的大公", "63155": "奔狼的都蓝王朝", "63156": "奔狼的都蓝王朝"}
+    },
+    "expected": {
+      "selected": 2,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 5420.3226953495405, "avg": 4956.273293651254},
+        {"title": "战技主目标伤害", "dmg": 11940.770092030894, "avg": 10918.486451653205},
+        {"title": "终结技伤害", "dmg": 12466.74219930394, "avg": 11399.428575397882},
+        {"title": "天赋追击伤害", "dmg": 9321.148178086965, "avg": 8523.137897464107}
+      ],
+      "swap": {"dmg": 12246.516377396014, "avg": 11382.276478715108}
+    }
+  },
+  {
+    "avatar": {
+      "id": "1314",
+      "name": "翡翠",
+      "level": 80,
+      "rank": 2,
+      "element": "量子",
+      "path": "",
+      "face": "",
+      "splash": "",
+      "skills": [
+        {"key": "a", "level": 1, "icon": ""},
+        {"key": "e", "level": 1, "icon": ""},
+        {"key": "q", "level": 1, "icon": ""},
+        {"key": "t", "level": 1, "icon": ""}
+      ],
+      "traces": [
+        {"id": "1314101", "active": true, "name": "", "icon": ""},
+        {"id": "1314102", "active": true, "name": "", "icon": ""},
+        {"id": "1314103", "active": true, "name": "", "icon": ""},
+        {"id": "1314201", "active": true, "name": "", "icon": ""},
+        {"id": "1314204", "active": true, "name": "", "icon": ""}
+      ],
+      "stars": [],
+      "stats": [
+        {"key": "atk", "base": "1241.856", "value": "2131.1377919999995"},
+        {"key": "speed", "base": "103", "value": "128.032"},
+        {"key": "cpct", "base": "5", "value": "82.56000019999999%"},
+        {"key": "cdmg", "base": "50", "value": "61.66400008%"},
+        {"key": "quantum", "base": "0", "value": "42.080301500000004%"}
+      ],
+      "cone": {"id": "23028", "name": "", "image": "", "description": "", "rank": 1, "level": 80, "promote": 6},
+      "relics": [
+        {
+          "id": "61151",
+          "slot": 1,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61152",
+          "slot": 2,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "1",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "61153",
+          "slot": 3,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "9,2,2"
+          ]
+        },
+        {
+          "id": "61154",
+          "slot": 4,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63155",
+          "slot": 5,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "9",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        },
+        {
+          "id": "63156",
+          "slot": 6,
+          "name": "",
+          "image": "",
+          "level": 15,
+          "rarity": 5,
+          "subs": [],
+          "legacyMainId": "4",
+          "legacySubIds": [
+            "8,2,2"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "character": {
+        "elem": "量子",
+        "sp": 140,
+        "talent": {
+          "a": {
+            "tables": {
+              "1": {
+                "name": "目标伤害",
+                "values": [
+                  0.9
+                ]
+              },
+              "2": {
+                "name": "相邻目标伤害",
+                "values": [
+                  0.3
+                ]
+              }
+            }
+          },
+          "e": {
+            "tables": {
+              "1": {
+                "name": "附加伤害",
+                "values": [
+                  0.25
+                ]
+              }
+            }
+          },
+          "q": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  2.4
+                ]
+              },
+              "2": {
+                "name": "追加攻击倍率提高",
+                "values": [
+                  0.8
+                ]
+              }
+            }
+          },
+          "t": {
+            "tables": {
+              "1": {
+                "name": "技能伤害",
+                "values": [
+                  1.2
+                ]
+              },
+              "2": {
+                "name": "每层爆伤提高",
+                "values": [
+                  0.024
+                ]
+              }
+            }
+          }
+        }
+      },
+      "cone": {
+        "skill": {
+          "tables": {
+            "1": [
+              16
+            ],
+            "2": [
+              12
+            ],
+            "3": [
+              20
+            ]
+          }
+        }
+      },
+      "conePath": "智识",
+      "relicMetadata": {},
+      "setNames": {"61151": "毁烬焚骨的大公", "61152": "毁烬焚骨的大公", "61153": "毁烬焚骨的大公", "61154": "毁烬焚骨的大公", "63155": "奔狼的都蓝王朝", "63156": "奔狼的都蓝王朝"}
+    },
+    "expected": {
+      "selected": 3,
+      "rows": [
+        {"title": "普攻伤害", "dmg": 4702.957393833819, "avg": 4702.957393833819},
+        {"title": "终结技伤害", "dmg": 13934.688574322427, "avg": 13934.688574322427},
+        {"title": "追击伤害", "dmg": 13097.103491642853, "avg": 13097.103491642853},
+        {"title": "强化追击伤害", "dmg": 21828.50581940476, "avg": 21828.50581940476}
+      ],
+      "swap": {"dmg": 21389.106236002328, "avg": 21389.106236002328}
+    }
+  }
+]

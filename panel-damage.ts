@@ -35,6 +35,10 @@ import * as jingliu from "./panel-damage-rules/characters/jingliu.js";
 import * as jingliuEnhanced from "./panel-damage-rules/characters/jingliu-enhanced.js";
 import * as yanqing from "./panel-damage-rules/characters/yanqing.js";
 import * as misha from "./panel-damage-rules/characters/misha.js";
+import * as argenti from "./panel-damage-rules/characters/argenti.js";
+import * as herta from "./panel-damage-rules/characters/herta.js";
+import * as himeko from "./panel-damage-rules/characters/himeko.js";
+import * as jade from "./panel-damage-rules/characters/jade.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -100,6 +104,7 @@ const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的�
 const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
 const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪耀" };
 const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
+const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪式感" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -154,6 +159,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23012": "如泥酣眠", "21010": "论剑" } },
   "1312": { name: "米沙", element: "冰", path: "毁灭", traces: [102, 103], rule: misha,
     cones: { "21042": "铭记于心的约定", "21012": "秘密誓心" } },
+  "1302": { name: "银枝", element: "物理", path: "智识", traces: [], rule: argenti,
+    cones: { "23018": "片刻，留在眼底", ...eruditionCones } },
+  "1013": { name: "黑塔", element: "冰", path: "智识", traces: [101, 103], rule: herta,
+    cones: { "23000": "银河铁道之夜", ...eruditionCones } },
+  "1003": { name: "姬子", element: "火", path: "智识", traces: [102, 103], rule: himeko,
+    cones: { "23000": "银河铁道之夜", ...eruditionCones } },
+  "1314": { name: "翡翠", element: "量子", path: "智识", traces: [103], rule: jade,
+    cones: { "23028": "偏偏希望无价", ...eruditionCones } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -269,6 +282,10 @@ const weaponRules: Readonly<Record<string, WeaponRules>> = {
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {
   const cone = avatar.cone;
   if (!cone) return [];
+  const energy = metadata.character.sp;
+  if (cone.id === "23018" && (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {
+    throw new MissingDamageData("缺少光锥所需的角色能量上限");
+  }
   const name = character.cones[cone.id];
   const configure = name && weaponRules[character.path]?.[name];
   if (!configure || !cone.rank || metadata.conePath !== character.path) {
