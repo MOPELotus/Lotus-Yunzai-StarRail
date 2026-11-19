@@ -23,8 +23,10 @@
 - `*面板`、`*角色面板` 查看已保存的角色列表。
 - `*三月七面板`、`*三月详情` 查看角色属性、技能、星魂、光锥和遗器。可用喵喵原有角色别名。各指令可加档案编号，例如 `*更新面板2`、`*银枝详情 2`。
 
-旧喵喵快照 `data/PlayerData/sr/<UID>.json` 可直接只读查询，也可用 `LOTUS_STAR_RAIL_LEGACY_PANEL_DIR` 指定快照目录。查询仍使用当前 QQ 档案已同步的 UID。新面板写入 `data/starrail/panels/<QQ>/<UID>.json`，保存角色面板字段。旧面板没有保留的综合属性显示为空，更新后使用米游社明细。
+旧喵喵快照 `data/PlayerData/sr/<UID>.json` 可直接只读查询，也可用 `LOTUS_STAR_RAIL_LEGACY_PANEL_DIR` 指定快照目录。查询仍使用当前 QQ 档案已同步的 UID。新面板写入 `data/starrail/panels/<QQ>/<UID>.json`，保存角色面板字段。旧面板在角色、光锥和遗器元数据齐全时，用喵喵静态规则补算综合属性并标注来源。缺少复算所需的数据时，仍可查看旧快照中的装备和行迹，缺项属性保留空值。更新后优先使用米游社明细。
 
 模块保留喵喵面板列表和角色详情的 HTML/CSS 结构。可用 `LOTUS_STAR_RAIL_PANEL_THEME_DIR` 指定获准使用的原喵喵 `resources/`。默认复用 `LOTUS_STAR_RAIL_GACHA_THEME_DIR` 或 `data/starrail/miao-theme/`。原图片、字体与数据各自遵循其授权。面板拉取接受米游社官方 CDN 头像；同时存在本机主题图时优先用本机图。
 
 面板列表、详情样式、角色别名及遗器词条转换来自 Miao-Plugin `2860761836069af80bacee5cb85b6dd2e91ea0b0` 的 `apps/profile/ProfileList.js`、`models/serv/api/MysPanelHSR{Api,Data,Mappings}.js`、`models/artis/ArtisAttr.js`、`resources/character/profile-{list,detail}.{html,css}`、`resources/common/{common.css,layout/elem.html}` 及 `resources/meta-sr/character/alias.js`。保留 MIT 许可。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
+
+旧面板复算及行迹布局沿用同版 Miao-Plugin 的 `models/attr/{Attr,AttrData}.js`、`models/Character.js`、`models/character/CharTalent.js`、`models/Weapon.js`、`models/artis/ArtisAttr.js`、`apps/profile/ProfileDetail.js` 与 `resources/meta-sr/{artifact,weapon}/` 里的静态规则。打包的 `panel-theme/static-panel-rules.json` 只摘录套装静态属性键值及光锥静态叠影表索引。装备数值仍从本地授权主题元数据读取。

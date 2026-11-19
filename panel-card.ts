@@ -1,6 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
 import { object, officialArtHosts, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 
@@ -16,13 +17,11 @@ const statTitles: Readonly<Record<string, string>> = {
   phy: "物理伤害提高", fire: "火伤害提高", ice: "冰伤害提高", elec: "雷伤害提高", wind: "风伤害提高",
   quantum: "量子伤害提高", imaginary: "虚数伤害提高",
 };
-const elementDamage: Readonly<Record<string, string>> = {
-  物理: "phy", 火: "fire", 冰: "ice", 雷: "elec", 风: "wind", 量子: "quantum", 虚数: "imaginary",
-};
 const showcaseKeys = ["hp", "atk", "def", "speed", "cpct", "cdmg", "dmg", "stance", "effPct", "effDef", "heal", "joy"];
-type Metadata = NonNullable<Awaited<ReturnType<typeof readTheme>>>;
+const skillBonus: Readonly<Record<string, number>> = { a: 1, e: 2, q: 2, t: 2, xe: 1, me: 1, mt: 1 };
+const skillCap: Readonly<Record<string, number>> = { a: 10, e: 15, q: 15, t: 15, xe: 15, me: 10, mt: 10 };
+type Metadata = Awaited<ReturnType<typeof readTheme>>;
 type Json = Record<string, unknown>;
-type Stat = PanelAvatar["stats"][number];
 
 function cssFile(path: string) {
   return pathToFileURL(path).href.replaceAll("(", "%28").replaceAll(")", "%29").replaceAll("'", "%27");
@@ -49,7 +48,7 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     readJson(join(lists, "artifact", "data.json")), readJson(join(lists, "artifact", "meta.json")),
     Bun.file(join(root, "common", "common.css")).exists(),
   ]);
-  const relicById = new Map<string, { name: string; asset: readonly string[] }>();
+  const relicById = new Map<string, { name: string; asset: readonly [string, string, string] }>();
   for (const value of Object.values(relics)) {
     const row = object(value);
     if (!safePart(row?.name)) continue;
@@ -173,18 +172,11 @@ function fieldsSource(snapshot: PanelSnapshot) {
 }
 
 function coneDetails(cone: PanelAvatar["cone"], metadata: Json) {
+  const attributes = leveledAttributes(metadata, cone?.level, cone?.promote, true) ?? {};
   const attrs: Record<string, string> = {};
-  const level = cone?.level ?? 0;
-  const thresholds = [20, 30, 40, 50, 60, 70];
-  // A cone at a breakpoint may be pre- or post-ascension. Use the old cached
-  // promotion when present. Display only stats supported by the snapshot.
-  const promote = cone?.promote ?? (!thresholds.includes(level) ? thresholds.filter(step => level > step).length : undefined);
-  const base = promote !== undefined ? object(object(object(metadata.attr)?.[promote])?.attrs) : undefined;
-  const growth = object(metadata.growAttr);
   for (const key of ["hp", "atk", "def"]) {
-    const start = base?.[key], step = growth?.[key];
-    attrs[key] = typeof start === "number" && typeof step === "number" && Number.isFinite(start) && Number.isFinite(step) && level > 0
-      ? fmt(start + step * (level - 1), false) : "—";
+    const value = attributes[key];
+    attrs[key] = value === undefined ? "—" : formatPanelAttribute(value, false);
   }
   const skill = object(metadata.skill);
   const tables = object(skill?.tables);
@@ -198,77 +190,92 @@ function coneDetails(cone: PanelAvatar["cone"], metadata: Json) {
   return { attrs, desc: { desc: cone?.description.replace(/<[^>]{1,100}>/gu, "") || description } };
 }
 
-function fmt(value: number, pct: boolean) {
-  return `${Number(value.toFixed(pct ? 2 : 1))}${pct ? "%" : ""}`;
-}
-
-function showcase(avatar: PanelAvatar, element: string) {
-  const map = new Map(avatar.stats.map(stat => [stat.key, stat]));
+function showcase(stats: PanelAvatar["stats"], element: string) {
+  const map = new Map(stats.map(stat => [stat.key, stat]));
   const attr: Record<string, string> = {};
   for (const key of showcaseKeys) {
-    const stat = map.get(key === "dmg" ? elementDamage[element] ?? "" : key);
+    const stat = map.get(key === "dmg" ? damageAttribute[element] ?? "" : key);
     attr[key] = stat?.value || "—";
     if (!stat?.base) continue;
     attr[key + "Base"] = stat.base;
     const ratio = stat.value.endsWith("%");
     if (ratio !== stat.base.endsWith("%")) continue;
     const diff = Number.parseFloat(stat.value) - Number.parseFloat(stat.base);
-    if (diff) attr[key + "Plus"] = `${diff > 0 ? "+" : ""}${fmt(diff, ratio)}`;
+    if (diff) attr[key + "Plus"] = `${diff > 0 ? "+" : ""}${formatPanelAttribute(diff, ratio)}`;
   }
   return attr;
 }
 
 function relicStats(part: PanelAvatar["relics"][number], theme: Metadata) {
-  if (!part.legacyMainId || part.rarity === undefined || part.level === undefined) return part;
-  // Miao ArtisAttr.js AttrSR calculates the main affix and rolled sub-affixes
-  // against the original deployed relic metadata.
-  const star = object(object(theme.relicValues.starData)?.[part.rarity]);
-  const key = object(object(theme.relicValues.mainIdx)?.[part.slot])?.[part.legacyMainId];
-  const mainCfg = typeof key === "string" ? object(object(star?.main)?.[key]) : undefined;
-  const value = (key: string, amount: number) => fmt(amount, !["hpPlus", "atkPlus", "defPlus", "speed"].includes(key));
-  const valid = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
-  const main = mainCfg && typeof key === "string" && valid(mainCfg.base) && valid(mainCfg.step) ? {
-    key, value: value(key, mainCfg.base + mainCfg.step * part.level),
-  } : undefined;
-  const subs: Stat[] = [];
-  for (const entry of part.legacySubIds ?? []) {
-    const match = /^(\d{1,3}),(\d{1,2}),(-?\d{1,2})$/u.exec(entry);
-    const cfg = match?.[1] && object(object(star?.sub)?.[match[1]]);
-    if (!match || !cfg || typeof cfg.key !== "string" || !valid(cfg.base) || !valid(cfg.step)) continue;
-    subs.push({ key: cfg.key, value: value(cfg.key, cfg.base * Number(match[2]) + cfg.step * Number(match[3])), times: Number(match[2]) });
+  const result = readLegacyRelicAttributes(part, theme.relicValues);
+  if (!result) return part;
+  const forDisplay = ({ key, value, rolls }: { key: string; value: number; rolls?: number }) => ({
+    key, value: formatPanelAttribute(value, !isFlatRelicAttribute(key)), times: rolls,
+  });
+  return { ...part, main: forDisplay(result.main), subs: result.sub.map(forDisplay) };
+}
+
+async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, theme: Metadata, signal: AbortSignal) {
+  const traces = new Map(avatar.traces.map(trace => [trace.id.slice(-3), trace]));
+  const treeConfig = object(metadata.tree);
+  if (!treeConfig) {
+    const images = await Promise.all(avatar.traces.map(async trace => ({
+      img: await remoteArt(trace.icon, signal), value: trace.active, type: "talent",
+    })));
+    return images.filter(item => item.img);
   }
-  return { ...part, main, subs };
+  const config = new Map(Object.entries(treeConfig).map(([id, node]) => [id.slice(-3), object(node)]));
+  const groups = new Map<number, { img: string; value: boolean }[]>();
+  for (const [idx, pos] of [..."0113355778"].entries()) {
+    const id = String(idx + 201);
+    const trace = traces.get(id);
+    const key = text(config.get(id)?.key) || "cpct";
+    const img = await localArt(theme, ["public", "icons", `tree-${key}.webp`]) || await remoteArt(trace?.icon, signal);
+    const group = groups.get(Number(pos)) ?? [];
+    group.push({ img, value: trace?.active === true });
+    groups.set(Number(pos), group);
+  }
+  const tree: ({ img: string; value: boolean; type: string } | { img: string; value: boolean }[] | undefined)[] =
+    Array.from({ length: 9 }, (_entry, idx) => groups.get(idx));
+  for (const [idx, pos] of [2, 4, 6].entries()) {
+    const trace = traces.get(String(idx + 101));
+    const img = await localArt(theme, ["character", name, "imgs", `tree-${idx + 1}.webp`]) || await remoteArt(trace?.icon, signal);
+    tree[pos] = { img, value: trace?.active === true, type: "talent" };
+  }
+  return tree;
 }
 
 export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal) {
   const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
-  const element = avatar.element || text(meta?.elem) || "物理";
+  const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
+  const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
   const path = text(meta?.weapon) || avatar.path;
   const cone = avatar.cone, weapon = cone && object(theme.weapons[cone.id]);
   const weaponName = cone?.name || text(weapon?.name) || (cone ? `光锥 ${cone.id}` : "");
   const weaponType = text(weapon?.type) || path;
   const imgs: Record<string, string> = {};
-  const talent: Record<string, { level: number | string }> = {};
+  const talent: Record<string, { level: number; original?: number }> = {};
+  const levels = object(character.talentCons ?? meta?.talentCons);
   for (const skill of avatar.skills) {
     talent[skill.key] = { level: skill.level };
+    const upgrade = levels?.[skill.key];
+    if (avatar.legacy && upgrade) {
+      const rank = avatar.rank ?? 0;
+      const eligible = (Array.isArray(upgrade) ? upgrade : [upgrade]).filter(value => typeof value === "number" && value <= rank);
+      talent[skill.key] = { original: skill.level,
+        level: Math.min(skillCap[skill.key] ?? 25, skill.level + eligible.length * (skillBonus[skill.key] ?? 0)) };
+    }
     imgs[skill.key] = await localArt(theme, ["character", name, "imgs", `talent-${skill.key}.webp`])
       || await remoteArt(skill.icon, artSignal);
   }
-  const levels = object(meta?.talentCons);
   for (let i = 1; i <= 6; i++) {
     const oldKey = text(levels?.[i]);
     imgs[`cons${i}`] = (oldKey && imgs[oldKey]) || await localArt(theme, ["character", name, "imgs", `cons-${i}.webp`])
       || await remoteArt(avatar.stars[i - 1]?.image, artSignal);
   }
   imgs.splash = await localArt(theme, ["character", name, "imgs", "splash.webp"]) || await remoteArt(avatar.splash || avatar.face, artSignal);
-  const treeData = [];
-  const skillOffset = Number(avatar.id) * 100 + 1000;
-  for (const trace of avatar.traces) {
-    const index = (Number(trace.id) - skillOffset) % 100;
-    const image = await remoteArt(trace.icon, artSignal) || (index >= 1 && index <= 4 && await localArt(theme, ["character", name, "imgs", `tree-${index}.webp`])) || "";
-    if (image) treeData.push({ img: image, value: trace.active, type: "talent" });
-  }
+  const treeData = await makeTraceTree(avatar, name, character, theme, artSignal);
   const artis = [];
   for (const row of avatar.relics) {
     const part = relicStats(row, theme);
@@ -282,14 +289,18 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
   const weaponImg = cone && await localArt(theme, ["weapon", weaponType, weaponName, "splash.webp"]) || await remoteArt(cone?.image, artSignal);
   const coneMeta = safePart(weaponType) && safePart(weaponName)
     ? await readJson(join(theme.root, "meta-sr", "weapon", weaponType, weaponName, "data.json")) : {};
+  const derived = avatar.stats.length ? undefined : calculateLegacyPanelAttributes(avatar, {
+    character, cone: coneMeta, conePath: weaponType, relicMetadata: theme.relicValues,
+    setForId: id => theme.relicById.get(id)?.asset[1],
+  });
   return preparedModel(theme, "detail", {
     mode: "profile", element, uid: snapshot.uid, charWeapon: path, hsr_paths: path,
     data: {
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
         ...coneDetails(cone, coneMeta) },
-      dataSource: fieldsSource(snapshot), updateTime: formatDate(snapshot.updatedAt),
+      dataSource: derived ? "旧喵喵静态计算" : fieldsSource(snapshot), updateTime: formatDate(snapshot.updatedAt),
     },
-    attr: showcase(avatar, element), artisDetail: { charWeight: {}, artis }, artisKeyTitle: statTitles,
+    attr: showcase(derived ?? avatar.stats, element), artisDetail: { charWeight: {}, artis }, artisKeyTitle: statTitles,
   });
 }

@@ -103,6 +103,7 @@ export interface PanelAvatar {
   stats: Stat[];
   cone?: Cone;
   relics: Relic[];
+  legacy?: { source: string; promote?: number; dataComplete: boolean };
 }
 export interface PanelSnapshot {
   version: 1;
@@ -221,7 +222,8 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
       const level = whole(value, 25);
       return level && Object.values(remakeMap).includes(key) ? [{ key, level, icon: "" }] : [];
     });
-    const relics = Object.entries(object(row.artis) ?? {}).flatMap(([key, value]) => {
+    const legacyParts = Object.entries(object(row.artis) ?? {});
+    const relics = legacyParts.flatMap(([key, value]) => {
       const part = object(value), partId = id(part?.id), slot = whole(key, 6);
       if (!part || !partId || !slot) return [];
       return [{ id: partId, slot, name: "", image: "", level: whole(part.level, 15), rarity: whole(part.star, 5), subs: [],
@@ -229,7 +231,8 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
     });
     const traces = Array.isArray(row.trees) ? row.trees.map(id).filter(Boolean).slice(0, 24).map(id => ({ id, active: true, icon: "", name: "" })) : [];
     parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), element: text(row.elem), path: "", face: "", splash: "",
-      skills, traces, stars: [], stats: [], cone: gear && coneId ? { id: coneId, name: text(gear.name), image: "", description: "",
+      skills, traces, stars: [], stats: [], legacy: { source, promote: whole(row.promote, 6),
+        dataComplete: Array.isArray(row.trees) && relics.length === legacyParts.length }, cone: gear && coneId ? { id: coneId, name: text(gear.name), image: "", description: "",
         rank: whole(gear.affix, 5), level: whole(gear.level, 80), promote: whole(gear.promote, 6) } : undefined, relics });
   }
   const time = whole(data?._profile, 9_999_999_999_999);
