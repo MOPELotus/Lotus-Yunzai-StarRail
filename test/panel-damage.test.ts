@@ -11,6 +11,7 @@ import iceFixtures from "./fixtures/panel-damage-ice-state.json";
 import eruditionFixtures from "./fixtures/panel-damage-erudition.json";
 import remembranceFixtures from "./fixtures/panel-damage-remembrance.json";
 import abundanceFixtures from "./fixtures/panel-damage-abundance.json";
+import destructionFixtures from "./fixtures/panel-damage-destruction.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -78,7 +79,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -236,5 +237,14 @@ describe("common engine with original character data", () => {
     expect(damage.rows[1]?.metric).toBe("heal");
     expect(damage.rows[2]?.metric).toBe("damage");
     expect(readStarRailPersonalDamage({ ...avatar, rank: 0 }, prepared, 6).scenarioCount).toBe(5);
+  });
+
+  test("requires Xueyi's original break stat for her damage conversion", () => {
+    const { avatar, metadata } = destructionFixtures.find(fixture => fixture.avatar.id === "1214")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const incomplete = { ...avatar, stats: avatar.stats.filter(stat => stat.key !== "stance") };
+    expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少计算所需的战斗属性");
   });
 });

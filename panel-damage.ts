@@ -46,6 +46,10 @@ import * as luocha from "./panel-damage-rules/characters/luocha.js";
 import * as natasha from "./panel-damage-rules/characters/natasha.js";
 import * as gallagher from "./panel-damage-rules/characters/gallagher.js";
 import * as huohuo from "./panel-damage-rules/characters/huohuo.js";
+import * as clara from "./panel-damage-rules/characters/clara.js";
+import * as xueyi from "./panel-damage-rules/characters/xueyi.js";
+import * as arlan from "./panel-damage-rules/characters/arlan.js";
+import * as hook from "./panel-damage-rules/characters/hook.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -191,6 +195,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "21035": "何物为真", "21007": "同一种心情" } },
   "1217": { name: "藿藿", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
   "2217": { name: "藿藿Pro", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
+  "1107": { name: "克拉拉", element: "物理", path: "毁灭", traces: [103], rule: clara,
+    cones: { "23002": "无可取代的东西", "23030": "落日时起舞" } },
+  "1214": { name: "雪衣", element: "量子", path: "毁灭", traces: [101, 102], stats: ["stance"], rule: xueyi,
+    cones: { "21042": "铭记于心的约定", "24000": "记一位星神的陨落" } },
+  "1008": { name: "阿兰", element: "雷", path: "毁灭", traces: [], rule: arlan,
+    cones: { "21012": "秘密誓心", "24000": "记一位星神的陨落" } },
+  "1109": { name: "虎克", element: "火", path: "毁灭", traces: [], rule: hook,
+    cones: { "21026": "汪！散步时间！", "24000": "记一位星神的陨落" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;

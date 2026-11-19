@@ -56,5 +56,18 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    '汪！散步时间！': [
+      staticIdx(1, 'atkPct'),
+      keyIdx('对烧灼或裂伤状态的敌人伤害提高[dmg]%', 'dmg', 2)
+    ],
+    记一位星神的陨落: [(tables) => {
+      return {
+        title: '4层Buff提高攻击力[atkPct]%，击破弱点后造成的伤害提高[dmg]%',
+        data: {
+          atkPct: tables[1] * 4,
+          dmg: tables[2]
+        }
+      }
+    }],
   }
 }
