@@ -6,7 +6,7 @@ import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
-import { findPanelAvatar, makePanelDetailCard, makePanelListCards, readTheme } from "./panel-card.ts";
+import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readTheme } from "./panel-card.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
@@ -105,10 +105,19 @@ export function createStarRailPanel(
       const theme = await readTheme();
       let models;
       let selected;
-      if (type === "detail") {
+      let relicScore: { readonly mark: string; readonly markClass: string } | undefined;
+      if (type === "detail" || type === "relics") {
         selected = findPanelAvatar(snapshot.avatars, name, theme);
         if (!selected) return `当前星铁面板中没有「${name}」，请用 *面板${profileId === 1 ? "" : profileId} 查看列表。`;
-        models = [await makePanelDetailCard(snapshot, selected, theme, signal)];
+        if (type === "relics") {
+          const relics = await makePanelRelicCard(snapshot, selected, theme, signal);
+          await verify();
+          if (!relics) return `「${selected.name}」暂无可评分的遗器，可用 *更新面板${profileId === 1 ? "" : profileId} 补齐面板。`;
+          models = [relics];
+          relicScore = relics.artisDetail;
+        } else {
+          models = [await makePanelDetailCard(snapshot, selected, theme, signal)];
+        }
       } else {
         models = await makePanelListCards(snapshot, theme, profileId, signal, updated);
       }
@@ -120,6 +129,7 @@ export function createStarRailPanel(
           await verify();
           if (type === "update") return `UID ${uid} 星铁面板已更新，共 ${snapshot.avatars.length} 位角色。图片暂时无法生成。`;
           if (selected) {
+            if (relicScore) return `UID ${uid} · ${selected.name} · 遗器总分 ${relicScore.mark} · ${relicScore.markClass}`;
             const visible = [selected.name, selected.level && `Lv.${selected.level}`, selected.rank !== undefined && `${selected.rank}魂`,
               selected.cone?.name, ...selected.relics.map(relic => relic.name)].filter(Boolean).join(" · ");
             return `UID ${uid}\n${visible}`;

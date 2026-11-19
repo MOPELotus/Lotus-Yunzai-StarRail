@@ -124,9 +124,9 @@ export function parsePanelCommand(message: string) {
     return { type: "update" as const, profileId, name: "" };
   if (/^(?:面板角色|角色面板|面板)(?:列表)?$/u.test(body))
     return { type: "list" as const, profileId, name: "" };
-  const detail = /^([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:详细|详情|面板|面版)$/u.exec(body);
+  const detail = /^([\p{L}\p{N}·・•_.&★ -]{1,28}?)(详细|详情|面板|面版|遗器|圣遗物)$/u.exec(body);
   if (detail?.[1] && !/^(?:展板|备用|删除|加载|重载|清理|重新加载|刷新|修复|重建)|列表$/u.test(detail[1])) {
-    return { type: "detail" as const, profileId, name: detail[1].trim() };
+    return { type: detail[2] === "遗器" || detail[2] === "圣遗物" ? "relics" as const : "detail" as const, profileId, name: detail[1].trim() };
   }
 }
 

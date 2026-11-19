@@ -30,3 +30,9 @@
 面板列表、详情样式、角色别名及遗器词条转换来自 Miao-Plugin `2860761836069af80bacee5cb85b6dd2e91ea0b0` 的 `apps/profile/ProfileList.js`、`models/serv/api/MysPanelHSR{Api,Data,Mappings}.js`、`models/artis/ArtisAttr.js`、`resources/character/profile-{list,detail}.{html,css}`、`resources/common/{common.css,layout/elem.html}` 及 `resources/meta-sr/character/alias.js`。保留 MIT 许可。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
 旧面板复算及行迹布局沿用同版 Miao-Plugin 的 `models/attr/{Attr,AttrData}.js`、`models/Character.js`、`models/character/CharTalent.js`、`models/Weapon.js`、`models/artis/ArtisAttr.js`、`apps/profile/ProfileDetail.js` 与 `resources/meta-sr/{artifact,weapon}/` 里的静态规则。打包的 `panel-theme/static-panel-rules.json` 只摘录套装静态属性键值及光锥静态叠影表索引。装备数值仍从本地授权主题元数据读取。
+
+## 遗器评分
+
+使用 `*银枝遗器` 或 `*三月圣遗物2` 查看指定角色的逐件评分、词条权重和总分。沿用面板指令的角色别名与档案编号。评分读取当前档案关联的已保存面板，也可以直接读取对应 UID 的旧喵喵面板，无需新的米游社请求。缺词条的遗器单独提示。总评级沿用原实现，以六个位置的平均分确定。
+
+评分、固定位置与元素主词条判定来自同版 Miao-Plugin 的 `models/artis/{ArtisMark,ArtisMarkCfg,ArtisAttr}.js` 和 `resources/meta-sr/artifact/{meta.js,meta.json,artis-mark.js}`，椒丘、风堇、缇宝的特殊规则来自其各自角色目录的 `artis.js`。卡图沿用 `apps/profile/ProfileArtis.js` 与 `resources/character/artis-mark.{html,css}`。模块随附角色满级基础属性的必要字段及遗器数值规则，来源为同版星铁元数据。角色立绘、遗器图和字体继续使用上节的本机主题或官方 CDN。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)

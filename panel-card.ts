@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
+import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
 import { object, officialArtHosts, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 
@@ -118,9 +119,9 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
   }
 }
 
-function preparedModel(theme: Metadata, kind: "list" | "detail", fields: Json) {
+function preparedModel<Fields extends Json>(theme: Metadata, kind: "list" | "detail" | "relics", fields: Fields) {
   return {
-    tplFile: join(packagedTheme, "character", `profile-${kind}.html`),
+    tplFile: join(packagedTheme, "character", kind === "relics" ? "artis-mark.html" : `profile-${kind}.html`),
     elemLayout: join(packagedTheme, "common", "layout", "elem.html"),
     _styles_path: cssFile(resolve(packagedTheme) + sep),
     _theme_path: theme.defaultStyle ? cssFile(theme.root + sep) : "",
@@ -302,5 +303,45 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
       dataSource: derived ? "旧喵喵静态计算" : fieldsSource(snapshot), updateTime: formatDate(snapshot.updatedAt),
     },
     attr: showcase(derived ?? avatar.stats, element), artisDetail: { charWeight: {}, artis }, artisKeyTitle: statTitles,
+  });
+}
+
+export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal) {
+  const { name, abbr, meta } = lookup(avatar, theme);
+  const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
+  const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
+  let speed = avatar.stats.find(stat => stat.key === "speed")?.value;
+  if (!speed && name === "缇宝" && avatar.legacy) {
+    const gear = avatar.cone && object(theme.weapons[avatar.cone.id]);
+    const coneName = avatar.cone?.name || text(gear?.name);
+    const conePath = text(gear?.type);
+    const cone = safePart(conePath) && safePart(coneName)
+      ? await readJson(join(theme.root, "meta-sr", "weapon", conePath, coneName, "data.json")) : {};
+    speed = calculateLegacyPanelAttributes(avatar, {
+      character, cone, conePath, relicMetadata: theme.relicValues, setForId: id => theme.relicById.get(id)?.asset[1],
+    })?.find(stat => stat.key === "speed")?.value;
+  }
+  const score = scoreStarRailRelics(avatar, {
+    name, abbr, element, speed: speed === undefined ? undefined : Number.parseFloat(speed),
+    base: object(character.baseAttr), relicValues: theme.relicValues,
+  });
+  if (!score) return;
+  const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
+  const splash = await localArt(theme, ["character", name, "imgs", "splash.webp"])
+    || await remoteArt(avatar.splash || avatar.face, artSignal);
+  const parts = await Promise.all(avatar.relics.flatMap(part => {
+    const scored = score.artis[part.slot];
+    if (!scored) return [];
+    return [(async () => {
+      const local = theme.relicById.get(part.id);
+      const filename = (local && await localArt(theme, local.asset)) || await remoteArt(part.image, artSignal);
+      return [part.slot, { ...scored, level: part.level ?? "", name: part.name || local?.name || `遗器 ${part.slot}`, img: filename }];
+    })()];
+  }));
+  signal.throwIfAborted();
+  return preparedModel(theme, "relics", {
+    uid: snapshot.uid, element, splash, data: { name, elem: element, level: avatar.level ?? "—", cons: avatar.rank ?? "—" },
+    charCfg: score.charCfg, artisDetail: { ...score, artis: Object.fromEntries(parts) },
+    attrMap: relicAttributeMap, artisKeyTitle: { ...statTitles, ...Object.fromEntries(Object.entries(relicAttributeMap).map(([key, attr]) => [key, attr.title])) },
   });
 }
