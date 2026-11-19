@@ -1,4 +1,4 @@
-import { calculateLegacyPanelAttributeRows, damageAttribute } from "./panel-attributes.ts";
+import { calculateLegacyPanelAttributeRows, calculateManagedElation, damageAttribute } from "./panel-attributes.ts";
 import type { readPanelDamageMetadata } from "./panel-card.ts";
 import { object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
 import DmgAttr from "./panel-damage-rules/DmgAttr.js";
@@ -92,6 +92,12 @@ import * as dahlia from "./panel-damage-rules/characters/dahlia.js";
 import * as silverWolfEnhanced from "./panel-damage-rules/characters/silver-wolf-enhanced.js";
 import * as ashveil from "./panel-damage-rules/characters/ashveil.js";
 import * as gilgamesh from "./panel-damage-rules/characters/gilgamesh.js";
+import * as elationTrailblazer from "./panel-damage-rules/characters/elation-trailblazer.js";
+import * as sparxie from "./panel-damage-rules/characters/sparxie.js";
+import * as yaoGuang from "./panel-damage-rules/characters/yao-guang.js";
+import * as pearl from "./panel-damage-rules/characters/pearl.js";
+import * as evanescia from "./panel-damage-rules/characters/evanescia.js";
+import elation from "./panel-damage-rules/weapons/elation.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -165,6 +171,7 @@ const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗
 const harmonyTrailblazerCones = { "23019": "镜中故我", "21004": "记忆中的模样" };
 const preservationTrailblazerCones = { "24002": "记忆的质料", "21043": "两个人的演唱会" };
 const destructionTrailblazerCones = { "24000": "记一位星神的陨落", "23002": "无可取代的东西" };
+const elationTrailblazerCones = { "24006": "欢愉满溢祝福", "21064": "菇菇嘎嘎历险记" };
 const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
@@ -338,6 +345,16 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23056": "一场谎言的终幕", "21010": "论剑" } },
   "1509": { name: "吉尔伽美什", element: "雷", path: "毁灭", traces: [102, 103], requiresEnergy: true, rule: gilgamesh,
     cones: { "23062": "所见即我", "24000": "记一位星神的陨落" } },
+  "8009": { name: "穹·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationTrailblazerCones },
+  "8010": { name: "星·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationTrailblazerCones },
+  "1501": { name: "火花", element: "火", path: "欢愉", traces: [101, 102, 103], rule: sparxie,
+    cones: { "23053": "花花世界迷人眼", "21064": "菇菇嘎嘎历险记" } },
+  "1502": { name: "爻光", element: "物理", path: "欢愉", traces: [101, 102], rule: yaoGuang,
+    cones: { "23054": "当她决定看见", "24006": "欢愉满溢祝福" } },
+  "1503": { name: "真珠", element: "冰", path: "欢愉", traces: [101], stats: ["def", "heal", "effDef"], rule: pearl,
+    cones: { "23055": "献给明日的色彩", "21065": "今日好手气" } },
+  "1505": { name: "绯英", element: "物理", path: "欢愉", traces: [101], requiresEnergy: true, stats: ["recharge"], rule: evanescia,
+    cones: { "23058": "邂逅于下一个花季", "22007": "未来，有我们一起" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -391,6 +408,11 @@ function panelValues(avatar: PanelAvatar, metadata: Metadata, character: Charact
       const number = typeof raw === "string" ? Number.parseFloat(raw) : raw;
       if (typeof number === "number" && Number.isFinite(number) && number >= 0) values[field === "base" ? key + "Base" : key] = number;
     }
+  }
+  if (!avatar.legacy && character.path === "欢愉" && values.joy === undefined) {
+    const joy = calculateManagedElation(avatar, metadata);
+    if (joy === undefined) throw new MissingDamageData("缺少计算欢愉度所需的行迹或装备数据");
+    values.joy = joy;
   }
   for (const key of ["atk", "speed", ...["hp", "def"].filter(key => character.stats?.includes(key))]) {
     if (!values[key + "Base"] || values[key] === undefined) throw new MissingDamageData("缺少角色基础与综合属性");
@@ -447,6 +469,7 @@ const weaponRules: Readonly<Record<string, WeaponRules>> = {
   "毁灭": destruction(staticIndex, dynamicIndex),
   "同谐": harmony(staticIndex, dynamicIndex),
   "记忆": remembrance(staticIndex, dynamicIndex),
+  "欢愉": elation(staticIndex, dynamicIndex),
 };
 
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {

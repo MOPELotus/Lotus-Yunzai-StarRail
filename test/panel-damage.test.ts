@@ -21,6 +21,7 @@ import destructionStateFixtures from "./fixtures/panel-damage-destruction-state.
 import critSpecialFixtures from "./fixtures/panel-damage-crit-special.json";
 import hpSpecialFixtures from "./fixtures/panel-damage-hp-special.json";
 import breakMultiFixtures from "./fixtures/panel-damage-break-multi.json";
+import elationFixtures from "./fixtures/panel-damage-elation.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -88,7 +89,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures, ...elationFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -101,12 +102,12 @@ describe("common engine with original character data", () => {
         expect(actual.title).toBe(row.title);
         expect(actual.average).toBeCloseTo(row.avg, 7);
         if ("percentage" in row) expect(actual).toMatchObject({ metric: "support", percentage: row.percentage });
-        if (!("dmg" in row) || row.dmg === undefined) expect(actual.critical).toBeUndefined();
+        if (!("dmg" in row) || typeof row.dmg !== "number") expect(actual.critical).toBeUndefined();
         else expect(actual.critical).toBeCloseTo(row.dmg, 7);
       }
       expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(expected.swap.avg, 7);
       if ("percentage" in expected.swap) expect(damage.swaps[0]?.values[1]?.percentage).toBe(expected.swap.percentage);
-      if (!("dmg" in expected.swap) || expected.swap.dmg === undefined) expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
+      if (!("dmg" in expected.swap) || typeof expected.swap.dmg !== "number") expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
       else expect(damage.swaps[0]?.values[1]?.critical).toBeCloseTo(expected.swap.dmg, 7);
     });
   }
@@ -435,5 +436,31 @@ describe("common engine with original character data", () => {
     expect(result.rows[result.selected]).toMatchObject({ metric: "damage", average: expected.rows[1]!.avg });
     expect(result.rows[result.selected]?.critical).toBeUndefined();
     expect(result.rows[result.selected]?.percentage).toBeUndefined();
+  });
+
+  test("rebuilds omitted Elation from verified trace, cone and set rules", () => {
+    for (const { avatar, metadata } of elationFixtures) {
+      const { setNames, ...inputs } = metadata;
+      const sets = new Map(Object.entries(setNames));
+      const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+      const direct = calculateStarRailPersonalDamage(avatar, prepared)!;
+      const stats = avatar.stats.filter(stat => stat.key !== "joy");
+      const rebuilt = calculateStarRailPersonalDamage({ ...avatar, stats }, prepared)!;
+      expect(rebuilt).toEqual(direct);
+      if (avatar.id === "1501") {
+        const traces = avatar.traces.filter(trace => trace.id !== "1501201");
+        expect(readStarRailPersonalDamage({ ...avatar, stats, traces }, prepared).reason)
+          .toBe("缺少计算欢愉度所需的行迹或装备数据");
+      }
+    }
+  });
+
+  test("keeps Pearl's original defense-based healing separate from damage", () => {
+    const { avatar, metadata } = elationFixtures.find(fixture => fixture.avatar.id === "1503")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const result = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) })!;
+    expect(result.rows[result.selected]?.title).toBe("强普治疗");
+    expect(result.rows.every(row => row.metric === "heal" && row.critical === undefined)).toBe(true);
   });
 });

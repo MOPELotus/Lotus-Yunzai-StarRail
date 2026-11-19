@@ -63,15 +63,57 @@ export function readLegacyRelicAttributes(part: Relic, meta: Json) {
   return { main: { key, value: main.base + main.step * part.level }, sub };
 }
 
-export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
-  character, cone, conePath, relicMetadata, setForId,
-}: {
+type PanelAttributeMetadata = {
   readonly character: Json;
   readonly cone: Json;
   readonly conePath: string;
   readonly relicMetadata: Json;
   readonly setForId: (id: string) => string | undefined;
-}) {
+};
+
+export function calculateManagedElation(avatar: PanelAvatar, { character, cone, setForId }: PanelAttributeMetadata) {
+  const trees = object(character.tree);
+  if (!trees) return;
+  const traces = new Map(avatar.traces.map(trace => [trace.id, trace.active]));
+  const base = object(character.baseAttr)?.joy;
+  let joy = finite(base) ? base : 0;
+  for (const [id, entry] of Object.entries(trees)) {
+    const trace = object(entry);
+    if (trace?.key !== "joy") continue;
+    if (!traces.has(id) || !finite(trace.value)) return;
+    if (traces.get(id)) joy += trace.value;
+  }
+  if (avatar.cone) {
+    const rules = staticCones[avatar.cone.id];
+    if (!rules) return;
+    const tables = object(object(cone.skill)?.tables);
+    for (const { key, idx } of rules) {
+      if (key !== "joy") continue;
+      const values = tables?.[idx];
+      const value = avatar.cone.rank && Array.isArray(values) ? values[avatar.cone.rank - 1] : undefined;
+      if (!finite(value)) return;
+      joy += value;
+    }
+  }
+  const sets = new Map<string, number>();
+  for (const relic of avatar.relics) {
+    const name = setForId(relic.id);
+    if (!name || !Object.hasOwn(staticSets, name)) return;
+    sets.set(name, (sets.get(name) ?? 0) + 1);
+  }
+  for (const [name, count] of sets) {
+    const bonuses = object(staticSets[name]);
+    for (const threshold of [2, 4]) {
+      const value = object(bonuses?.[threshold])?.joy;
+      if (count >= threshold && finite(value)) joy += value;
+    }
+  }
+  return joy;
+}
+
+export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
+  character, cone, conePath, relicMetadata, setForId,
+}: PanelAttributeMetadata) {
   if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR"].includes(avatar.legacy.source)) return;
   const charStats = leveledAttributes(character, avatar.level, avatar.legacy.promote, false);
   if (!charStats || primary.some(key => !finite(charStats[key]))) return;

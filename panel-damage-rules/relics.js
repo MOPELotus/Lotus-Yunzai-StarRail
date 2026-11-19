@@ -312,4 +312,27 @@ export default {
       }
     }]
   },
+  零号关卡朋克洛德: {
+    2: [attr('joy', 8), {
+      check: ({ attr }) => attr.joy.base >= 40,
+      title: '战斗中欢愉度首次达到[joy]%时，使装备者暴击伤害提高[cdmg]%',
+      data: {
+        joy: ({ attr, calc }) => {
+          let _joy = calc(attr.joy)
+          return _joy < 80 ? 40 : 80
+        },
+        cdmg: ({ attr, calc }) => {
+          let joy = calc(attr.joy)
+          return joy < 80 ? 20 : 32
+        }
+      }
+    }]
+  },
+  神的瞬息欢愉: {
+    2: [attr('speedPct', 6), {
+      title: '进场欢愉度达到40%，行动提前40%（不计入单次伤害倍率）',
+      sort: 10,
+      check: ({ attr, calc, params }) => (params.entryJoy ?? calc(attr.joy)) >= 40
+    }]
+  },
 }
