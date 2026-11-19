@@ -255,6 +255,7 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
   const cone = avatar.cone, weapon = cone && object(theme.weapons[cone.id]);
   const weaponName = cone?.name || text(weapon?.name) || (cone ? `光锥 ${cone.id}` : "");
   const weaponType = text(weapon?.type) || path;
+  const weaponFolder = text(weapon?.name) || weaponName;
   const imgs: Record<string, string> = {};
   const talent: Record<string, { level: number; original?: number }> = {};
   const levels = object(character.talentCons ?? meta?.talentCons);
@@ -287,9 +288,11 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
       main: part.main, attrs: part.subs.map(stat => ({ ...stat, upNum: stat.times })),
     });
   }
-  const weaponImg = cone && await localArt(theme, ["weapon", weaponType, weaponName, "splash.webp"]) || await remoteArt(cone?.image, artSignal);
-  const coneMeta = safePart(weaponType) && safePart(weaponName)
-    ? await readJson(join(theme.root, "meta-sr", "weapon", weaponType, weaponName, "data.json")) : {};
+  const weaponImg = cone && (await localArt(theme, ["weapon", weaponType, weaponFolder, "splash.webp"])
+    || (weaponFolder !== weaponName && await localArt(theme, ["weapon", weaponType, weaponName, "splash.webp"])))
+    || await remoteArt(cone?.image, artSignal);
+  const coneMeta = safePart(weaponType) && safePart(weaponFolder)
+    ? await readJson(join(theme.root, "meta-sr", "weapon", weaponType, weaponFolder, "data.json")) : {};
   const derived = avatar.stats.length ? undefined : calculateLegacyPanelAttributes(avatar, {
     character, cone: coneMeta, conePath: weaponType, relicMetadata: theme.relicValues,
     setForId: id => theme.relicById.get(id)?.asset[1],

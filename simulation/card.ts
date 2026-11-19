@@ -37,9 +37,7 @@ async function portraits(pulls: readonly WarpPull[], directory: string) {
     } catch { return; }
   }
   return Promise.all(pulls.map((pull) => {
-    const entry = item({ name: pull.name, item_type: pull.kind }) ??
-      item({ name: pull.name.replaceAll("『", "「").replaceAll("』", "」"), item_type: pull.kind });
-    const path = entry?.img;
+    const path = item({ name: pull.name, item_type: pull.kind })?.img;
     if (!path) return;
     const file = pull.kind === "光锥" ? path.replace(/icon\.webp$/u, "splash.webp") : path.replace(/face\.webp$/u, "preview.webp");
     if (!assets.has(file)) assets.set(file, picture(file));

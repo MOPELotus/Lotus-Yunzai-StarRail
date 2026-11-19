@@ -57,6 +57,14 @@ export async function readStarRailGachaItems(root: string) {
   const [characters, weapons] = await Promise.all([itemCatalog(root, "character"), itemCatalog(root, "weapon")]);
   const characterNames = new Map([...characters.values()].map((item) => [item.name, item]));
   const weaponNames = new Map([...weapons.values()].map((item) => [item.name, item]));
-  return ({ name, item_type }: Pick<Parameters<ResolveItem>[0], "name" | "item_type">) =>
-    (item_type === "角色" ? characterNames : weaponNames).get(name);
+  return ({ name, item_type }: Pick<Parameters<ResolveItem>[0], "name" | "item_type">) => {
+    const names = item_type === "角色" ? characterNames : weaponNames;
+    const exact = names.get(name);
+    if (exact || !/[『』「」]/u.test(name)) return exact;
+    const normalizeQuotes = (title: string) => title.replaceAll("『", "「").replaceAll("』", "」");
+    const requested = normalizeQuotes(name);
+    const candidates = [...names.values()].filter((item) => normalizeQuotes(item.name) === requested);
+    const item = candidates.length === 1 ? candidates[0] : undefined;
+    if (item) return { ...item, name, abbr: item.abbr === item.name ? name : item.abbr };
+  };
 }
