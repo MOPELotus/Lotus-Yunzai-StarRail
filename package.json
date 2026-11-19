@@ -1,0 +1,17 @@
+{
+  "name": "@lotus-yunzai/starrail",
+  "private": true,
+  "type": "module",
+  "lotusYunzai": {
+    "entry": "./index.ts",
+    "games": ["starrail"]
+  },
+  "dependencies": {
+    "@lotus-yunzai/account": "workspace:*",
+    "@lotus-yunzai/gacha": "workspace:*",
+    "@lotus-yunzai/hoyo-client": "workspace:*",
+    "@lotus-yunzai/skia": "workspace:*",
+    "@lotus-yunzai/storage": "workspace:*",
+    "skia-canvas": "3.0.8"
+  }
+}
