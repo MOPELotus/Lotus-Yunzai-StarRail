@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { parsePanelCommand, readLegacyPanel } from "../panel-model.ts";
-import { replacePanelEquipment } from "../panel-equipment.ts";
+import { changePanelSuperimposition, replacePanelEquipment } from "../panel-equipment.ts";
 
 const uid = "100000123";
 const { avatars: [target, donor] } = readLegacyPanel(uid, { uid, avatars: {
@@ -34,7 +34,31 @@ test("copies exactly the requested donor equipment without changing either snaps
   expect([target, donor]).toEqual(before);
   expect(replacePanelEquipment(target!, donor!, [1, 1]).error).toMatch(/只能指定一次/);
   const all = parsePanelCommand("*希儿换飞霄遗器");
-  if (!all || !("equipment" in all)) throw new Error("missing relic command");
+  if (!all || !("equipment" in all) || !("slots" in all.equipment)) throw new Error("missing relic command");
   expect(replacePanelEquipment(target!, donor!, all.equipment.slots).avatar?.relics).toEqual(donor!.relics);
   expect(replacePanelEquipment(target!, donor!, [2]).error).toMatch(/缺少可用的手部记录/);
+});
+
+
+test("parses numeric, Chinese and full superimposition tiers for the currently equipped light cone", () => {
+  expect(parsePanelCommand("*希儿伤害2换五叠影武器 2")).toEqual({
+    type: "damage", profileId: 2, name: "希儿", scenario: 2, equipment: { superimposition: 5, coneName: "武器" },
+  });
+  expect(parsePanelCommand("#星铁希儿面板换叠影3 于夜色中")).toMatchObject({
+    type: "detail", name: "希儿", profileId: 1, equipment: { superimposition: 3, coneName: "于夜色中" },
+  });
+  expect(parsePanelCommand("*希儿换满精光锥")).toMatchObject({ equipment: { superimposition: 5, coneName: "光锥" } });
+  expect(parsePanelCommand("*希儿换叠影6武器")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换叠影3")).toBeUndefined();
+});
+
+test("changes only the current light cone tier and recomputes its description from theme data", () => {
+  const source = { ...target!, cone: { ...target!.cone!, name: "于夜色中", description: "原叠影描述" } };
+  const before = structuredClone(source);
+  const changed = changePanelSuperimposition(source, 5, "于夜色中", "");
+  expect(changed.avatar).toEqual({ ...source, cone: { ...source.cone, rank: 5, description: "" }, stats: [] });
+  expect(changed.label).toBe("临时换装 · 于夜色中 · 叠影5阶");
+  expect(source).toEqual(before);
+  expect(changePanelSuperimposition(source, 4, "如泥酣眠", "").error).toMatch(/当前装备/);
+  expect(changePanelSuperimposition({ ...source, cone: undefined }, 4, "武器", "").error).toMatch(/没有光锥/);
 });

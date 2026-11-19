@@ -3,7 +3,8 @@ import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { PanelAvatar } from "./panel-model.ts";
 
 const allRelics = "relics" as const;
-const parts: Readonly<Record<string, (number | typeof allRelics)>> = {
+type EquipmentSlot = number | typeof allRelics;
+const parts: Readonly<Record<string, EquipmentSlot>> = {
   光锥: 0, 武器: 0,
   头: 1, 帽子: 1, 头部: 1,
   手: 2, 手套: 2, 手部: 2,
@@ -16,27 +17,62 @@ const parts: Readonly<Record<string, (number | typeof allRelics)>> = {
 const partNames = ["光锥", "头部", "手部", "躯干", "脚部", "位面球", "连接绳"];
 const role = String.raw`[\p{L}\p{N}·・•_.&★ -]{1,28}?`;
 const partPattern = Object.keys(parts).sort((a, b) => b.length - a.length).join("|");
-const pattern = new RegExp(
-  String.raw`^(?:#星铁|\*)(${role})(?:(伤害)([1-9]\d{0,5})?|详细|详情|面板|面版)?\s*换\s*(${role})\s*((?:${partPattern})(?:\s*\+\s*(?:${partPattern})){0,6})(?:\s+([1-9]\d{0,2}))?$`,
+const changePattern = new RegExp(
+  String.raw`^(?:#星铁|\*)(${role})(?:(伤害)([1-9]\d{0,5})?|详细|详情|面板|面版)?\s*换\s*([^\p{Cc}\p{Cf}]{1,100}?)(?:\s+([1-9]\d{0,2}))?$`,
   "u",
 );
+const donorPattern = new RegExp(String.raw`^(${role})\s*((?:${partPattern})(?:\s*\+\s*(?:${partPattern})){0,6})$`, "u");
+const superimpositionPattern = /^(?:([1-5一二三四五满])(?:叠影?|精炼?)|(?:叠影?|精炼?)([1-5一二三四五]))\s*([^+]{1,64})$/u;
+const invalidTierPrefix = /^(?:[0-9零一二三四五六七八九十满])?(?:叠影?|精炼?)/u;
+const tiers = "一二三四五";
 
-export function parseEquipmentChange(message: string) {
-  const match = pattern.exec(message);
+type EquipmentCommand = {
+  type: "damage" | "detail";
+  name: string;
+  profileId: number;
+  scenario: number | undefined;
+  equipment: { donor: string; slots: EquipmentSlot[] } | { superimposition: number; coneName: string };
+};
+
+export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
+  const match = changePattern.exec(message);
   if (!match) return;
-  const [, target, mode, scenario, requestedDonor, requestedParts, archive] = match;
-  const name = target?.trim(), donor = requestedDonor?.trim();
+  const [, target, mode, scenario, requested, archive] = match;
+  const name = target?.trim();
+  const request = requested?.trim();
   const profileId = Number(archive ?? 1);
-  if (!name || !donor || !requestedParts || profileId > MAX_PROFILE_ID || /\d{9,}|换/u.test(name + donor)) return;
+  if (!name || !request || profileId > MAX_PROFILE_ID || /\d{9,}|换/u.test(name + request)) return;
+
+  const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
+    scenario: scenario === undefined ? undefined : Number(scenario) };
+  const rankChange = superimpositionPattern.exec(request);
+  if (rankChange) {
+    const rankLabel = rankChange[1] ?? rankChange[2]!;
+    const coneName = rankChange[3]!.trim();
+    const rank = rankLabel === "满" ? 5 : tiers.includes(rankLabel) ? tiers.indexOf(rankLabel) + 1 : Number(rankLabel);
+    return { ...command, equipment: { superimposition: rank, coneName } };
+  }
+  if (invalidTierPrefix.test(request)) return;
+  const donorChange = donorPattern.exec(request);
+  const donor = donorChange?.[1]?.trim();
+  const requestedParts = donorChange?.[2];
+  if (!donor || !requestedParts) return;
   const slots = requestedParts.split("+").map(key => parts[key.trim()]!);
-  return {
-    type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
-    scenario: scenario === undefined ? undefined : Number(scenario),
-    equipment: { donor, slots },
-  };
+  return { ...command, equipment: { donor, slots } };
 }
 
-export function replacePanelEquipment(target: PanelAvatar, donor: PanelAvatar, slots: readonly (number | typeof allRelics)[]) {
+export function changePanelSuperimposition(target: PanelAvatar, rank: number, requestedName: string, canonicalName: string) {
+  const cone = target.cone;
+  if (!cone) return { error: `「${target.name}」的星铁面板没有光锥记录。` };
+  const coneName = canonicalName || cone.name;
+  if (requestedName !== "武器" && requestedName !== "光锥" && requestedName !== coneName) {
+    return { error: `「${target.name}」当前装备「${coneName || cone.id}」，请指定当前光锥。` };
+  }
+  const avatar = { ...target, cone: { ...cone, rank, description: "" }, stats: [] };
+  return { avatar, label: `临时换装 · ${coneName || cone.id} · 叠影${rank}阶` };
+}
+
+export function replacePanelEquipment(target: PanelAvatar, donor: PanelAvatar, slots: readonly EquipmentSlot[]) {
   if (slots.length !== new Set(slots).size) return { error: "同一个装备部位只能指定一次。" };
   if (slots.includes(allRelics) && !donor.relics.length) return { error: `「${donor.name}」的星铁面板没有遗器记录。` };
   const originalRelics = slots.includes(allRelics) ? donor.relics : target.relics;

@@ -8,11 +8,11 @@ import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunza
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
-import { replacePanelEquipment } from "./panel-equipment.ts";
+import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
-import { id as readId, normalizePanel, object, readLegacyPanel, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
+import { id as readId, normalizePanel, object, readLegacyPanel, text, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
@@ -123,10 +123,16 @@ export function createStarRailPanel(
           return `「${selected.name}」的星铁个人伤害规则尚未接入。当前支持${personalDamageNames}。`;
         }
         if ("equipment" in command) {
-          const { donor: donorName, slots } = command.equipment;
-          const donor = findPanelAvatar(snapshot.avatars, donorName, theme);
-          if (!donor) return `当前星铁面板中没有换装来源「${donorName}」。`;
-          const replacement = replacePanelEquipment(selected, donor, slots);
+          const change = command.equipment;
+          let replacement;
+          if ("superimposition" in change) {
+            const equipped = selected.cone && object(theme.weapons[selected.cone.id]);
+            replacement = changePanelSuperimposition(selected, change.superimposition, change.coneName, text(equipped?.name));
+          } else {
+            const donor = findPanelAvatar(snapshot.avatars, change.donor, theme);
+            if (!donor) return `当前星铁面板中没有换装来源「${change.donor}」。`;
+            replacement = replacePanelEquipment(selected, donor, change.slots);
+          }
           if ("error" in replacement) return replacement.error;
           equipmentMetadata = await readPanelDamageMetadata(replacement.avatar, theme);
           equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(replacement.avatar, equipmentMetadata);

@@ -129,7 +129,7 @@ export function parsePanelCommand(message: string) {
   if (equipment) return equipment;
   const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害([1-9]\d{0,5})?|武器([1-7])?)(?:\s+([1-9]\d{0,2}))?$/u.exec(message);
   const damagedRole = damage?.[1]?.trim();
-  if (damage && damagedRole && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
+  if (damage && damagedRole && !damagedRole.includes("换") && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
     const profileId = Number(damage[4] ?? 1);
     if (profileId > MAX_PROFILE_ID) return;
     const scenario = damage[2] ?? damage[3];
@@ -146,7 +146,7 @@ export function parsePanelCommand(message: string) {
     return { type: "list" as const, profileId, name: "" };
   if (/卡池(?:详情|详细)$/u.test(body)) return;
   const detail = /^([\p{L}\p{N}·・•_.&★ -]{1,28}?)(详细|详情|面板|面版|遗器|圣遗物)$/u.exec(body);
-  if (detail?.[1] && !/^(?:展板|备用|删除|加载|重载|清理|重新加载|刷新|修复|重建)|列表$/u.test(detail[1])) {
+  if (detail?.[1] && !detail[1].includes("换") && !/^(?:展板|备用|删除|加载|重载|清理|重新加载|刷新|修复|重建)|列表$/u.test(detail[1])) {
     return { type: detail[2] === "遗器" || detail[2] === "圣遗物" ? "relics" as const : "detail" as const, profileId, name: detail[1].trim() };
   }
 }
