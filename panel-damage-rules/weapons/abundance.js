@@ -12,5 +12,12 @@ export default function (staticIdx, keyIdx) {
         }
       }
     ],
+    同一种心情: [
+      staticIdx(1, 'heal')
+    ],
+    时节不居: [
+      staticIdx(1, 'hpPct'),
+      staticIdx(2, 'heal')
+    ],
   }
 }

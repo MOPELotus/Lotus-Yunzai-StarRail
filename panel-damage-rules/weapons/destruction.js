@@ -35,5 +35,14 @@ export default function (staticIdx, keyIdx) {
       staticIdx(1, 'stance'),
       keyIdx('敌方受到装备者造成的击破伤害提高[breakEnemydmg]%', 'breakEnemydmg', 2)
     ],
+    秘密誓心: [
+      staticIdx(1, 'dmg'),
+      keyIdx('对生命百分比高于角色的敌人的伤害提高[dmg]%', 'dmg', 2)
+    ],
+    到不了的彼岸: [
+      staticIdx(1, 'cpct'),
+      staticIdx(2, 'hpPct'),
+      keyIdx('受到攻击或装备者消耗自身生命值，伤害提高[dmg]%', 'dmg', 3)
+    ],
   }
 }

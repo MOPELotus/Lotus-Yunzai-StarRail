@@ -215,4 +215,34 @@ export default {
       }
     }
   },
+  云无留迹的过客: {
+    2: attr('heal', 10)
+  },
+  宝命长存的莳者: {
+    2: attr('hpPct', 12),
+    4: {
+      title: '消耗生命2层提高暴击率16%',
+      data: {
+        cpct: 16
+      }
+    }
+  },
+  不老者的仙舟: {
+    2: [attr('hpPct', 12), {
+      title: '速度大于等于120提高攻击力8%',
+      check: ({ calc, attr }) => calc(attr.speed) > 120,
+      data: {
+        atkPct: 8
+      }
+    }]
+  },
+  谧宁拾骨地: {
+    2: [attr('hpPct', 12), {
+      title: '生命值大于等于5000时暴击伤害提升28%',
+      check: ({ calc, attr }) => calc(attr.hp) >= 5000,
+      data: {
+        cdmg: 28
+      }
+    }]
+  },
 }

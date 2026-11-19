@@ -23,6 +23,10 @@ import * as firefly from "./panel-damage-rules/characters/firefly.js";
 import * as fireflyEnhanced from "./panel-damage-rules/characters/firefly-enhanced.js";
 import * as fugue from "./panel-damage-rules/characters/fugue.js";
 import * as ruanMei from "./panel-damage-rules/characters/ruan-mei.js";
+import * as blade from "./panel-damage-rules/characters/blade.js";
+import * as bladeEnhanced from "./panel-damage-rules/characters/blade-enhanced.js";
+import * as tribbie from "./panel-damage-rules/characters/tribbie.js";
+import * as bailu from "./panel-damage-rules/characters/bailu.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -62,7 +66,7 @@ type Buff = {
 };
 type Rule = {
   details: readonly {
-    title: string;
+    title: string | ((variables: Variables) => string);
     cons?: number;
     params?: Readonly<Params>;
     check?: (variables: Variables) => boolean;
@@ -85,6 +89,7 @@ type Character = {
 const setRules = relicRules as unknown as Readonly<Record<string, Readonly<Record<number, Buff | Buff[]>>>>;
 const kafkaCones = { "23006": "只需等待", "23022": "重塑时光之忆", "24003": "孤独的疗愈" };
 const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的约定" };
+const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -121,6 +126,12 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23035": "长路终有归途", "24003": "孤独的疗愈" } },
   "1303": { name: "阮•梅", element: "冰", path: "同谐", traces: [101], stats: ["stance"], rule: ruanMei,
     cones: { "23019": "镜中故我", "21004": "记忆中的模样" } },
+  "1205": { name: "刃", element: "风", path: "毁灭", traces: [102], stats: ["hp"], rule: blade, cones: bladeCones },
+  "2205": { name: "刃Pro", element: "风", path: "毁灭", traces: [103], stats: ["hp"], rule: bladeEnhanced, cones: bladeCones },
+  "1403": { name: "缇宝", element: "量子", path: "同谐", traces: [101, 102], stats: ["hp"], rule: tribbie,
+    cones: { "23038": "如果时间是一朵花", "23019": "镜中故我" } },
+  "1211": { name: "白露", element: "雷", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: bailu,
+    cones: { "23013": "时节不居", "21007": "同一种心情" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -177,7 +188,7 @@ function panelValues(avatar: PanelAvatar, metadata: Metadata, character: Charact
       if (typeof number === "number" && Number.isFinite(number) && number >= 0) values[field === "base" ? key + "Base" : key] = number;
     }
   }
-  for (const key of ["atk", "speed", ...(character.stats?.includes("def") ? ["def"] : [])]) {
+  for (const key of ["atk", "speed", ...["hp", "def"].filter(key => character.stats?.includes(key))]) {
     if (!values[key + "Base"] || values[key] === undefined) throw new MissingDamageData("缺少角色基础与综合属性");
   }
   for (const key of ["cpct", "cdmg", "dmg", ...(character.stats ?? [])]) {
@@ -272,6 +283,7 @@ function originalDamage(
   const weaponBuffs = weaponEffects(avatar, metadata, character);
   const relics = relicEffects(avatar, metadata);
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
+  if (relics.sets["谧宁拾骨地"] === 2 && values.hp === undefined) throw new MissingDamageData("缺少套装所需的生命属性");
   const buffs = [...rule.buffs, ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };
@@ -291,13 +303,14 @@ function originalDamage(
     damage.shield = amount => ({ ...shield(amount), metric: "shield" });
     const { dmg, avg, metric = "damage" } = detail.dmg(variables, damage);
     if (!Number.isFinite(avg) || (dmg !== undefined && !Number.isFinite(dmg))) throw new MissingDamageData("原规则所需数据不齐");
-    return { critical: dmg, average: avg, metric, active: msg as string[] };
+    const title = typeof detail.title === "function" ? detail.title(variables) : detail.title;
+    return { title, critical: dmg, average: avg, metric, active: msg as string[] };
   }
 
   const scenarios = rule.details.flatMap((detail, index) => {
     if (detail.cons && detail.cons > rank) return [];
     const result = calculate(detail);
-    return result ? [{ detail, index, row: { title: detail.title, ...result } }] : [];
+    return result ? [{ detail, index, row: result }] : [];
   });
   const defaultIndex = scenarios.findIndex(row => row.index === rule.defDmgIdx);
   const selected = scenario === undefined ? Math.max(0, defaultIndex) : scenario - 1;

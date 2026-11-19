@@ -5,6 +5,7 @@ import advancedFixtures from "./fixtures/panel-damage.json";
 import additionalFixtures from "./fixtures/panel-damage-additional.json";
 import physicalImaginaryFixtures from "./fixtures/panel-damage-physical-imaginary.json";
 import breakFixtures from "./fixtures/panel-damage-break-support.json";
+import healthFixtures from "./fixtures/panel-damage-hp-support.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -70,7 +71,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures]) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -141,5 +142,18 @@ describe("common engine with original character data", () => {
     expect(damage.rows[damage.selected]?.title).toBe("持【狐祈】破韧后终结技对三伤害");
     expect(damage.buffs.some(buff => buff.startsWith("忘归人战技："))).toBe(true);
     expect(readStarRailPersonalDamage(six, prepared, 5).scenarioCount).toBe(4);
+  });
+
+  test("keeps enhanced Blade's dynamic labels and requires saved HP for HP scaling", () => {
+    const { avatar, metadata } = healthFixtures.find(fixture => fixture.avatar.id === "2205")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    expect(damage.rows[2]?.title).toBe("天赋追加攻击(群伤, 3目标)");
+    expect(damage.rows[damage.selected]?.title).toBe("终结技(扩散, 90%已损失生命)");
+    expect(readStarRailPersonalDamage({ ...avatar, rank: 0 }, prepared, 5).scenarioCount).toBe(4);
+    const incomplete = { ...avatar, stats: avatar.stats.map(stat => stat.key === "hp" ? { ...stat, base: undefined } : stat) };
+    expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少角色基础与综合属性");
   });
 });
