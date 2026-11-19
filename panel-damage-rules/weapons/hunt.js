@@ -75,5 +75,24 @@ export default function (staticIdx, keyIdx) {
         }
       }
     }],
+    唯有沉默: [
+      staticIdx(1, 'atkPct'),
+      keyIdx('场上目标小于等于2时，暴击率提高[cpct]%', 'cpct', 2)
+    ],
+    星海巡航: [
+      staticIdx(1, 'cpct'),
+      keyIdx('对生命值小于50%的敌人暴击率提高[cpct]%，消灭敌方目标后，攻击力提高[atkPct]%', { cpct: 2, atkPct: 3 })
+    ],
+    理想燃烧的地狱: [
+      staticIdx(1, 'cpct'),
+      (tables) => {
+        return {
+          title: '攻击力提高[atkPct]%',
+          data: {
+            atkPct: tables[2] + tables[3] * 4
+          }
+        }
+      }
+    ],
   }
 }

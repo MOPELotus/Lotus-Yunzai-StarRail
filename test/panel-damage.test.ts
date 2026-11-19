@@ -12,6 +12,7 @@ import eruditionFixtures from "./fixtures/panel-damage-erudition.json";
 import remembranceFixtures from "./fixtures/panel-damage-remembrance.json";
 import abundanceFixtures from "./fixtures/panel-damage-abundance.json";
 import destructionFixtures from "./fixtures/panel-damage-destruction.json";
+import huntFixtures from "./fixtures/panel-damage-hunt.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -79,7 +80,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -246,5 +247,17 @@ describe("common engine with original character data", () => {
     const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
     const incomplete = { ...avatar, stats: avatar.stats.filter(stat => stat.key !== "stance") };
     expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少计算所需的战斗属性");
+  });
+
+  test("keeps Sushang's sword stance damage as distinct added skill hits", () => {
+    const { avatar, metadata } = huntFixtures.find(fixture => fixture.avatar.id === "1206")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    const firstSwordHit = damage.rows[2]!.average - damage.rows[1]!.average;
+    const secondSwordHit = damage.rows[4]!.average - damage.rows[2]!.average;
+    expect(firstSwordHit).toBeGreaterThan(0);
+    expect(secondSwordHit).toBeCloseTo(firstSwordHit, 7);
   });
 });

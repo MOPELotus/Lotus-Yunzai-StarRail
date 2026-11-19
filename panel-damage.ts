@@ -50,6 +50,12 @@ import * as clara from "./panel-damage-rules/characters/clara.js";
 import * as xueyi from "./panel-damage-rules/characters/xueyi.js";
 import * as arlan from "./panel-damage-rules/characters/arlan.js";
 import * as hook from "./panel-damage-rules/characters/hook.js";
+import * as topaz from "./panel-damage-rules/characters/topaz.js";
+import * as moze from "./panel-damage-rules/characters/moze.js";
+import * as danHeng from "./panel-damage-rules/characters/dan-heng.js";
+import * as sushang from "./panel-damage-rules/characters/sushang.js";
+import * as archer from "./panel-damage-rules/characters/archer.js";
+import * as marchHunt from "./panel-damage-rules/characters/march-hunt.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -203,6 +209,18 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "21012": "秘密誓心", "24000": "记一位星神的陨落" } },
   "1109": { name: "虎克", element: "火", path: "毁灭", traces: [], rule: hook,
     cones: { "21026": "汪！散步时间！", "24000": "记一位星神的陨落" } },
+  "1112": { name: "托帕&账账", element: "火", path: "巡猎", traces: [101, 102], rule: topaz,
+    cones: { "23016": "烦恼着，幸福着", "21010": "论剑" } },
+  "1223": { name: "貊泽", element: "雷", path: "巡猎", traces: [103], rule: moze,
+    cones: { "23016": "烦恼着，幸福着", "21010": "论剑" } },
+  "1002": { name: "丹恒", element: "风", path: "巡猎", traces: [103], rule: danHeng,
+    cones: { "21003": "唯有沉默", "24001": "星海巡航" } },
+  "1206": { name: "素裳", element: "物理", path: "巡猎", traces: [101], rule: sushang,
+    cones: { "21010": "论剑", "23001": "于夜色中" } },
+  "1015": { name: "Archer", element: "量子", path: "巡猎", traces: [102], rule: archer,
+    cones: { "23046": "理想燃烧的地狱", "24001": "星海巡航" } },
+  "1224": { name: "三月七·巡猎", element: "虚数", path: "巡猎", traces: [], rule: marchHunt,
+    cones: { "21010": "论剑", "24001": "星海巡航" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
