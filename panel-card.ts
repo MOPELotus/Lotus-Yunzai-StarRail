@@ -126,7 +126,7 @@ function preparedModel<Fields extends Json>(theme: Metadata, kind: "list" | "det
     _styles_path: cssFile(resolve(packagedTheme) + sep),
     _theme_path: theme.defaultStyle ? cssFile(theme.root + sep) : "",
     _res_path: "", game: "sr", elem: "sr", bodyClass: theme.defaultStyle ? "original-theme" : "",
-    copyright: "Created By miao-plugin · Lotus-Yunzai", sys: { scale: "" },
+    cardBrand: "Lotus-Yunzai · StarRail", sys: { scale: "" },
     groupRank: false, allowRank: false, rankCfg: {}, imgType: "png" as const,
     viewport: { width: 960, height: 900 }, scale: 1,
     ...fields,
@@ -300,7 +300,7 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
         ...coneDetails(cone, coneMeta) },
-      dataSource: derived ? "旧喵喵静态计算" : fieldsSource(snapshot), updateTime: formatDate(snapshot.updatedAt),
+      dataSource: derived ? "旧面板静态复算" : fieldsSource(snapshot), updateTime: formatDate(snapshot.updatedAt),
     },
     attr: showcase(derived ?? avatar.stats, element), artisDetail: { charWeight: {}, artis }, artisKeyTitle: statTitles,
   });

@@ -108,7 +108,7 @@ export interface PanelAvatar {
 export interface PanelSnapshot {
   version: 1;
   uid: string;
-  source: "miyoushe" | "miao";
+  source: "miyoushe" | "legacy";
   updatedAt?: string;
   avatars: PanelAvatar[];
 }
@@ -204,7 +204,7 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
   const data = object(source);
   const avatars = object(data?.avatars);
   if (id(data?.uid) !== uid || !avatars || Object.keys(avatars).length > 256) {
-    throw new Error("旧喵喵面板档案与当前角色不匹配。");
+    throw new Error("旧面板档案与当前角色不匹配。");
   }
   const parsed: PanelAvatar[] = [];
   for (const [key, value] of Object.entries(avatars)) {
@@ -237,5 +237,5 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
   }
   const time = whole(data?._profile, 9_999_999_999_999);
   const updatedAt = time && time >= 1_000_000_000 ? new Date(time < 1e11 ? time * 1000 : time).toISOString() : undefined;
-  return { version: 1, uid, source: "miao", updatedAt, avatars: parsed };
+  return { version: 1, uid, source: "legacy", updatedAt, avatars: parsed };
 }

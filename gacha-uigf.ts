@@ -194,7 +194,7 @@ function include(rows: Map<string, StarRailUigfRow>, row: StarRailUigfRow) {
 function readRows(value: unknown, uid: string, allowCollaboration: boolean): StarRailUigfRow[] {
   if (!Array.isArray(value) || !value.length) throw new TypeError("当前星铁档案没有可转换的逐抽记录。");
   if (value.some(isLotusPlaceholder)) {
-    throw new TypeError("该星铁文件包含 Lotus 显示占位，无法作为真实逐抽记录导入或导出。");
+    throw new TypeError("该星铁文件包含显示占位记录，无法作为真实逐抽记录导入或导出。");
   }
   const rows = new Map<string, StarRailUigfRow>();
   for (const row of value) include(rows, readRow(row, uid, allowCollaboration));

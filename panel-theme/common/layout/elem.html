@@ -9,7 +9,7 @@
   <link rel="stylesheet" type="text/css" href="{{_theme_path}}common/common.css"/>
   {{/if}}
   <style>body {transform:none} body .container {background-color:#242e45} body:not(.original-theme) .head-box {background-color:#303f60}</style>
-  <title>miao-plugin</title>
+  <title>{{cardBrand}}</title>
   {{block 'css'}}
   {{/block}}
 </head>
@@ -17,7 +17,7 @@
 <body class="elem-{{elemCls}} {{displayMode || mode || `default`}}-mode {{bodyClass}}" {{sys.scale}}>
 <div class="container elem-bg" id="container">
   {{block 'main'}}{{/block}}
-  <div class="copyright">{{@copyright || sys?.copyright}}</div>
+  <div class="copyright">{{cardBrand}}</div>
 </div>
 </body>
 </html>

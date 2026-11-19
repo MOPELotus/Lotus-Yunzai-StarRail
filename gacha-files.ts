@@ -43,7 +43,7 @@ function describe(error: unknown, profileId: number) {
   }
   if (error instanceof StarRailGachaArchiveError) return error.message;
   if (error instanceof TypeError &&
-      /^(?:UIGF|SRGF|星铁|当前星铁档案|该文件版本不支持星铁联动|该星铁文件包含 Lotus)/u.test(error.message)) return error.message;
+      /^(?:UIGF|SRGF|星铁|当前星铁档案|该文件版本不支持星铁联动|该星铁文件包含显示占位记录)/u.test(error.message)) return error.message;
 }
 
 export function createStarRailGachaFiles(
