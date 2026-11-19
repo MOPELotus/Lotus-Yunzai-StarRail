@@ -10,6 +10,7 @@ import nihilityFixtures from "./fixtures/panel-damage-nihility.json";
 import iceFixtures from "./fixtures/panel-damage-ice-state.json";
 import eruditionFixtures from "./fixtures/panel-damage-erudition.json";
 import remembranceFixtures from "./fixtures/panel-damage-remembrance.json";
+import abundanceFixtures from "./fixtures/panel-damage-abundance.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -77,7 +78,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -89,11 +90,11 @@ describe("common engine with original character data", () => {
         const actual = damage.rows[index]!;
         expect(actual.title).toBe(row.title);
         expect(actual.average).toBeCloseTo(row.avg, 7);
-        if (row.dmg === undefined) expect(actual.critical).toBeUndefined();
+        if (!("dmg" in row) || row.dmg === undefined) expect(actual.critical).toBeUndefined();
         else expect(actual.critical).toBeCloseTo(row.dmg, 7);
       }
       expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(expected.swap.avg, 7);
-      if (expected.swap.dmg === undefined) expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
+      if (!("dmg" in expected.swap) || expected.swap.dmg === undefined) expect(damage.swaps[0]?.values[1]?.critical).toBeUndefined();
       else expect(damage.swaps[0]?.values[1]?.critical).toBeCloseTo(expected.swap.dmg, 7);
     });
   }
@@ -223,5 +224,17 @@ describe("common engine with original character data", () => {
     expect(damage.rows[damage.selected]?.average).toBeCloseTo(12637.421915703677, 7);
     const incomplete = { ...avatar, skills: avatar.skills.filter(skill => skill.key !== "mt") };
     expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少技能等级");
+  });
+
+  test("distinguishes Luocha's eidolon shield from healing and damage", () => {
+    const { avatar, metadata } = abundanceFixtures.find(fixture => fixture.avatar.id === "1203")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared, 6)!;
+    expect(damage.rows[damage.selected]).toMatchObject({ title: "2命护盾量", metric: "shield", critical: undefined });
+    expect(damage.rows[1]?.metric).toBe("heal");
+    expect(damage.rows[2]?.metric).toBe("damage");
+    expect(readStarRailPersonalDamage({ ...avatar, rank: 0 }, prepared, 6).scenarioCount).toBe(5);
   });
 });

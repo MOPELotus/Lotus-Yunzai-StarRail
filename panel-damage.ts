@@ -42,6 +42,10 @@ import * as jade from "./panel-damage-rules/characters/jade.js";
 import * as castorice from "./panel-damage-rules/characters/castorice.js";
 import * as aglaea from "./panel-damage-rules/characters/aglaea.js";
 import * as evernight from "./panel-damage-rules/characters/evernight.js";
+import * as luocha from "./panel-damage-rules/characters/luocha.js";
+import * as natasha from "./panel-damage-rules/characters/natasha.js";
+import * as gallagher from "./panel-damage-rules/characters/gallagher.js";
+import * as huohuo from "./panel-damage-rules/characters/huohuo.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -88,7 +92,7 @@ type Rule = {
     check?: (variables: Variables) => boolean;
     dmg: (variables: Variables, damage: DamageFn) => DamageValue;
   }[];
-  buffs: readonly Buff[];
+  buffs?: readonly Buff[];
   defDmgIdx?: number;
   mainAttr: string;
   defParams?: Params | ((variables: Variables) => Params);
@@ -110,6 +114,7 @@ const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪�
 const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
 const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪式感" };
 const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
+const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -178,6 +183,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23036": "将光阴织成黄金", ...remembranceCones } },
   "1413": { name: "长夜月", element: "冰", path: "记忆", traces: [101, 103], stats: ["hp"], rule: evernight,
     cones: { "23049": "致长夜的星光", ...remembranceCones } },
+  "1203": { name: "罗刹", element: "虚数", path: "丰饶", traces: [], stats: ["heal"], rule: luocha,
+    cones: { "23008": "棺的回响", "21007": "同一种心情" } },
+  "1105": { name: "娜塔莎", element: "物理", path: "丰饶", traces: [102], stats: ["hp", "heal"], rule: natasha,
+    cones: { "22001": "嘿，我在这儿", "23013": "时节不居" } },
+  "1301": { name: "加拉赫", element: "火", path: "丰饶", traces: [101], stats: ["heal", "stance"], rule: gallagher,
+    cones: { "21035": "何物为真", "21007": "同一种心情" } },
+  "1217": { name: "藿藿", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
+  "2217": { name: "藿藿Pro", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -334,7 +347,7 @@ function originalDamage(
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
   if (relics.sets["谧宁拾骨地"] === 2 && values.hp === undefined) throw new MissingDamageData("缺少套装所需的生命属性");
   if (relics.sets["泛银河商业公司"] === 2 && values.effPct === undefined) throw new MissingDamageData("缺少套装所需的效果命中属性");
-  const buffs = [...rule.buffs, ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
+  const buffs = [...(rule.buffs ?? []), ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };
   const defaultParams = (typeof rule.defParams === "function" ? rule.defParams(meta as unknown as Variables) : rule.defParams) ?? {};

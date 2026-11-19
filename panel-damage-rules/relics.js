@@ -274,4 +274,14 @@ export default {
       }
     }]
   },
+  渊思寂虑的巨树: {
+    2: [attr('speedPct', 6), {
+      title: '速度大于等于[_speed]时，治疗量提高[heal]%',
+      check: ({ attr }) => attr.speed >= 135,
+      data: {
+        _speed: ({ attr }) => attr.speed >= 180 ? 180 : 135,
+        heal: ({ attr }) => attr.speed >= 180 ? 20 : 12
+      }
+    }]
+  },
 }

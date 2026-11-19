@@ -19,5 +19,27 @@ export default function (staticIdx, keyIdx) {
       staticIdx(1, 'hpPct'),
       staticIdx(2, 'heal')
     ],
+    棺的回响: [
+      staticIdx(1, 'atkPct'),
+      keyIdx('释放终结技后，速度提升[speed]', 'speed', 3)
+    ],
+    '嘿，我在这儿': [
+      staticIdx(1, 'hpPct'),
+      keyIdx('释放战技时，治疗量提高[heal]%', 'heal', 2)
+    ],
+    惊魂夜: [
+      staticIdx(1, 'recharge'),
+      (tables) => {
+        return {
+          title: '提供治疗时，5层提供目标攻击力[atkPct]%',
+          data: {
+            atkPct: tables[3] * 5
+          }
+        }
+      }
+    ],
+    何物为真: [
+      staticIdx(1, 'stance')
+    ],
   }
 }

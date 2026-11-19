@@ -52,17 +52,19 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;
   const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
   const labels = damage.rows.map((row, index) => `${index + 1}. ${row.title}`);
-  const rowWidth = 335 + 9 * Math.max(...labels.map(glyphUnits));
+  const rowMetrics = (["damage", "shield", "heal"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
+  const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
+  const criticalGap = Math.max(162, glyphUnits(resultHeading) * 8 + 16);
+  const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.map(glyphUnits));
   const width = Math.max(660, 210 + damage.swaps.length * 110, rowWidth);
   const listHeight = 45 + damage.rows.length * 34;
   const swapTop = 161 + listHeight, swapHeight = 110 + damage.swaps.length * 45;
   const buffTop = swapTop + swapHeight + 14;
   const buffLines = damage.buffs.flatMap(conditionLines);
   const height = buffTop + 73 + buffLines.length * 25;
-  const valueX = width - 46, critX = valueX - 162;
+  const valueX = width - 46, critX = valueX - criticalGap;
   const matrixX = (index: number) => 170 + (index + 0.5) * (width - 210) / damage.swaps.length;
   const baseline = damage.rows[damage.selected]!;
-  const rowMetrics = (["damage", "shield", "heal"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
   const metricLabel = personalDamageMetricLabel[baseline.metric];
 
   return renderPng(width, height, ctx => {
@@ -122,7 +124,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
 
     box(147, listHeight, "伤害计算");
     text("暴击伤害", critX, 173, 16, "#f5f3f7", "right");
-    text(rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / "), valueX, 173, 16, "#f5f3f7", "right");
+    text(resultHeading, valueX, 173, 16, "#f5f3f7", "right");
     for (const [index, row] of damage.rows.entries()) {
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(labels[index]!, 42, y, 18, color);
