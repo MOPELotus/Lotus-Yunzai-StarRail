@@ -16,6 +16,7 @@ import huntFixtures from "./fixtures/panel-damage-hunt.json";
 import dotFixtures from "./fixtures/panel-damage-dot.json";
 import harmonyFixtures from "./fixtures/panel-damage-harmony.json";
 import trailblazerFixtures from "./fixtures/panel-damage-harmony-break.json";
+import preservationFixtures from "./fixtures/panel-damage-preservation.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -83,7 +84,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures,
+    ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
@@ -309,5 +310,35 @@ describe("common engine with original character data", () => {
     const damage = calculateStarRailPersonalDamage(avatar, { ...inputs, setForId: id => sets.get(id) }, 4)!;
     expect(damage.rows[damage.selected]?.title).toBe("终结技单体速度加成比例");
     expect(damage.rows[damage.selected]?.percentage).toBe(damage.rows[2]?.percentage);
+  });
+
+  test("uses the original strict effect hit threshold for Belobog's extra defense", () => {
+    const { avatar, metadata } = preservationFixtures.find(fixture => fixture.avatar.id === "8003")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const stats = avatar.stats.filter(stat => stat.key !== "effPct");
+    expect(readStarRailPersonalDamage({ ...avatar, stats }, prepared).reason).toBe("缺少套装所需的效果命中属性");
+    const shieldAt = (value: string) => {
+      const damage = calculateStarRailPersonalDamage({ ...avatar, stats: [...stats, { key: "effPct", value }] }, prepared)!;
+      return damage.rows[damage.selected]!;
+    };
+    expect(shieldAt("50%").metric).toBe("shield");
+    expect(shieldAt("50%").active.some(buff => buff.startsWith("筑城者的贝洛伯格"))).toBe(false);
+    expect(shieldAt("51%").average).toBeGreaterThan(shieldAt("50%").average);
+  });
+
+  test("retains the fixed comrade attack and the original dragon spirit shield at eidolon two", () => {
+    const { avatar, metadata } = preservationFixtures.find(fixture => fixture.avatar.id === "1414")!;
+    const { setNames, ...inputs } = metadata;
+    const sets = new Map(Object.entries(setNames));
+    const prepared = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const damage = calculateStarRailPersonalDamage(avatar, prepared)!;
+    const rankOne = calculateStarRailPersonalDamage({ ...avatar, rank: 1 }, prepared)!;
+    expect(damage.rows[damage.selected]?.title).toBe("普攻伤害");
+    expect(damage.rows[4]?.metric).toBe("shield");
+    expect(damage.rows[4]?.average).toBeCloseTo(rankOne.rows[4]!.average * 2, 7);
+    expect(damage.rows[5]?.title).toContain("同袍攻击:3000");
+    expect(readStarRailPersonalDamage(avatar, prepared, 7).scenarioCount).toBe(6);
   });
 });

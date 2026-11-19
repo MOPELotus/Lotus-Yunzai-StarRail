@@ -71,6 +71,10 @@ import * as hanya from "./panel-damage-rules/characters/hanya.js";
 import * as yukong from "./panel-damage-rules/characters/yukong.js";
 import * as harmonyTrailblazer from "./panel-damage-rules/characters/harmony-trailblazer.js";
 import * as fuXuan from "./panel-damage-rules/characters/fu-xuan.js";
+import * as gepard from "./panel-damage-rules/characters/gepard.js";
+import * as marchPreservation from "./panel-damage-rules/characters/march-preservation.js";
+import * as preservationTrailblazer from "./panel-damage-rules/characters/preservation-trailblazer.js";
+import * as danHengPermansor from "./panel-damage-rules/characters/danheng-permansor.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -141,6 +145,7 @@ const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
 const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪式感" };
 const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
 const harmonyTrailblazerCones = { "23019": "镜中故我", "21004": "记忆中的模样" };
+const preservationTrailblazerCones = { "24002": "记忆的质料", "21043": "两个人的演唱会" };
 const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
@@ -269,6 +274,16 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     rule: harmonyTrailblazer, cones: harmonyTrailblazerCones },
   "1208": { name: "符玄", element: "量子", path: "存护", traces: [], stats: ["hp", "heal"], rule: fuXuan,
     cones: { "23011": "她已闭上双眼", "24002": "记忆的质料" } },
+  "1104": { name: "杰帕德", element: "冰", path: "存护", traces: [103], stats: ["def"], rule: gepard,
+    cones: { "23005": "制胜的瞬间", "21043": "两个人的演唱会" } },
+  "1001": { name: "三月七", element: "冰", path: "存护", traces: [], stats: ["def"], rule: marchPreservation,
+    cones: { "21030": "这就是我啦！", "21043": "两个人的演唱会" } },
+  "8003": { name: "穹·存护", element: "火", path: "存护", traces: [], stats: ["def"],
+    rule: preservationTrailblazer, cones: preservationTrailblazerCones },
+  "8004": { name: "星·存护", element: "火", path: "存护", traces: [], stats: ["def"],
+    rule: preservationTrailblazer, cones: preservationTrailblazerCones },
+  "1414": { name: "丹恒•腾荒", element: "物理", path: "存护", traces: [103], rule: danHengPermansor,
+    cones: { "23051": "纵然山河万程", "21043": "两个人的演唱会" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -424,7 +439,9 @@ function originalDamage(
   const relics = relicEffects(avatar, metadata);
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
   if (relics.sets["谧宁拾骨地"] === 2 && values.hp === undefined) throw new MissingDamageData("缺少套装所需的生命属性");
-  if (relics.sets["泛银河商业公司"] === 2 && values.effPct === undefined) throw new MissingDamageData("缺少套装所需的效果命中属性");
+  if (values.effPct === undefined && (relics.sets["泛银河商业公司"] === 2 || relics.sets["筑城者的贝洛伯格"] === 2)) {
+    throw new MissingDamageData("缺少套装所需的效果命中属性");
+  }
   const buffs = [...(rule.buffs ?? []), ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };

@@ -31,5 +31,32 @@ export default function (staticIdx, keyIdx) {
       staticIdx(2, 'recharge'),
       keyIdx('装备者生命降低时，使我方全体造成的伤害提高[dmg]%', 'dmg', 3)
     ],
+    制胜的瞬间: [
+      staticIdx(1, 'defPct'),
+      staticIdx(2, 'effPct'),
+      keyIdx('受到攻击时，防御力提高[defPct]%', 'defPct', 3)
+    ],
+    '这就是我啦！': [
+      staticIdx(1, 'defPct'),
+      (tables) => {
+        return {
+          title: '基于防御力提高终结技伤害值[qInc]',
+          data: {
+            qInc: ({ calc, attr }) => calc(attr.def) * tables[2] / 100
+          }
+        }
+      }
+    ],
+    纵然山河万程: [
+      staticIdx(1, 'atkPct'),
+      (tables) => {
+        return {
+          title: '终结技后【卫戍】状态：造成的伤害提高[dmg]%',
+          data: {
+            dmg: tables[4]
+          }
+        }
+      }
+    ],
   }
 }
