@@ -24,6 +24,7 @@ import { parseChallengeQuery } from "./challenge-model.ts";
 import { queryStarRailChallenge } from "./challenge.ts";
 import { createStarRailPanel } from "./panel.ts";
 import { parsePanelCommand } from "./panel-model.ts";
+import { createStarRailSimulation } from "./simulation/commands.ts";
 
 const updateCommand = /^#星铁更新抽卡记录([1-9]\d{0,2})?$/u;
 const helpCommand = /^#星铁(?:抽卡|记录)帮助$/u;
@@ -101,6 +102,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
   const client = createProfileHoyoClient(profiles);
   const panel = createStarRailPanel(profiles, client, lockFile, signal);
+  const simulate = createStarRailSimulation({ lockFile, signal });
   const history = createStarRailGachaHistoryStore(historyRoot, lockFile);
   const archive = createStarRailGachaRecordArchive({ directory: recordsRoot, legacyDirectory: legacyRecordsRoot }, lockFile);
   const gachaFiles = createStarRailGachaFiles(profiles, archive, signal, runtimeVersion?.version ?? runtimeVersion?.revision ?? "dev");
@@ -223,6 +225,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         }
         return panel(String(userId), panelCommand);
       }
+      const simulated = await simulate(context.normalizedMessage, context);
+      if (simulated !== undefined) return simulated;
       const fileReply = await gachaFiles(context);
       if (fileReply !== undefined) return fileReply;
       if (helpCommand.test(context.normalizedMessage)) return help;

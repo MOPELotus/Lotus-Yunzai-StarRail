@@ -36,3 +36,27 @@
 使用 `*银枝遗器` 或 `*三月圣遗物2` 查看指定角色的逐件评分、词条权重和总分。沿用面板指令的角色别名与档案编号。评分读取当前档案关联的已保存面板，也可以直接读取对应 UID 的旧喵喵面板，无需新的米游社请求。缺词条的遗器单独提示。总评级沿用原实现，以六个位置的平均分确定。
 
 评分、固定位置与元素主词条判定来自同版 Miao-Plugin 的 `models/artis/{ArtisMark,ArtisMarkCfg,ArtisAttr}.js` 和 `resources/meta-sr/artifact/{meta.js,meta.json,artis-mark.js}`，椒丘、风堇、缇宝的特殊规则来自其各自角色目录的 `artis.js`。卡图沿用 `apps/profile/ProfileArtis.js` 与 `resources/character/artis-mark.{html,css}`。模块随附角色满级基础属性的必要字段及遗器数值规则，来源为同版星铁元数据。角色立绘、遗器图和字体继续使用上节的本机主题或官方 CDN。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
+
+## 模拟跃迁
+
+- `*单抽`、`*十连`、`*百连` 进入当前角色活动跃迁。可用 `*单抽2`、`*十连光锥2` 选择当期指定卡池，也可用 `*十连常驻` 进行群星跃迁。
+- `*我的星轨票` 查询模拟票数。默认每天北京时间 04:00 补至 100 张专票和 10 张通票。每个 QQ 共用票数，同一会话内的同类活动卡池共用保底，角色、光锥和常驻各有独立保底。真实账号及抽卡档案无需绑定。
+- 模拟使用基础概率、硬保底和近似软保底。内置 4.7 第一期官方 UP 与一套固定常驻名单，供聊天内娱乐使用。自选非 UP、积分、商城及游戏内持有情况不参与模拟。当前期次结束时，活动卡池等待配置更新，常驻池仍可用。
+- 模拟存档默认写入宿主 `data/starrail/simulation/<QQ>/1.json`，可用 `LOTUS_STAR_RAIL_WARP_STATE_DIR` 指定目录。旧模拟 Redis 余额和保底可保留作原部署备份，本模块从自己的存档读写。
+- `LOTUS_STAR_RAIL_WARP_BANNERS` 可指向 UTF-8 JSON 文件，替换内置活动日历。每项包含 `slot`（1–4）、`start` 和 `end`（带时区的 ISO 时间）、`character`、`cone`、四星角色数组 `characters4` 和四星光锥数组 `cones4`。同一编号的有效区间不能重叠，结束时刻不再开放。单个卡池可按以下格式配置。
+
+  ```json
+  [
+    {
+      "slot": 1,
+      "start": "2026-11-11T11:00:00+08:00",
+      "end": "2026-12-22T15:00:00+08:00",
+      "character": "星神★阿哈",
+      "cone": "当第一声『阿哈』响起",
+      "characters4": ["艾丝妲", "玲可", "驭空"],
+      "cones4": ["宇宙市场趋势", "天才们的休憩", "黑夜如影随行"]
+    }
+  ]
+  ```
+
+模拟逻辑和结果图由 Lotus-Yunzai 编写。角色和光锥插图按现有本机主题目录读取，发行仓只包含渲染代码。内置活动数据来自游戏发布方的 [4.7 版本活动跃迁](https://www.taptap.cn/moment/868905398936014841) 与 [4.7 版本更新说明](https://www.taptap.cn/moment/869248465039788964)。首日开始时间按公告预计维护完成时刻配置。

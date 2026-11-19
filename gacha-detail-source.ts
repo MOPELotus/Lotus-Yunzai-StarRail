@@ -53,9 +53,10 @@ export async function readStarRailRecordItems(root: string): Promise<StarRailRec
   return (id) => items.get(id);
 }
 
-export async function readStarRailGachaItems(root: string): Promise<ResolveItem> {
+export async function readStarRailGachaItems(root: string) {
   const [characters, weapons] = await Promise.all([itemCatalog(root, "character"), itemCatalog(root, "weapon")]);
   const characterNames = new Map([...characters.values()].map((item) => [item.name, item]));
   const weaponNames = new Map([...weapons.values()].map((item) => [item.name, item]));
-  return ({ name, item_type }) => (item_type === "角色" ? characterNames : weaponNames).get(name);
+  return ({ name, item_type }: Pick<Parameters<ResolveItem>[0], "name" | "item_type">) =>
+    (item_type === "角色" ? characterNames : weaponNames).get(name);
 }
