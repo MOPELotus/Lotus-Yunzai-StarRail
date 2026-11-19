@@ -245,4 +245,12 @@ export default {
       }
     }]
   },
+  泛银河商业公司: {
+    2: [attr('effPct', 10), {
+      title: '基于效果命中提高攻击力[atkPct]%',
+      data: {
+        atkPct: ({ calc, attr }) => Math.min(25, calc(attr.effPct) / 4 || 0)
+      }
+    }]
+  },
 }

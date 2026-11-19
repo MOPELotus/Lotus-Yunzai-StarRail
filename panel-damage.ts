@@ -27,6 +27,10 @@ import * as blade from "./panel-damage-rules/characters/blade.js";
 import * as bladeEnhanced from "./panel-damage-rules/characters/blade-enhanced.js";
 import * as tribbie from "./panel-damage-rules/characters/tribbie.js";
 import * as bailu from "./panel-damage-rules/characters/bailu.js";
+import * as welt from "./panel-damage-rules/characters/welt.js";
+import * as weltEnhanced from "./panel-damage-rules/characters/welt-enhanced.js";
+import * as silverWolf from "./panel-damage-rules/characters/silver-wolf.js";
+import * as jiaoqiu from "./panel-damage-rules/characters/jiaoqiu.js";
 import hunt from "./panel-damage-rules/weapons/hunt.js";
 import nihility from "./panel-damage-rules/weapons/nihility.js";
 import erudition from "./panel-damage-rules/weapons/erudition.js";
@@ -90,6 +94,7 @@ const setRules = relicRules as unknown as Readonly<Record<string, Readonly<Recor
 const kafkaCones = { "23006": "只需等待", "23022": "重塑时光之忆", "24003": "孤独的疗愈" };
 const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的约定" };
 const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
+const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪耀" };
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -132,6 +137,12 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: { "23038": "如果时间是一朵花", "23019": "镜中故我" } },
   "1211": { name: "白露", element: "雷", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: bailu,
     cones: { "23013": "时节不居", "21007": "同一种心情" } },
+  "1004": { name: "瓦尔特", element: "虚数", path: "虚无", traces: [101, 103], rule: welt, cones: weltCones },
+  "2004": { name: "瓦尔特Pro", element: "虚数", path: "虚无", traces: [101, 102, 103], stats: ["effPct"], rule: weltEnhanced, cones: weltCones },
+  "1006": { name: "银狼", element: "量子", path: "虚无", traces: [102], stats: ["stance"], rule: silverWolf,
+    cones: { "23007": "雨一直下", "22000": "新手任务开始前" } },
+  "1218": { name: "椒丘", element: "火", path: "虚无", traces: [102], stats: ["effPct"], rule: jiaoqiu,
+    cones: { "23029": "那无数个春天", "21015": "决心如汗珠般闪耀" } },
 }) as unknown as [string, Character][]);
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
@@ -284,6 +295,7 @@ function originalDamage(
   const relics = relicEffects(avatar, metadata);
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
   if (relics.sets["谧宁拾骨地"] === 2 && values.hp === undefined) throw new MissingDamageData("缺少套装所需的生命属性");
+  if (relics.sets["泛银河商业公司"] === 2 && values.effPct === undefined) throw new MissingDamageData("缺少套装所需的效果命中属性");
   const buffs = [...rule.buffs, ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };

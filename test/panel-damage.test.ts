@@ -6,6 +6,7 @@ import additionalFixtures from "./fixtures/panel-damage-additional.json";
 import physicalImaginaryFixtures from "./fixtures/panel-damage-physical-imaginary.json";
 import breakFixtures from "./fixtures/panel-damage-break-support.json";
 import healthFixtures from "./fixtures/panel-damage-hp-support.json";
+import nihilityFixtures from "./fixtures/panel-damage-nihility.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -71,7 +72,7 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
-  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures]) {
+  for (const { avatar, metadata, expected } of [...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures, ...healthFixtures, ...nihilityFixtures]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {
       const { setNames, ...inputs } = metadata;
       const sets = new Map(Object.entries(setNames));
@@ -155,5 +156,23 @@ describe("common engine with original character data", () => {
     expect(readStarRailPersonalDamage({ ...avatar, rank: 0 }, prepared, 5).scenarioCount).toBe(4);
     const incomplete = { ...avatar, stats: avatar.stats.map(stat => stat.key === "hp" ? { ...stat, base: undefined } : stat) };
     expect(readStarRailPersonalDamage(incomplete, prepared).reason).toBe("缺少角色基础与综合属性");
+  });
+
+  test("requires the saved attributes for effect-hit conversion and for entanglement", () => {
+    for (const [id, key, reason] of [
+      ["1004", "effPct", "缺少套装所需的效果命中属性"],
+      ["1006", "stance", "缺少计算所需的战斗属性"],
+    ]) {
+      const { avatar, metadata } = nihilityFixtures.find(fixture => fixture.avatar.id === id)!;
+      const { setNames, ...inputs } = metadata;
+      const sets = new Map(Object.entries(setNames));
+      const prepared = { ...inputs, setForId: (itemId: string) => sets.get(itemId) };
+      expect(readStarRailPersonalDamage({ ...avatar, stats: avatar.stats.filter(stat => stat.key !== key) }, prepared).reason).toBe(reason);
+      if (id === "1006") {
+        const damage = calculateStarRailPersonalDamage(avatar, prepared, 4)!;
+        expect(damage.rows[damage.selected]).toMatchObject({ title: "击破纠缠伤害(10韧性怪)", metric: "damage", critical: undefined });
+        expect(damage.rows[damage.selected]?.average).toBeCloseTo(48708.26289070868, 7);
+      }
+    }
   });
 });

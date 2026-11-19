@@ -47,5 +47,30 @@ export default function (staticIdx, keyIdx) {
       staticIdx(1, 'stance'),
       keyIdx('【焚灼】状态下，敌方目标受到的击破伤害提高[breakEnemydmg]%', 'breakEnemydmg', 2)
     ],
+    以世界之名: [
+      keyIdx('对陷入负面效果的敌人伤害提高[dmg]%，释放战技的功力提高[atkPct]%', { dmg: 1, atkPct: 3 })
+    ],
+    决心如汗珠般闪耀: [
+      keyIdx('攻陷状态敌方防御力降低[enemyDef]%', 'enemyDef', 2)
+    ],
+    新手任务开始前: [
+      staticIdx(1, 'effPct')
+    ],
+    雨一直下: [
+      staticIdx(1, 'effPct'),
+      keyIdx('对大于3个负面效果的敌人提升暴击率[cpct]%', 'cpct', 2),
+      keyIdx('以太编码提升伤害[dmg]%', 'dmg', 3)
+    ],
+    那无数个春天: [
+      staticIdx(1, 'effPct'),
+      (tables) => {
+        return {
+          title: '【穷寇】状态下，敌方目标受到的伤害提高[enemydmg]%',
+          data: {
+            enemydmg: tables[2] + tables[3]
+          }
+        }
+      }
+    ],
   }
 }
