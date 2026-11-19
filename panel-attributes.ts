@@ -62,7 +62,7 @@ export function readLegacyRelicAttributes(part: Relic, meta: Json) {
   return { main: { key, value: main.base + main.step * part.level }, sub };
 }
 
-export function calculateLegacyPanelAttributes(avatar: PanelAvatar, {
+export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, {
   character, cone, conePath, relicMetadata, setForId,
 }: {
   readonly character: Json;
@@ -70,7 +70,7 @@ export function calculateLegacyPanelAttributes(avatar: PanelAvatar, {
   readonly conePath: string;
   readonly relicMetadata: Json;
   readonly setForId: (id: string) => string | undefined;
-}): PanelAvatar["stats"] | undefined {
+}) {
   if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR"].includes(avatar.legacy.source)) return;
   const charStats = leveledAttributes(character, avatar.level, avatar.legacy.promote, false);
   if (!charStats || primary.some(key => !finite(charStats[key]))) return;
@@ -142,9 +142,14 @@ export function calculateLegacyPanelAttributes(avatar: PanelAvatar, {
     const initial = base.get(key) ?? 0;
     const total = initial * (1 + (multipliers.get(key) ?? 0) / 100) + (flat.get(key) ?? 0);
     const ratio = percentages.some(value => value === key);
-    return {
-      key: key === "dmg" ? element : key,
-      base: formatPanelAttribute(initial, ratio), value: formatPanelAttribute(total, ratio),
-    };
+    return { key: key === "dmg" ? element : key, base: initial, value: total, ratio };
   });
+}
+
+export function calculateLegacyPanelAttributes(
+  ...args: Parameters<typeof calculateLegacyPanelAttributeRows>
+): PanelAvatar["stats"] | undefined {
+  return calculateLegacyPanelAttributeRows(...args)?.map(({ key, base, value, ratio }) => ({
+    key, base: formatPanelAttribute(base, ratio), value: formatPanelAttribute(value, ratio),
+  }));
 }

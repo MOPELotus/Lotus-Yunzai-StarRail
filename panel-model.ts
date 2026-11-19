@@ -115,6 +115,13 @@ export interface PanelSnapshot {
 export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 
 export function parsePanelCommand(message: string) {
+  const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害([1-9]\d{0,5})?|武器([1-7])?)(?:\s+([1-9]\d{0,2}))?$/u.exec(message);
+  const damagedRole = damage?.[1]?.trim();
+  if (damage && damagedRole && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
+    const profileId = Number(damage[4] ?? 1);
+    if (profileId > MAX_PROFILE_ID) return;
+    return { type: "damage" as const, profileId, name: damagedRole, scenario: Number(damage[2] ?? damage[3] ?? 3) };
+  }
   const command = /^(?:#星铁|\*)(.+?)\s*([1-9]\d{0,2})?$/u.exec(message);
   if (!command || !command[1]) return;
   const body = command[1].trim();

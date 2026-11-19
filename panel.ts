@@ -6,7 +6,9 @@ import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
-import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readTheme } from "./panel-card.ts";
+import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
+import { calculateStarRailPersonalDamage, hasPersonalDamage, personalDamageScenarios } from "./panel-damage.ts";
+import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
@@ -63,7 +65,8 @@ export function createStarRailPanel(
   const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
   const refreshing = new Set<string>();
 
-  return async function query(qq: string, { type, profileId, name }: PanelCommand, context?: StarRailGroupRankContext) {
+  return async function query(qq: string, command: PanelCommand, context?: StarRailGroupRankContext) {
+    const { type, profileId, name } = command;
     try {
       const observedAt = type === "relics" && groupRank?.allows(context) ? Date.now() : undefined;
       const { role, revision: initialRevision, ...account } = await profiles.requestContext(qq, profileId, "sr");
@@ -105,6 +108,21 @@ export function createStarRailPanel(
 
       if (!snapshot?.avatars.length) return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
       const theme = await readTheme();
+      if (type === "damage") {
+        const avatar = findPanelAvatar(snapshot.avatars, name, theme);
+        await verify();
+        if (!avatar) return `当前星铁面板中没有「${name}」，请用 *面板${profileId === 1 ? "" : profileId} 查看列表。`;
+        if (!hasPersonalDamage(avatar.id)) return `「${avatar.name}」的星铁个人伤害规则尚未接入。当前支持希儿。`;
+        if (command.scenario > personalDamageScenarios) return `希儿支持 ${personalDamageScenarios} 个伤害场景，请输入 1（普攻）、2（战技）或 3（终结技）。`;
+        const metadata = await readPanelDamageMetadata(avatar, theme);
+        const damage = metadata && calculateStarRailPersonalDamage(avatar, metadata, command.scenario);
+        await verify();
+        if (!damage) return "希儿伤害计算缺少有效面板或可用装备规则。请确认技能、行迹、装备及角色属性数据完整。";
+        const card = await renderStarRailPersonalDamage(damage, theme.root).catch(() => undefined);
+        await verify();
+        if (card) return { type: "image" as const, file: card.png };
+        return damage.rows.map(row => `${row.title} · 暴击 ${Math.round(row.critical)} · 期望 ${Math.round(row.average)}`).join("\n");
+      }
       let models;
       let selected;
       let relicScore: { readonly mark: string; readonly markClass: string; readonly incomplete: number } | undefined;

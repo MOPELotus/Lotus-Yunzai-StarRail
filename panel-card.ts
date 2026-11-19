@@ -84,6 +84,19 @@ export function findPanelAvatar(avatars: readonly PanelAvatar[], name: string, t
   return near.length === 1 ? near[0] : undefined;
 }
 
+export async function readPanelDamageMetadata(avatar: PanelAvatar, theme: Metadata) {
+  const { name } = lookup(avatar, theme);
+  const weapon = avatar.cone && object(theme.weapons[avatar.cone.id]);
+  const coneName = text(weapon?.name), conePath = text(weapon?.type);
+  if (!safePart(name) || (avatar.cone && (!safePart(coneName) || !safePart(conePath)))) return;
+  const [character, cone] = await Promise.all([
+    readJson(join(theme.root, "meta-sr", "character", name, "data.json")),
+    weapon ? readJson(join(theme.root, "meta-sr", "weapon", conePath, coneName, "data.json")) : Promise.resolve<Json>({}),
+  ]);
+  if (String(character.id) !== avatar.id || (avatar.cone && String(cone.id) !== avatar.cone.id)) return;
+  return { character, cone, conePath, relicMetadata: theme.relicValues, setForId: (id: string) => theme.relicById.get(id)?.asset[1] };
+}
+
 async function localArt(theme: Metadata, paths: readonly string[]) {
   if (!paths.every(safePart)) return "";
   const file = join(theme.root, "meta-sr", ...paths);

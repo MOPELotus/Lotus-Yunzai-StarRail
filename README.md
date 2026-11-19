@@ -31,6 +31,14 @@
 
 旧面板复算及行迹布局沿用同版 Miao-Plugin 的 `models/attr/{Attr,AttrData}.js`、`models/Character.js`、`models/character/CharTalent.js`、`models/Weapon.js`、`models/artis/ArtisAttr.js`、`apps/profile/ProfileDetail.js` 与 `resources/meta-sr/{artifact,weapon}/` 里的静态规则。打包的 `panel-theme/static-panel-rules.json` 只摘录套装静态属性键值及光锥静态叠影表索引。装备数值仍从本地授权主题元数据读取。
 
+## 希儿个人伤害
+
+`*希儿伤害` 查看已保存面板的个人伤害。序号 `1`、`2`、`3` 分别选普攻、战技和终结技进行词条替换比较，默认选终结技。支持原角色别名和 `武器` 别名，例如 `*希尔伤害2`、`*希儿武器1 2`。后者读取档案 2。结果展示 80 级弱点敌人条件下的暴击与期望伤害、词条替换效果和生效增益。
+
+此入口支持角色编号 `1102`、光锥于夜色中、锋镝、如泥酣眠，以及繁星璀璨的天才、野穗伴行的快枪手、繁星竞技场、停转的萨尔索图、太空封印站、苍穹战线格拉默的成套效果。缺少必需属性、行迹或装备规则时提示数据不齐。查询通过档案选择角色并使用本地快照与主题元数据。
+
+三种伤害场景、增益和词条替换规则依据同版 Miao-Plugin 的 `models/ProfileDmg.js`、`models/dmg/{DmgAttr,DmgCalc}.js`、`resources/meta-sr/character/希儿/calc.js`、`resources/meta-sr/weapon/巡猎/calc.js` 和 `resources/meta-sr/artifact/{calc,meta}.js`，卡图分区沿用 `resources/character/profile-detail.html` 的伤害区块。使用本机授权主题目录中对应的量子背景和角色立绘。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
+
 ## 遗器评分
 
 使用 `*银枝遗器` 或 `*三月圣遗物2` 查看指定角色的逐件评分、词条权重和总分。沿用面板指令的角色别名与档案编号。评分读取当前档案关联的已保存面板，也可以直接读取对应 UID 的旧喵喵面板，无需新的米游社请求。缺词条的遗器单独提示。总评级沿用原实现，以六个位置的平均分确定。
