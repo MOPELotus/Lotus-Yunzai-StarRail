@@ -176,6 +176,31 @@ type Character = {
   cones: Readonly<Record<string, string>>;
 };
 const setRules = relicRules as unknown as Readonly<Record<string, Readonly<Record<number, Buff | Buff[]>>>>;
+const destructionCones = {
+  "20002": "天倾",
+  "20009": "乐圮",
+  "20016": "俱殁",
+  "21005": "鼹鼠党欢迎你",
+  "21012": "秘密誓心",
+  "21019": "在蓝天下",
+  "21026": "汪！散步时间！",
+  "21033": "无处可逃",
+  "21038": "在火的远处",
+  "21042": "铭记于心的约定",
+  "21058": "一行往日的血",
+  "22003": "忍事录•音律狩猎",
+  "23002": "无可取代的东西",
+  "23009": "到不了的彼岸",
+  "23014": "此身为剑",
+  "23015": "比阳光更明亮的",
+  "23025": "梦应归于何处",
+  "23030": "落日时起舞",
+  "23039": "血火啊，燃烧前路",
+  "23044": "黎明恰如此燃烧",
+  "23045": "没有回报的加冕",
+  "23062": "所见即我",
+  "24000": "记一位星神的陨落",
+};
 const huntCones = {
   "20000": "锋镝",
   "20007": "离弦",
@@ -225,9 +250,6 @@ const nihilityCones = {
   "23059": "灼尽炼狱的新骸",
   "24003": "孤独的疗愈",
 };
-const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的约定" };
-const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
-const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
 const eruditionCones = {
   "20006": "智库",
   "20013": "灵钥",
@@ -255,7 +277,6 @@ const eruditionCones = {
 const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
 const harmonyTrailblazerCones = { "23019": "镜中故我", "21004": "记忆中的模样" };
 const preservationTrailblazerCones = { "24002": "记忆的质料", "21043": "两个人的演唱会" };
-const destructionTrailblazerCones = { "24000": "记一位星神的陨落", "23002": "无可取代的东西" };
 const elationTrailblazerCones = { "24006": "欢愉满溢祝福", "21064": "菇菇嘎嘎历险记" };
 const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
@@ -279,23 +300,23 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1222": { name: "灵砂", element: "火", path: "丰饶", traces: [101], stats: ["stance", "heal"], rule: lingsha,
     cones: { "23032": "唯有香如故" } },
   "1221": { name: "云璃", element: "物理", path: "毁灭", traces: [103], rule: yunli,
-    cones: { "23030": "落日时起舞", "23002": "无可取代的东西" } },
+    cones: destructionCones },
   "1315": { name: "波提欧", element: "物理", path: "巡猎", traces: [101], stats: ["stance"], rule: boothill,
     cones: huntCones },
   "1305": { name: "真理医生", element: "虚数", path: "巡猎", traces: [102, 103], rule: drRatio,
     cones: huntCones },
   "1213": { name: "丹恒•饮月", element: "虚数", path: "毁灭", traces: [103], rule: imbibitorLunae,
-    cones: { "23015": "比阳光更明亮的", "23002": "无可取代的东西" } },
+    cones: destructionCones },
   "1310": { name: "流萤", element: "火", path: "毁灭", traces: [103], stats: ["stance"], rule: firefly,
-    cones: fireflyCones },
+    cones: destructionCones },
   "2310": { name: "流萤Pro", element: "火", path: "毁灭", traces: [101, 103], stats: ["stance"], rule: fireflyEnhanced,
-    cones: fireflyCones },
+    cones: destructionCones },
   "1225": { name: "忘归人", element: "火", path: "虚无", traces: [102], stats: ["stance"], rule: fugue,
     cones: nihilityCones },
   "1303": { name: "阮•梅", element: "冰", path: "同谐", traces: [101], stats: ["stance"], rule: ruanMei,
     cones: { "23019": "镜中故我", "21004": "记忆中的模样" } },
-  "1205": { name: "刃", element: "风", path: "毁灭", traces: [102], stats: ["hp"], rule: blade, cones: bladeCones },
-  "2205": { name: "刃Pro", element: "风", path: "毁灭", traces: [103], stats: ["hp"], rule: bladeEnhanced, cones: bladeCones },
+  "1205": { name: "刃", element: "风", path: "毁灭", traces: [102], stats: ["hp"], rule: blade, cones: destructionCones },
+  "2205": { name: "刃Pro", element: "风", path: "毁灭", traces: [103], stats: ["hp"], rule: bladeEnhanced, cones: destructionCones },
   "1403": { name: "缇宝", element: "量子", path: "同谐", traces: [101, 102], stats: ["hp"], rule: tribbie,
     cones: { "23038": "如果时间是一朵花", "23019": "镜中故我" } },
   "1211": { name: "白露", element: "雷", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: bailu,
@@ -306,12 +327,12 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: nihilityCones },
   "1218": { name: "椒丘", element: "火", path: "虚无", traces: [102], stats: ["effPct"], rule: jiaoqiu,
     cones: nihilityCones },
-  "1212": { name: "镜流", element: "冰", path: "毁灭", traces: [103], rule: jingliu, cones: jingliuCones },
-  "2212": { name: "镜流Pro", element: "冰", path: "毁灭", traces: [101, 103], stats: ["hp"], rule: jingliuEnhanced, cones: jingliuCones },
+  "1212": { name: "镜流", element: "冰", path: "毁灭", traces: [103], rule: jingliu, cones: destructionCones },
+  "2212": { name: "镜流Pro", element: "冰", path: "毁灭", traces: [101, 103], stats: ["hp"], rule: jingliuEnhanced, cones: destructionCones },
   "1209": { name: "彦卿", element: "冰", path: "巡猎", traces: [101, 103], rule: yanqing,
     cones: huntCones },
   "1312": { name: "米沙", element: "冰", path: "毁灭", traces: [102, 103], rule: misha,
-    cones: { "21042": "铭记于心的约定", "21012": "秘密誓心" } },
+    cones: destructionCones },
   "1302": { name: "银枝", element: "物理", path: "智识", traces: [], rule: argenti,
     cones: eruditionCones },
   "1013": { name: "黑塔", element: "冰", path: "智识", traces: [101, 103], rule: herta,
@@ -335,13 +356,13 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1217": { name: "藿藿", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
   "2217": { name: "藿藿Pro", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
   "1107": { name: "克拉拉", element: "物理", path: "毁灭", traces: [103], rule: clara,
-    cones: { "23002": "无可取代的东西", "23030": "落日时起舞" } },
+    cones: destructionCones },
   "1214": { name: "雪衣", element: "量子", path: "毁灭", traces: [101, 102], stats: ["stance"], rule: xueyi,
-    cones: { "21042": "铭记于心的约定", "24000": "记一位星神的陨落" } },
+    cones: destructionCones },
   "1008": { name: "阿兰", element: "雷", path: "毁灭", traces: [], rule: arlan,
-    cones: { "21012": "秘密誓心", "24000": "记一位星神的陨落" } },
+    cones: destructionCones },
   "1109": { name: "虎克", element: "火", path: "毁灭", traces: [], rule: hook,
-    cones: { "21026": "汪！散步时间！", "24000": "记一位星神的陨落" } },
+    cones: destructionCones },
   "1112": { name: "托帕&账账", element: "火", path: "巡猎", traces: [101, 102], rule: topaz,
     cones: huntCones },
   "1223": { name: "貊泽", element: "雷", path: "巡猎", traces: [103], rule: moze,
@@ -396,15 +417,15 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1414": { name: "丹恒•腾荒", element: "物理", path: "存护", traces: [103], rule: danHengPermansor,
     cones: { "23051": "纵然山河万程", "21043": "两个人的演唱会" } },
   "1014": { name: "Saber", element: "风", path: "毁灭", traces: [101, 103], rule: saber,
-    cones: { "23045": "没有回报的加冕", "24000": "记一位星神的陨落" } },
+    cones: destructionCones },
   "1404": { name: "万敌", element: "虚数", path: "毁灭", traces: [103], stats: ["hp"], rule: mydei,
-    cones: { "23039": "血火啊，燃烧前路", "23009": "到不了的彼岸" } },
+    cones: destructionCones },
   "1408": { name: "白厄", element: "物理", path: "毁灭", traces: [102, 103], rule: phainon,
-    cones: { "23044": "黎明恰如此燃烧", "24000": "记一位星神的陨落" } },
+    cones: destructionCones },
   "8001": { name: "穹·毁灭", element: "物理", path: "毁灭", traces: [102, 103],
-    rule: destructionTrailblazer, cones: destructionTrailblazerCones },
+    rule: destructionTrailblazer, cones: destructionCones },
   "8002": { name: "星·毁灭", element: "物理", path: "毁灭", traces: [102, 103],
-    rule: destructionTrailblazer, cones: destructionTrailblazerCones },
+    rule: destructionTrailblazer, cones: destructionCones },
   "1405": { name: "那刻夏", element: "风", path: "智识", traces: [102, 103], rule: anaxa,
     cones: eruditionCones },
   "1201": { name: "青雀", element: "量子", path: "智识", traces: [102, 103], rule: qingque, cones: eruditionCones },
@@ -429,7 +450,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1504": { name: "不死途", element: "雷", path: "巡猎", traces: [102, 103], rule: ashveil,
     cones: huntCones },
   "1509": { name: "吉尔伽美什", element: "雷", path: "毁灭", traces: [102, 103], requiresEnergy: true, rule: gilgamesh,
-    cones: { "23062": "所见即我", "24000": "记一位星神的陨落" } },
+    cones: destructionCones },
   "8009": { name: "穹·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationTrailblazerCones },
   "8010": { name: "星·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationTrailblazerCones },
   "1501": { name: "火花", element: "火", path: "欢愉", traces: [101, 102, 103], rule: sparxie,
@@ -582,7 +603,7 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
     throw new MissingDamageData(`当前光锥「${cone.name || cone.id}」的伤害规则尚未接入或缺少叠影`);
   }
   const energy = metadata.character.sp;
-  if ((cone.id === "21034" || cone.id === "23018") &&
+  if ((cone.id === "21034" || cone.id === "23018" || cone.id === "23062") &&
       (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {
     throw new MissingDamageData("缺少光锥所需的角色能量上限");
   }
@@ -591,6 +612,9 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
   }
   if (cone.id === "23027" && values.stance === undefined) {
     throw new MissingDamageData("缺少光锥所需的击破特攻");
+  }
+  if (cone.id === "23039" && (!values.hpBase || !values.hp)) {
+    throw new MissingDamageData("缺少光锥所需的生命上限");
   }
   const data = object(object(metadata.cone.skill)?.tables);
   const tables = new Proxy(Object.create(null), { get: (_, key: string) => tableValue(data?.[key], cone.rank) });
