@@ -74,5 +74,19 @@ test("combines one level and one eidolon in source orderings, including a level 
     });
   }
   expect(parsePanelCommand("*希儿换81级六魂")).toBeUndefined();
-  expect(parsePanelCommand("*希儿换70级换满行迹")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换70级换满行迹换六魂")).toBeUndefined();
+});
+
+
+test("combines level and full traces in the original separate and compact forms", () => {
+  for (const request of ["70级换满行迹", "满行迹换70级", "70级满行迹", "满行迹70级", "满行迹换等级 70", "满行迹等级 70", "等级 70满行迹"]) {
+    expect(parsePanelCommand(`#星铁希儿伤害2换${request}`)).toMatchObject({
+      type: "damage", profileId: 1, scenario: 2, equipment: { level: 70, fullTraces: true },
+    });
+    expect(parsePanelCommand(`*希儿面板换${request} 2`)).toMatchObject({
+      type: "detail", profileId: 2, equipment: { level: 70, fullTraces: true },
+    });
+  }
+  expect(parsePanelCommand("*希儿换满行迹81级")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换满行迹换70级换满行迹")).toBeUndefined();
 });

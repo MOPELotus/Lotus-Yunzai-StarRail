@@ -39,7 +39,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -49,7 +49,8 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const name = target?.trim();
   const content = requested?.trim();
   // With no trailing archive, the number after 等级 belongs to the preview itself.
-  const levelUsesSuffix = archive && /(?:^|换)\s*等级[\s:：]*$/u.test((content ?? "").replace(eidolonToken, ""));
+  const levelPrefix = (content ?? "").replace(eidolonToken, "").replace("满行迹", "");
+  const levelUsesSuffix = archive && /(?:^|换)\s*等级[\s:：]*$/u.test(levelPrefix);
   const request = levelUsesSuffix ? `${content} ${archive}` : content;
   const profileId = Number(levelUsesSuffix ? 1 : archive ?? 1);
   if (!name || !request || profileId > MAX_PROFILE_ID || name.includes("换") || /\d{9,}/u.test(name + request)) return;
@@ -59,6 +60,8 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const segments = request.split("换").map(segment => segment.trim());
   if (segments.length === 2) {
     const first = segments[0]!, second = segments[1]!;
+    const levelAndTraces = first === "满行迹" ? readCharacterLevel(second) : second === "满行迹" ? readCharacterLevel(first) : undefined;
+    if (levelAndTraces !== undefined) return { ...command, equipment: { level: levelAndTraces, fullTraces: true } };
     const firstEidolon = readEidolon(first);
     const eidolon = firstEidolon ?? readEidolon(second);
     if (eidolon === undefined) return;
@@ -76,8 +79,11 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   if (eidolon !== undefined) return { ...command, equipment: { eidolon } };
   if (request === "满行迹") return { ...command, equipment: { fullTraces: true } };
   if (request.startsWith("满行迹") || request.endsWith("满行迹")) {
-    const rank = readEidolon(request.replace("满行迹", "").trim());
+    const other = request.replace("满行迹", "").trim();
+    const rank = readEidolon(other);
     if (rank !== undefined) return { ...command, equipment: { fullTraces: true, eidolon: rank } };
+    const level = readCharacterLevel(other);
+    if (level !== undefined) return { ...command, equipment: { fullTraces: true, level } };
   }
   const level = readCharacterLevel(request);
   if (level !== undefined) return { ...command, equipment: { level } };
