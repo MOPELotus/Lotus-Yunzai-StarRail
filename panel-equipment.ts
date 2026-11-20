@@ -37,7 +37,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -56,8 +56,11 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
     const first = segments[0]!, second = segments[1]!;
     const firstEidolon = readEidolon(first);
     const eidolon = firstEidolon ?? readEidolon(second);
-    const equipment = readEquipment(firstEidolon !== undefined ? second : first);
-    if (eidolon === undefined || !equipment) return;
+    if (eidolon === undefined) return;
+    const other = firstEidolon !== undefined ? second : first;
+    if (other === "满行迹") return { ...command, equipment: { fullTraces: true, eidolon } };
+    const equipment = readEquipment(other);
+    if (!equipment) return;
     return { ...command, equipment: { ...equipment, eidolon } };
   }
   if (segments.length !== 1) return;
@@ -65,6 +68,10 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const eidolon = readEidolon(request);
   if (eidolon !== undefined) return { ...command, equipment: { eidolon } };
   if (request === "满行迹") return { ...command, equipment: { fullTraces: true } };
+  if (request.startsWith("满行迹") || request.endsWith("满行迹")) {
+    const rank = readEidolon(request.replace("满行迹", "").trim());
+    if (rank !== undefined) return { ...command, equipment: { fullTraces: true, eidolon: rank } };
+  }
   const relicSets = readRelicSetNames(request);
   if (relicSets) return { ...command, equipment: { relicSets } };
   const equipment = readEquipment(request);

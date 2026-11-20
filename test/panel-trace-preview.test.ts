@@ -16,7 +16,7 @@ test("matches the original full trace commands for details and a selected damage
     type: "damage", name: "镜流Pro", scenario: 5, profileId: 2, equipment: { fullTraces: true },
   });
   expect(parsePanelCommand("*希儿面板换满行迹")).toMatchObject({ type: "detail", equipment: { fullTraces: true } });
-  expect(parsePanelCommand("*希儿面板换满行迹换六魂")).toBeUndefined();
+  expect(parsePanelCommand("*希儿面板换满行迹换飞霄光锥")).toBeUndefined();
 });
 
 test("activates original short and enhanced IDs without changing skill levels or other fields", () => {
@@ -31,4 +31,15 @@ test("activates original short and enhanced IDs without changing skill levels or
   expect(changePanelFullTraces(avatar, { "12212201": { key: "cdmg", value: 2 } })).toMatchObject({
     error: expect.stringMatching(/缺少角色行迹资料/),
   });
+});
+
+
+test("supports original separate and compact eidolon/full trace forms", () => {
+  for (const variant of ["零魂换满行迹", "满行迹换零魂", "零魂满行迹", "满行迹零星魂"]) {
+    expect(parsePanelCommand(`*希儿伤害2换${variant} 2`)).toEqual({
+      type: "damage", profileId: 2, name: "希儿", scenario: 2, equipment: { fullTraces: true, eidolon: 0 },
+    });
+  }
+  expect(parsePanelCommand("*希儿换满行迹换0魂换满行迹")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换满行迹7魂")).toBeUndefined();
 });

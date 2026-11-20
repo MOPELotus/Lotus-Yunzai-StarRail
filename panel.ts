@@ -159,7 +159,8 @@ export function createStarRailPanel(
             }
             temporary = replacement.avatar;
             labels.unshift(replacement.label);
-          } else if ("fullTraces" in change) {
+          }
+          if ("fullTraces" in change) {
             const replacement = changePanelFullTraces(temporary, equipmentMetadata?.character.tree);
             if ("error" in replacement) {
               await verify();
