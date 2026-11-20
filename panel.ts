@@ -7,7 +7,7 @@ import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient 
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
-import { calculateEquipmentAttributeRows, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
+import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
 import { changePanelFullTraces } from "./panel-trace-preview.ts";
@@ -128,6 +128,7 @@ export function createStarRailPanel(
         if ("equipment" in command) {
           const change = command.equipment;
           let temporary = selected;
+          let promotion: number | undefined;
           const labels: string[] = [];
           if ("donor" in change) {
             const donor = findPanelAvatar(snapshot.avatars, change.donor, theme);
@@ -169,7 +170,17 @@ export function createStarRailPanel(
             temporary = replacement.avatar;
             labels.push(replacement.label);
           }
-          equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata);
+          if ("level" in change && equipmentMetadata) {
+            const replacement = changePanelLevel(temporary, change.level, equipmentMetadata);
+            if ("error" in replacement) {
+              await verify();
+              return replacement.error;
+            }
+            temporary = replacement.avatar;
+            promotion = replacement.promotion;
+            labels.push(replacement.label);
+          }
+          equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata, promotion);
           await verify();
           if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
           equipmentLabel = labels.join(" · ");

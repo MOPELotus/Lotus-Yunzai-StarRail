@@ -16,6 +16,8 @@ export const damageAttribute: Readonly<Record<string, string>> = {
 const staticCones: Readonly<Record<string, readonly { key: string; idx: string }[]>> = staticRules.cones;
 const staticSets: Readonly<Record<string, unknown>> = staticRules.sets;
 const ascensions = [20, 30, 40, 50, 60, 70];
+// The fixed Attr.calcPromote uses the lower phase at each shared boundary.
+const defaultPromotion = (level: number) => ascensions.filter(step => level > step).length;
 
 function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -31,7 +33,7 @@ export function isFlatRelicAttribute(key: string) {
 
 export function leveledAttributes(meta: Json, level: number | undefined, promotion: number | undefined, cone: boolean) {
   if (!level || (promotion === undefined && ascensions.includes(level))) return;
-  const promote = promotion ?? ascensions.filter(step => level > step).length;
+  const promote = promotion ?? defaultPromotion(level);
   const rows = meta.attr;
   const stats = object(Array.isArray(rows) ? rows[promote] : object(rows)?.[promote]);
   const bases = object(stats?.attrs);
@@ -99,6 +101,49 @@ type PanelAttributeMetadata = {
   readonly setForId: (id: string) => string | undefined;
 };
 
+// The fixed MiYouShe converter distinguishes boundary phases using combined base HP.
+function recordedPromotions(target: PanelAvatar, { character, cone }: PanelAttributeMetadata) {
+  const level = target.level;
+  const base = Number(target.stats.find(stat => stat.key === "hp")?.base);
+  if (!level || !Number.isFinite(base) || base <= 0 || (target.cone && !target.cone.level)) return;
+  const candidates = (level: number) => {
+    const lowest = defaultPromotion(level);
+    return ascensions.includes(level) ? [lowest, lowest + 1] : [lowest];
+  };
+  const weapon = target.cone;
+  const weaponPhases = weapon?.promote !== undefined ? [weapon.promote] : weapon?.level ? candidates(weapon.level) : [0];
+  const matches = candidates(level).flatMap(progression => {
+    const hp = leveledAttributes(character, level, progression, false)?.hp;
+    if (hp === undefined) return [];
+    return weaponPhases.flatMap(weaponPhase => {
+      const weaponHp = weapon ? leveledAttributes(cone, weapon.level, weaponPhase, true)?.hp : 0;
+      return weaponHp !== undefined && Math.abs(base - hp - weaponHp) <= 1
+        ? [{ progression, weaponPhase }] : [];
+    });
+  });
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+export function changePanelLevel(target: PanelAvatar, level: number, metadata: PanelAttributeMetadata) {
+  const weapon = target.cone;
+  const weaponLevel = weapon?.level;
+  const boundaryWeaponLevel = weaponLevel !== undefined && weapon?.promote === undefined && ascensions.includes(weaponLevel)
+    ? weaponLevel : undefined;
+  const sameLevel = target.level === level;
+  let promotion = defaultPromotion(level);
+  let cone = weapon;
+  if (target.legacy) {
+    if (sameLevel) promotion = Math.max(promotion, target.legacy.promote ?? 0);
+    if (weapon && boundaryWeaponLevel !== undefined) cone = { ...weapon, promote: defaultPromotion(boundaryWeaponLevel) };
+  } else if ((sameLevel && ascensions.includes(level)) || boundaryWeaponLevel !== undefined) {
+    const recorded = recordedPromotions(target, metadata);
+    if (!recorded) return { error: `「${target.name}」等级试算缺少可确认的角色或光锥突破资料。` };
+    if (sameLevel) promotion = recorded.progression;
+    if (weapon && boundaryWeaponLevel !== undefined) cone = { ...weapon, promote: recorded.weaponPhase };
+  }
+  return { avatar: { ...target, level, cone, stats: [] }, promotion, label: `临时等级 · Lv.${level}` };
+}
+
 export function calculateManagedElation(avatar: PanelAvatar, { character, cone, setForId }: PanelAttributeMetadata) {
   const trees = object(character.tree);
   if (!trees) return;
@@ -139,23 +184,23 @@ export function calculateManagedElation(avatar: PanelAvatar, { character, cone, 
   return joy;
 }
 
-export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata) {
+export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number) {
   if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR"].includes(avatar.legacy.source)) return;
-  return calculatePanelAttributeRows(avatar, metadata, readLegacyRelicAttributes);
+  return calculatePanelAttributeRows(avatar, metadata, readLegacyRelicAttributes, promotion);
 }
 
-export function calculateEquipmentAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata) {
-  if (avatar.legacy) return calculateLegacyPanelAttributeRows(avatar, metadata);
+export function calculateEquipmentAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number) {
+  if (avatar.legacy) return calculateLegacyPanelAttributeRows(avatar, metadata, promotion);
   const traces = new Set(avatar.traces.map(trace => trace.id));
   const trees = object(metadata.character.tree);
   if (!trees || Object.entries(trees).some(([id, trace]) => finite(object(trace)?.value) && !traces.has(id))) return;
-  return calculatePanelAttributeRows(avatar, metadata, readManagedRelicAttributes);
+  return calculatePanelAttributeRows(avatar, metadata, readManagedRelicAttributes, promotion);
 }
 
 function calculatePanelAttributeRows(avatar: PanelAvatar, {
   character, cone, conePath, relicMetadata, setForId,
-}: PanelAttributeMetadata, readRelic: typeof readLegacyRelicAttributes) {
-  const charStats = leveledAttributes(character, avatar.level, avatar.legacy?.promote, false);
+}: PanelAttributeMetadata, readRelic: typeof readLegacyRelicAttributes, promotion = avatar.legacy?.promote) {
+  const charStats = leveledAttributes(character, avatar.level, promotion, false);
   if (!charStats || primary.some(key => !finite(charStats[key]))) return;
   const trees = object(character.tree);
   if (!trees) return;

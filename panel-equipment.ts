@@ -28,6 +28,7 @@ const invalidTierPrefix = /^(?:[0-9零一二三四五六七八九十满])?(?:叠
 const tiers = "一二三四五";
 const eidolonPattern = /^([0-6零一二三四五六满])(?:命|魂|星魂)$/u;
 const eidolonDigits = "零一二三四五六";
+const characterLevelPattern = /^(?:([1-9]\d?)级|等级[\s:：]+([1-9]\d?))$/u;
 
 type DonorEquipment = { donor: string; slots: EquipmentSlot[]; eidolon?: number };
 type Superimposition = { superimposition: number; coneName: string; eidolon?: number };
@@ -37,7 +38,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -45,8 +46,11 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   if (!match) return;
   const [, target, mode, scenario, requested, archive] = match;
   const name = target?.trim();
-  const request = requested?.trim();
-  const profileId = Number(archive ?? 1);
+  const content = requested?.trim();
+  // With no trailing archive, the number after 等级 belongs to the preview itself.
+  const levelUsesSuffix = archive && /^等级[\s:：]*$/u.test(content ?? "");
+  const request = levelUsesSuffix ? `${content} ${archive}` : content;
+  const profileId = Number(levelUsesSuffix ? 1 : archive ?? 1);
   if (!name || !request || profileId > MAX_PROFILE_ID || name.includes("换") || /\d{9,}/u.test(name + request)) return;
 
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
@@ -71,6 +75,12 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   if (request.startsWith("满行迹") || request.endsWith("满行迹")) {
     const rank = readEidolon(request.replace("满行迹", "").trim());
     if (rank !== undefined) return { ...command, equipment: { fullTraces: true, eidolon: rank } };
+  }
+  const level = characterLevelPattern.exec(request);
+  if (level) {
+    const value = Number(level[1] ?? level[2]);
+    if (value <= 80) return { ...command, equipment: { level: value } };
+    return;
   }
   const relicSets = readRelicSetNames(request);
   if (relicSets) return { ...command, equipment: { relicSets } };
