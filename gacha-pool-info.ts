@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readMiaoObjectExport } from "@lotus-yunzai/gacha/miao-data";
+import { readLiteralObjectExport } from "@lotus-yunzai/gacha/literal-exports";
 import { renderGachaPoolCard, type GachaPoolCardModel } from "@lotus-yunzai/skia/gacha-pool";
 import { readStarRailGachaCatalog, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { readStarRailGachaSchedule, type StarRailGachaPeriod } from "./gacha-schedule.ts";
@@ -47,8 +47,8 @@ async function readPoolItems(root: string): Promise<Catalog> {
       throw error;
     }),
   ]);
-  const weaponAliases = readMiaoObjectExport(weaponSource, "aliasCfg") ?? {};
-  const weaponAbbreviations = readMiaoObjectExport(weaponSource, "abbr") ?? {};
+  const weaponAliases = readLiteralObjectExport(weaponSource, "aliasCfg") ?? {};
+  const weaponAbbreviations = readLiteralObjectExport(weaponSource, "abbr") ?? {};
   function group(kind: Kind, aliases: StringMap, abbreviations: StringMap) {
     return [...metadata[kind].values()].flatMap(({ id, name, img, abbr, rank }) => rank === 4 || rank === 5 ? [{
       id: String(id), card: { name, abbr: abbreviations[name] || abbr, img: img ?? "", star: rank },

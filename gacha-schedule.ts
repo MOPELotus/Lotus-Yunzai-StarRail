@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readMiaoArrayExport } from "@lotus-yunzai/gacha/miao-data";
+import { readLiteralArrayExport } from "@lotus-yunzai/gacha/literal-exports";
 import type { StarRailGachaDetailOptions } from "./gacha-detail.ts";
 
 export interface StarRailGachaPeriod {
@@ -36,7 +36,7 @@ function period(row: unknown): row is StarRailGachaPeriod {
 
 /** The original export uses literal flow collections, which can be read without running the theme's JavaScript. */
 export function parseStarRailGachaSchedule(source: string): readonly StarRailGachaPeriod[] {
-  const periods = readMiaoArrayExport(source, "poolDetailSr");
+  const periods = readLiteralArrayExport(source, "poolDetailSr");
   return periods.every(period) ? periods : [];
 }
 
