@@ -75,29 +75,35 @@ export function createStarRailPanel(
   return async function query(qq: string, command: PanelCommand, context?: StarRailGroupRankContext) {
     const { type, profileId, name } = command;
     try {
-      const observedAt = type === "relics" && groupRank?.allows(context) ? Date.now() : undefined;
-      const { role, revision: initialRevision, ...account } = await profiles.requestContext(qq, profileId, "sr");
+      const account = await profiles.requestContext(qq, profileId, "sr").catch(error => {
+        if (type !== "update" && error instanceof ProfileError && error.code === "login-required") return undefined;
+        throw error;
+      });
+      const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
+      const observedAt = type === "relics" && account && groupRank?.allows(context) ? Date.now() : undefined;
       const { uid } = role;
       const explicitUid = "uid" in command;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
       const key = `${qq}:${uid}`;
-      let revision = initialRevision;
+      let revision = account?.revision;
       let snapshot: PanelSnapshot | undefined;
       let updated = false;
       async function verify() {
         signal.throwIfAborted();
-        const latest = await profiles.requestContext(qq, profileId, "sr").catch(() => undefined);
+        const latest = await (account
+          ? profiles.requestContext(qq, profileId, "sr")
+          : profiles.savedRole(qq, profileId, "sr").then(role => ({ role, revision: undefined }))).catch(() => undefined);
         if (!latest || latest.revision !== revision || latest.role.uid !== uid || latest.role.region !== role.region) {
           throw new ProfileError("changed", "星铁面板档案已变更，请重新查询。");
         }
       }
 
-      if (type === "update") {
+      if (type === "update" && account) {
         if (refreshing.has(key)) return "此星铁角色面板正在更新，请稍后查询。";
         refreshing.add(key);
         try {
           const startedAt = new Date();
-          const result = await client.fetchStarRailPanel({ ...account, role, revision }, { signal });
+          const result = await client.fetchStarRailPanel(account, { signal });
           revision = result.revision;
           await verify();
           if (!result.avatars.length) return "米游社未返回星铁角色数据，原面板已保留。";
