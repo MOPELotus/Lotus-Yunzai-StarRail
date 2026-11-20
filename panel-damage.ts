@@ -316,7 +316,24 @@ const preservationCones = {
   "24002": "记忆的质料",
 };
 const elationTrailblazerCones = { "24006": "欢愉满溢祝福", "21064": "菇菇嘎嘎历险记" };
-const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
+const abundanceCones = {
+  "20001": "物穰",
+  "20008": "嘉果",
+  "20015": "蕃息",
+  "21000": "一场术后对话",
+  "21007": "同一种心情",
+  "21014": "此时恰好",
+  "21021": "等价交换",
+  "21028": "暖夜不会漫长",
+  "21035": "何物为真",
+  "21048": "梦的蒙太奇",
+  "21055": "直到明天的明天",
+  "22001": "嘿，我在这儿",
+  "23008": "棺的回响",
+  "23013": "时节不居",
+  "23017": "惊魂夜",
+  "23032": "唯有香如故",
+};
 
 // The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
@@ -336,7 +353,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1220": { name: "飞霄", element: "风", path: "巡猎", traces: [102, 103], rule: feixiao,
     cones: huntCones },
   "1222": { name: "灵砂", element: "火", path: "丰饶", traces: [101], stats: ["stance", "heal"], rule: lingsha,
-    cones: { "23032": "唯有香如故" } },
+    cones: abundanceCones },
   "1221": { name: "云璃", element: "物理", path: "毁灭", traces: [103], rule: yunli,
     cones: destructionCones },
   "1315": { name: "波提欧", element: "物理", path: "巡猎", traces: [101], stats: ["stance"], rule: boothill,
@@ -358,7 +375,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1403": { name: "缇宝", element: "量子", path: "同谐", traces: [101, 102], stats: ["hp"], rule: tribbie,
     cones: harmonyCones },
   "1211": { name: "白露", element: "雷", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: bailu,
-    cones: { "23013": "时节不居", "21007": "同一种心情" } },
+    cones: abundanceCones },
   "1004": { name: "瓦尔特", element: "虚数", path: "虚无", traces: [101, 103], rule: welt, cones: nihilityCones },
   "2004": { name: "瓦尔特Pro", element: "虚数", path: "虚无", traces: [101, 102, 103], stats: ["effPct"], rule: weltEnhanced, cones: nihilityCones },
   "1006": { name: "银狼", element: "量子", path: "虚无", traces: [102], stats: ["stance"], rule: silverWolf,
@@ -386,13 +403,13 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1413": { name: "长夜月", element: "冰", path: "记忆", traces: [101, 103], stats: ["hp"], rule: evernight,
     cones: { "23049": "致长夜的星光", ...remembranceCones } },
   "1203": { name: "罗刹", element: "虚数", path: "丰饶", traces: [], stats: ["heal"], rule: luocha,
-    cones: { "23008": "棺的回响", "21007": "同一种心情" } },
+    cones: abundanceCones },
   "1105": { name: "娜塔莎", element: "物理", path: "丰饶", traces: [102], stats: ["hp", "heal"], rule: natasha,
-    cones: { "22001": "嘿，我在这儿", "23013": "时节不居" } },
+    cones: abundanceCones },
   "1301": { name: "加拉赫", element: "火", path: "丰饶", traces: [101], stats: ["heal", "stance"], rule: gallagher,
-    cones: { "21035": "何物为真", "21007": "同一种心情" } },
-  "1217": { name: "藿藿", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
-  "2217": { name: "藿藿Pro", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: huohuoCones },
+    cones: abundanceCones },
+  "1217": { name: "藿藿", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: abundanceCones },
+  "2217": { name: "藿藿Pro", element: "风", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: huohuo, cones: abundanceCones },
   "1107": { name: "克拉拉", element: "物理", path: "毁灭", traces: [103], rule: clara,
     cones: destructionCones },
   "1214": { name: "雪衣", element: "量子", path: "毁灭", traces: [101, 102], stats: ["stance"], rule: xueyi,
@@ -474,7 +491,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "2102": { name: "希儿Pro", element: "量子", path: "巡猎", traces: [101, 102], rule: seeleEnhanced,
     cones: huntCones },
   "1110": { name: "玲可", element: "量子", path: "丰饶", traces: [], stats: ["hp", "heal"], rule: lynx,
-    cones: { "22001": "嘿，我在这儿", "21007": "同一种心情" } },
+    cones: abundanceCones },
   "1409": { name: "风堇", element: "风", path: "记忆", traces: [101, 103], stats: ["hp", "heal"], rule: hyacine,
     cones: { "23042": "愿虹光永驻天空", "21054": "故事的下一页" } },
   "1415": { name: "昔涟", element: "冰", path: "记忆", traces: [103], stats: ["hp"], rule: cyrene,
@@ -648,7 +665,7 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
   if (cone.id === "21041" && values.effPct === undefined) {
     throw new MissingDamageData("缺少光锥所需的效果命中");
   }
-  if (cone.id === "23027" && values.stance === undefined) {
+  if ((cone.id === "23027" || cone.id === "23032") && values.stance === undefined) {
     throw new MissingDamageData("缺少光锥所需的击破特攻");
   }
   if (cone.id === "23039" && (!values.hpBase || !values.hp)) {
@@ -656,6 +673,9 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
   }
   if ((cone.id === "21030" || cone.id === "21039") && (!values.defBase || !values.def)) {
     throw new MissingDamageData("缺少光锥所需的防御力");
+  }
+  if (cone.id === "21014" && values.effDef === undefined) {
+    throw new MissingDamageData("缺少光锥所需的效果抵抗");
   }
   const data = object(object(metadata.cone.skill)?.tables);
   const tables = new Proxy(Object.create(null), { get: (_, key: string) => tableValue(data?.[key], cone.rank) });

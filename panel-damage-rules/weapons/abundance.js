@@ -1,24 +1,36 @@
 export default function (staticIdx, keyIdx) {
   return {
-    唯有香如故: [
-      staticIdx(1, 'stance'),
-      (tables) => {
-        return {
-          title: '终结技攻击敌方目标后，敌方目标受到的伤害提高[enemydmg]%',
-          sort: 9,
-          data: {
-            enemydmg: ({ attr, calc }) => calc(attr.stance) >= 150 ? (tables[2] + tables[3]) : tables[2]
-          }
-        }
-      }
+    一场术后对话: [
+      staticIdx(1, 'recharge'),
+      keyIdx('终结技治疗加成[qHeal]%（旧试算提示）', 'qHeal', 2)
     ],
     同一种心情: [
       staticIdx(1, 'heal')
     ],
+    嘉果: [],
     时节不居: [
       staticIdx(1, 'hpPct'),
       staticIdx(2, 'heal')
     ],
+    暖夜不会漫长: [
+      staticIdx(1, 'hpPct')
+    ],
+    此时恰好: [
+      staticIdx(1, 'effDef'),
+      (tables) => {
+        return {
+          title: '基于效果抵抗，提高治疗量[heal]%',
+          data: {
+            heal: ({ attr, calc }) => Math.min(tables[3], calc(attr.effDef) * tables[2] / 100)
+          }
+        }
+      }
+    ],
+    物穰: [
+      keyIdx('战技和终结技治疗加成[eHeal]%（旧试算提示）', { eHeal: 1, qHeal: 1 })
+    ],
+    等价交换: [],
+    蕃息: [],
     棺的回响: [
       staticIdx(1, 'atkPct'),
       keyIdx('释放终结技后，速度提升[speed]', 'speed', 3)
@@ -41,5 +53,24 @@ export default function (staticIdx, keyIdx) {
     何物为真: [
       staticIdx(1, 'stance')
     ],
+    唯有香如故: [
+      staticIdx(1, 'stance'),
+      (tables) => {
+        return {
+          title: '终结技攻击敌方目标后，敌方目标受到的伤害提高[enemydmg]%，击破特攻达到150%时计入额外加成',
+          sort: 9,
+          data: {
+            enemydmg: ({ attr, calc }) => calc(attr.stance) >= 150 ? (tables[2] + tables[3]) : tables[2]
+          }
+        }
+      }
+    ],
+    梦的蒙太奇: [
+      staticIdx(1, 'speedPct')
+    ],
+    直到明天的明天: [
+      staticIdx(1, 'heal'),
+      keyIdx('按我方目标生命值不低于50%估算，造成的伤害提高[dmg]%', 'dmg', 2)
+    ]
   }
 }
