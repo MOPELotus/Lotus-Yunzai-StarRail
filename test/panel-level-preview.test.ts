@@ -62,3 +62,17 @@ test("compares managed base HP to boundary pairs without guessing an unknown pha
   expect(changePanelLevel({ ...managed, stats: [{ key: "hp", base: "1676", value: "1900" }] }, 70, ambiguous).error)
     .toMatch(/缺少可确认/);
 });
+
+
+test("combines one level and one eidolon in source orderings, including a level separated from the archive", () => {
+  for (const request of ["70级换零魂", "零魂换70级", "70级零魂", "零星魂70级", "零魂换等级 70", "零魂等级 70", "等级 70零魂"]) {
+    expect(parsePanelCommand(`#星铁希儿伤害2换${request}`)).toMatchObject({
+      type: "damage", profileId: 1, scenario: 2, equipment: { level: 70, eidolon: 0 },
+    });
+    expect(parsePanelCommand(`*希儿面板换${request} 2`)).toMatchObject({
+      type: "detail", profileId: 2, equipment: { level: 70, eidolon: 0 },
+    });
+  }
+  expect(parsePanelCommand("*希儿换81级六魂")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换70级换满行迹")).toBeUndefined();
+});

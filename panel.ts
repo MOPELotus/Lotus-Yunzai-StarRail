@@ -152,6 +152,17 @@ export function createStarRailPanel(
 
           // A donor changes the cone metadata, but the talent thresholds belong to the target.
           equipmentMetadata = await readPanelDamageMetadata(temporary, theme);
+          // At a saved level boundary, the level preview needs the original base HP before other changes clear it.
+          if ("level" in change && equipmentMetadata) {
+            const replacement = changePanelLevel(temporary, change.level, equipmentMetadata);
+            if ("error" in replacement) {
+              await verify();
+              return replacement.error;
+            }
+            temporary = replacement.avatar;
+            promotion = replacement.promotion;
+            labels.push(replacement.label);
+          }
           if ("eidolon" in change && change.eidolon !== undefined) {
             const replacement = changePanelEidolon(temporary, change.eidolon, equipmentMetadata?.character.talentCons);
             if ("error" in replacement) {
@@ -168,16 +179,6 @@ export function createStarRailPanel(
               return replacement.error;
             }
             temporary = replacement.avatar;
-            labels.push(replacement.label);
-          }
-          if ("level" in change && equipmentMetadata) {
-            const replacement = changePanelLevel(temporary, change.level, equipmentMetadata);
-            if ("error" in replacement) {
-              await verify();
-              return replacement.error;
-            }
-            temporary = replacement.avatar;
-            promotion = replacement.promotion;
             labels.push(replacement.label);
           }
           equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata, promotion);

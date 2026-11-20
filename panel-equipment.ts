@@ -26,7 +26,8 @@ const donorPattern = new RegExp(String.raw`^(${role})\s*((?:${partPattern})(?:\s
 const superimpositionPattern = /^(?:([1-5一二三四五满])(?:叠影?|精炼?)|(?:叠影?|精炼?)([1-5一二三四五]))\s*([^+]{1,64})$/u;
 const invalidTierPrefix = /^(?:[0-9零一二三四五六七八九十满])?(?:叠影?|精炼?)/u;
 const tiers = "一二三四五";
-const eidolonPattern = /^([0-6零一二三四五六满])(?:命|魂|星魂)$/u;
+const eidolonToken = /([0-6零一二三四五六满])(?:命|魂|星魂)/u;
+const eidolonPattern = new RegExp(`^${eidolonToken.source}$`, "u");
 const eidolonDigits = "零一二三四五六";
 const characterLevelPattern = /^(?:([1-9]\d?)级|等级[\s:：]+([1-9]\d?))$/u;
 
@@ -38,7 +39,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -48,7 +49,7 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const name = target?.trim();
   const content = requested?.trim();
   // With no trailing archive, the number after 等级 belongs to the preview itself.
-  const levelUsesSuffix = archive && /^等级[\s:：]*$/u.test(content ?? "");
+  const levelUsesSuffix = archive && /(?:^|换)\s*等级[\s:：]*$/u.test((content ?? "").replace(eidolonToken, ""));
   const request = levelUsesSuffix ? `${content} ${archive}` : content;
   const profileId = Number(levelUsesSuffix ? 1 : archive ?? 1);
   if (!name || !request || profileId > MAX_PROFILE_ID || name.includes("换") || /\d{9,}/u.test(name + request)) return;
@@ -63,6 +64,8 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
     if (eidolon === undefined) return;
     const other = firstEidolon !== undefined ? second : first;
     if (other === "满行迹") return { ...command, equipment: { fullTraces: true, eidolon } };
+    const level = readCharacterLevel(other);
+    if (level !== undefined) return { ...command, equipment: { level, eidolon } };
     const equipment = readEquipment(other);
     if (!equipment) return;
     return { ...command, equipment: { ...equipment, eidolon } };
@@ -76,16 +79,25 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
     const rank = readEidolon(request.replace("满行迹", "").trim());
     if (rank !== undefined) return { ...command, equipment: { fullTraces: true, eidolon: rank } };
   }
-  const level = characterLevelPattern.exec(request);
-  if (level) {
-    const value = Number(level[1] ?? level[2]);
-    if (value <= 80) return { ...command, equipment: { level: value } };
-    return;
+  const level = readCharacterLevel(request);
+  if (level !== undefined) return { ...command, equipment: { level } };
+  const rankToken = eidolonToken.exec(request)?.[0];
+  if (rankToken) {
+    const rank = readEidolon(rankToken);
+    const combinedLevel = readCharacterLevel(request.replace(rankToken, "").trim());
+    if (rank !== undefined && combinedLevel !== undefined) return { ...command, equipment: { level: combinedLevel, eidolon: rank } };
   }
   const relicSets = readRelicSetNames(request);
   if (relicSets) return { ...command, equipment: { relicSets } };
   const equipment = readEquipment(request);
   if (equipment) return { ...command, equipment };
+}
+
+function readCharacterLevel(request: string) {
+  const match = characterLevelPattern.exec(request);
+  if (!match) return;
+  const level = Number(match[1] ?? match[2]);
+  return level <= 80 ? level : undefined;
 }
 
 function readEquipment(request: string): DonorEquipment | Superimposition | undefined {
