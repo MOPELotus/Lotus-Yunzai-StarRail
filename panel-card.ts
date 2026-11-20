@@ -48,20 +48,28 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     Bun.file(join(root, "common", "common.css")).exists(),
   ]);
   const relicById = new Map<string, { name: string; asset: readonly [string, string, string] }>();
+  const relicSets = new Map<string, { outer: boolean; pieces: Map<string, { id: string; name: string }> }>();
   for (const value of Object.values(relics)) {
     const row = object(value);
     if (!safePart(row?.name)) continue;
-    for (const [slot, entry] of Object.entries(object(row?.idxs) ?? {})) {
+    const indices = object(row?.idxs) ?? {};
+    const pieces = new Map<string, { id: string; name: string }>();
+    for (const [slot, entry] of Object.entries(indices)) {
       const part = object(entry), name = text(part?.name);
       if (!name || !/^[1-6]$/u.test(slot)) continue;
-      for (const itemId of Object.keys(object(part?.ids) ?? {})) {
+      for (const [itemId, star] of Object.entries(object(part?.ids) ?? {})) {
         if (/^[1-9]\d{0,11}$/u.test(String(itemId))) {
-          relicById.set(String(itemId), { name, asset: ["artifact", row.name, `arti-${slot}.webp`] });
+          relicById.set(itemId, { name, asset: ["artifact", row.name, `arti-${slot}.webp`] });
+          const key = `${slot}:${star}`;
+          if (typeof star === "number" && Number.isInteger(star) && star >= 2 && star <= 5 && !pieces.has(key)) {
+            pieces.set(key, { id: itemId, name });
+          }
         }
       }
     }
+    if (pieces.size) relicSets.set(row.name, { outer: Object.hasOwn(indices, "1"), pieces });
   }
-  return { root, defaultStyle, characters, weapons, relicById, relicValues };
+  return { root, defaultStyle, characters, weapons, relicById, relicSets, relicValues };
 }
 
 function lookup(avatar: PanelAvatar, theme: Metadata) {

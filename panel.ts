@@ -9,6 +9,7 @@ import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
+import { changePanelRelicSets } from "./panel-relic-set.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
@@ -137,6 +138,11 @@ export function createStarRailPanel(
           } else if ("superimposition" in change) {
             const equipped = temporary.cone && object(theme.weapons[temporary.cone.id]);
             const replacement = changePanelSuperimposition(temporary, change.superimposition, change.coneName, text(equipped?.name));
+            if ("error" in replacement) return replacement.error;
+            temporary = replacement.avatar;
+            labels.push(replacement.label);
+          } else if ("relicSets" in change) {
+            const replacement = changePanelRelicSets(temporary, change.relicSets, theme.relicSets);
             if ("error" in replacement) return replacement.error;
             temporary = replacement.avatar;
             labels.push(replacement.label);

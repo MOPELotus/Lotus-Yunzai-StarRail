@@ -1,6 +1,7 @@
 // Same-archive equipment replacement follows apps/profile/ProfileChange.js in the MIT source.
 import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { PanelAvatar } from "./panel-model.ts";
+import { readRelicSetNames } from "./panel-relic-set.ts";
 
 const allRelics = "relics" as const;
 type EquipmentSlot = number | typeof allRelics;
@@ -36,7 +37,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -63,6 +64,8 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
 
   const eidolon = readEidolon(request);
   if (eidolon !== undefined) return { ...command, equipment: { eidolon } };
+  const relicSets = readRelicSetNames(request);
+  if (relicSets) return { ...command, equipment: { relicSets } };
   const equipment = readEquipment(request);
   if (equipment) return { ...command, equipment };
 }
