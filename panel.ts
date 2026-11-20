@@ -77,6 +77,8 @@ export function createStarRailPanel(
       const observedAt = type === "relics" && groupRank?.allows(context) ? Date.now() : undefined;
       const { role, revision: initialRevision, ...account } = await profiles.requestContext(qq, profileId, "sr");
       const { uid } = role;
+      const explicitUid = "uid" in command;
+      if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
       const key = `${qq}:${uid}`;
       let revision = initialRevision;
       let snapshot: PanelSnapshot | undefined;
@@ -231,7 +233,7 @@ export function createStarRailPanel(
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
-          models = [await makePanelDetailCard(snapshot, selected, theme, signal, equipmentLabel, skillPreview)];
+          models = [await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid })];
         }
       } else {
         models = await makePanelListCards(snapshot, theme, profileId, signal, updated);

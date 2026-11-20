@@ -265,8 +265,11 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
   return tree;
 }
 
-export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal, equipmentLabel?: string, skillPreview = false) {
-  const artSignal = equipmentLabel ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
+export async function makePanelDetailCard(
+  snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
+  { equipmentLabel, skillPreview, localOnly }: { equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean } = {},
+) {
+  const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";

@@ -144,7 +144,18 @@ export interface PanelSnapshot {
 }
 export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 
+const leadingPanelUid = /^(#星铁|\*)\s*((?:18|[1-9])\d{8})(?!\d)\s*(?=[\p{L}\p{N}])/u;
+
 export function parsePanelCommand(message: string) {
+  const leading = leadingPanelUid.exec(message);
+  if (!leading) return parseLocalPanelCommand(message);
+  const body = message.slice(leading[0].length).replace(/\s+档案\s*([1-9]\d{0,2})$/u, " $1");
+  const command = parseLocalPanelCommand(leading[1] + body);
+  if (!command || "equipment" in command || (command.type !== "detail" && command.type !== "damage")) return;
+  return { ...command, uid: leading[2]! };
+}
+
+function parseLocalPanelCommand(message: string) {
   const equipment = parseEquipmentChange(message);
   if (equipment) return equipment;
   const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害|武器)(\d{1,6})?(?:\s+([1-9]\d{0,2}))?$/u.exec(message);

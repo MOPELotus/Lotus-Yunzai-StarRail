@@ -521,3 +521,18 @@ test("uses the original common scenario numbering for damage and weapon queries"
   expect(parsePanelCommand("*镜流Pro光锥8")).toBeUndefined();
   expect(parsePanelCommand("*镜流Pro光锥")).toBeUndefined();
 });
+
+
+test("recognizes the original leading profile UID only for local detail and damage queries", () => {
+  expect(parsePanelCommand("#星铁100000121希儿详情")).toEqual({ type: "detail", profileId: 1, uid: "100000121", name: "希儿" });
+  expect(parsePanelCommand("#星铁 1800000123 希儿伤害2 档案2")).toEqual({
+    type: "damage", profileId: 2, uid: "1800000123", name: "希儿", scenario: 2,
+  });
+  expect(parsePanelCommand("*100000121 1102武器8 3")).toEqual({
+    type: "damage", profileId: 3, uid: "100000121", name: "1102", scenario: 8,
+  });
+  expect(parsePanelCommand("#星铁100000121更新面板")).toBeUndefined();
+  expect(parsePanelCommand("#星铁100000121希儿遗器")).toBeUndefined();
+  expect(parsePanelCommand("#星铁100000121希儿面板换六魂")).toBeUndefined();
+  expect(parsePanelCommand("#星铁100000121希儿详情 档案256")).toBeUndefined();
+});
