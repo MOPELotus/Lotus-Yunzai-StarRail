@@ -265,7 +265,7 @@ export async function renderStarRailAbyss(data, signal) {
   }
   for (const [x, y, direction] of [[26, 26, 1], [734, 26, -1], [26, height - 26, 1], [734, height - 26, -1]]) line(x, y, direction * 22, GOLD)
   line(44, offset + 6, 672); text("Lotus-Yunzai · 米游社", 44, offset + 27, 16, MUTED, 672, "center")
-  const png = await canvas.toBuffer("png")
+  const png = await canvas.toBuffer("png", { filters: "auto" })
   signal.throwIfAborted()
   return { png, engine: checkGpu() }
 }
