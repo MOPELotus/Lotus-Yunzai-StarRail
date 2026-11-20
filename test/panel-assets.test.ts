@@ -45,3 +45,29 @@ test("warp images resolve the two title quote styles only within the matching St
     expect(resolve({ name: displayName, item_type: "光锥" })).toBeUndefined();
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test("draw records resolve character separator variants without mixing forms", async () => {
+  const root = await mkdtemp(join(tmpdir(), "lotus-star-rail-portrait-"));
+  try {
+    const characters = join(root, "meta-sr", "character");
+    await mkdir(characters, { recursive: true });
+    const dataFile = join(characters, "data.json");
+    const catalog = {
+      1002: { name: "丹恒", star: 4 }, 1213: { name: "丹恒•饮月", star: 5 },
+      1414: { name: "丹恒•腾荒", star: 5 }, 8007: { name: "穹·记忆", star: 5 }, 8008: { name: "星·记忆", star: 5 },
+    };
+    await writeFile(dataFile, JSON.stringify(catalog));
+    let resolve = await readStarRailGachaItems(root);
+    expect(resolve({ name: "丹恒·饮月", item_type: "角色" })).toMatchObject({ id: 1213, name: "丹恒·饮月",
+      img: "/meta-sr/character/丹恒•饮月/imgs/face.webp" });
+    expect(resolve({ name: "丹恒·腾荒", item_type: "角色" })?.id).toBe(1414);
+    expect(resolve({ name: "丹恒", item_type: "角色" })?.id).toBe(1002);
+    expect(resolve({ name: "穹•记忆", item_type: "角色" })?.id).toBe(8007);
+    expect(resolve({ name: "星•记忆", item_type: "角色" })?.id).toBe(8008);
+    expect(resolve({ name: "丹恒·饮月", item_type: "光锥" })).toBeUndefined();
+    await writeFile(dataFile, JSON.stringify({ ...catalog, 1999: { name: "丹恒·饮月", star: 5 } }));
+    resolve = await readStarRailGachaItems(root);
+    expect(resolve({ name: "丹恒•饮月", item_type: "角色" })?.id).toBe(1213);
+    expect(resolve({ name: "丹恒・饮月", item_type: "角色" })).toBeUndefined();
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
