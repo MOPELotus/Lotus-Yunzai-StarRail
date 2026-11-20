@@ -297,7 +297,24 @@ const harmonyCones = {
   "23038": "如果时间是一朵花",
   "23048": "金血铭刻的时代",
 };
-const preservationTrailblazerCones = { "24002": "记忆的质料", "21043": "两个人的演唱会" };
+const preservationCones = {
+  "20003": "琥珀",
+  "20010": "戍御",
+  "20017": "开疆",
+  "21002": "余生的第一天",
+  "21009": "朗道的选择",
+  "21016": "宇宙市场趋势",
+  "21023": "我们是地火",
+  "21030": "这就是我啦！",
+  "21039": "织造命运之线",
+  "21043": "两个人的演唱会",
+  "21053": "愿旅途永远坦然",
+  "23005": "制胜的瞬间",
+  "23011": "她已闭上双眼",
+  "23023": "命运从未公平",
+  "23051": "纵然山河万程",
+  "24002": "记忆的质料",
+};
 const elationTrailblazerCones = { "24006": "欢愉满溢祝福", "21064": "菇菇嘎嘎历险记" };
 const huohuoCones = { "23017": "惊魂夜", "21007": "同一种心情" };
 
@@ -310,7 +327,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1401": { name: "大黑塔", element: "冰", path: "智识", traces: [101, 102, 103], rule: theHerta,
     cones: eruditionCones },
   "1304": { name: "砂金", element: "虚数", path: "存护", traces: [102], stats: ["def"], rule: aventurine,
-    cones: { "23023": "命运从未公平", "21043": "两个人的演唱会" } },
+    cones: preservationCones },
   "1307": { name: "黑天鹅", element: "风", path: "虚无", traces: [103], stats: ["effPct"], rule: blackSwan, cones: nihilityCones },
   "1005": { name: "卡芙卡", element: "雷", path: "虚无", traces: [], rule: kafka, cones: nihilityCones },
   "2005": { name: "卡芙卡Pro", element: "雷", path: "虚无", traces: [103], stats: ["effPct"], rule: kafkaEnhanced, cones: nihilityCones },
@@ -426,17 +443,17 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "8006": { name: "星·同谐", element: "虚数", path: "同谐", traces: [101, 102], stats: ["stance"],
     rule: harmonyTrailblazer, cones: harmonyCones },
   "1208": { name: "符玄", element: "量子", path: "存护", traces: [], stats: ["hp", "heal"], rule: fuXuan,
-    cones: { "23011": "她已闭上双眼", "24002": "记忆的质料" } },
+    cones: preservationCones },
   "1104": { name: "杰帕德", element: "冰", path: "存护", traces: [103], stats: ["def"], rule: gepard,
-    cones: { "23005": "制胜的瞬间", "21043": "两个人的演唱会" } },
+    cones: preservationCones },
   "1001": { name: "三月七", element: "冰", path: "存护", traces: [], stats: ["def"], rule: marchPreservation,
-    cones: { "21030": "这就是我啦！", "21043": "两个人的演唱会" } },
+    cones: preservationCones },
   "8003": { name: "穹·存护", element: "火", path: "存护", traces: [], stats: ["def"],
-    rule: preservationTrailblazer, cones: preservationTrailblazerCones },
+    rule: preservationTrailblazer, cones: preservationCones },
   "8004": { name: "星·存护", element: "火", path: "存护", traces: [], stats: ["def"],
-    rule: preservationTrailblazer, cones: preservationTrailblazerCones },
+    rule: preservationTrailblazer, cones: preservationCones },
   "1414": { name: "丹恒•腾荒", element: "物理", path: "存护", traces: [103], rule: danHengPermansor,
-    cones: { "23051": "纵然山河万程", "21043": "两个人的演唱会" } },
+    cones: preservationCones },
   "1014": { name: "Saber", element: "风", path: "毁灭", traces: [101, 103], rule: saber,
     cones: destructionCones },
   "1404": { name: "万敌", element: "虚数", path: "毁灭", traces: [103], stats: ["hp"], rule: mydei,
@@ -636,6 +653,9 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
   }
   if (cone.id === "23039" && (!values.hpBase || !values.hp)) {
     throw new MissingDamageData("缺少光锥所需的生命上限");
+  }
+  if ((cone.id === "21030" || cone.id === "21039") && (!values.defBase || !values.def)) {
+    throw new MissingDamageData("缺少光锥所需的防御力");
   }
   const data = object(object(metadata.cone.skill)?.tables);
   const tables = new Proxy(Object.create(null), { get: (_, key: string) => tableValue(data?.[key], cone.rank) });

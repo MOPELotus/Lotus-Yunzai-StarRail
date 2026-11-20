@@ -1,5 +1,54 @@
 export default function (staticIdx, keyIdx) {
   return {
+    余生的第一天: [
+      staticIdx(1, 'defPct')
+    ],
+    制胜的瞬间: [
+      staticIdx(1, 'defPct'),
+      staticIdx(2, 'effPct'),
+      keyIdx('受到攻击时，防御力提高[defPct]%', 'defPct', 3)
+    ],
+    宇宙市场趋势: [
+      staticIdx(1, 'defPct')
+    ],
+    开疆: [],
+    戍御: [],
+    我们是地火: [],
+    朗道的选择: [],
+    琥珀: [
+      staticIdx(1, 'defPct'),
+      keyIdx('生命值小于50%时，防御力提高[defPct]%', 'defPct', 2)
+    ],
+    记忆的质料: [
+      staticIdx(1, 'effDef')
+    ],
+    '这就是我啦！': [
+      staticIdx(1, 'defPct'),
+      (tables) => {
+        return {
+          title: '基于防御力换算的终结技增量[qInc]（旧试算提示）',
+          data: {
+            qInc: ({ calc, attr }) => calc(attr.def) * tables[2] / 100
+          }
+        }
+      }
+    ],
+    她已闭上双眼: [
+      staticIdx(1, 'hpPct'),
+      staticIdx(2, 'recharge'),
+      keyIdx('装备者生命降低时，使我方全体造成的伤害提高[dmg]%', 'dmg', 3)
+    ],
+    织造命运之线: [
+      staticIdx(1, 'effDef'),
+      (tables) => {
+        return {
+          title: '按防御力提高造成的伤害[dmg]%，沿用旧试算32%上限',
+          data: {
+            dmg: ({ calc, attr }) => Math.min(calc(attr.def) * tables[2] / 100, 32)
+          }
+        }
+      }
+    ],
     命运从未公平: [
       staticIdx(1, 'defPct'),
       (tables) => {
@@ -16,36 +65,15 @@ export default function (staticIdx, keyIdx) {
       staticIdx(1, 'defPct'),
       (tables) => {
         return {
-          title: '基于场上持有护盾的角色数目，提高装备者造成的伤害[dmg]%',
+          title: '按场上4名角色持有护盾计算，装备者造成的伤害提高[dmg]%',
           data: {
             dmg: tables[2] * 4
           }
         }
       }
     ],
-    记忆的质料: [
-      staticIdx(1, 'effDef')
-    ],
-    她已闭上双眼: [
-      staticIdx(1, 'hpPct'),
-      staticIdx(2, 'recharge'),
-      keyIdx('装备者生命降低时，使我方全体造成的伤害提高[dmg]%', 'dmg', 3)
-    ],
-    制胜的瞬间: [
-      staticIdx(1, 'defPct'),
-      staticIdx(2, 'effPct'),
-      keyIdx('受到攻击时，防御力提高[defPct]%', 'defPct', 3)
-    ],
-    '这就是我啦！': [
-      staticIdx(1, 'defPct'),
-      (tables) => {
-        return {
-          title: '基于防御力提高终结技伤害值[qInc]',
-          data: {
-            qInc: ({ calc, attr }) => calc(attr.def) * tables[2] / 100
-          }
-        }
-      }
+    愿旅途永远坦然: [
+      keyIdx('我方目标持有护盾时，造成的伤害提高[dmg]%', 'dmg', 2)
     ],
     纵然山河万程: [
       staticIdx(1, 'atkPct'),
@@ -57,6 +85,6 @@ export default function (staticIdx, keyIdx) {
           }
         }
       }
-    ],
+    ]
   }
 }
