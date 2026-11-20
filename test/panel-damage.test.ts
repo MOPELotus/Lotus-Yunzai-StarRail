@@ -26,6 +26,7 @@ import finalElationFixtures from "./fixtures/panel-damage-elation-final.json";
 import cerydraFixtures from "./fixtures/panel-damage-cerydra.json";
 import feixiaoConeFixtures from "./fixtures/panel-damage-feixiao-cones.json";
 import hertaConeFixtures from "./fixtures/panel-damage-herta-cones.json";
+import hertaFiveStarConeFixtures from "./fixtures/panel-damage-herta-five-star-cones.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -91,6 +92,34 @@ describe("Star Rail personal damage", () => {
 });
 
 describe("common engine with original character data", () => {
+  for (const fixture of hertaFiveStarConeFixtures) {
+    const { rank, affix, gearFixtureConeId, coneId, stats, tables, teamTraceEnabled, expected, buff } = fixture;
+    const { avatar } = hertaConeFixtures.find(entry => entry.avatar.rank === rank)!;
+    const gear = hertaConeFixtures.find(entry => entry.avatar.cone.id === gearFixtureConeId)!;
+    test(`matches 大黑塔 with cone ${coneId}, rank ${rank}, and team trace ${teamTraceEnabled}`, () => {
+      const { setNames, ...inputs } = gear.metadata;
+      const sets = new Map(Object.entries(setNames));
+      const damage = calculateStarRailPersonalDamage({
+        ...avatar,
+        cone: { ...avatar.cone, id: coneId, rank: affix },
+        relics: gear.avatar.relics,
+        stats,
+        traces: avatar.traces.map(trace => trace.id === "1401102" ? { ...trace, active: teamTraceEnabled } : trace),
+      }, { ...inputs, cone: { skill: { tables } }, setForId: id => sets.get(id) })!;
+
+      expect(damage.selected).toBe(expected.selected);
+      expect(damage.rows.map(row => row.title)).toEqual(expected.rows.map(row => row.title));
+      expected.rows.forEach((row, index) => {
+        expect(damage.rows[index]!.critical).toBeCloseTo(row.dmg, 7);
+        expect(damage.rows[index]!.average).toBeCloseTo(row.avg, 7);
+      });
+      expect(damage.swaps[0]?.values[1]?.critical).toBeCloseTo(expected.swap.dmg, 7);
+      expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(expected.swap.avg, 7);
+      if (buff) expect(damage.buffs).toContain(buff);
+      else expect(damage.buffs.some(value => value.startsWith("偏偏希望无价："))).toBe(false);
+    });
+  }
+
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
     ...feixiaoConeFixtures, ...hertaConeFixtures,
