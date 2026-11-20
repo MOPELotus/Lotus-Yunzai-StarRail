@@ -2,6 +2,7 @@
 import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { PanelAvatar } from "./panel-model.ts";
 import type { CoreSkillLevels } from "./panel-skill-preview.ts";
+import { readNamedCone } from "./panel-cone-preview.ts";
 import { readRelicSetNames } from "./panel-relic-set.ts";
 
 const allRelics = "relics" as const;
@@ -43,7 +44,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number } | { skillLevels: CoreSkillLevels };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number } | { skillLevels: CoreSkillLevels } | { namedCone: string };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -107,6 +108,8 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   if (skillLevels) return { ...command, equipment: { skillLevels } };
   const relicSets = readRelicSetNames(request);
   if (relicSets) return { ...command, equipment: { relicSets } };
+  const namedCone = readNamedCone(request);
+  if (namedCone) return { ...command, equipment: { namedCone } };
   const equipment = readEquipment(request);
   if (equipment) return { ...command, equipment };
 }

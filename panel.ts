@@ -12,11 +12,12 @@ import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
 import { changePanelFullTraces } from "./panel-trace-preview.ts";
 import { changePanelCoreSkills } from "./panel-skill-preview.ts";
+import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
-import { id as readId, normalizePanel, object, readLegacyPanel, text, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
+import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
@@ -146,6 +147,21 @@ export function createStarRailPanel(
             const replacement = changePanelSuperimposition(temporary, change.superimposition, change.coneName, text(equipped?.name));
             if ("error" in replacement) return replacement.error;
             temporary = replacement.avatar;
+            labels.push(replacement.label);
+          } else if ("namedCone" in change) {
+            const named = object(theme.weapons[change.namedCone]);
+            const previous = temporary.cone && object(theme.weapons[temporary.cone.id]);
+            const coneName = text(named?.name), coneStar = whole(named?.star, 5);
+            if (!coneName || !coneStar) return "本地主题缺少指定光锥资料。";
+            const originalMetadata = await readPanelDamageMetadata(temporary, theme);
+            await verify();
+            if (!originalMetadata || !temporary.level) return `「${temporary.name}」缺少可确认的当前光锥和角色属性资料。`;
+            const current = changePanelLevel(temporary, temporary.level, originalMetadata);
+            if ("error" in current) return current.error;
+            const replacement = changePanelNamedCone(current.avatar, { id: change.namedCone, name: coneName, star: coneStar }, whole(previous?.star, 5));
+            if ("error" in replacement) return replacement.error;
+            temporary = replacement.avatar;
+            promotion = current.promotion;
             labels.push(replacement.label);
           } else if ("relicSets" in change) {
             const replacement = changePanelRelicSets(temporary, change.relicSets, theme.relicSets);
