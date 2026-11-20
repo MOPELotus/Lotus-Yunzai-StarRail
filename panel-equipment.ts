@@ -1,6 +1,7 @@
 // Same-archive equipment replacement follows apps/profile/ProfileChange.js in the MIT source.
 import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { PanelAvatar } from "./panel-model.ts";
+import type { CoreSkillLevels } from "./panel-skill-preview.ts";
 import { readRelicSetNames } from "./panel-relic-set.ts";
 
 const allRelics = "relics" as const;
@@ -31,6 +32,9 @@ const eidolonPattern = new RegExp(`^${eidolonToken.source}$`, "u");
 const eidolonDigits = "零一二三四五六";
 const characterLevelPattern = /^(?:([1-9]\d?)级|等级[\s:：]+([1-9]\d?))$/u;
 
+const skillNumber = "(1[0-5]|[1-9])";
+const skillLevelsPattern = new RegExp(`^(?:天赋|技能|行迹)${skillNumber} ?${skillNumber} ?${skillNumber} ?${skillNumber}$`, "u");
+
 type DonorEquipment = { donor: string; slots: EquipmentSlot[]; eidolon?: number };
 type Superimposition = { superimposition: number; coneName: string; eidolon?: number };
 
@@ -39,7 +43,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number } | { skillLevels: CoreSkillLevels };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -51,8 +55,10 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   // With no trailing archive, the number after 等级 belongs to the preview itself.
   const levelPrefix = (content ?? "").replace(eidolonToken, "").replace("满行迹", "");
   const levelUsesSuffix = archive && /(?:^|换)\s*等级[\s:：]*$/u.test(levelPrefix);
-  const request = levelUsesSuffix ? `${content} ${archive}` : content;
-  const profileId = Number(levelUsesSuffix ? 1 : archive ?? 1);
+  const skillsUseSuffix = archive && content && !readSkillLevels(content) && readSkillLevels(`${content} ${archive}`);
+  const suffixIsArgument = levelUsesSuffix || skillsUseSuffix;
+  const request = suffixIsArgument ? `${content} ${archive}` : content;
+  const profileId = Number(suffixIsArgument ? 1 : archive ?? 1);
   if (!name || !request || profileId > MAX_PROFILE_ID || name.includes("换") || /\d{9,}/u.test(name + request)) return;
 
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
@@ -97,6 +103,8 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
     const combinedLevel = readCharacterLevel(request.replace(rankToken, "").trim());
     if (rank !== undefined && combinedLevel !== undefined) return { ...command, equipment: { level: combinedLevel, eidolon: rank } };
   }
+  const skillLevels = readSkillLevels(request);
+  if (skillLevels) return { ...command, equipment: { skillLevels } };
   const relicSets = readRelicSetNames(request);
   if (relicSets) return { ...command, equipment: { relicSets } };
   const equipment = readEquipment(request);
@@ -128,6 +136,11 @@ function readFullCharacterPreview(segments: readonly string[]) {
     }
   }
   if (level !== undefined && eidolon !== undefined && fullTraces) return { level, eidolon, fullTraces } as const;
+}
+
+function readSkillLevels(request: string): CoreSkillLevels | undefined {
+  const match = skillLevelsPattern.exec(request);
+  if (match) return { a: Number(match[1]), e: Number(match[2]), t: Number(match[3]), q: Number(match[4]) };
 }
 
 function readCharacterLevel(request: string) {

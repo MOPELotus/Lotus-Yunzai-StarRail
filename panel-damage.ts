@@ -401,17 +401,19 @@ class MissingDamageData extends Error {
   }
 }
 
-function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number): SkillValues {
-  const current = new Map(avatar.skills.map(({ key, level }) => [key, level]));
+function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number, skillPreview: boolean): SkillValues {
+  const current = new Map(avatar.skills.map(skill => [skill.key, skill]));
   const cfg = object(metadata.character.talent);
   const upgrades = object(metadata.character.talentCons);
   return new Proxy(Object.create(null), {
     get(_, key: string) {
       const originalKey = key.replace(/^([aeqtx]|xe|me|mt)[123]$/u, "$1");
-      const baseLevel = current.get(originalKey);
-      if (!baseLevel || (avatar.legacy && !upgrades)) throw new MissingDamageData("缺少技能等级");
+      const skill = current.get(originalKey);
+      const missing = skill ? !skill.level : !skillPreview || !["xe", "me", "mt"].includes(originalKey);
+      if (missing || (avatar.legacy && !upgrades)) throw new MissingDamageData("缺少技能等级");
       const upgradeAt = upgrades?.[originalKey];
-      const level = avatar.legacy ? starRailLegacySkillLevel(originalKey, baseLevel, rank, upgradeAt) : baseLevel;
+      const level = !skill ? 1 : avatar.legacy && skill.original === undefined
+        ? starRailLegacySkillLevel(originalKey, skill.level, rank, upgradeAt) : skill.level;
       const tables = object(object(cfg?.[key])?.tables);
       const rows = Object.values(tables ?? {}).map(object);
       return new Proxy(Object.create(null), {
@@ -525,7 +527,7 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
 
 function originalDamage(
   avatar: PanelAvatar, metadata: Metadata, scenario: number | undefined,
-  character: Character, rows?: PanelAttributeRows,
+  character: Character, rows: PanelAttributeRows | undefined, skillPreview: boolean,
 ) {
   if (!avatar.level || avatar.rank === undefined || metadata.character.elem !== character.element ||
       (avatar.element && avatar.element !== character.element)) throw new MissingDamageData("缺少角色等级、星魂或元素资料");
@@ -541,7 +543,7 @@ function originalDamage(
     throw new MissingDamageData("缺少对应的行迹状态");
   }
   const trees = Object.fromEntries([...knownTraces].filter(([id, active]) => id && active));
-  const talent = talentValues(avatar, metadata, rank);
+  const talent = talentValues(avatar, metadata, rank, skillPreview);
   const { values, staticAttr } = panelValues(avatar, metadata, character, rows);
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: { ...values, staticAttr },
@@ -605,11 +607,11 @@ function originalDamage(
   return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };
 }
 
-export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number, rows?: PanelAttributeRows) {
+export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number, rows?: PanelAttributeRows, skillPreview = false) {
   const character = characters.get(avatar.id);
   if (!character) return { reason: "该星铁角色的个人伤害规则尚未接入", scenarioCount: undefined } as const;
   try {
-    return { damage: originalDamage(avatar, metadata, scenario, character, rows) } as const;
+    return { damage: originalDamage(avatar, metadata, scenario, character, rows, skillPreview) } as const;
   } catch (error) {
     if (!(error instanceof MissingDamageData)) throw error;
     return { reason: error.message, scenarioCount: error.scenarioCount } as const;

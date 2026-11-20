@@ -41,6 +41,11 @@ export function starRailLegacySkillLevel(skill: string, level: number, rank: num
   return Math.min(skillCap[skill] ?? 25, level + starRailSkillBonus(skill, rank, upgrades));
 }
 
+/** Uses the fixed CharTalent level mode for explicit effective levels. */
+export function starRailSpecifiedSkillLevel(skill: string, level: number, rank: number, upgrades: unknown) {
+  return { level: Math.min(skillCap[skill] ?? 25, level), original: level - starRailSkillBonus(skill, rank, upgrades) };
+}
+
 /** Recovers the base of an effective MiYouShe level when the result is unambiguous. */
 export function recoverStarRailSkillLevel(skill: string, effective: number, oldRank: number, rank: number, upgrades: unknown) {
   const oldBonus = starRailSkillBonus(skill, oldRank, upgrades);

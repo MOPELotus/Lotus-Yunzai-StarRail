@@ -11,6 +11,7 @@ import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttribute
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
 import { changePanelFullTraces } from "./panel-trace-preview.ts";
+import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
@@ -114,6 +115,7 @@ export function createStarRailPanel(
       if (!snapshot?.avatars.length) return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
       const theme = await readTheme();
       let selected: PanelAvatar | undefined;
+      const skillPreview = "equipment" in command && "skillLevels" in command.equipment;
       let equipmentLabel: string | undefined;
       let equipmentRows: PanelAttributeRows | undefined;
       let equipmentMetadata: Awaited<ReturnType<typeof readPanelDamageMetadata>>;
@@ -181,6 +183,15 @@ export function createStarRailPanel(
             temporary = replacement.avatar;
             labels.push(replacement.label);
           }
+          if ("skillLevels" in change) {
+            const replacement = changePanelCoreSkills(temporary, change.skillLevels, equipmentMetadata?.character.talentCons);
+            if ("error" in replacement) {
+              await verify();
+              return replacement.error;
+            }
+            temporary = replacement.avatar;
+            labels.push(replacement.label);
+          }
           equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata, promotion);
           await verify();
           if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
@@ -192,7 +203,7 @@ export function createStarRailPanel(
       if (type === "damage" && selected) {
         const metadata = equipmentMetadata ?? await readPanelDamageMetadata(selected, theme);
         const scenario = "scenario" in command ? command.scenario : undefined;
-        const result = metadata ? readStarRailPersonalDamage(selected, metadata, scenario, equipmentRows) : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined };
+        const result = metadata ? readStarRailPersonalDamage(selected, metadata, scenario, equipmentRows, skillPreview) : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined };
         await verify();
         if (result.scenarioCount !== undefined) {
           return equipmentLabel
@@ -220,7 +231,7 @@ export function createStarRailPanel(
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
-          models = [await makePanelDetailCard(snapshot, selected, theme, signal, equipmentLabel)];
+          models = [await makePanelDetailCard(snapshot, selected, theme, signal, equipmentLabel, skillPreview)];
         }
       } else {
         models = await makePanelListCards(snapshot, theme, profileId, signal, updated);

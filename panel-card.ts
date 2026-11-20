@@ -265,7 +265,7 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
   return tree;
 }
 
-export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal, equipmentLabel?: string) {
+export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal, equipmentLabel?: string, skillPreview = false) {
   const artSignal = equipmentLabel ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
@@ -281,13 +281,18 @@ export async function makePanelDetailCard(snapshot: PanelSnapshot, avatar: Panel
   for (const skill of avatar.skills) {
     talent[skill.key] = { level: skill.level, original: skill.original };
     const upgrade = levels?.[skill.key];
-    if (avatar.legacy && upgrade) {
+    if (avatar.legacy && upgrade && skill.original === undefined) {
       const rank = avatar.rank ?? 0;
       talent[skill.key] = { original: skill.level,
         level: starRailLegacySkillLevel(skill.key, skill.level, rank, upgrade) };
     }
     imgs[skill.key] = await localArt(theme, ["character", name, "imgs", `talent-${skill.key}.webp`])
       || await remoteArt(skill.icon, artSignal);
+  }
+  if (skillPreview) {
+    for (const key of ["xe", "me", "mt"]) {
+      if (object(character.talent)?.[key]) imgs[key] = await localArt(theme, ["character", name, "imgs", `talent-${key}.webp`]);
+    }
   }
   for (let i = 1; i <= 6; i++) {
     const oldKey = text(levels?.[i]);
