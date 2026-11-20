@@ -205,7 +205,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1204": { name: "景元", element: "雷", path: "智识", traces: [101, 103], rule: jingYuan,
     cones: { "23010": "拂晓之前", "21027": "早餐的仪式感" } },
   "1220": { name: "飞霄", element: "风", path: "巡猎", traces: [102, 103], rule: feixiao,
-    cones: { "23031": "我将，巡征追猎", "23012": "如泥酣眠" } },
+    cones: { "23031": "我将，巡征追猎", "23012": "如泥酣眠", "21010": "论剑", "24001": "星海巡航" } },
   "1222": { name: "灵砂", element: "火", path: "丰饶", traces: [101], stats: ["stance", "heal"], rule: lingsha,
     cones: { "23032": "唯有香如故" } },
   "1221": { name: "云璃", element: "物理", path: "毁灭", traces: [103], rule: yunli,
