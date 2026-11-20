@@ -22,7 +22,7 @@ test("accepts the fixed original constellation syntax, including zero, max and e
   expect(parsePanelCommand("*希儿面板换零魂")).toMatchObject({ type: "detail", equipment: { eidolon: 0 } });
   expect(parsePanelCommand("*希儿换满命")).toMatchObject({ type: "detail", equipment: { eidolon: 6 } });
   expect(parsePanelCommand("*希儿面板换七魂")).toBeUndefined();
-  expect(parsePanelCommand("*希儿面板换五星魂换5叠影武器")).toBeUndefined();
+  expect(parsePanelCommand("*希儿面板换五星魂换5叠影武器换六魂")).toBeUndefined();
 });
 
 test("keeps original levels in a legacy cache and adjusts managed base, memo and double Elation upgrade levels", () => {

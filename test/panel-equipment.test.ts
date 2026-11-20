@@ -81,3 +81,20 @@ test("combines exactly one eidolon segment and one same-archive donor segment in
   expect(parsePanelCommand("*希儿换飞霄光锥换零魂换")).toBeUndefined();
   expect(parsePanelCommand("*希儿换零魂换满魂")).toBeUndefined();
 });
+
+
+test("combines one eidolon and one current cone tier without mixing weapon overrides", () => {
+  const expected = {
+    type: "damage" as const, profileId: 2, name: "希儿", scenario: 2,
+    equipment: { eidolon: 0, superimposition: 5, coneName: "于夜色中" },
+  };
+  expect(parsePanelCommand("#星铁希儿伤害2换零星魂换五叠影于夜色中 2")).toEqual(expected);
+  expect(parsePanelCommand("*希儿伤害2换叠影5于夜色中 换 零魂 2")).toEqual(expected);
+  expect(parsePanelCommand("*希儿面板换满精武器换六魂")).toMatchObject({
+    type: "detail", equipment: { eidolon: 6, superimposition: 5, coneName: "武器" },
+  });
+  expect(parsePanelCommand("*希儿换六魂换叠影6武器")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换飞霄光锥换六魂换满叠影武器")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换飞霄光锥换满叠影武器")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换五叠影武器换三叠影武器")).toBeUndefined();
+});

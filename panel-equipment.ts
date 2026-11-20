@@ -29,13 +29,14 @@ const eidolonPattern = /^([0-6零一二三四五六满])(?:命|魂|星魂)$/u;
 const eidolonDigits = "零一二三四五六";
 
 type DonorEquipment = { donor: string; slots: EquipmentSlot[]; eidolon?: number };
+type Superimposition = { superimposition: number; coneName: string; eidolon?: number };
 
 type EquipmentCommand = {
   type: "damage" | "detail";
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | { superimposition: number; coneName: string } | { eidolon: number };
+  equipment: DonorEquipment | Superimposition | { eidolon: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -54,7 +55,7 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
     const first = segments[0]!, second = segments[1]!;
     const firstEidolon = readEidolon(first);
     const eidolon = firstEidolon ?? readEidolon(second);
-    const equipment = readDonorEquipment(firstEidolon !== undefined ? second : first);
+    const equipment = readEquipment(firstEidolon !== undefined ? second : first);
     if (eidolon === undefined || !equipment) return;
     return { ...command, equipment: { ...equipment, eidolon } };
   }
@@ -62,15 +63,17 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
 
   const eidolon = readEidolon(request);
   if (eidolon !== undefined) return { ...command, equipment: { eidolon } };
-  const rankChange = superimpositionPattern.exec(request);
-  if (rankChange) {
-    const rankLabel = rankChange[1] ?? rankChange[2]!;
-    const coneName = rankChange[3]!.trim();
-    const rank = rankLabel === "满" ? 5 : tiers.includes(rankLabel) ? tiers.indexOf(rankLabel) + 1 : Number(rankLabel);
-    return { ...command, equipment: { superimposition: rank, coneName } };
-  }
-  const equipment = readDonorEquipment(request);
+  const equipment = readEquipment(request);
   if (equipment) return { ...command, equipment };
+}
+
+function readEquipment(request: string): DonorEquipment | Superimposition | undefined {
+  const rankChange = superimpositionPattern.exec(request);
+  if (!rankChange) return readDonorEquipment(request);
+  const rankLabel = rankChange[1] ?? rankChange[2]!;
+  const coneName = rankChange[3]!.trim();
+  const rank = rankLabel === "满" ? 5 : tiers.includes(rankLabel) ? tiers.indexOf(rankLabel) + 1 : Number(rankLabel);
+  return { superimposition: rank, coneName };
 }
 
 function readEidolon(request: string) {
