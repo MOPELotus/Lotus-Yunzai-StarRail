@@ -39,7 +39,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -58,6 +58,10 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
     scenario: scenario === undefined ? undefined : Number(scenario) };
   const segments = request.split("换").map(segment => segment.trim());
+  if (request.includes("满行迹") && eidolonToken.test(request)) {
+    const equipment = readFullCharacterPreview(segments);
+    if (equipment) return { ...command, equipment };
+  }
   if (segments.length === 2) {
     const first = segments[0]!, second = segments[1]!;
     const levelAndTraces = first === "满行迹" ? readCharacterLevel(second) : second === "满行迹" ? readCharacterLevel(first) : undefined;
@@ -97,6 +101,33 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   if (relicSets) return { ...command, equipment: { relicSets } };
   const equipment = readEquipment(request);
   if (equipment) return { ...command, equipment };
+}
+
+function readFullCharacterPreview(segments: readonly string[]) {
+  if (segments.length > 3 || segments.some(segment => !segment)) return;
+  let eidolon: number | undefined;
+  let level: number | undefined;
+  let fullTraces = false;
+  for (const segment of segments) {
+    const rankToken = eidolonToken.exec(segment)?.[0];
+    let pending = segment;
+    if (rankToken) {
+      if (eidolon !== undefined) return;
+      eidolon = readEidolon(rankToken);
+      pending = pending.replace(rankToken, "");
+    }
+    if (pending.includes("满行迹")) {
+      if (fullTraces) return;
+      fullTraces = true;
+      pending = pending.replace("满行迹", "");
+    }
+    if (pending.trim()) {
+      if (level !== undefined) return;
+      level = readCharacterLevel(pending.trim());
+      if (level === undefined) return;
+    }
+  }
+  if (level !== undefined && eidolon !== undefined && fullTraces) return { level, eidolon, fullTraces } as const;
 }
 
 function readCharacterLevel(request: string) {
