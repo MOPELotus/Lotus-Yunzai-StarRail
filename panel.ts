@@ -10,6 +10,7 @@ import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelReli
 import { calculateEquipmentAttributeRows, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
+import { changePanelFullTraces } from "./panel-trace-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
@@ -158,6 +159,14 @@ export function createStarRailPanel(
             }
             temporary = replacement.avatar;
             labels.unshift(replacement.label);
+          } else if ("fullTraces" in change) {
+            const replacement = changePanelFullTraces(temporary, equipmentMetadata?.character.tree);
+            if ("error" in replacement) {
+              await verify();
+              return replacement.error;
+            }
+            temporary = replacement.avatar;
+            labels.push(replacement.label);
           }
           equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata);
           await verify();

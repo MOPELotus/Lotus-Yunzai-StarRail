@@ -37,7 +37,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] };
+  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -64,6 +64,7 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
 
   const eidolon = readEidolon(request);
   if (eidolon !== undefined) return { ...command, equipment: { eidolon } };
+  if (request === "满行迹") return { ...command, equipment: { fullTraces: true } };
   const relicSets = readRelicSetNames(request);
   if (relicSets) return { ...command, equipment: { relicSets } };
   const equipment = readEquipment(request);
