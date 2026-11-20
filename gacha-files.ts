@@ -51,6 +51,7 @@ export function createStarRailGachaFiles(
   archive: ReturnType<typeof createStarRailGachaRecordArchive>,
   signal: AbortSignal,
   appVersion: string,
+  hasDisplayHistory?: (qq: string, uid: string) => Promise<boolean>,
 ) {
   const savedRole = (qq: string, profileId: number) => profiles.savedRole(qq, profileId, "sr");
   const receive = createGachaFileImport({
@@ -92,8 +93,9 @@ export function createStarRailGachaFiles(
       const { uid } = role;
       const data = await archive.read({ qq, uid }, { legacyTimezone: starRailLegacyArchiveTimezone(role) });
       if (data.status === "unavailable") {
-        return data.reason === "mirror" ? "旧星铁档案含有用于显示的占位记录，无法导出真实逐抽。"
-          : "本地没有可导出的星铁逐抽记录。可先用 *导入记录 导入 UIGF 或 SRGF 文件。";
+        if (data.reason === "mirror") return "旧星铁档案含有用于显示的占位记录，无法导出真实逐抽。";
+        if (await hasDisplayHistory?.(qq, uid)) return "本地只有星铁显示用汇总记录，无法导出真实逐抽。";
+        return "本地没有可导出的星铁逐抽记录。可先用 *导入记录 导入 UIGF 或 SRGF 文件。";
       }
       const exportArchive = version === "v4" && !Number.isInteger(data.archive.timezone)
         ? convertStarRailUigfTimezone(data.archive, 0) : data.archive;

@@ -49,6 +49,8 @@ const specialPools = new Map<string, SpecialPool>([
   ["武器联动", "GachaType_CollabEquipmentUp"], ["新手", "GachaType_Newbie"],
 ]);
 const historyRoot = fileURLToPath(new URL("../../data/starRailGachaJson/", import.meta.url));
+const legacyHistoryRoots = ["Lotus-Plugin", "Lotus-ReFactor"].map(directory =>
+  fileURLToPath(new URL(`../${directory}/data/starRailGachaJson/`, import.meta.url)));
 const recordsRoot = fileURLToPath(new URL("../../data/starRailGachaRows/", import.meta.url));
 const legacyRecordsRoot = fileURLToPath(new URL("../../data/srJson/", import.meta.url));
 const help = [
@@ -107,9 +109,12 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const simulate = createStarRailSimulation({ lockFile, signal });
-  const history = createStarRailGachaHistoryStore(historyRoot, lockFile);
+  const history = createStarRailGachaHistoryStore(historyRoot, lockFile, legacyHistoryRoots);
   const archive = createStarRailGachaRecordArchive({ directory: recordsRoot, legacyDirectory: legacyRecordsRoot }, lockFile);
-  const gachaFiles = createStarRailGachaFiles(profiles, archive, signal, runtimeVersion?.version ?? runtimeVersion?.revision ?? "dev");
+  const hasDisplayHistory = async (qq: string, uid: string) =>
+    (await history.read(qq, uid) ?? await history.readLegacy(qq, uid)) !== null;
+  const gachaFiles = createStarRailGachaFiles(profiles, archive, signal, runtimeVersion?.version ?? runtimeVersion?.revision ?? "dev",
+    hasDisplayHistory);
   const service = createStarRailGachaSync(profiles, client, history);
   const updateGacha = createGachaUpdater((qq, profileId) => service.sync(qq, profileId, { signal }));
 
@@ -118,13 +123,19 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     try {
       const role = await profiles.savedRole(qq, profileId, "sr");
       const { uid, nickname } = role;
-      const snapshot = recordArchive ? null : await history.read(qq, uid);
+      let snapshot = recordArchive ? null : await history.read(qq, uid);
       const raw = snapshot === null ? await archive.read({ qq, uid }, { legacyTimezone: starRailLegacyArchiveTimezone(role) }) : undefined;
       if (raw?.status === "unavailable") {
-        if (recordArchive) return raw.reason === "mirror"
-          ? `UID:${uid} 本地只有旧显示镜像，请通过 *导入记录${profileId === 1 ? "" : profileId} 导入真实逐抽文件。`
-          : `UID:${uid} 本地暂无逐抽档案，可使用 *导入记录${profileId === 1 ? "" : profileId}。`;
-        return `[starrail] profile ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
+        if (recordArchive) {
+          const summary = raw.reason === "mirror" ? "旧显示镜像" : await hasDisplayHistory(qq, uid) ? "显示用汇总记录" : "";
+          return summary
+            ? `UID:${uid} 本地只有${summary}，请通过 *导入记录${profileId === 1 ? "" : profileId} 导入真实逐抽文件。`
+            : `UID:${uid} 本地暂无逐抽档案，可使用 *导入记录${profileId === 1 ? "" : profileId}。`;
+        }
+        snapshot = await history.readLegacy(qq, uid);
+        if (snapshot === null) {
+          return `[starrail] profile ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
+        }
       }
       const themeDirectory = starRailGachaThemeDirectory();
       const rawArchive = raw?.status === "available" ? raw.archive : undefined;
