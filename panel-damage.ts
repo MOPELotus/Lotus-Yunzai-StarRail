@@ -181,7 +181,30 @@ const fireflyCones = { "23025": "梦应归于何处", "21042": "铭记于心的�
 const bladeCones = { "23009": "到不了的彼岸", "21012": "秘密誓心" };
 const weltCones = { "23004": "以世界之名", "21015": "决心如汗珠般闪耀" };
 const jingliuCones = { "23014": "此身为剑", "21012": "秘密誓心" };
-const eruditionCones = { "21020": "天才们的休憩", "21027": "早餐的仪式感" };
+const eruditionCones = {
+  "20006": "智库",
+  "20013": "灵钥",
+  "20020": "睿见",
+  "21006": "「我」的诞生",
+  "21013": "别让世界静下来",
+  "21020": "天才们的休憩",
+  "21027": "早餐的仪式感",
+  "21034": "今日亦是和平的一日",
+  "21040": "银河沦陷日",
+  "21045": "谐乐静默之后",
+  "21060": "氤氲麦香的梦",
+  "22004": "宇宙大生意",
+  "23000": "银河铁道之夜",
+  "23010": "拂晓之前",
+  "23018": "片刻，留在眼底",
+  "23028": "偏偏希望无价",
+  "23033": "忍法帖•缭乱破魔",
+  "23037": "向着不可追问处",
+  "23041": "生命当付之一炬",
+  "23060": "当一颗星照亮夜空",
+  "23061": "星火悄然闪耀",
+  "24004": "不息的演算",
+};
 const remembranceCones = { "21050": "胜利只在朝夕间", "21052": "多流汗，少流泪" };
 const harmonyTrailblazerCones = { "23019": "镜中故我", "21004": "记忆中的模样" };
 const preservationTrailblazerCones = { "24002": "记忆的质料", "21043": "两个人的演唱会" };
@@ -196,15 +219,14 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1308": { name: "黄泉", element: "雷", path: "虚无", traces: [102, 103], rule: acheron,
     cones: { "23024": "行于流逝的岸", "21044": "无边曼舞" } },
   "1401": { name: "大黑塔", element: "冰", path: "智识", traces: [101, 102, 103], rule: theHerta,
-    cones: { "23037": "向着不可追问处", "23000": "银河铁道之夜", "23010": "拂晓之前",
-      "23028": "偏偏希望无价", ...eruditionCones } },
+    cones: eruditionCones },
   "1304": { name: "砂金", element: "虚数", path: "存护", traces: [102], stats: ["def"], rule: aventurine,
     cones: { "23023": "命运从未公平", "21043": "两个人的演唱会" } },
   "1307": { name: "黑天鹅", element: "风", path: "虚无", traces: [103], stats: ["effPct"], rule: blackSwan, cones: kafkaCones },
   "1005": { name: "卡芙卡", element: "雷", path: "虚无", traces: [], rule: kafka, cones: kafkaCones },
   "2005": { name: "卡芙卡Pro", element: "雷", path: "虚无", traces: [103], stats: ["effPct"], rule: kafkaEnhanced, cones: kafkaCones },
   "1204": { name: "景元", element: "雷", path: "智识", traces: [101, 103], rule: jingYuan,
-    cones: { "23010": "拂晓之前", "21027": "早餐的仪式感" } },
+    cones: eruditionCones },
   "1220": { name: "飞霄", element: "风", path: "巡猎", traces: [102, 103], rule: feixiao,
     cones: { "23031": "我将，巡征追猎", "23012": "如泥酣眠", "21010": "论剑", "24001": "星海巡航" } },
   "1222": { name: "灵砂", element: "火", path: "丰饶", traces: [101], stats: ["stance", "heal"], rule: lingsha,
@@ -244,13 +266,13 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1312": { name: "米沙", element: "冰", path: "毁灭", traces: [102, 103], rule: misha,
     cones: { "21042": "铭记于心的约定", "21012": "秘密誓心" } },
   "1302": { name: "银枝", element: "物理", path: "智识", traces: [], rule: argenti,
-    cones: { "23018": "片刻，留在眼底", ...eruditionCones } },
+    cones: eruditionCones },
   "1013": { name: "黑塔", element: "冰", path: "智识", traces: [101, 103], rule: herta,
-    cones: { "23000": "银河铁道之夜", ...eruditionCones } },
+    cones: eruditionCones },
   "1003": { name: "姬子", element: "火", path: "智识", traces: [102, 103], rule: himeko,
-    cones: { "23000": "银河铁道之夜", ...eruditionCones } },
+    cones: eruditionCones },
   "1314": { name: "翡翠", element: "量子", path: "智识", traces: [103], rule: jade,
-    cones: { "23028": "偏偏希望无价", ...eruditionCones } },
+    cones: eruditionCones },
   "1407": { name: "遐蝶", element: "量子", path: "记忆", traces: [], stats: ["hp"], rule: castorice,
     cones: { "23040": "让告别，更美一些", ...remembranceCones } },
   "1402": { name: "阿格莱雅", element: "雷", path: "记忆", traces: [101], rule: aglaea,
@@ -337,7 +359,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "8002": { name: "星·毁灭", element: "物理", path: "毁灭", traces: [102, 103],
     rule: destructionTrailblazer, cones: destructionTrailblazerCones },
   "1405": { name: "那刻夏", element: "风", path: "智识", traces: [102, 103], rule: anaxa,
-    cones: { "23041": "生命当付之一炬", "21020": "天才们的休憩" } },
+    cones: eruditionCones },
   "1201": { name: "青雀", element: "量子", path: "智识", traces: [102, 103], rule: qingque, cones: eruditionCones },
   "1106": { name: "佩拉", element: "冰", path: "虚无", traces: [101, 102, 103], rule: pela,
     cones: { "21015": "决心如汗珠般闪耀", "22000": "新手任务开始前" } },
@@ -372,7 +394,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1505": { name: "绯英", element: "物理", path: "欢愉", traces: [101], requiresEnergy: true, stats: ["recharge"], rule: evanescia,
     cones: { "23058": "邂逅于下一个花季", "22007": "未来，有我们一起" } },
   "1510": { name: "姬子•启行", element: "火", path: "智识", traces: [], rule: himekoNova,
-    cones: { "23060": "当一颗星照亮夜空", "21020": "天才们的休憩" } },
+    cones: eruditionCones },
   "1511": { name: "星神★阿哈", element: "量子", path: "欢愉", traces: [103], rule: aha,
     cones: { "23065": "当第一声「阿哈」响起", "22009": "在世界尽头相会吧！" } },
   "1512": { name: "知更鸟•晴歌", element: "风", path: "记忆", traces: [103], stats: ["hp"], rule: robinDahlia,
@@ -380,7 +402,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1513": { name: "砂金•戏浪", element: "量子", path: "欢愉", traces: [101, 102, 103], stats: ["hp"], rule: aventurineElation,
     cones: { "23064": "向浪花掷下盛夏", "21064": "菇菇嘎嘎历险记" } },
   "1508": { name: "远坂凛", element: "量子", path: "智识", traces: [101], rule: tohsakaRin,
-    cones: { "23061": "星火悄然闪耀", "21020": "天才们的休憩" } },
+    cones: eruditionCones },
   "1506": { name: "银狼LV.999", element: "虚数", path: "欢愉", traces: [101], rule: silverWolfElation,
     cones: { "23057": "欢迎来到银河城", "21064": "菇菇嘎嘎历险记" } },
   "1412": { name: "刻律德菈", element: "风", path: "同谐", traces: [101, 102, 103], rule: cerydra,
@@ -488,7 +510,7 @@ function relicEffects(avatar: PanelAvatar, metadata: Metadata) {
 
 type IndexedBuff = Buff & { idx?: number; key?: string };
 type WeaponRule = IndexedBuff | ((tables: Numbers) => IndexedBuff);
-type WeaponRules = Readonly<Record<string, readonly WeaponRule[]>>;
+type WeaponRules = Readonly<Record<string, WeaponRule | WeaponRule[]>>;
 const staticIndex = () => ({ isStatic: true });
 function dynamicIndex(title: string, key: string | Numbers, idx?: number): WeaponRule {
   if (typeof key === "string") return { title, key, idx };
@@ -507,18 +529,20 @@ const weaponRules: Readonly<Record<string, WeaponRules>> = {
 function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Character) {
   const cone = avatar.cone;
   if (!cone) return [];
-  const energy = metadata.character.sp;
-  if (cone.id === "23018" && (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {
-    throw new MissingDamageData("缺少光锥所需的角色能量上限");
-  }
   const name = character.cones[cone.id];
   const configure = name && weaponRules[character.path]?.[name];
   if (!configure || !cone.rank || metadata.conePath !== character.path) {
     throw new MissingDamageData(`当前光锥「${cone.name || cone.id}」的伤害规则尚未接入或缺少叠影`);
   }
+  const energy = metadata.character.sp;
+  if ((cone.id === "21034" || cone.id === "23018") &&
+      (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {
+    throw new MissingDamageData("缺少光锥所需的角色能量上限");
+  }
   const data = object(object(metadata.cone.skill)?.tables);
   const tables = new Proxy(Object.create(null), { get: (_, key: string) => tableValue(data?.[key], cone.rank) });
-  return configure.flatMap(row => {
+  const rules = Array.isArray(configure) ? configure : [configure];
+  return rules.flatMap(row => {
     const rule = typeof row === "function" ? row(tables) : row;
     if (rule.isStatic) return [];
     const title = rule.title?.includes("：") ? rule.title : `${name}：${rule.title ?? ""}`;

@@ -27,6 +27,7 @@ import cerydraFixtures from "./fixtures/panel-damage-cerydra.json";
 import feixiaoConeFixtures from "./fixtures/panel-damage-feixiao-cones.json";
 import hertaConeFixtures from "./fixtures/panel-damage-herta-cones.json";
 import hertaFiveStarConeFixtures from "./fixtures/panel-damage-herta-five-star-cones.json";
+import eruditionConeFixtures from "./fixtures/panel-damage-erudition-cones.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -88,6 +89,65 @@ describe("Star Rail personal damage", () => {
     expect(calculateStarRailPersonalDamage({
       ...avatar, relics: avatar.relics.map((part, i) => i > 3 ? { ...part, id: String(i) } : part),
     }, metadata, 3)).toBeUndefined();
+  });
+});
+
+describe("all original Erudition Light Cones", () => {
+  const herta = hertaConeFixtures.find(entry => entry.avatar.rank === 6)!;
+  const workshop = hertaConeFixtures.find(entry => entry.avatar.cone.id === "21027")!;
+  const avatar = { ...herta.avatar, relics: workshop.avatar.relics };
+  const { setNames, ...inputs } = workshop.metadata;
+  const sets = new Map(Object.entries(setNames));
+  const defaults = { ...inputs, character: { ...inputs.character, sp: 220 }, setForId: (id: string) => sets.get(id) };
+
+  for (const fixture of eruditionConeFixtures) {
+    const { id, stats, tables, rows, swap } = fixture;
+    const equipped = {
+      ...avatar,
+      cone: { ...avatar.cone, id, rank: 5 },
+      stats: Object.entries(stats).map(([key, [base, value]]) => ({ key, base: base!, value: value! })),
+    };
+    const context = { ...defaults, cone: { skill: { tables } } };
+    test(`matches the original damage and attribute swap with Erudition Light Cone ${id}`, () => {
+      const result = calculateStarRailPersonalDamage(equipped, context)!;
+      expect(result.selected).toBe(herta.expected.selected);
+      expect(result.rows.map(row => row.title)).toEqual(herta.expected.rows.map(row => row.title));
+      rows.forEach(([critical, average], index) => {
+        expect(result.rows[index]?.critical).toBeCloseTo(critical!, 7);
+        expect(result.rows[index]?.average).toBeCloseTo(average!, 7);
+      });
+      expect(result.swaps[0]?.values[1]?.critical).toBeCloseTo(swap[0]!, 7);
+      expect(result.swaps[0]?.values[1]?.average).toBeCloseTo(swap[1]!, 7);
+    });
+  }
+
+  test("uses the actual energy limit and stops when either energy-based passive is missing its inputs", () => {
+    const equipped = { ...avatar, cone: { ...avatar.cone, id: "21034" } };
+    const fixture = eruditionConeFixtures.find(entry => entry.id === "21034")!;
+    const context = { ...defaults, cone: { skill: { tables: fixture.tables } } };
+    for (const sp of [130, 160, 220]) {
+      const damage = calculateStarRailPersonalDamage(equipped, { ...context, character: { ...context.character, sp } });
+      const bonus = sp === 130 ? "52%" : "64%";
+      expect(damage?.buffs.some(value => value.includes(`最多计入160点，伤害提高${bonus}`))).toBe(true);
+    }
+    for (const id of ["21034", "23018"]) {
+      for (const sp of [undefined, 0, -1, Number.NaN]) {
+        const missingEnergy = readStarRailPersonalDamage({ ...equipped, cone: { ...equipped.cone, id } },
+          { ...context, character: { ...context.character, sp } });
+        expect(missingEnergy.reason).toBe("缺少光锥所需的角色能量上限");
+      }
+    }
+    expect(readStarRailPersonalDamage(equipped, { ...context, cone: {} }).reason).toBe("缺少技能等级或叠影数据");
+  });
+
+  test("distinguishes the declared empty Light Cone from unknown or cross-path equipment", () => {
+    const cone = { ...avatar.cone, id: "20013" };
+    const context = { ...defaults, cone: {} };
+    const noBuff = calculateStarRailPersonalDamage({ ...avatar, cone }, context);
+    expect(noBuff).toBeDefined();
+    expect(noBuff?.buffs.some(value => value.startsWith("灵钥："))).toBe(false);
+    expect(calculateStarRailPersonalDamage({ ...avatar, cone }, { ...context, conePath: "巡猎" })).toBeUndefined();
+    expect(calculateStarRailPersonalDamage({ ...avatar, cone: { ...cone, id: "29999", name: "灵钥" } }, context)).toBeUndefined();
   });
 });
 
