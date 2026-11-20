@@ -147,6 +147,14 @@ export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 const leadingPanelUid = /^(#星铁|\*)\s*((?:18|[1-9])\d{8})(?!\d)\s*(?=[\p{L}\p{N}])/u;
 
 export function parsePanelCommand(message: string) {
+  const relicList = /^(?:(?:#星铁|\*)(?:遗器|圣遗物)|#遗器)列表(?:\s*(\d{9,10})(?!\d))?(?:\s*(?:档案\s*)?([1-9]\d{0,2}))?$/u.exec(message);
+  if (relicList) {
+    const profileId = Number(relicList[2] ?? 1);
+    if (profileId > MAX_PROFILE_ID) return;
+    const uid = relicList[1];
+    if (uid && !/^(?:18|[1-9])\d{8}$/u.test(uid)) return;
+    return { type: "relic-list" as const, name: "", profileId, ...(uid ? { uid } : {}) };
+  }
   const leading = leadingPanelUid.exec(message);
   if (!leading) return parseLocalPanelCommand(message);
   const body = message.slice(leading[0].length).replace(/\s+档案\s*([1-9]\d{0,2})$/u, " $1");

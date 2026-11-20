@@ -6,7 +6,7 @@ import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
-import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
+import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
@@ -121,8 +121,28 @@ export function createStarRailPanel(
         snapshot = managedSnapshot(uid, await store.read(qq, uid)) ?? await legacySnapshot(uid);
       }
 
-      if (!snapshot?.avatars.length) return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
+      if (!snapshot?.avatars.length) {
+        if (type === "relic-list") {
+          await verify();
+          return "请先获取角色面板数据后再查看遗器列表。";
+        }
+        return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
+      }
       const theme = await readTheme();
+      if (type === "relic-list") {
+        const model = await makePanelRelicListCard(snapshot, theme, signal, explicitUid);
+        await verify();
+        if (!model.eligible) return "请先获取角色面板数据后再查看遗器列表。";
+        if (!model.artis.length) return "当前面板没有符合旧版词条筛选条件的遗器。";
+        const title = `UID ${uid} · 遗器列表`;
+        const files = await renderTemplate(model);
+        await verify();
+        if (files && files.length) {
+          const images = files.map(file => ({ type: "image" as const, file }));
+          return images.length === 1 ? images[0] : { type: "forward" as const, nodes: [title, ...images] };
+        }
+        return [title, ...model.artis.map(({ avatar, name, mark, markClass }) => `${avatar} · ${name} · ${mark} 分 · ${markClass}`)].join("\n");
+      }
       let selected: PanelAvatar | undefined;
       const skillPreview = "equipment" in command && "skillLevels" in command.equipment;
       let equipmentLabel: string | undefined;

@@ -145,9 +145,10 @@ async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string,
   return remoteArt(avatar.splash || avatar.face, signal);
 }
 
-function preparedModel<Fields extends Json>(theme: Metadata, kind: "list" | "detail" | "relics", fields: Fields) {
+function preparedModel<Fields extends Json>(theme: Metadata,
+  template: "profile-list" | "profile-detail" | "artis-mark" | "artis-list", fields: Fields) {
   return {
-    tplFile: join(packagedTheme, "character", kind === "relics" ? "artis-mark.html" : `profile-${kind}.html`),
+    tplFile: join(packagedTheme, "character", `${template}.html`),
     elemLayout: join(packagedTheme, "common", "layout", "elem.html"),
     _styles_path: cssFile(resolve(packagedTheme) + sep),
     _theme_path: theme.defaultStyle ? cssFile(theme.root + sep) : "",
@@ -185,7 +186,7 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
         abbr, star: star ?? "", cons: avatar.rank ?? "—", isNew: updated,
       }))));
     }
-    pages.push(preparedModel(theme, "list", {
+    pages.push(preparedModel(theme, "profile-list", {
       chars, uid: snapshot.uid, profileSuffix: profileId === 1 ? "" : profileId, hasNew: updated,
       msg: updated ? `获取角色面板数据成功，共 ${avatars.length} 位角色` : "",
       updateTime: { profile: formatDate(snapshot.updatedAt) }, servName: fieldsSource(snapshot),
@@ -330,7 +331,7 @@ export async function makePanelDetailCard(
     character, cone: coneMeta, conePath: weaponType, relicMetadata: theme.relicValues,
     setForId: id => theme.relicById.get(id)?.asset[1],
   });
-  return preparedModel(theme, "detail", {
+  return preparedModel(theme, "profile-detail", {
     mode: "profile", element, uid: snapshot.uid, charWeapon: path, hsr_paths: path,
     data: {
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
@@ -342,7 +343,7 @@ export async function makePanelDetailCard(
   });
 }
 
-export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal) {
+async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata) {
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
@@ -361,22 +362,75 @@ export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelA
     name, abbr, element, speed: speed === undefined ? undefined : Number.parseFloat(speed),
     base: object(character.baseAttr), relicValues: theme.relicValues,
   });
+  return { name, element, score };
+}
+
+const artisKeyTitle = { ...statTitles, ...Object.fromEntries(Object.entries(relicAttributeMap).map(([key, attr]) => [key, attr.title])) };
+
+async function panelRelicArtwork(part: PanelAvatar["relics"][number], theme: Metadata, signal: AbortSignal, localOnly = false) {
+  const local = theme.relicById.get(part.id);
+  const img = (local && await localArt(theme, local.asset)) || (!localOnly ? await remoteArt(part.image, signal) : "");
+  return { name: part.name || local?.name || `遗器 ${part.slot}`, img };
+}
+
+export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal) {
+  const { name, element, score } = await scorePanelAvatarRelics(avatar, theme);
   if (!score) return;
   const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const splash = await panelPortrait(theme, avatar, name, artSignal);
   const parts = await Promise.all(avatar.relics.flatMap(part => {
     const scored = score.artis[part.slot];
     if (!scored) return [];
-    return [(async () => {
-      const local = theme.relicById.get(part.id);
-      const filename = (local && await localArt(theme, local.asset)) || await remoteArt(part.image, artSignal);
-      return [part.slot, { ...scored, level: part.level ?? "", name: part.name || local?.name || `遗器 ${part.slot}`, img: filename }];
-    })()];
+    return [panelRelicArtwork(part, theme, artSignal).then(artwork =>
+      [part.slot, { ...scored, level: part.level ?? "", ...artwork }])];
   }));
   signal.throwIfAborted();
-  return preparedModel(theme, "relics", {
+  return preparedModel(theme, "artis-mark", {
     uid: snapshot.uid, element, splash, data: { name, elem: element, level: avatar.level ?? "—", cons: avatar.rank ?? "—" },
     charCfg: score.charCfg, artisDetail: { ...score, artis: Object.fromEntries(parts) },
-    attrMap: relicAttributeMap, artisKeyTitle: { ...statTitles, ...Object.fromEntries(Object.entries(relicAttributeMap).map(([key, attr]) => [key, attr.title])) },
+    attrMap: relicAttributeMap, artisKeyTitle,
   });
+}
+
+type RelicRating = NonNullable<ReturnType<typeof scoreStarRailRelics>>;
+
+export async function collectPanelRelics(snapshot: PanelSnapshot, theme: Metadata, signal: AbortSignal) {
+  const eligible: { name: string; part: PanelAvatar["relics"][number];
+    scored: RelicRating["artis"][number]; charWeight: RelicRating["charWeight"] }[] = [];
+  for (const avatar of snapshot.avatars) {
+    signal.throwIfAborted();
+    if (!avatar.relics.length) continue;
+    const { name, score } = await scorePanelAvatarRelics(avatar, theme);
+    if (!score) continue;
+    for (const [slot, scored] of Object.entries(score.artis)) {
+      const part = avatar.relics.find(part => part.slot === Number(slot));
+      if (part) eligible.push({ name, part, scored, charWeight: score.charWeight });
+    }
+  }
+  // The fixed Miao list exempts slot 1 and reverses traversal order for equal marks.
+  const kept = eligible.filter(({ part, scored, charWeight }) => part.slot < 2 || (charWeight[scored.main.key] ?? 0) <= 0 ||
+    scored.attrs.some(attr => (charWeight[attr.key] ?? 0) > 0));
+  kept.sort((left, right) => left.scored._mark - right.scored._mark);
+  return { eligible: eligible.length, entries: kept.reverse().slice(0, 28) };
+}
+
+export async function makePanelRelicListCard(snapshot: PanelSnapshot, theme: Metadata, signal: AbortSignal, localOnly = false) {
+  const { eligible, entries } = await collectPanelRelics(snapshot, theme, signal);
+  const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
+  const artis = [];
+  for (let start = 0; start < entries.length; start += 8) {
+    signal.throwIfAborted();
+    artis.push(...await Promise.all(entries.slice(start, start + 8).map(async ({ name, part, scored, charWeight }) => {
+      const [artwork, side] = await Promise.all([
+        panelRelicArtwork(part, theme, artSignal, localOnly),
+        localArt(theme, ["character", name, "imgs", "face.webp"]).then(image => image ||
+          localArt(theme, ["character", name, "imgs", "face-q.webp"])),
+      ]);
+      return { ...scored, ...artwork, side, charWeight, avatar: name };
+    })));
+  }
+  signal.throwIfAborted();
+  const originalTitles = Object.fromEntries(Object.entries(damageAttribute).map(([title, key]) => [key, `${title}伤加成`]));
+  return preparedModel(theme, "artis-list", { uid: snapshot.uid, eligible, artis,
+    artisKeyTitle: { ...artisKeyTitle, ...originalTitles }, scale: 1.4 });
 }
