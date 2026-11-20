@@ -125,26 +125,39 @@ export function createStarRailPanel(
         }
         if ("equipment" in command) {
           const change = command.equipment;
-          let replacement;
-          if ("eidolon" in change) {
-            equipmentMetadata = await readPanelDamageMetadata(selected, theme);
-            await verify();
-            replacement = changePanelEidolon(selected, change.eidolon, equipmentMetadata?.character.talentCons);
-          } else if ("superimposition" in change) {
-            const equipped = selected.cone && object(theme.weapons[selected.cone.id]);
-            replacement = changePanelSuperimposition(selected, change.superimposition, change.coneName, text(equipped?.name));
-          } else {
+          let temporary = selected;
+          const labels: string[] = [];
+          if ("donor" in change) {
             const donor = findPanelAvatar(snapshot.avatars, change.donor, theme);
             if (!donor) return `当前星铁面板中没有换装来源「${change.donor}」。`;
-            replacement = replacePanelEquipment(selected, donor, change.slots);
+            const replacement = replacePanelEquipment(temporary, donor, change.slots);
+            if ("error" in replacement) return replacement.error;
+            temporary = replacement.avatar;
+            labels.push(replacement.label);
+          } else if ("superimposition" in change) {
+            const equipped = temporary.cone && object(theme.weapons[temporary.cone.id]);
+            const replacement = changePanelSuperimposition(temporary, change.superimposition, change.coneName, text(equipped?.name));
+            if ("error" in replacement) return replacement.error;
+            temporary = replacement.avatar;
+            labels.push(replacement.label);
           }
-          if ("error" in replacement) return replacement.error;
-          equipmentMetadata ??= await readPanelDamageMetadata(replacement.avatar, theme);
-          equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(replacement.avatar, equipmentMetadata);
+
+          // A donor changes the cone metadata, but the talent thresholds belong to the target.
+          equipmentMetadata = await readPanelDamageMetadata(temporary, theme);
+          if ("eidolon" in change && change.eidolon !== undefined) {
+            const replacement = changePanelEidolon(temporary, change.eidolon, equipmentMetadata?.character.talentCons);
+            if ("error" in replacement) {
+              await verify();
+              return replacement.error;
+            }
+            temporary = replacement.avatar;
+            labels.unshift(replacement.label);
+          }
+          equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata);
           await verify();
           if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
-          equipmentLabel = replacement.label;
-          selected = { ...replacement.avatar, stats: formatPanelAttributeRows(equipmentRows) };
+          equipmentLabel = labels.join(" · ");
+          selected = { ...temporary, stats: formatPanelAttributeRows(equipmentRows) };
         }
       }
 

@@ -28,12 +28,14 @@ const tiers = "一二三四五";
 const eidolonPattern = /^([0-6零一二三四五六满])(?:命|魂|星魂)$/u;
 const eidolonDigits = "零一二三四五六";
 
+type DonorEquipment = { donor: string; slots: EquipmentSlot[]; eidolon?: number };
+
 type EquipmentCommand = {
   type: "damage" | "detail";
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: { donor: string; slots: EquipmentSlot[] } | { superimposition: number; coneName: string } | { eidolon: number };
+  equipment: DonorEquipment | { superimposition: number; coneName: string } | { eidolon: number };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -43,15 +45,23 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const name = target?.trim();
   const request = requested?.trim();
   const profileId = Number(archive ?? 1);
-  if (!name || !request || profileId > MAX_PROFILE_ID || /\d{9,}|换/u.test(name + request)) return;
+  if (!name || !request || profileId > MAX_PROFILE_ID || name.includes("换") || /\d{9,}/u.test(name + request)) return;
 
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
     scenario: scenario === undefined ? undefined : Number(scenario) };
-  const eidolon = eidolonPattern.exec(request)?.[1];
-  if (eidolon !== undefined) {
-    const rank = eidolon === "满" ? 6 : eidolonDigits.includes(eidolon) ? eidolonDigits.indexOf(eidolon) : Number(eidolon);
-    return { ...command, equipment: { eidolon: rank } };
+  const segments = request.split("换").map(segment => segment.trim());
+  if (segments.length === 2) {
+    const first = segments[0]!, second = segments[1]!;
+    const firstEidolon = readEidolon(first);
+    const eidolon = firstEidolon ?? readEidolon(second);
+    const equipment = readDonorEquipment(firstEidolon !== undefined ? second : first);
+    if (eidolon === undefined || !equipment) return;
+    return { ...command, equipment: { ...equipment, eidolon } };
   }
+  if (segments.length !== 1) return;
+
+  const eidolon = readEidolon(request);
+  if (eidolon !== undefined) return { ...command, equipment: { eidolon } };
   const rankChange = superimpositionPattern.exec(request);
   if (rankChange) {
     const rankLabel = rankChange[1] ?? rankChange[2]!;
@@ -59,13 +69,24 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
     const rank = rankLabel === "满" ? 5 : tiers.includes(rankLabel) ? tiers.indexOf(rankLabel) + 1 : Number(rankLabel);
     return { ...command, equipment: { superimposition: rank, coneName } };
   }
+  const equipment = readDonorEquipment(request);
+  if (equipment) return { ...command, equipment };
+}
+
+function readEidolon(request: string) {
+  const label = eidolonPattern.exec(request)?.[1];
+  if (label === undefined) return;
+  return label === "满" ? 6 : eidolonDigits.includes(label) ? eidolonDigits.indexOf(label) : Number(label);
+}
+
+function readDonorEquipment(request: string): DonorEquipment | undefined {
   if (invalidTierPrefix.test(request)) return;
   const donorChange = donorPattern.exec(request);
   const donor = donorChange?.[1]?.trim();
   const requestedParts = donorChange?.[2];
   if (!donor || !requestedParts) return;
   const slots = requestedParts.split("+").map(key => parts[key.trim()]!);
-  return { ...command, equipment: { donor, slots } };
+  return { donor, slots };
 }
 
 export function changePanelSuperimposition(target: PanelAvatar, rank: number, requestedName: string, canonicalName: string) {
@@ -89,7 +110,7 @@ export function replacePanelEquipment(target: PanelAvatar, donor: PanelAvatar, s
     if (slot === allRelics) continue;
     if (slot === 0) {
       if (!donor.cone) return { error: `「${donor.name}」的星铁面板没有光锥记录。` };
-      cone = donor.cone;
+      cone = { ...donor.cone, description: "" };
       continue;
     }
     const equipped = donor.relics.filter(part => part.slot === slot);

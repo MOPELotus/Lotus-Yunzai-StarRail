@@ -25,13 +25,15 @@ test("accepts original Star Rail parts, details, bare target and damage with an 
 
 test("copies exactly the requested donor equipment without changing either snapshot record", () => {
   const before = structuredClone([target, donor]);
-  const replaced = replacePanelEquipment(target!, donor!, [0, 1]);
+  const cachedDonor = { ...donor!, cone: { ...donor!.cone!, description: "缓存里保存的旧说明" } };
+  const replaced = replacePanelEquipment(target!, cachedDonor, [0, 1]);
   expect(replaced.avatar).toMatchObject({
-    id: "1102", level: 80, cone: { id: "23030", level: 70, promote: 5, rank: 3 }, stats: [],
+    id: "1102", level: 80, cone: { id: "23030", level: 70, promote: 5, rank: 3, description: "" }, stats: [],
     relics: [{ slot: 1, id: "61011", legacySubIds: ["9,2,2"] }, { slot: 2, id: "61082" }],
   });
   expect(replaced.label).toBe("临时换装 · 飞霄 · 光锥、头部");
   expect([target, donor]).toEqual(before);
+  expect(cachedDonor.cone.description).toBe("缓存里保存的旧说明");
   expect(replacePanelEquipment(target!, donor!, [1, 1]).error).toMatch(/只能指定一次/);
   const all = parsePanelCommand("*希儿换飞霄遗器");
   if (!all || !("equipment" in all) || !("slots" in all.equipment)) throw new Error("missing relic command");
@@ -61,4 +63,21 @@ test("changes only the current light cone tier and recomputes its description fr
   expect(source).toEqual(before);
   expect(changePanelSuperimposition(source, 4, "如泥酣眠", "").error).toMatch(/当前装备/);
   expect(changePanelSuperimposition({ ...source, cone: undefined }, 4, "武器", "").error).toMatch(/没有光锥/);
+});
+
+
+test("combines exactly one eidolon segment and one same-archive donor segment in either order", () => {
+  const expected = {
+    type: "damage" as const, profileId: 2, name: "希儿", scenario: 2, equipment: { eidolon: 0, donor: "飞霄", slots: [0, 1] },
+  };
+  expect(parsePanelCommand("#星铁希儿伤害2换零星魂换飞霄光锥+头部 2")).toEqual(expected);
+  expect(parsePanelCommand("*希儿伤害2换飞霄光锥+头部 换 零魂 2")).toEqual(expected);
+  expect(parsePanelCommand("*希儿面板换飞霄遗器换六魂")).toMatchObject({
+    type: "detail", equipment: { eidolon: 6, donor: "飞霄", slots: ["relics"] },
+  });
+  expect(parsePanelCommand("*希儿换飞霄光锥换六魂换银枝头")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换飞霄光锥换叠影5武器")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换零魂换飞霄100000123光锥")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换飞霄光锥换零魂换")).toBeUndefined();
+  expect(parsePanelCommand("*希儿换零魂换满魂")).toBeUndefined();
 });
