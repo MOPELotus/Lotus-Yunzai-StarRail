@@ -25,6 +25,7 @@ import elationFixtures from "./fixtures/panel-damage-elation.json";
 import finalElationFixtures from "./fixtures/panel-damage-elation-final.json";
 import cerydraFixtures from "./fixtures/panel-damage-cerydra.json";
 import feixiaoConeFixtures from "./fixtures/panel-damage-feixiao-cones.json";
+import hertaConeFixtures from "./fixtures/panel-damage-herta-cones.json";
 
 const metadata = {
   character: { id: 1102, elem: "量子", talent: {
@@ -92,7 +93,7 @@ describe("Star Rail personal damage", () => {
 describe("common engine with original character data", () => {
   for (const { avatar, metadata, expected } of [
     ...advancedFixtures, ...additionalFixtures, ...physicalImaginaryFixtures, ...breakFixtures,
-    ...feixiaoConeFixtures,
+    ...feixiaoConeFixtures, ...hertaConeFixtures,
     ...healthFixtures, ...nihilityFixtures, ...iceFixtures, ...eruditionFixtures, ...remembranceFixtures, ...abundanceFixtures, ...destructionFixtures, ...huntFixtures, ...dotFixtures, ...harmonyFixtures, ...trailblazerFixtures, ...preservationFixtures, ...destructionStateFixtures, ...critSpecialFixtures, ...hpSpecialFixtures, ...breakMultiFixtures, ...elationFixtures, ...finalElationFixtures, ...cerydraFixtures,
   ]) {
     test(`matches ${avatar.name}'s default, all rows and an original attribute swap`, () => {

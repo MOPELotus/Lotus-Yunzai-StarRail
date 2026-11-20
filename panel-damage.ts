@@ -196,7 +196,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1308": { name: "黄泉", element: "雷", path: "虚无", traces: [102, 103], rule: acheron,
     cones: { "23024": "行于流逝的岸", "21044": "无边曼舞" } },
   "1401": { name: "大黑塔", element: "冰", path: "智识", traces: [101, 102, 103], rule: theHerta,
-    cones: { "23037": "向着不可追问处" } },
+    cones: { "23037": "向着不可追问处", ...eruditionCones } },
   "1304": { name: "砂金", element: "虚数", path: "存护", traces: [102], stats: ["def"], rule: aventurine,
     cones: { "23023": "命运从未公平", "21043": "两个人的演唱会" } },
   "1307": { name: "黑天鹅", element: "风", path: "虚无", traces: [103], stats: ["effPct"], rule: blackSwan, cones: kafkaCones },
