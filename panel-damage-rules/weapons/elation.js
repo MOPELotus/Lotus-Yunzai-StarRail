@@ -32,6 +32,12 @@ export default function (staticIdx, keyIdx) {
     欢愉满溢祝福: [
       staticIdx(1, 'atkPct')
     ],
+    欢迎来到银河城: [
+      staticIdx(1, 'speedPct'),
+      keyIdx('造成的欢愉伤害无视目标[xeIgnore]%的防御力。装备者对自身单体施放终结技时，获得[punchline]点【笑点】', {
+        xeIgnore: 2, punchline: 3
+      })
+    ],
     邂逅于下一个花季: [
       staticIdx(1, 'cdmg'),
       (tables) => {
@@ -44,22 +50,20 @@ export default function (staticIdx, keyIdx) {
       },
       keyIdx('施放欢愉技时，使敌方目标受到的伤害提高[enemydmg]%', 'enemydmg', 3)
     ],
-    献给明日的色彩: [
-      staticIdx(1, 'defPct'),
-      keyIdx('敌方全体受到的伤害提高[enemydmg]%', {
-        enemydmg: 2
-      })
-    ],
-    欢迎来到银河城: [
-      staticIdx(1, 'speedPct'),
-      keyIdx('造成的欢愉伤害无视目标[xeIgnore]%的防御力。装备者对自身单体施放终结技时，获得[punchline]点【笑点】', {
-        xeIgnore: 2, punchline: 3
-      })
+    放个短假: [
+      staticIdx(1, 'joyPct'),
+      keyIdx('施放欢愉技期间无视目标[xeIgnore]%的防御力', 'xeIgnore', 2)
     ],
     向浪花掷下盛夏: [
       staticIdx(1, 'cpct'),
       keyIdx('装备者的速度提高[speedPct]%，欢愉度提高[joyPct]%', {
         speedPct: 2, joyPct: 3
+      })
+    ],
+    献给明日的色彩: [
+      staticIdx(1, 'defPct'),
+      keyIdx('敌方全体受到的伤害提高[enemydmg]%', {
+        enemydmg: 2
       })
     ],
     '在世界尽头相会吧！': [
@@ -85,5 +89,8 @@ export default function (staticIdx, keyIdx) {
         data: { ignore: tables[4] }
       })
     ],
+    // The fixed catalog includes these items without personal solver effects.
+    嗤笑: [],
+    残泪: []
   }
 }

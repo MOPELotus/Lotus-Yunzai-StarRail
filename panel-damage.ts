@@ -331,7 +331,23 @@ const preservationCones = {
   "23051": "纵然山河万程",
   "24002": "记忆的质料",
 };
-const elationTrailblazerCones = { "24006": "欢愉满溢祝福", "21064": "菇菇嘎嘎历险记" };
+const elationCones = {
+  "20023": "嗤笑",
+  "20024": "残泪",
+  "21064": "菇菇嘎嘎历险记",
+  "21065": "今日好手气",
+  "21066": "放个短假",
+  "22007": "未来，有我们一起",
+  "22009": "在世界尽头相会吧！",
+  "23053": "花花世界迷人眼",
+  "23054": "当她决定看见",
+  "23055": "献给明日的色彩",
+  "23057": "欢迎来到银河城",
+  "23058": "邂逅于下一个花季",
+  "23064": "向浪花掷下盛夏",
+  "23065": "当第一声「阿哈」响起",
+  "24006": "欢愉满溢祝福",
+};
 const abundanceCones = {
   "20001": "物穰",
   "20008": "嘉果",
@@ -522,28 +538,28 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: huntCones },
   "1509": { name: "吉尔伽美什", element: "雷", path: "毁灭", traces: [102, 103], requiresEnergy: true, rule: gilgamesh,
     cones: destructionCones },
-  "8009": { name: "穹·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationTrailblazerCones },
-  "8010": { name: "星·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationTrailblazerCones },
+  "8009": { name: "穹·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationCones },
+  "8010": { name: "星·欢愉", element: "雷", path: "欢愉", traces: [101, 102], rule: elationTrailblazer, cones: elationCones },
   "1501": { name: "火花", element: "火", path: "欢愉", traces: [101, 102, 103], rule: sparxie,
-    cones: { "23053": "花花世界迷人眼", "21064": "菇菇嘎嘎历险记" } },
+    cones: elationCones },
   "1502": { name: "爻光", element: "物理", path: "欢愉", traces: [101, 102], rule: yaoGuang,
-    cones: { "23054": "当她决定看见", "24006": "欢愉满溢祝福" } },
+    cones: elationCones },
   "1503": { name: "真珠", element: "冰", path: "欢愉", traces: [101], stats: ["def", "heal", "effDef"], rule: pearl,
-    cones: { "23055": "献给明日的色彩", "21065": "今日好手气" } },
+    cones: elationCones },
   "1505": { name: "绯英", element: "物理", path: "欢愉", traces: [101], requiresEnergy: true, stats: ["recharge"], rule: evanescia,
-    cones: { "23058": "邂逅于下一个花季", "22007": "未来，有我们一起" } },
+    cones: elationCones },
   "1510": { name: "姬子•启行", element: "火", path: "智识", traces: [], rule: himekoNova,
     cones: eruditionCones },
   "1511": { name: "星神★阿哈", element: "量子", path: "欢愉", traces: [103], rule: aha,
-    cones: { "23065": "当第一声「阿哈」响起", "22009": "在世界尽头相会吧！" } },
+    cones: elationCones },
   "1512": { name: "知更鸟•晴歌", element: "风", path: "记忆", traces: [103], stats: ["hp"], rule: robinDahlia,
     cones: remembranceCones },
   "1513": { name: "砂金•戏浪", element: "量子", path: "欢愉", traces: [101, 102, 103], stats: ["hp"], rule: aventurineElation,
-    cones: { "23064": "向浪花掷下盛夏", "21064": "菇菇嘎嘎历险记" } },
+    cones: elationCones },
   "1508": { name: "远坂凛", element: "量子", path: "智识", traces: [101], rule: tohsakaRin,
     cones: eruditionCones },
   "1506": { name: "银狼LV.999", element: "虚数", path: "欢愉", traces: [101], rule: silverWolfElation,
-    cones: { "23057": "欢迎来到银河城", "21064": "菇菇嘎嘎历险记" } },
+    cones: elationCones },
   "1412": { name: "刻律德菈", element: "风", path: "同谐", traces: [101, 102, 103], rule: cerydra,
     cones: harmonyCones },
 }) as unknown as [string, Character][]);
@@ -674,7 +690,7 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
     throw new MissingDamageData(`当前光锥「${cone.name || cone.id}」的伤害规则尚未接入或缺少叠影`);
   }
   const energy = metadata.character.sp;
-  if ((cone.id === "21034" || cone.id === "23018" || cone.id === "23062") &&
+  if ((cone.id === "21034" || cone.id === "23018" || cone.id === "23058" || cone.id === "23062") &&
       (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {
     throw new MissingDamageData("缺少光锥所需的角色能量上限");
   }
