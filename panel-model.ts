@@ -142,13 +142,13 @@ export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 export function parsePanelCommand(message: string) {
   const equipment = parseEquipmentChange(message);
   if (equipment) return equipment;
-  const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害([1-9]\d{0,5})?|武器([1-7])?)(?:\s+([1-9]\d{0,2}))?$/u.exec(message);
+  const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害|武器)(\d{1,6})?(?:\s+([1-9]\d{0,2}))?$/u.exec(message);
   const damagedRole = damage?.[1]?.trim();
   if (damage && damagedRole && !damagedRole.includes("换") && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
-    const profileId = Number(damage[4] ?? 1);
+    const profileId = Number(damage[3] ?? 1);
     if (profileId > MAX_PROFILE_ID) return;
-    const scenario = damage[2] ?? damage[3];
-    return { type: "damage" as const, profileId, name: damagedRole, scenario: scenario === undefined ? undefined : Number(scenario) };
+    const scenario = damage[2];
+    return { type: "damage" as const, profileId, name: damagedRole, scenario: scenario === undefined ? undefined : Math.max(1, Number(scenario)) };
   }
   const command = /^(?:#星铁|\*)(.+?)\s*([1-9]\d{0,2})?$/u.exec(message);
   if (!command || !command[1]) return;

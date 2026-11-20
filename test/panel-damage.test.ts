@@ -55,7 +55,7 @@ describe("Star Rail personal damage", () => {
     expect(parsePanelCommand("*希儿伤害")).toEqual({ type: "damage", name: "希儿", profileId: 1, scenario: undefined });
     expect(parsePanelCommand("#星铁希尔伤害2 3")).toEqual({ type: "damage", name: "希尔", profileId: 3, scenario: 2 });
     expect(parsePanelCommand("*希儿武器1")).toEqual({ type: "damage", name: "希儿", profileId: 1, scenario: 1 });
-    expect(parsePanelCommand("*希儿武器8")).toBeUndefined();
+    expect(parsePanelCommand("*希儿武器8")).toMatchObject({ scenario: 8 });
     expect(parsePanelCommand("#希儿伤害")).toBeUndefined();
   });
 
@@ -505,4 +505,19 @@ describe("common engine with original character data", () => {
     expect(support.rows[support.selected]).toMatchObject({ display: expected.rows[4]?.display, metric: "support" });
     expect(support.swaps[0]?.values[1]?.display).toMatch(/^\d+点$/);
   });
+});
+
+
+test("uses the original common scenario numbering for damage and weapon queries", () => {
+  for (const type of ["伤害", "武器"]) {
+    expect(parsePanelCommand(`#星铁镜流Pro${type}8 2`)).toEqual({
+      type: "damage", profileId: 2, name: "镜流Pro", scenario: 8,
+    });
+    expect(parsePanelCommand(`*遐蝶${type}0008`)).toMatchObject({ scenario: 8 });
+    expect(parsePanelCommand(`*遐蝶${type}0`)).toMatchObject({ scenario: 1 });
+    expect(parsePanelCommand(`*遐蝶${type} 2`)).toMatchObject({ profileId: 2, scenario: undefined });
+    expect(parsePanelCommand(`*希儿${type}99`)).toMatchObject({ scenario: 99 });
+  }
+  expect(parsePanelCommand("*镜流Pro光锥8")).toBeUndefined();
+  expect(parsePanelCommand("*镜流Pro光锥")).toBeUndefined();
 });
