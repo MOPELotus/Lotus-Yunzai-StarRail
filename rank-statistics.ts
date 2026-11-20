@@ -32,8 +32,9 @@ export async function queryStarRailRankStats(message: string, signal: AbortSigna
   if ("message" in result) return result.message;
   try {
     const theme = starRailGachaThemeDirectory();
+    const rankTheme = Bun.env.LOTUS_STAR_RAIL_RANK_THEME_DIR?.trim() || Bun.env.LOTUS_STAR_RAIL_ARK_THEME_DIR?.trim();
     const { png } = await renderDamageRankStatsCard("sr", character.name, result.stats, {
-      footer: "Lotus-Yunzai · StarRail", themeDirectories: [Bun.env.LOTUS_STAR_RAIL_ARK_THEME_DIR?.trim() || theme, theme],
+      footer: "Lotus-Yunzai · StarRail", themeDirectories: rankTheme ? [rankTheme, theme] : [theme],
     });
     if (!signal.aborted) return { type: "image" as const, file: png };
   } catch {

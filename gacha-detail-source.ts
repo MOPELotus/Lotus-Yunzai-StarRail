@@ -1,14 +1,18 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { StarRailGachaDetailOptions } from "./gacha-detail.ts";
 import type { StarRailRecordItem, StarRailRecordItemResolver } from "./gacha-record-source.ts";
 
-const defaultTheme = fileURLToPath(new URL("../../data/starrail/miao-theme", import.meta.url));
+const defaultTheme = fileURLToPath(new URL("../../data/starrail/theme", import.meta.url));
+const legacyTheme = fileURLToPath(new URL("../../data/starrail/miao-theme", import.meta.url));
 const missing = new Set(["ENOENT", "ENOTDIR"]);
 
 export function starRailGachaThemeDirectory() {
-  return Bun.env.LOTUS_STAR_RAIL_GACHA_THEME_DIR?.trim() || defaultTheme;
+  const configured = Bun.env.LOTUS_STAR_RAIL_GACHA_THEME_DIR?.trim();
+  if (configured) return configured;
+  return existsSync(defaultTheme) || !existsSync(legacyTheme) ? defaultTheme : legacyTheme;
 }
 
 function isSegment(value: unknown): value is string {

@@ -1,13 +1,13 @@
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
 import { object, officialArtHosts, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 
 const packagedTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
-const defaultTheme = fileURLToPath(new URL("../../data/starrail/miao-theme", import.meta.url));
 const aliases: Readonly<Record<string, string>> = alias;
 const shortNames: Readonly<Record<string, string>> = abbr;
 const normalizeName = (name: string) => name.normalize("NFKC").toLowerCase().replace(/[·・•\s]/gu, "");
@@ -39,7 +39,7 @@ async function readJson(file: string): Promise<Json> {
   }
 }
 
-export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR?.trim() || Bun.env.LOTUS_STAR_RAIL_GACHA_THEME_DIR?.trim() || defaultTheme) {
+export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR?.trim() || starRailGachaThemeDirectory()) {
   const root = resolve(directory);
   const lists = join(root, "meta-sr");
   const [characters, weapons, relics, relicValues, defaultStyle] = await Promise.all([

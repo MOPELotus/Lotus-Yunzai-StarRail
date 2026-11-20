@@ -28,7 +28,7 @@ export function starRailLegacyArchiveTimezone(role: GameRole) {
   if (role.region === "prod_gf_cn" || role.region === "prod_qd_cn" || (!role.region && /^[125]\d{8}$/u.test(role.uid))) return 8;
 }
 
-function legacyMiaoTime(input: unknown) {
+function usesLegacyServerTime(input: unknown) {
   if (typeof input !== "object" || !input || !("info" in input)) return false;
   const { info } = input;
   return typeof info === "object" && info !== null && "export_app" in info &&
@@ -57,7 +57,7 @@ export function createStarRailGachaFiles(
     prefix: "*", gameName: "星铁", signal, savedRole, failure: describe,
     async importDocument(input, { qq, profileId, role, verifyProfile }) {
       const incoming = selectStarRailUigf(input, { uid: role.uid,
-        legacyMiaoServerTime: starRailLegacyArchiveTimezone(role) === 8 && legacyMiaoTime(input) });
+        legacyServerTime: starRailLegacyArchiveTimezone(role) === 8 && usesLegacyServerTime(input) });
       const result = await archive.merge({ qq, uid: role.uid }, incoming, verifyProfile, { legacyTimezone: starRailLegacyArchiveTimezone(role) });
       const lines = result.pools.flatMap(({ pool, received, added, total }) => received
         ? [`${poolNames[pool]}记录：读取 ${received} 条，新增 ${added} 条，共 ${total} 条`] : []);

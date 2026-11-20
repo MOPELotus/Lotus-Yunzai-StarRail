@@ -12,7 +12,7 @@ const group77 = { message_type: "group", adapter: "onebot", self_id: 99, group_i
 const role = (uid: string) => ({ uid, region: "prod_gf_cn", gameBiz: "hkrpg_cn" });
 const verified = async () => {};
 
-test("matches only old relic-score ranking aliases without taking damage or public Ark commands", () => {
+test("matches relic-score ranking aliases separately from damage and public ranking commands", () => {
   expect(matchStarRailRelicRank(command)?.id).toBe(1001);
   expect(matchStarRailRelicRank("#星铁群内三月七评分排名榜")?.id).toBe(1001);
   for (const unrelated of ["#星铁三月七排行", "#星铁三月七遗器", "#星铁三月七排名统计", "#星铁三月七双暴排行", "#三月七遗器排名", "#原神三月七遗器排名"]) {

@@ -23,6 +23,8 @@ export interface StarRailUigfArchive {
 
 export interface StarRailUigfImportOptions {
   readonly uid: string;
+  readonly legacyServerTime?: boolean;
+  /** Option used by older callers when reading their saved exports. */
   readonly legacyMiaoServerTime?: boolean;
 }
 
@@ -105,7 +107,8 @@ export function convertStarRailUigfTimezone(archive: StarRailUigfArchive, timezo
     ({ ...row, time: formatWallTime(parseWallTime(row.time).ms + delta) })) };
 }
 
-function sourceAccount(input: unknown, { uid, legacyMiaoServerTime }: StarRailUigfImportOptions) {
+function sourceAccount(input: unknown, { uid, legacyServerTime, legacyMiaoServerTime }: StarRailUigfImportOptions) {
+  const useServerTime = legacyServerTime ?? legacyMiaoServerTime;
   if (!object(input) || !object(input.info)) throw new TypeError("星铁抽卡文件缺少有效的导出信息。");
   const info = input.info;
   const knownLegacy = typeof info.export_app === "string" && oldExporters.has(info.export_app);
@@ -121,7 +124,7 @@ function sourceAccount(input: unknown, { uid, legacyMiaoServerTime }: StarRailUi
       throw new TypeError("UIGF 文件须恰好包含一个与当前档案 UID 匹配的星铁账号。");
     }
     const account = accounts[0]!;
-    const oldWallTime = version === "v4.0" && legacyMiaoServerTime === true;
+    const oldWallTime = version === "v4.0" && useServerTime === true;
     const offset = checkTimezone(account.timezone, !oldWallTime);
     return { records: account.list, timezone: oldWallTime ? cnTimezone : offset, lang: text(account.lang),
       allowCollaboration: version !== "v4.0" || knownLegacy };
@@ -129,7 +132,7 @@ function sourceAccount(input: unknown, { uid, legacyMiaoServerTime }: StarRailUi
   if (info.srgf_version !== "v1.0") throw new TypeError("星铁抽卡文件的 SRGF 版本或游戏类型无效。");
   if (identifier(info.uid) !== uid) throw new TypeError("SRGF 文件的 UID 与当前档案不一致。");
   const offset = checkTimezone(info.region_time_zone);
-  return { records: input.list, timezone: legacyMiaoServerTime ? cnTimezone : offset, lang: text(info.lang),
+  return { records: input.list, timezone: useServerTime ? cnTimezone : offset, lang: text(info.lang),
     allowCollaboration: knownLegacy };
 }
 

@@ -33,9 +33,9 @@ const updateCommand = /^#星铁更新抽卡记录([1-9]\d{0,2})?$/u;
 const helpCommand = /^#星铁(?:抽卡|记录)帮助$/u;
 const recordPrefix = "#星铁逐抽";
 const recordDefault = /^(?:记录|祈愿|分析|统计)(?:[1-9]\d{0,2})?$/u;
-const poolCommand = /^#星铁(?:喵喵)?(全部)?(抽卡|抽奖|角色|光锥|武器|常驻|up)池?(全部)?(记录|祈愿|分析|统计)([1-9]\d{0,2})?$/u;
-const versionCommand = /^#星铁(?:喵喵)?(版本|全部)(全部)?统计([1-9]\d{0,2})?$/u;
-const specialCommand = /^#星铁(?:喵喵)?(?:(全部)?(角色联动|光锥联动|武器联动|新手)池?(全部)?(记录|祈愿|分析|统计)|全部(?:记录|祈愿|分析))([1-9]\d{0,2})?$/u;
+const poolCommand = /^#星铁(全部)?(抽卡|抽奖|角色|光锥|武器|常驻|up)池?(全部)?(记录|祈愿|分析|统计)([1-9]\d{0,2})?$/u;
+const versionCommand = /^#星铁(版本|全部)(全部)?统计([1-9]\d{0,2})?$/u;
+const specialCommand = /^#星铁(?:(全部)?(角色联动|光锥联动|武器联动|新手)池?(全部)?(记录|祈愿|分析|统计)|全部(?:记录|祈愿|分析))([1-9]\d{0,2})?$/u;
 const detailPools = new Map<string, StarRailGachaDetailPool>([
   ["光锥", "GachaType_EquipmentUp"], ["武器", "GachaType_EquipmentUp"], ["常驻", "GachaType_Standard"],
 ]);

@@ -21,7 +21,7 @@
 
 - `*更新面板` 从米游社读取当前档案下的国服星铁角色面板，保存新快照并返回角色列表。
 - `*面板`、`*角色面板` 查看已保存的角色列表。
-- `*三月七面板`、`*三月详情` 查看角色属性、技能、星魂、光锥和遗器。可用喵喵原有角色别名。各指令可加档案编号，例如 `*更新面板2`、`*银枝详情 2`。详情和个人伤害可在角色名前带 UID，例如 `#星铁100000121希儿伤害2 档案2`。UID 必须等于所选档案当前绑定的星铁角色，该查询只读取本地面板和素材。
+- `*三月七面板`、`*三月详情` 查看角色属性、技能、星魂、光锥和遗器。保留旧版角色别名。各指令可加档案编号，例如 `*更新面板2`、`*银枝详情 2`。详情和个人伤害可在角色名前带 UID，例如 `#星铁100000121希儿伤害2 档案2`。UID 必须等于所选档案当前绑定的星铁角色，该查询只读取本地面板和素材。
 - `#星铁希儿面板换飞霄光锥+头部` 临时借用同档案角色的配装。`*希儿伤害2换飞霄光锥` 用同一份临时配装计算指定伤害场景。支持光锥、六个遗器部位、整套遗器及同一来源的 `+` 组合。原面板与群榜记录保留。来源装备缺失或面板信息不足时会提示。换装伤害沿用当前个人伤害的角色、光锥和套装支持范围。换装语义来自固定版本的 `apps/profile/ProfileChange.js`，米游社遗器词条按同版 `MysPanelHSRData.js` 的离散档位还原。
 - `*希儿面板换满叠影武器`、`#星铁希儿伤害2换叠影5于夜色中` 临时调整当前光锥的叠影。支持一至五阶和`满`，可加档案编号。光锥名称需与该档案内当前配装一致，`武器`与`光锥`可直接指当前光锥。
 - `*希儿面板换零星魂`、`#星铁希儿伤害2换满魂` 临时试算 0 至 6 魂，可加档案编号。旧快照使用原始技能等级，米游社快照根据保存的当前星魂和同版 `CharTalent.js` 的升阶表还原基础等级，再应用指定星魂。缺少必要技能或无法确认等级时会提示。
@@ -32,9 +32,9 @@
 - `*希儿面板换技能6 10 9 12` 或 `#星铁希儿伤害2换天赋610912` 临时设定普攻、战技、天赋和终结技的有效等级。沿用原版 `技能`、`天赋` 和 `行迹` 写法，数字可连写或用空格分开。未指定的忆灵和欢愉技能在伤害计算中沿用原入口的 1 级默认值。
 - `*希儿面板换如泥酣眠` 或 `#星铁希儿伤害2换酣眠` 以原名称或别名临时更换光锥。沿用当前配装的光锥等级、突破与叠影，非五星换五星按原版使用叠影一。伤害试算使用已核对的角色与光锥规则。别名来自固定版本的 `resources/meta-sr/weapon/alias.js`。
 
-旧喵喵快照 `data/PlayerData/sr/<UID>.json` 可直接只读查询，也可用 `LOTUS_STAR_RAIL_LEGACY_PANEL_DIR` 指定快照目录。查询仍使用当前 QQ 档案已同步的 UID。新面板写入 `data/starrail/panels/<QQ>/<UID>.json`，保存角色面板字段。旧面板在角色、光锥和遗器元数据齐全时，用喵喵静态规则补算综合属性并标注来源。缺少复算所需的数据时，仍可查看旧快照中的装备和行迹，缺项属性保留空值。更新后优先使用米游社明细。
+旧版面板快照 `data/PlayerData/sr/<UID>.json` 可直接只读查询，也可用 `LOTUS_STAR_RAIL_LEGACY_PANEL_DIR` 指定快照目录。查询仍使用当前 QQ 档案已同步的 UID。新面板写入 `data/starrail/panels/<QQ>/<UID>.json`，保存角色面板字段。旧面板在角色、光锥和遗器元数据齐全时，按原静态规则补算综合属性并标注来源。缺少复算所需的数据时，仍可查看旧快照中的装备和行迹，缺项属性保留空值。更新后优先使用米游社明细。
 
-模块保留喵喵面板列表和角色详情的 HTML/CSS 结构。可用 `LOTUS_STAR_RAIL_PANEL_THEME_DIR` 指定获准使用的原喵喵 `resources/`。默认复用 `LOTUS_STAR_RAIL_GACHA_THEME_DIR` 或 `data/starrail/miao-theme/`。原图片、字体与数据各自遵循其授权。面板拉取接受米游社官方 CDN 头像；同时存在本机主题图时优先用本机图。
+面板列表和角色详情沿用原 HTML/CSS 结构。可用 `LOTUS_STAR_RAIL_PANEL_THEME_DIR` 指定获准使用的本机 `resources/`。默认读取 `LOTUS_STAR_RAIL_GACHA_THEME_DIR` 或 `data/starrail/theme/`，也可继续读取已有主题目录。原图片、字体与数据各自遵循其授权。面板拉取接受米游社官方 CDN 头像；同时存在本机主题图时优先用本机图。
 
 面板列表、详情样式、角色别名及遗器词条转换来自 Miao-Plugin `2860761836069af80bacee5cb85b6dd2e91ea0b0` 的 `apps/profile/ProfileList.js`、`models/serv/api/MysPanelHSR{Api,Data,Mappings}.js`、`models/artis/ArtisAttr.js`、`resources/character/profile-{list,detail}.{html,css}`、`resources/common/{common.css,layout/elem.html}` 及 `resources/meta-sr/character/alias.js`。保留 MIT 许可。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
@@ -182,7 +182,7 @@ Saber 保留四点炉心战技及不同目标数的强化普攻场景，天赋�
 
 ## 遗器评分
 
-使用 `*银枝遗器` 或 `*三月圣遗物2` 查看指定角色的逐件评分、词条权重和总分。沿用面板指令的角色别名与档案编号。评分读取当前档案关联的已保存面板，也可以直接读取对应 UID 的旧喵喵面板，无需新的米游社请求。缺词条的遗器单独提示。总评级沿用原实现，以六个位置的平均分确定。
+使用 `*银枝遗器` 或 `*三月圣遗物2` 查看指定角色的逐件评分、词条权重和总分。沿用面板指令的角色别名与档案编号。评分读取当前档案关联的已保存面板，也可以直接读取同一 UID 的旧版面板，无需新的米游社请求。缺词条的遗器单独提示。总评级沿用原实现，以六个位置的平均分确定。
 
 评分、固定位置与元素主词条判定来自同版 Miao-Plugin 的 `models/artis/{ArtisMark,ArtisMarkCfg,ArtisAttr}.js` 和 `resources/meta-sr/artifact/{meta.js,meta.json,artis-mark.js}`，椒丘、风堇、缇宝的特殊规则来自其各自角色目录的 `artis.js`。卡图沿用 `apps/profile/ProfileArtis.js` 与 `resources/character/artis-mark.{html,css}`。模块随附角色满级基础属性的必要字段及遗器数值规则，来源为同版星铁元数据。角色立绘、遗器图和字体继续使用上节的本机主题或官方 CDN。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
@@ -239,16 +239,16 @@ bun plugins/starrail/simulation/import-legacy-cli.ts --apply authorization.json
 
 `*希儿排名统计`、`#星铁老杨排名统计` 或 `#景元排名统计` 查询角色的公开伤害分布，显示十个百分位与样本数。数值和比较口径由数据服务定义。查询只发送公开角色编号、百分位参数和协议版本，不读取本地账号或面板。
 
-排名图默认从星铁抽卡主题读取喵喵星空底图 `common/bg/bg-sr.webp`，也可用 `LOTUS_STAR_RAIL_ARK_THEME_DIR` 指定有权使用的喵喵 `resources/` 目录。缺素材时使用内置无标识底色。[Ark 上游后端说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/backend.md) · [排名命令说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/extendMiaoRank.md)
+排名图默认从星铁抽卡主题读取星铁星空底图 `common/bg/bg-sr.webp`，也可用 `LOTUS_STAR_RAIL_RANK_THEME_DIR` 指定有权使用的本机 `resources/` 目录。缺素材时使用内置无标识底色。[Ark 上游后端说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/backend.md) · [排名命令说明](https://github.com/MOPELotus/ark-plugin/blob/e81b5ef9111294c17b2b489aee9a94e4ebc0c9c6/docs/extendMiaoRank.md)
 
 ## 历史卡池
 
 `*3.8卡池` 查询整版，包括原资料里的中场。`*4.1下半卡池` 只查指定期次。`*白厄卡池`、`*舞舞舞卡池` 或不带游戏前缀的名称查询会展示历次入池及其同组角色或光锥。末尾加「详情」或「详细」可展开各期全部组。不带游戏前缀时优先查询原神，使用 `*` 可明确查询星铁。
 
-历史和复刻提示只读取现有主题目录 `meta-sr/info/index.js` 中的 `poolDetailSr`、角色及光锥图鉴。时间按北京时间解释，未公布的期次不推算。已收录的未来期次仍可查阅，未复刻天数从最近已结束的对应期次起算。公开卡池查询无需登录。旧命令与图卡以喵喵 MIT 源码的 `apps/gacha/GachaPool.js`、`apps/gacha/Gacha.js` 和 `resources/gacha/gacha-info.html` 为依据，星铁背景和头像使用现有本机主题。
+历史和复刻提示只读取现有主题目录 `meta-sr/info/index.js` 中的 `poolDetailSr`、角色及光锥图鉴。时间按北京时间解释，未公布的期次不推算。已收录的未来期次仍可查阅，未复刻天数从最近已结束的对应期次起算。公开卡池查询无需登录。星铁背景和头像使用现有本机主题。旧命令与图卡的源码依据为 Miao-Plugin 的 `apps/gacha/GachaPool.js`、`apps/gacha/Gacha.js` 和 `resources/gacha/gacha-info.html`。 [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
 ## 群遗器评分排行
 
 `*三月七遗器评分排行`、`*群内三月评分排名` 查询本群遗器总分。部署者可在 `LOTUS_STAR_RAIL_PANEL_RANK_GROUPS` 列出启用的群号，用逗号或空格分隔。在启用的群内发送 `*三月七遗器` 并成功展示可完整计分的装备，才会登记本人当前档案的星铁评分。相同命途的两位开拓者使用同一榜，显示各自最近公开的评分。
 
-榜单沿用模块中的喵喵遗器总分和等级。群内保留 UID、角色、评分、档案校验字段及时间，查榜时以当前群成员及仍选用该 UID 的档案为准。榜单使用本机已登记的摘要生成。图卡复用原群榜的元素背景、头像、名次标记和评分样式，源码许可见 [Miao MIT](LICENSES/Miao-Plugin-MIT.txt)。
+榜单使用模块的遗器总分和等级。群内保留 UID、角色、评分、档案校验字段及时间，查榜时以当前群成员及仍选用该 UID 的档案为准。榜单使用本机已登记的摘要生成。图卡复用原群榜的元素背景、头像、名次标记和评分样式，源码许可见 [Miao MIT](LICENSES/Miao-Plugin-MIT.txt)。
