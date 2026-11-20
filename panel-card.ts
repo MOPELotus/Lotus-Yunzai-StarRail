@@ -6,6 +6,7 @@ import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, 
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
 import { object, officialArtHosts, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
+import { readStarRailPanelPortrait } from "./panel-portrait.ts";
 
 const packagedTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
 const aliases: Readonly<Record<string, string>> = alias;
@@ -136,6 +137,12 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
   } finally {
     void response?.body?.cancel().catch(() => undefined);
   }
+}
+
+async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string, signal: AbortSignal) {
+  const selected = await readStarRailPanelPortrait(theme.root, avatar.id, name);
+  if (selected) return cssFile(selected.file);
+  return remoteArt(avatar.splash || avatar.face, signal);
 }
 
 function preparedModel<Fields extends Json>(theme: Metadata, kind: "list" | "detail" | "relics", fields: Fields) {
@@ -302,7 +309,7 @@ export async function makePanelDetailCard(
     imgs[`cons${i}`] = (oldKey && imgs[oldKey]) || await localArt(theme, ["character", name, "imgs", `cons-${i}.webp`])
       || await remoteArt(avatar.stars[i - 1]?.image, artSignal);
   }
-  imgs.splash = await localArt(theme, ["character", name, "imgs", "splash.webp"]) || await remoteArt(avatar.splash || avatar.face, artSignal);
+  imgs.splash = await panelPortrait(theme, avatar, name, artSignal);
   const treeData = await makeTraceTree(avatar, name, character, theme, artSignal);
   const artis = [];
   for (const row of avatar.relics) {
@@ -356,8 +363,7 @@ export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelA
   });
   if (!score) return;
   const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
-  const splash = await localArt(theme, ["character", name, "imgs", "splash.webp"])
-    || await remoteArt(avatar.splash || avatar.face, artSignal);
+  const splash = await panelPortrait(theme, avatar, name, artSignal);
   const parts = await Promise.all(avatar.relics.flatMap(part => {
     const scored = score.artis[part.slot];
     if (!scored) return [];

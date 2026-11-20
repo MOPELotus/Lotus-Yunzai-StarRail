@@ -4,6 +4,7 @@ import { renderPng } from "@lotus-yunzai/skia";
 import { Canvas, loadImage } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
+import { readStarRailPanelPortrait } from "./panel-portrait.ts";
 
 const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo", 风: "anemo", 火: "pyro", 物理: "sr" };
 const words = new Intl.Segmenter("zh-CN", { granularity: "word" });
@@ -23,7 +24,7 @@ function conditionLines(buff: string) {
   return lines;
 }
 
-export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string) {
+export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string, avatarId: string) {
   const root = await realpath(theme);
   async function asset(parts: string[]) {
     try {
@@ -41,12 +42,13 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     const file = await asset(["common", "font", filename]);
     try { if (file) return registerGachaThemeFont(scope, file); } catch {}
   }
-  const [bg, portrait, texture, titleFont, bodyFont] = await Promise.all([
+  const [bg, appearance, texture, titleFont, bodyFont] = await Promise.all([
     picture(["common", "bg", `bg-${elementBackground[damage.element] ?? "sr"}.webp`]),
-    picture(["meta-sr", "character", damage.name, "imgs", "splash.webp"]),
+    readStarRailPanelPortrait(root, avatarId, damage.name),
     picture(["common", "cont", "card-bg.png"]),
     font("StarRailDamageTitle", "NZBZ.ttf"), font("StarRailDamageBody", "HYWH-65W.ttf"),
   ]);
+  const portrait = appearance?.image;
   const fallback = '"Noto Sans CJK SC", sans-serif';
   const heading = titleFont ? `${titleFont}, ${fallback}` : fallback;
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;

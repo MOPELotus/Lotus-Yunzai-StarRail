@@ -36,6 +36,8 @@
 
 面板列表和角色详情沿用原 HTML/CSS 结构。可用 `LOTUS_STAR_RAIL_PANEL_THEME_DIR` 指定获准使用的本机 `resources/`。默认读取 `LOTUS_STAR_RAIL_GACHA_THEME_DIR` 或 `data/starrail/theme/`，也可继续读取已有主题目录。原图片、字体与数据各自遵循其授权。面板拉取接受米游社官方 CDN 头像；同时存在本机主题图时优先用本机图。
 
+角色详情、遗器评分和个人伤害卡从已筛选图库随机选取同一角色形态的图片。默认读取面板主题的 `profile/normal-character/`。可用 `LOTUS_CHARACTER_GALLERY_DIR` 指定已筛选图库的根目录，模块读取其中的 `sr-character/<角色名称>/` 或同名图片文件。遇到坏图时会继续尝试同角色的候选，图库无可用图时读取同角色形态的原立绘。开拓者图库按性别和命途匹配，例如 `星·记忆`。
+
 面板列表、详情样式、角色别名及遗器词条转换来自 Miao-Plugin `2860761836069af80bacee5cb85b6dd2e91ea0b0` 的 `apps/profile/ProfileList.js`、`models/serv/api/MysPanelHSR{Api,Data,Mappings}.js`、`models/artis/ArtisAttr.js`、`resources/character/profile-{list,detail}.{html,css}`、`resources/common/{common.css,layout/elem.html}` 及 `resources/meta-sr/character/alias.js`。保留 MIT 许可。 [Miao-Plugin 固定版本](https://github.com/MOPELotus/miao-plugin/tree/2860761836069af80bacee5cb85b6dd2e91ea0b0) · [MIT 许可](LICENSES/Miao-Plugin-MIT.txt)
 
 旧面板复算及行迹布局沿用同版 Miao-Plugin 的 `models/attr/{Attr,AttrData}.js`、`models/Character.js`、`models/character/CharTalent.js`、`models/Weapon.js`、`models/artis/ArtisAttr.js`、`apps/profile/ProfileDetail.js` 与 `resources/meta-sr/{artifact,weapon}/` 里的静态规则。打包的 `panel-theme/static-panel-rules.json` 只摘录套装静态属性键值及光锥静态叠影表索引。装备数值仍从本地授权主题元数据读取。
