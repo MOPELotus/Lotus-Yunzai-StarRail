@@ -110,7 +110,8 @@ export class ExpressionCompiler {
 
 const expressionFields = new Set(["condition", "enable_if", "hit_condition", "available_if",
   "scaling_atk", "scaling_hp", "amount", "dot_ratio_expr", "pool_override", "instances_expr",
-  "repeat_scaling_atk", "stacks_value"]);
+  "repeat_scaling_atk", "stacks_value", "target_filter", "where", "filter",
+  "ratio", "delta", "percent", "floor", "toughness_dmg", "punchline_source", "elation", "scale"]);
 const expressionMaps = new Set(["stat_exprs", "hit_stat_exprs"]);
 
 export interface BoundTemplateExpression {
