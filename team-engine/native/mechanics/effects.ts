@@ -159,7 +159,9 @@ export class HookEffects {
         const modifier = subMechanic(model, "modifier");
         const caster = this.#resolveRef(raw.source, source, payload);
         if (!caster) throw new Error("无法读取状态施加者 " + string(raw.source));
-        for (const target of targeter()) this.applyModifier(target, modifier, caster, payload, number(raw.apply_chance, 1), source);
+        const targets = targeter();
+        const baked = this.#bakeModifier(modifier, source, payload);
+        for (const target of targets) this.#applyBakedModifier(target, baked, caster, payload, number(raw.apply_chance, 1), source);
         return;
       }
       case "remove_modifier": {
@@ -321,6 +323,10 @@ export class HookEffects {
 
   applyModifier(target: ActorState, model: Mechanic, source: ActorState, payload: EventPayload = {}, chance?: number,
     evaluator = source): boolean {
+    return this.#applyBakedModifier(target, this.#bakeModifier(model, evaluator, payload), source, payload, chance, evaluator);
+  }
+
+  #bakeModifier(model: Mechanic, evaluator: ActorState, payload: EventPayload): Mechanic {
     const { raw } = model;
     const stats = map(raw.stat_effects);
     const effects = Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, typeof value === "string"
@@ -329,8 +335,8 @@ export class HookEffects {
     const attached = new Map(model.expressions);
     const liveDot = typeof raw.dot_ratio === "string" && /\$(snapshot|modifier)\b/.test(raw.dot_ratio);
     if (liveDot) attached.set("dot_ratio_expr", model.expressions.get("dot_ratio") ?? this.context.expression(raw.dot_ratio, evaluator));
-    const bake = (key: string, perTarget = false) => typeof raw[key] === "string" ? this.context.amount(model, key, evaluator,
-      payload, { target: perTarget ? target : undefined }) : raw[key];
+    const bake = (key: string) => typeof raw[key] === "string"
+      ? this.context.amount(model, key, evaluator, payload) : raw[key];
     const bakeShield = (name: string): EventPayload => {
       const shield = subMechanic(model, name);
       const sourceStats = map(shield.raw.scaling);
@@ -343,10 +349,17 @@ export class HookEffects {
     };
     const shield = raw.shield ? { ...bakeShield("shield"),
       cap: map(raw.shield).cap ? bakeShield("shield.cap") : undefined } : undefined;
-    return this.modifiers.apply(target, {
-      expressions: attached, raw: { ...raw, shield, stat_effects: effects, stacks: bake("stacks", true),
-        dot_ratio: liveDot ? undefined : bake("dot_ratio"), dot_base_chance: bake("dot_base_chance") },
-    }, source, payload, chance);
+    return { expressions: attached, raw: { ...raw, shield, stat_effects: effects,
+      dot_ratio: liveDot ? undefined : bake("dot_ratio"), dot_base_chance: bake("dot_base_chance") } };
+  }
+
+  #applyBakedModifier(target: ActorState, model: Mechanic, source: ActorState, payload: EventPayload,
+    chance: number | undefined, evaluator: ActorState): boolean {
+    // Shared modifier amounts use the cast snapshot. Only stacks may refer to
+    // the receiving target and are evaluated separately for each application.
+    const stacks = typeof model.raw.stacks === "string"
+      ? this.context.amount(model, "stacks", evaluator, payload, { target }) : model.raw.stacks;
+    return this.modifiers.apply(target, { ...model, raw: { ...model.raw, stacks } }, source, payload, chance);
   }
 
   #resolveRef(ref: unknown, source: ActorState, payload: EventPayload): ActorState | undefined {
@@ -469,25 +482,23 @@ export class HookEffects {
 
   #barrage(model: Mechanic, source: ActorState, payload: EventPayload, chain: Chain): void {
     const raw = model.raw;
-    const count = Math.trunc(this.context.amount(model, "instances_expr", source, payload, {}, number(raw.instances, 1)));
-    const selected = this.context.targets(raw.target ?? "enemy_first", source, payload);
-    let target = selected[0];
-    if (!target) return;
-    const seen = new Set<ActorState>();
-    const all = selected.length > 1 ? selected : this.runner.actors(isEnemy(source.actor) ? "player" : "enemy");
-    const repeated = this.context.amount(model, "repeat_scaling_atk", source, payload);
+    const count = Math.trunc(this.context.amount(model, "instances_expr", source, payload, {}, 1));
+    const seen = new Set<string>();
     for (let index = 0; index < count; index++) {
-      if (!target?.alive) target = all.find(item => item.alive);
-      if (!target) break;
-      this.#dealDamage(model, source, [target], payload, chain);
-      if (seen.has(target) && repeated) {
+      const allies = this.runner.actors("player");
+      if (!allies.length) break;
+      const remaining = allies.filter(unit => !seen.has(unit.actor.id));
+      const target = remaining.at(-1) ?? allies[this.runner.mode === "roll" ? Math.floor(this.context.rng() * allies.length) : 0]!;
+      const nested = { ...payload, barrage_target: target.actor.id };
+      this.#dealDamage(model, source, [target], nested, chain);
+      if (seen.has(target.actor.id)) {
         const expressions = new Map(model.expressions);
         expressions.delete("scaling_atk");
-        this.#dealDamage({ raw: { ...raw, scaling_atk: repeated }, expressions }, source, [target], payload, chain);
+        const repeat = model.expressions.get("repeat_scaling_atk");
+        if (repeat) expressions.set("scaling_atk", repeat);
+        this.#dealDamage({ raw: { ...raw, scaling_atk: raw.repeat_scaling_atk ?? 0 }, expressions }, source, [target], nested, chain);
       }
-      seen.add(target);
-      const right: ActorState | undefined = all[all.indexOf(target) + 1];
-      target = right?.alive ? right : target;
+      seen.add(target.actor.id);
     }
   }
 

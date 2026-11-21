@@ -70,3 +70,29 @@ test("uses the real settlement panel for owned white stats and local passives", 
   expect(owned.actor.stats.atk).toBe(1440);
   expect(owned.modifiers.has("LOTUS_PANEL_RESIDUAL")).toBe(true);
 });
+
+test("uses the triggering summon action's element for an allied follow-up", async () => {
+  const roles = ["8002", "1222", "1502", "1409"].map(id => ({ id }));
+  const runner = await run({ roles, cycle: 4, enemies: 3 });
+  for (const [id, action, element] of [["1222_fuyuan", "122204", "fire"], ["1409_ika", "1140901", "wind"]]) {
+    const triggering = runner.events.findIndex(event => event.kind === "on_action" &&
+      event.payload.actor === id && event.payload.action_id === action);
+    expect(triggering).toBeGreaterThan(-1);
+    const nextAction = runner.events.findIndex((event, index) => index > triggering && event.kind === "on_action");
+    expect(runner.events.slice(triggering, nextAction < 0 ? undefined : nextAction).some(event =>
+      event.kind === "after_being_hit" && event.payload.action_id === "hook_大吉大利" &&
+      event.payload.damage_type === element && Number(event.payload.amount) > 0)).toBe(true);
+  }
+});
+
+test("snapshots the buff caster's panel before applying a modifier to the whole team", async () => {
+  const roles = ["8005", "1101", "1305", "8003"].map(id => ({ id }));
+  const runner = await run({ roles, cycle: 6, enemies: 1 });
+  const firstBuff = runner.events.find(event => event.kind === "after_apply_modifier" &&
+    event.payload.modifier_id === "BRONYA_ULT_BUFF");
+  expect(firstBuff).toBeDefined();
+  const action = runner.events.find(event => event.kind === "after_being_hit" &&
+    event.time === firstBuff?.time && event.payload.action_id === "130501");
+  expect(Number(action?.payload.amount)).toBeCloseTo(3323.274704904837, 6);
+  expect(runner.state.damageByActor.get("1305")).toBeCloseTo(83659.73105424874, 6);
+});

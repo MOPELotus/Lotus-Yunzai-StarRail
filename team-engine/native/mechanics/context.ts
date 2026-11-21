@@ -260,7 +260,14 @@ export class HookContext {
       monster_id: (ref: unknown) => isEnemy(actor(ref)?.actor ?? owner.actor) ? template(ref)?.raw.enemy_id ?? "" : "",
       monster_unique_id: (ref: unknown) => number(template(ref)?.raw.unique_id),
       monster_rank: (ref: unknown) => number(template(ref)?.raw.rank),
-      element_of: (ref: unknown) => template(ref)?.element ?? "",
+      element_of: (ref: unknown) => {
+        const unit = template(ref);
+        if (!unit || unit.element || !unit.ownerId) return unit?.element ?? "";
+        // Summon definitions can leave the element on the attacking action. This is
+        // needed by allied effects such as Yao Guang's attack-element follow-up.
+        const action = unit.id === payload.actor ? unit.actions.find(action => action.id === payload.action_id) : undefined;
+        return action?.damageType ?? this.template(unit.ownerId)?.element ?? "";
+      },
       elation_of: (ref: unknown) => panel(ref, "elation"),
       stat_of: (ref: unknown, stat: unknown, noAura?: unknown) => panel(ref, string(stat), noAura),
       base_stat_of: (ref: unknown, stat: unknown) => actor(ref)?.actor.stats[stat === "def" ? "def_" : string(stat)] ?? 0,
