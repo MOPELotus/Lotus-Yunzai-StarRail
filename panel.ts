@@ -7,7 +7,7 @@ import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient 
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { MessageEvent } from "../../lib/messages.ts";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
-import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
+import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelPracticeCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
@@ -61,13 +61,13 @@ async function legacySnapshot(uid: string) {
   }
 }
 
-function managedSnapshot(uid: string, raw: unknown, showcase = false) {
+function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty = false) {
   if (raw === null) return;
   const stored = object(raw);
   const source = stored?.source;
   const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe";
   if (stored?.version !== 1 || stored.uid !== uid || !allowedSource || typeof stored.updatedAt !== "string" ||
-      !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || !stored.avatars.length ||
+      !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || (!allowEmpty && !stored.avatars.length) ||
       stored.avatars.length > 256 || stored.avatars.some(row => !object(row) || !readId(row.id) || typeof row.name !== "string" ||
         !Array.isArray(row.skills) || !Array.isArray(row.traces) || !Array.isArray(row.stars) || !Array.isArray(row.stats) || !Array.isArray(row.relics))) {
     throw new Error("星铁面板档案无效。");
@@ -149,13 +149,13 @@ export function createStarRailPanel(
           refreshing.delete(key);
         }
       } else if (type !== "showcase") {
-        snapshot = managedSnapshot(uid, await store.read(qq, uid));
-        if (!snapshot) {
+        snapshot = managedSnapshot(uid, await store.read(qq, uid), false, type === "practice");
+        if (!snapshot || (type === "practice" && !snapshot.avatars.length)) {
           const old = await legacySnapshot(uid);
           snapshot = old?.snapshot;
           if (old?.snapshot.avatars.length) legacy = old.data;
         }
-        if (type !== "refresh-traces" && !snapshot?.avatars.length) snapshot = managedSnapshot(uid, await showcases.read(qq, uid), true) ?? snapshot;
+        if (type !== "refresh-traces" && !snapshot?.avatars.length) snapshot = managedSnapshot(uid, await showcases.read(qq, uid), true, type === "practice") ?? snapshot;
       }
 
       if (type === "refresh-traces" && account) {
@@ -237,14 +237,15 @@ export function createStarRailPanel(
 
       if (!snapshot?.avatars.length) {
         if (type === "reload") await verify();
-        if (type === "relic-list") {
+        if (type === "relic-list" || type === "practice") {
           await verify();
+          if (type === "practice") return `UID ${uid} 暂无星铁角色数据，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
           return "请先获取角色面板数据后再查看遗器列表。";
         }
         return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
       }
       if (account && context?.user_id?.toString() === qq && !context.isDelegated &&
-          (type === "detail" || type === "damage" || type === "export") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
+          (type === "detail" || type === "damage" || type === "export" || type === "practice") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
         const selectedRole = await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
         const owner = selectedRole && starRailTraceOwner(account, selectedRole);
         if (owner) {
@@ -275,6 +276,29 @@ export function createStarRailPanel(
         return `已导出 ${name}（${format}）。${retained}`;
       }
       const theme = await readTheme();
+      if (type === "practice") {
+        const models = await makePanelPracticeCards(snapshot, theme, signal, command.rarity, legacy);
+        await verify();
+        if (!models.length) return `UID ${uid} 暂无符合筛选条件的星铁角色。`;
+        const first = models[0]!;
+        const title = `UID ${uid} · 面板练度统计 · 共 ${first.total} 名角色`;
+        const nodes = [];
+        for (const model of models) {
+          const files = await renderTemplate(model).catch(() => false as const);
+          await verify();
+          if (files && files.length) nodes.push(...files.map(file => ({ type: "image" as const, file })));
+          else {
+            const updateTimes = [model.updateTime.profile && `更新面板 ${model.updateTime.profile}`,
+              model.updateTime.mys && `米游社 ${model.updateTime.mys}`].filter(Boolean).join(" · ");
+            nodes.push([title, ...model.avatars.map(row => {
+              const weapon = row.weapon && `${row.weapon.name} Lv.${row.weapon.level ?? "—"} 叠影 ${row.weapon.affix ?? "—"}`;
+              const rating = row.rating ? `遗器 ${row.rating.mark} ${row.rating.markClass}` : "遗器暂无面板数据";
+              return `${row.name} · Lv.${row.level ?? "—"} · ${row.cons ?? "—"} 魂 · A/E/Q/T ${row.talent.map(skill => skill.level).join("/")} · ${weapon || "光锥—"} · ${rating}`;
+            }), ...(updateTimes ? [updateTimes] : [])].join("\n"));
+          }
+        }
+        return nodes.length === 1 ? nodes[0] : { type: "forward" as const, nodes: [title, ...nodes] };
+      }
       if (type === "relic-list") {
         const model = await makePanelRelicListCard(snapshot, theme, signal, explicitUid);
         await verify();

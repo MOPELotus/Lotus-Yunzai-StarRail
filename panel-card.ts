@@ -6,7 +6,7 @@ import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
-import { object, officialArtHosts, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
+import { isStarRailTalentUnlocks, object, officialArtHosts, recoverStarRailSkillLevel, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 import { readStarRailPanelPortrait } from "./panel-portrait.ts";
 
 const packagedTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
@@ -157,7 +157,7 @@ async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string,
 }
 
 function preparedModel<Fields extends Json>(theme: Metadata,
-  template: "profile-list" | "profile-detail" | "artis-mark" | "artis-list", fields: Fields) {
+  template: "profile-list" | "profile-detail" | "profile-stat" | "artis-mark" | "artis-list", fields: Fields) {
   return {
     tplFile: join(packagedTheme, "character", `${template}.html`),
     elemLayout: join(packagedTheme, "common", "layout", "elem.html"),
@@ -202,6 +202,97 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
       chars, uid: snapshot.uid, profileSuffix: profileId === 1 ? "" : profileId, hasNew: updated,
       msg: updated ? `获取角色面板数据成功，共 ${avatars.length} 位角色` : "",
       updateTime: { profile: formatDate(snapshot.updatedAt) }, servName: fieldsSource(snapshot),
+    }));
+  }
+  return pages;
+}
+
+const practiceSkills = ["a", "e", "q", "t"] as const;
+
+function practiceTime(value: string | undefined) {
+  const stamp = value && Date.parse(value);
+  return stamp ? new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).format(new Date(stamp)).slice(5) : "";
+}
+
+function comparePracticeNumber(left: number | undefined, right: number | undefined) {
+  if (left === right) return 0;
+  if (left === undefined) return -1;
+  if (right === undefined) return 1;
+  return right - left;
+}
+
+export async function makePanelPracticeCards(snapshot: PanelSnapshot, theme: Metadata, signal: AbortSignal,
+  rarity: number | undefined, legacy?: Json) {
+  const candidates = snapshot.avatars.filter(avatar => (avatar.level ?? 0) > 1 || avatar.cone !== undefined).map(avatar => {
+    const catalog = lookup(avatar, theme);
+    return { avatar, ...catalog, star: avatar.rarity ?? whole(catalog.meta?.star, 5) };
+  }).filter(({ star }) => rarity === undefined || star === rarity);
+  const oldAvatars = object(legacy?.avatars);
+  const rows = [];
+  for (const { avatar, name, abbr, meta, star } of candidates) {
+    signal.throwIfAborted();
+    const character = await readPanelCharacter(name, theme);
+    const unlocks = object(character.talentCons ?? meta?.talentCons);
+    const talent = practiceSkills.map(key => {
+      const skill = avatar.skills.find(skill => skill.key === key);
+      if (!skill) return { level: "—" as const, original: undefined };
+      const rank = avatar.rank;
+      const upgrade = unlocks?.[key];
+      if (avatar.legacy && !skill.effective) {
+        return { level: starRailLegacySkillLevel(key, skill.level, rank ?? 0, upgrade), original: skill.level };
+      }
+      return { level: skill.level, original: skill.original ?? (rank !== undefined && (rank === 0 || isStarRailTalentUnlocks(upgrade))
+        ? recoverStarRailSkillLevel(key, skill.level, rank, 0, upgrade) : undefined) };
+    });
+    const originals = talent.map(skill => skill.original);
+    const talentSum = originals.every(level => level !== undefined) ? originals.reduce((sum, level) => sum + level, 0) : 4;
+    const gear = avatar.cone;
+    const cone = gear && object(theme.weapons[gear.id]);
+    const coneName = gear?.name || text(cone?.name);
+    const coneType = text(cone?.type) || avatar.path;
+    const weapon = gear && {
+      name: text(cone?.abbr) || coneName || `光锥 ${gear.id}`,
+      level: gear.level, star: whole(cone?.star, 5), affix: gear.rank,
+      icon: await localArt(theme, ["weapon", coneType, coneName, "icon-s.webp"]),
+    };
+    const oldRelics = object(object(oldAvatars?.[avatar.id])?.artis);
+    const rating = avatar.relics.length ? (await scorePanelAvatarRelics(avatar, theme, character)).score
+      : oldRelics && Object.keys(oldRelics).length ? undefined : { mark: "0.0", markClass: "D" };
+    const setCounts = new Map<string, number>();
+    const seenSlots = new Set<number>();
+    for (const part of [...avatar.relics].sort((a, b) => a.slot - b.slot)) {
+      if (seenSlots.has(part.slot)) continue;
+      seenSlots.add(part.slot);
+      const set = theme.relicById.get(part.id)?.asset[1];
+      if (set) setCounts.set(set, (setCounts.get(set) ?? 0) + 1);
+    }
+    const relics = await Promise.all([...setCounts].flatMap(([set, count]) => count >= 2
+      ? [localArt(theme, ["artifact", set, theme.relicSets.get(set)?.outer ? "arti-1.webp" : "arti-5.webp"])] : []));
+    rows.push({
+      id: avatar.id, name: abbr, star, level: avatar.level, cons: avatar.rank, talent, talentSum, weapon,
+      face: await localArt(theme, ["character", name, "imgs", "face.webp"]),
+      relics: relics.filter(Boolean),
+      rating: rating && { mark: rating.mark, markClass: rating.markClass },
+    });
+  }
+  rows.sort((a, b) => comparePracticeNumber(a.level, b.level) || comparePracticeNumber(a.star, b.star) ||
+    b.talentSum - a.talentSum || comparePracticeNumber(a.cons, b.cons) || comparePracticeNumber(a.weapon?.level, b.weapon?.level) ||
+    comparePracticeNumber(a.weapon?.star, b.weapon?.star) || comparePracticeNumber(a.weapon?.affix, b.weapon?.affix) || Number(b.id) - Number(a.id));
+  const mysTimestamp = whole(legacy?._mys, 9_999_999_999_999);
+  const updateTime = {
+    profile: practiceTime(snapshot.updatedAt),
+    mys: mysTimestamp && mysTimestamp >= 1_000_000_000
+      ? practiceTime(new Date(mysTimestamp < 1e11 ? mysTimestamp * 1000 : mysTimestamp).toISOString()) : "",
+  };
+  const path = (filename: string) => join(theme.root, "character", "imgs", filename);
+  const art = async (filename: string) => await Bun.file(path(filename)).exists() ? cssFile(path(filename)) : "";
+  const [background, main] = await Promise.all([art("bg-02.jpg"), art("main-02.png")]);
+  const pages = [];
+  for (let start = 0; start < rows.length; start += 30) {
+    pages.push(preparedModel(theme, "profile-stat", {
+      uid: snapshot.uid, total: rows.length, avatars: rows.slice(start, start + 30), start, background, main, updateTime,
     }));
   }
   return pages;
@@ -357,9 +448,9 @@ export async function makePanelDetailCard(
   });
 }
 
-async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata) {
+async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata, characterData?: Json) {
   const { name, abbr, meta } = lookup(avatar, theme);
-  const character = await readPanelCharacter(name, theme);
+  const character = characterData ?? await readPanelCharacter(name, theme);
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
   let speed = avatar.stats.find(stat => stat.key === "speed")?.value;
   if (!speed && name === "缇宝" && avatar.legacy) {

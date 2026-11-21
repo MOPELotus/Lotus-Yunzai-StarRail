@@ -1,0 +1,90 @@
+{{extend elemLayout}}
+
+{{block 'css'}}
+<link rel="stylesheet" type="text/css" href="{{_styles_path}}character/profile-stat.css"/>
+{{if _theme_path}}
+<link rel="stylesheet" type="text/css" href="{{_theme_path}}character/profile-stat.css"/>
+{{/if}}
+<style>
+  {{if background}}body { background: url('{{background}}') left center; background-size: 100% auto; }{{/if}}
+  {{if main}}body .container { background: url('{{main}}') center -25px no-repeat; background-size: 100% auto; }{{/if}}
+</style>
+{{/block}}
+
+{{block 'main'}}
+<div class="head-box">
+  <div class="title">*面板练度统计</div>
+  <div class="label">UID:{{uid}} 共{{total}}名角色</div>
+</div>
+<div id="profile-stat">
+  <div class="cont">
+    <div class="cont-table">
+      <div class="avatar tr thead">
+        <div class="td-idx">#</div>
+        <div class="td-name">角色</div>
+        <div class="td-lv">Lv</div>
+        <div class="td-cons">星魂</div>
+        <div class="td-talent">A</div><div class="td-talent">E</div>
+        <div class="td-talent">Q</div><div class="td-talent">T</div>
+        <div class="td-weapon">光锥</div>
+        <div class="td-artis">遗器</div>
+      </div>
+      {{each avatars avatar idx}}
+      <div class="avatar tr">
+        <div class="td td-idx star{{avatar.star}}">{{start+idx+1}}</div>
+        <div class="td td-name star{{avatar.star}}">
+          <div class="item-banner">
+            <div class="item-icon char-icon star{{avatar.star}}">
+              {{if avatar.face}}<span class="img" style="background-image:url({{avatar.face}})"></span>{{/if}}
+            </div>
+            <span class="item-name">{{avatar.name}}</span>
+          </div>
+        </div>
+        <div class="td td-lv">{{avatar.level ?? '—'}}</div>
+        <div class="td td-cons"><span class="cons avatar cons-{{avatar.cons}}">{{avatar.cons ?? '—'}}</span></div>
+        {{set talentLvMap = [0,1,1,1,2,2,3,3,3,4,5]}}
+        {{set talentALvMap = [0,1,1,2,3,4,5]}}
+        {{each avatar.talent skill skillIndex}}
+        {{set skillClass = (skillIndex===0 ? talentALvMap : talentLvMap)[skill.original || 1]}}
+        <div class="td-talent lv{{skillClass}} {{skill.level>skill.original?'talent-plus':''}} crown-sr">{{skill.level}}</div>
+        {{/each}}
+        {{set weapon = avatar.weapon}}
+        <div class="td td-weapon star{{weapon?.star}}">
+          {{if weapon}}
+          <div class="item-banner star{{weapon.star}}">
+            <span class="level">{{weapon.level ?? '—'}}</span>
+            <div class="item-icon weapon-icon">
+              {{if weapon.icon}}<span class="img" style="background-image:url({{weapon.icon}})"></span>{{/if}}
+            </div>
+            <span class="cons weapon cons-{{weapon.affix+1}} star{{weapon.star}}">{{weapon.affix ?? '—'}}</span>
+            <span class="item-name">{{weapon.name}}</span>
+          </div>
+          {{/if}}
+        </div>
+        {{set mark = avatar.rating}}
+        <div class="td td-artis class-{{mark?.markClass||'D'}}">
+          <div class="item item-banner avatar-artis artis{{avatar.relics.length}}">
+            <div class="artis item-icon {{avatar.relics.length>0?'star5':'no-artis'}}">
+              {{each avatar.relics img}}<div class="img" style="background-image:url({{img}})"></div>{{/each}}
+              {{if avatar.relics.length === 0}}<span class="img no-artis"></span>{{/if}}
+            </div>
+            {{if mark}}
+            <span class="artis-mark-class class-{{mark.markClass}}">{{mark.markClass}}</span>{{mark.mark}}
+            {{else}}<span class="artis-na">暂无面板数据</span>{{/if}}
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    <div class="cont-notice">
+      {{if updateTime.profile || updateTime.mys}}
+      <strong>数据更新时间</strong>
+      {{if updateTime.profile}}<span>*更新面板: {{updateTime.profile}}</span>{{/if}}
+      {{if updateTime.mys}}<span>米游社: {{updateTime.mys}}</span>{{/if}}
+      {{else}}
+      <div>发送 <strong>*更新面板</strong> 获取角色数据。</div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+{{/block}}

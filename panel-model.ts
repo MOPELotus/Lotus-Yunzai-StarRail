@@ -30,6 +30,13 @@ const remakeMap: Readonly<Record<string, string>> = {
 const skillBonus: Readonly<Record<string, number>> = { a: 1, e: 2, q: 2, t: 2, xe: 1, me: 1, mt: 1 };
 const skillCap: Readonly<Record<string, number>> = { a: 10, e: 15, q: 15, t: 15, xe: 15, me: 10, mt: 10 };
 
+export function isStarRailTalentUnlocks(value: unknown): value is number | number[] {
+  const unlocks = Array.isArray(value) ? value : [value];
+  return unlocks.length > 0 && new Set(unlocks).size === unlocks.length && unlocks.every(
+    unlock => typeof unlock === "number" && Number.isInteger(unlock) && unlock >= 1 && unlock <= 6,
+  );
+}
+
 function starRailSkillBonus(skill: string, rank: number, upgrades: unknown) {
   const unlocks = Array.isArray(upgrades) ? upgrades : [upgrades];
   const active = unlocks.filter(unlock => typeof unlock === "number" && unlock > 0 && unlock <= rank).length;
@@ -160,7 +167,19 @@ const refreshPanel = new RegExp(
     `(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "iu",
 );
 
+const practiceTarget = String.raw`(?:\s*(?:档案\s*)?(\d{1,3}))?`;
+const practiceOverview = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:面板)?练度统计${practiceTarget}$`, "u");
+const practiceAliases = new RegExp(String.raw`^#星铁\s*((?:我的)?(?:物理|火|冰|雷|风|量子|虚数)*(?:角色|练度|[五四54星])+(?:汇总|统计|列表)(?:force|[五四54星])*)${practiceTarget}$`, "u");
+
 export function parsePanelCommand(message: string) {
+  const practice = practiceOverview.exec(message);
+  if (practice) return { type: "practice" as const, name: "", profileId: Number(practice[1] ?? 1), rarity: undefined };
+  const alias = practiceAliases.exec(message);
+  const aliasBody = alias?.[1];
+  if (alias && aliasBody && aliasBody !== "角色统计") {
+    const rarity = /[五5]+星/u.test(aliasBody) ? 5 : /星/u.test(aliasBody) ? 4 : undefined;
+    return { type: "practice" as const, name: "", profileId: Number(alias[2] ?? 1), rarity };
+  }
   const traces = traceRefresh.exec(message);
   if (traces) return { type: "refresh-traces" as const, name: "", profileId: Number(traces[1] ?? 1) };
   const reload = reloadPanel.exec(message);

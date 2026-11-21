@@ -1,4 +1,4 @@
-import { id, object, recoverStarRailSkillLevel, safeArt, type PanelSnapshot } from "./panel-model.ts";
+import { id, isStarRailTalentUnlocks, object, recoverStarRailSkillLevel, safeArt, type PanelSnapshot } from "./panel-model.ts";
 
 function scalarFields(value: unknown, names: readonly string[]) {
   const row = object(value);
@@ -20,13 +20,6 @@ function mapLegacyRelics(value: unknown) {
   }));
 }
 
-function provenTalentUnlocks(value: unknown): value is number | number[] {
-  const unlocks = Array.isArray(value) ? value : [value];
-  return unlocks.length > 0 && new Set(unlocks).size === unlocks.length && unlocks.every(
-    unlock => typeof unlock === "number" && Number.isInteger(unlock) && unlock >= 1 && unlock <= 6,
-  );
-}
-
 function legacyDocument(snapshot: PanelSnapshot, raw: Record<string, unknown>, talentCons?: ReadonlyMap<string, Record<string, unknown>>) {
   let unresolved = 0;
   const storedAvatars = object(raw.avatars) ?? {};
@@ -38,7 +31,7 @@ function legacyDocument(snapshot: PanelSnapshot, raw: Record<string, unknown>, t
       const unlocks = talentCons?.get(avatar.id)?.[skill.key];
       const rank = avatar.rank;
       // Testing the inverse at rank zero rejects levels saturated by an active bonus.
-      const original = rank !== undefined && (rank === 0 || provenTalentUnlocks(unlocks))
+      const original = rank !== undefined && (rank === 0 || isStarRailTalentUnlocks(unlocks))
         ? recoverStarRailSkillLevel(skill.key, skill.level, rank, 0, unlocks)
         : undefined;
       if (original === undefined) {
