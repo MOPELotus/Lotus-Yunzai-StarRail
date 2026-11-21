@@ -16,6 +16,7 @@ import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { panelExportFile } from "./panel-file.ts";
+import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -23,6 +24,7 @@ import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, typ
 
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
+const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
 const maxBytes = 8 * 1024 * 1024;
 
 async function legacySnapshot(uid: string) {
@@ -55,10 +57,12 @@ async function legacySnapshot(uid: string) {
   }
 }
 
-function managedSnapshot(uid: string, raw: unknown) {
+function managedSnapshot(uid: string, raw: unknown, showcase = false) {
   if (raw === null) return;
   const stored = object(raw);
-  if (stored?.version !== 1 || stored.uid !== uid || stored.source !== "miyoushe" || typeof stored.updatedAt !== "string" ||
+  const source = stored?.source;
+  const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe";
+  if (stored?.version !== 1 || stored.uid !== uid || !allowedSource || typeof stored.updatedAt !== "string" ||
       !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || !stored.avatars.length ||
       stored.avatars.length > 256 || stored.avatars.some(row => !object(row) || !readId(row.id) || typeof row.name !== "string" ||
         !Array.isArray(row.skills) || !Array.isArray(row.traces) || !Array.isArray(row.stars) || !Array.isArray(row.stats) || !Array.isArray(row.relics))) {
@@ -72,14 +76,15 @@ export function createStarRailPanel(
   lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,
 ) {
   const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
+  const showcases = createRoleJsonArchive(showcaseDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
   const refreshing = new Set<string>();
 
   return async function query(qq: string, command: PanelCommand,
-    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile">) {
+    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & Partial<Pick<MessageEvent, "reply">>) {
     const { type, profileId, name } = command;
     const uploadFile = context?.uploadFile;
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
-    if (type === "reload" && context?.isDelegated) return "请在本人 QQ 会话重新加载星铁面板。";
+    if ((type === "reload" || type === "showcase") && context?.isDelegated) return "请在本人 QQ 会话重新加载或查询星铁公开展板。";
     if (type === "export") {
       const group = context?.message_type === "group";
       if (group && !command.share) {
@@ -104,6 +109,7 @@ export function createStarRailPanel(
       let snapshot: PanelSnapshot | undefined;
       let legacy: Record<string, unknown> | undefined;
       let updated = false;
+      let publicLookup = false;
       async function verify() {
         signal.throwIfAborted();
         const latest = await (account
@@ -134,12 +140,47 @@ export function createStarRailPanel(
         } finally {
           refreshing.delete(key);
         }
-      } else {
+      } else if (type !== "showcase") {
         snapshot = managedSnapshot(uid, await store.read(qq, uid));
         if (!snapshot) {
           const old = await legacySnapshot(uid);
           snapshot = old?.snapshot;
-          legacy = old?.data;
+          if (old?.snapshot.avatars.length) legacy = old.data;
+        }
+        if (!snapshot?.avatars.length) snapshot = managedSnapshot(uid, await showcases.read(qq, uid), true) ?? snapshot;
+      }
+
+      if (type === "showcase" || (type === "reload" && !snapshot?.avatars.length && context?.reply)) {
+        publicLookup = true;
+        const bound = await profiles.savedRole(qq, profileId, "sr");
+        if (bound.uid !== uid || bound.region !== role.region || bound.gameBiz !== role.gameBiz) {
+          return "所选档案当前绑定的星铁角色无法核验。";
+        }
+        const target = showcaseTarget(bound);
+        const refreshKey = `showcase:${key}`;
+        if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询，请稍后再试。";
+        refreshing.add(refreshKey);
+        try {
+          const cached = managedSnapshot(uid, await showcases.read(qq, uid), true);
+          const started = new Date();
+          if (cached?.source === target.provider && cached.updatedAt &&
+              Date.parse(cached.updatedAt) + (whole(cached.showcaseTtl, 86_400) ?? 60) * 1000 > started.getTime()) {
+            snapshot = cached;
+          } else {
+            await verify();
+            if (type === "reload") await context?.reply?.(`本地暂无星铁面板，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`);
+            await verify();
+            const next = await fetchStarRailShowcase(target, signal, undefined, started);
+            snapshot = await showcases.update({ qq, uid }, verify, current => {
+              const previous = managedSnapshot(uid, current, true);
+              if (previous?.source === target.provider && previous.updatedAt && Date.parse(previous.updatedAt) > started.getTime()) {
+                return { result: previous };
+              }
+              return { document: next, result: next };
+            });
+          }
+        } finally {
+          refreshing.delete(refreshKey);
         }
       }
 
@@ -309,7 +350,7 @@ export function createStarRailPanel(
           models = [await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid })];
         }
       } else {
-        models = await makePanelListCards(snapshot, theme, profileId, signal, updated, type === "reload");
+        models = await makePanelListCards(snapshot, theme, profileId, signal, updated, type === "reload" || publicLookup);
       }
       const images = [];
       for (const model of models) {
@@ -324,7 +365,9 @@ export function createStarRailPanel(
               selected.cone?.name, ...selected.relics.map(relic => relic.name)].filter(Boolean).join(" · ");
             return [`UID ${uid}`, equipmentLabel, visible].filter(Boolean).join("\n");
           }
-          return `UID ${uid} 星铁面板 · ${snapshot.avatars.length} 位角色\n${snapshot.avatars.map(avatar => avatar.name).join("、")}`;
+          const label = snapshot.source === "miyoushe" || snapshot.source === "legacy"
+            ? "星铁面板" : `星铁公开展板 · ${showcaseProviderNames[snapshot.source]}`;
+          return `UID ${uid} ${label} · ${snapshot.avatars.length} 位角色\n${snapshot.avatars.map(avatar => avatar.name).join("、")}`;
         }
         images.push(...result.map(file => ({ type: "image" as const, file })));
       }
@@ -346,6 +389,7 @@ export function createStarRailPanel(
         if (error.code === "missing" || error.code === "login-required") return `[starrail] 请先登录 profile ${profileId}。`;
         if (error.code === "role-missing") return `[starrail] profile ${profileId} 没有同步星铁 UID。`;
       }
+      if (error instanceof ShowcaseError) return error.message;
       if (error instanceof GameRecordRequestError) return error.message;
       if (error instanceof HoyoRequestError) {
         if (error.code === "profile-changed") return "星铁面板档案已变更，请重新查询。";

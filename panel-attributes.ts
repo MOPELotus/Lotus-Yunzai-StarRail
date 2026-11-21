@@ -185,7 +185,7 @@ export function calculateManagedElation(avatar: PanelAvatar, { character, cone, 
 }
 
 export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number) {
-  if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR"].includes(avatar.legacy.source)) return;
+  if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR", "avocado.wiki"].includes(avatar.legacy.source)) return;
   return calculatePanelAttributeRows(avatar, metadata, readLegacyRelicAttributes, promotion);
 }
 

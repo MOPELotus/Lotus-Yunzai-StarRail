@@ -136,10 +136,13 @@ export interface PanelAvatar {
   relics: Relic[];
   legacy?: { source: string; promote?: number; dataComplete: boolean };
 }
+export type ShowcaseProvider = "mihomo" | "avocado" | "enka";
+
 export interface PanelSnapshot {
   version: 1;
   uid: string;
-  source: "miyoushe" | "legacy";
+  source: "miyoushe" | "legacy" | ShowcaseProvider;
+  showcaseTtl?: number;
   updatedAt?: string;
   avatars: PanelAvatar[];
 }
@@ -148,6 +151,7 @@ export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 const leadingPanelUid = /^(#星铁|\*)\s*((?:18|[1-9])\d{8})(?!\d)\s*(?=[\p{L}\p{N}])/u;
 
 const panelTarget = String.raw`(?:\s*([1-9]\d{8,9})(?:\s+档案\s*([1-9]\d{0,2}))?|\s*(?:档案\s*)?(\d{1,3}))?`;
+const showcasePanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:展板|备用)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "u");
 const reloadPanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:加载|重新加载|重载)面板${panelTarget}$`, "u");
 const refreshPanel = new RegExp(
   String.raw`^(?:(?:#星铁|\*)\s*(?:(?:米游社|mys)\s*)?|#?(?:米游社|mys)\s*星铁\s*)` +
@@ -156,12 +160,13 @@ const refreshPanel = new RegExp(
 
 export function parsePanelCommand(message: string) {
   const reload = reloadPanel.exec(message);
-  const refresh = reload ? undefined : refreshPanel.exec(message);
-  const operation = reload ?? refresh;
+  const showcase = reload ? undefined : showcasePanel.exec(message);
+  const refresh = reload || showcase ? undefined : refreshPanel.exec(message);
+  const operation = reload ?? showcase ?? refresh;
   if (operation) {
     const profileId = Number(operation[2] ?? operation[3] ?? 1);
     if (refresh && (profileId < 1 || profileId > MAX_PROFILE_ID)) return;
-    return { type: reload ? "reload" as const : "update" as const, name: "", profileId, ...(operation[1] && { uid: operation[1] }) };
+    return { type: reload ? "reload" as const : showcase ? "showcase" as const : "update" as const, name: "", profileId, ...(operation[1] && { uid: operation[1] }) };
   }
   const exporting = /^(?:#星铁|\*)(强制)?导出面板(?:\s*(?:档案\s*)?(\d+))?$/u.exec(message);
   if (exporting) return { type: "export" as const, name: "", profileId: Number(exporting[2] ?? 1), share: Boolean(exporting[1]) };
@@ -234,14 +239,18 @@ function skill(row: Json): Skill | undefined {
 }
 
 const enhancedIds = new Set(["1212", "1205", "1005", "1006", "1004", "1102", "1217", "1310", "1306", "1307"]);
+
+export function canonicalStarRailPanelCharacter(original: string, enhanced: boolean) {
+  const transformed = `2${original.slice(1)}`;
+  return enhanced && enhancedIds.has(original) && mappedNames[transformed] ? transformed : original;
+}
 function officialAvatar(row: Json): PanelAvatar | undefined {
   const original = id(row.id);
   const level = whole(row.level, 80);
   if (!original || !level) return;
   const skillRows = array(row.skills);
-  const enhancedId = `2${original.slice(1)}`;
-  const enhanced = enhancedIds.has(original) && mappedNames[enhancedId] && skillRows.some(row => text(String(row.point_id)).startsWith(`1${original}`));
-  const avatarId = enhanced ? enhancedId : original;
+  const avatarId = canonicalStarRailPanelCharacter(original, skillRows.some(row => text(String(row.point_id)).startsWith(`1${original}`)));
+  const enhanced = avatarId !== original;
   const name = enhanced || original.startsWith("8") ? mappedNames[avatarId] || text(row.name ?? row.name_mi18n) : text(row.name ?? row.name_mi18n) || mappedNames[avatarId];
   if (!name) return;
   const eidolons = array(row.ranks);

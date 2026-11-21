@@ -1,3 +1,4 @@
+import { showcaseProviderNames } from "./panel-showcase.ts";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -197,7 +198,9 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
 }
 
 function fieldsSource(snapshot: PanelSnapshot) {
-  return snapshot.source === "miyoushe" ? "米游社" : "本地面板档案";
+  if (snapshot.source === "miyoushe") return "米游社";
+  if (snapshot.source === "legacy") return "本地面板档案";
+  return `公开展板 · ${showcaseProviderNames[snapshot.source]}`;
 }
 
 function coneDetails(cone: PanelAvatar["cone"], metadata: Json) {

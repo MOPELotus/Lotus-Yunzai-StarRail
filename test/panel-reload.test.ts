@@ -19,7 +19,7 @@ test("星铁旧重读和米游社更新写法走不同入口，保留 UID 和档
   expect(parsePanelCommand(`#星铁重载面板${uid} 档案 2`)).toEqual({ type: "reload", name: "", uid, profileId: 2 });
   expect(parsePanelCommand(`#mys星铁更新面板${uid} 档案 2`)).toEqual({ type: "update", name: "", uid, profileId: 2 });
   expect(parsePanelCommand("#星铁米游社面板更新 255")).toEqual({ type: "update", name: "", profileId: 255 });
-  for (const name of ["#米游社原神更新面板", "#米游社更新面板", "#星铁备用更新面板", "#星铁删除面板", "#星铁更新面板256"]) {
+  for (const name of ["#米游社原神更新面板", "#米游社更新面板", "#星铁删除面板", "#星铁更新面板256"]) {
     expect(parsePanelCommand(name)).toBeUndefined();
   }
 });
