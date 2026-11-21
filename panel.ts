@@ -81,7 +81,7 @@ export function createStarRailPanel(
   const refreshing = new Set<string>();
 
   return async function query(qq: string, command: PanelCommand,
-    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & Partial<Pick<MessageEvent, "reply">>) {
+    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & { readonly reply?: (message: string) => unknown }) {
     const { type, profileId, name } = command;
     const uploadFile = context?.uploadFile;
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
@@ -172,7 +172,7 @@ export function createStarRailPanel(
             if (type === "reload") {
               const notice = `本地暂无星铁面板，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`;
               const delivered = await Promise.resolve().then(() => context?.reply?.(notice)).catch(() => false);
-              if (!delivered) return `通知发送失败，已取消公开展板回退。可使用 *展板更新面板${profileId === 1 ? "" : profileId} 主动查询。`;
+              if (delivered !== true) return `通知发送失败，已取消公开展板回退。可使用 *展板更新面板${profileId === 1 ? "" : profileId} 主动查询。`;
             }
             await verify();
             const next = await fetchStarRailShowcase(target, signal, undefined, started);
