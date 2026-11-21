@@ -2,7 +2,7 @@
 // the fixed MIT Miao reference in panel-theme/character/profile-detail.{html,css}.
 import { Canvas, type CanvasRenderingContext2D as Context } from "skia-canvas";
 import { renderPng } from "@lotus-yunzai/skia";
-import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
+import { fill, image, picture, relicPortrait, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import type { makePanelDetailCard } from "./panel-card.ts";
 
 type Model = Awaited<ReturnType<typeof makePanelDetailCard>>;
@@ -272,22 +272,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       ctx.fillStyle = heading;
       ctx.fillRect(x, y, 185, 60);
       ctx.restore();
-      const relic = art.get(part.img);
-      if (relic) {
-        const size = 90;
-        const mask = new Canvas(size * density, size * density);
-        const layer = mask.getContext("2d");
-        layer.scale(density, density);
-        picture(layer, relic, 0, 0, size, size);
-        layer.globalCompositeOperation = "destination-in";
-        const fade = layer.createLinearGradient(0, size, size, 0);
-        fade.addColorStop(0, "#0000");
-        fade.addColorStop(.3, "#0005");
-        fade.addColorStop(.5, "#000");
-        layer.fillStyle = fade;
-        layer.fillRect(0, 0, size, size);
-        ctx.drawCanvas(mask, x + 95, y - 12, size, size);
-      }
+      relicPortrait(ctx, art.get(part.img), x + 95, y - 12, 90, density);
       ctx.save();
       rounded(ctx, x, y, 185, 190, 10);
       ctx.clip();

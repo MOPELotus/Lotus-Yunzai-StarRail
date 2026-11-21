@@ -6,7 +6,6 @@ import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yu
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { MessageEvent } from "../../lib/messages.ts";
-import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelPracticeCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
@@ -23,6 +22,7 @@ import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPanelPractice } from "./panel-practice-skia.ts";
 import { renderStarRailPanelList } from "./panel-list-skia.ts";
+import { renderStarRailRelicList, renderStarRailRelicMark } from "./panel-relic-skia.ts";
 import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -320,7 +320,7 @@ export function createStarRailPanel(
         if (!model.eligible) return "请先获取角色面板数据后再查看遗器列表。";
         if (!model.artis.length) return "当前面板没有符合旧版词条筛选条件的遗器。";
         const title = `UID ${uid} · 遗器列表`;
-        const files = await renderTemplate(model, true);
+        const files = await renderStarRailRelicList(model, theme.root).then(card => [card.png]).catch(() => false as const);
         await verify();
         if (files && files.length) {
           const images = files.map(file => ({ type: "image" as const, file }));
@@ -469,10 +469,9 @@ export function createStarRailPanel(
       for (const model of models) {
         await verify();
         const native = "damageRows" in model ? renderStarRailPanelDetail(model, theme.root)
-          : "chars" in model ? renderStarRailPanelList(model, theme.root) : undefined;
-        const result = native
-          ? await native.then(card => [card.png]).catch(() => false as const)
-          : await renderTemplate(model, true);
+          : "chars" in model ? renderStarRailPanelList(model, theme.root)
+            : renderStarRailRelicMark(model, theme.root);
+        const result = await native.then(card => [card.png]).catch(() => false as const);
         if (!result) {
           await verify();
           if (type === "update") return `UID ${uid} 星铁面板已更新，共 ${snapshot.avatars.length} 位角色。图片暂时无法生成。`;

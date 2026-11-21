@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
+import { Canvas, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 
 const white = "#fff";
@@ -73,4 +73,19 @@ export function styles(ctx: Context, font: ReturnType<typeof typography>) {
 
 export async function themeArt(theme: string, relative: string) {
   return await image(join(theme, relative)) ?? image(join(bundledTheme, relative));
+}
+export function relicPortrait(ctx: Context, icon: Image | undefined, x: number, y: number, size: number, density: number) {
+  if (!icon) return;
+  const mask = new Canvas(size * density, size * density);
+  const layer = mask.getContext("2d");
+  layer.scale(density, density);
+  picture(layer, icon, 0, 0, size, size);
+  layer.globalCompositeOperation = "destination-in";
+  const fade = layer.createLinearGradient(0, size, size, 0);
+  fade.addColorStop(0, "#0000");
+  fade.addColorStop(.3, "#0005");
+  fade.addColorStop(.5, "#000");
+  layer.fillStyle = fade;
+  layer.fillRect(0, 0, size, size);
+  ctx.drawCanvas(mask, x, y, size, size);
 }
