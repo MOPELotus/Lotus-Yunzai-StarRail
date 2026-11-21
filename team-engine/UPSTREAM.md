@@ -1,0 +1,6 @@
+# 星铁队伍伤害引擎
+
+- HSR_Nous 固定在 `00185ddc4d57039894caf19467f602e716329e40`。保留运行编译器、仿真和结构化日志所需的 Python 源码、规则表与公开模板，以及原 MIT 声明。排除账户、网络工具、前端和示例假角色。 [上游提交与许可](https://github.com/pzc2004/HSR_Nous/blob/00185ddc4d57039894caf19467f602e716329e40/LICENSE)
+- PyYAML 6.0.3 固定在 `49790e73684bebad1df05ef8d828fa12f685bffb`。仅包含纯 Python `lib/yaml` 和原许可。入口使用系统 Python 3.10+，并禁用全局 site packages。计算不需要 pip、Node.js、旧插件或联网下载。 [PyYAML 许可](https://github.com/yaml/pyyaml/blob/49790e73684bebad1df05ef8d828fa12f685bffb/LICENSE)
+- `vendor` 与上游的运行差异是删去无用包入口重导出，以及飞霄两处雷狩接入已有追加攻击行动，使实战中的追加攻击能触发装备事件。`catalog.json` 是模板名、真实角色 ID、命途与装备名索引。`defaults.json` 记录本项目用于缺少个人面板的 E0、80 级、S1 基准配装。
+- 目标是各自行动的精英假人，轮次使用首轮 150、以后每轮 100 行动值。默认策略优先消耗可用战技点，终结技另由引擎调度。已有模板公开 caveats 随卡片显示，DPS 按每轮伤害计算。结果是该规则、基准配装和自动行动策略下的估算，数值与以往引擎或游戏实战会不同。

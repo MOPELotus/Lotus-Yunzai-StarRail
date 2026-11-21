@@ -1,38 +1,26 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { calculateTeamDamage, starRailTeamCatalog } from "../team-damage-runtime.ts";
 
-test("队伤引擎预检拒绝缺失角色时清除已启动的旧计时器", async () => {
-  const root = await mkdtemp(join(tmpdir(), "lotus-team-worker-test-"));
-  try {
-    const old = join(root, "legacy/services/starRailTeamDamage");
-    await mkdir(old, { recursive: true });
-    await Promise.all([
-      Bun.write(join(root, "worker.mjs"), Bun.file(new URL("../team-damage-worker.mjs", import.meta.url))),
-      Bun.write(join(root, "legacy/package.json"), '{"type":"module"}'),
-      Bun.write(join(old, "engine.js"), `
-        export class StarRailDpsEngine {
-          async ensureLoaded() { this.timer = setInterval(() => {}, 100); }
-          defaultModule() { return [{ item_id: 8006 }]; }
-          calculate() { throw new Error("Unsupported role reached simulator"); }
-          clearTimers() { clearInterval(this.timer); }
-        }
-      `),
-    ]);
-    const child = Bun.spawn([process.execPath, join(root, "worker.mjs")], {
-      stdin: new Blob([JSON.stringify({ roles: [{ item_id: 8005 }] })]), stdout: "pipe", stderr: "inherit",
-    });
-    const timer = setTimeout(() => child.kill("SIGKILL"), 1500);
-    try {
-      expect(await new Response(child.stdout).json()).toEqual({ error: "unsupported", roleId: 8005 });
-      expect(await child.exited).toBe(0);
-    } finally {
-      clearTimeout(timer);
-      if (child.exitCode === null) child.kill("SIGKILL");
-      await child.exited;
-    }
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
+const python = Bun.which("python3") ?? (process.platform === "win32" ? Bun.which("python") : null);
+const members = ["1220", "1112", "1303", "8005"].map(id => ({ id }));
+
+test.skipIf(!python)("固定开源引擎无需旧安装即可计算，并保留多目标与确定性", async () => {
+  const signal = new AbortController().signal;
+  const single = await calculateTeamDamage(members, 1, 1, signal);
+  const [multi, repeated] = await Promise.all([calculateTeamDamage(members, 3, 5, signal), calculateTeamDamage(members, 3, 5, signal)]);
+  expect(single.total).toBeGreaterThan(0);
+  expect(multi.total).toBeGreaterThan(single.total);
+  expect(multi).toEqual(repeated);
+  expect(multi.damage).toHaveLength(4);
+  expect(multi.turns.length).toBeGreaterThan(8);
+  expect(new Set(multi.actions.map(action => action.name)).size).toBe(4);
+  expect(multi.damage.reduce((sum, row) => sum + row.value, 0)).toBeCloseTo(multi.total, 4);
+  expect(multi.warnings.some(note => note.includes("飞霄") || note.includes("托帕"))).toBe(true);
+  expect(starRailTeamCatalog.some(role => role.item_id === "1413")).toBe(true);
+  expect(starRailTeamCatalog.every(role => role.item_id.length === 4)).toBe(true);
+}, 16_000);
+
+test.skipIf(!python)("本地工作进程尊重提前取消", async () => {
+  const cancelled = AbortSignal.abort();
+  await expect(calculateTeamDamage(members, 20, 5, cancelled)).rejects.toBeDefined();
 });

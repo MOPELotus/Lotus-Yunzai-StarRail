@@ -1,5 +1,5 @@
 import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
-import { canonicalStarRailPanelCharacter, id, object, text, type PanelAvatar } from "./panel-model.ts";
+import { canonicalStarRailPanelCharacter, text } from "./panel-model.ts";
 
 const spellings = /^(?:#?(?:崩坏星穹铁道|星穹铁道|星穹|星铁|星轨|穹轨|崩铁|铁道)|\*+)\s*(?:队伍伤害|队伤|伤害)(详情|过程|全图)?/u;
 
@@ -55,7 +55,8 @@ export interface TeamRole extends Json {
   nick_name?: string;
   name?: string;
   element?: string;
-  dps_template?: Json;
+  path?: string;
+  hasLegacy?: boolean;
 }
 
 export function teamRoleName(role: TeamRole) {
@@ -73,7 +74,10 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
     if (enhanced) aliases.push(`${name}Pro`, `加强${name}`, `${name}加强`, `加强版${name}`);
     if (/[&＆]/u.test(name)) aliases.push(name.split(/[&＆]/u)[0]!, name.replace(/[&＆]/u, "和"), name.replace(/[&＆]/u, "与"));
     const trailblazer = name.match(/^开拓者[·•.・]?(.*)$/u)?.[1];
-    if (trailblazer) aliases.push(`${trailblazer}主`, `${trailblazer}开拓者`);
+    if (trailblazer) {
+      aliases.push(`${trailblazer}主`, `${trailblazer}开拓者`);
+      if (/^80(?:0[1-9]|10)$/u.test(String(role.item_id))) aliases.push(`${trailblazer}${Number(role.item_id) % 2 ? "男" : "女"}主`);
+    }
     for (const term of aliases.map(roleKey)) if (term && !entries.has(term)) entries.set(term, role);
   }
   const terms = [...entries.keys()].sort((a, b) => b.length - a.length);
@@ -92,47 +96,6 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
     selected.push(...segmented.slice(0, 4 - selected.length));
   }
   if (!selected.length) throw new TeamDamageError("请指定星铁队伍角色，例如 *队伍伤害飞托阮同。");
-  const unsupported = selected.find(role => !object(role.dps_template));
-  if (unsupported) throw new TeamDamageError(`${teamRoleName(unsupported)} 暂无队伍伤害模板。`);
+  if (new Set(selected.map(role => String(role.item_id))).size !== selected.length) throw new TeamDamageError("同一角色只能在队伍中安排一次。");
   return selected;
-}
-
-const damageKeys: Record<string, readonly [string, string]> = {
-  wuli: ["phy", "physicalAddHurt"], physical: ["phy", "physicalAddHurt"],
-  huo: ["fire", "fireAddHurt"], fire: ["fire", "fireAddHurt"], bing: ["ice", "iceAddHurt"], ice: ["ice", "iceAddHurt"],
-  lei: ["elec", "elecAddHurt"], elec: ["elec", "elecAddHurt"], thunder: ["elec", "elecAddHurt"],
-  feng: ["wind", "windAddHurt"], wind: ["wind", "windAddHurt"],
-  liangzi: ["quantum", "quantumAddHurt"], quantum: ["quantum", "quantumAddHurt"],
-  xushu: ["imaginary", "imaginaryAddHurt"], imaginary: ["imaginary", "imaginaryAddHurt"],
-};
-const ratios = {
-  cpct: "criticalChance", cdmg: "criticalDamage", recharge: "spRatio", heal: "healRatio",
-  stance: "stanceBreakRatio", effPct: "statusProbability", effDef: "statusResistance",
-} as const;
-const primaries = { hp: "hp", atk: "attack", def: "defense", speed: "speed" } as const;
-
-export function teamPanelInput(avatar: PanelAvatar, role: TeamRole, stats = avatar.stats) {
-  const numbers = new Map(stats.map(row => [row.key, row]));
-  const number = (value?: string) => value && /^[-+]?\d+(?:\.\d+)?%?$/u.test(value) ? Number.parseFloat(value) : undefined;
-  const combatValues: Record<string, number> = {};
-  for (const [stat, key] of Object.entries(primaries)) {
-    const row = numbers.get(stat);
-    const base = number(row?.base), final = number(row?.value);
-    if (!base || !final) return;
-    combatValues[`${key}Base`] = base;
-    combatValues[`${key}Final`] = final;
-  }
-  function ratio(key: string) {
-    const value = numbers.get(key)?.value;
-    const parsed = number(value) ?? 0;
-    return value?.endsWith("%") || Math.abs(parsed) > 1 ? parsed / 100 : parsed;
-  }
-  for (const [stat, key] of Object.entries(ratios)) combatValues[key] = ratio(stat);
-  const damage = role.element && damageKeys[role.element];
-  if (damage) combatValues[damage[1]] = ratio(damage[0]);
-
-  const cone = avatar.cone;
-  if (cone && (!id(cone.id) || !cone.level || !cone.rank)) return;
-  return { rank: avatar.rank ?? 0, level: avatar.level ?? 80,
-    weapon: cone ? { id: Number(cone.id), level: cone.level, rankLevel: cone.rank } : null, combatValues };
 }

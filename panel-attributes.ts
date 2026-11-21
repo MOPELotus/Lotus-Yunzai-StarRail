@@ -65,7 +65,7 @@ export function readLegacyRelicAttributes(part: Relic, meta: Json) {
   return { main: { key, value: main.base + main.step * part.level }, sub };
 }
 
-function readManagedRelicAttributes(part: Relic, meta: Json) {
+export function readManagedRelicAttributes(part: Relic, meta: Json) {
   if (!part.main || part.level === undefined || part.rarity === undefined) return;
   const star = object(object(meta.starData)?.[part.rarity]);
   // Reconstruct the original discrete rolls from the normalized MiYouShe values.
@@ -187,6 +187,19 @@ export function calculateManagedElation(avatar: PanelAvatar, { character, cone, 
 export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number) {
   if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR", "avocado.wiki"].includes(avatar.legacy.source)) return;
   return calculatePanelAttributeRows(avatar, metadata, readLegacyRelicAttributes, promotion);
+}
+
+export function readPanelStaticConeEffects(avatar: PanelAvatar, { character, cone, conePath }: PanelAttributeMetadata) {
+  if (!avatar.cone || conePath !== character.weapon) return [];
+  const rules = staticCones[avatar.cone.id];
+  if (!rules) return;
+  const tables = object(object(cone.skill)?.tables);
+  const effects = rules.map(({ key, idx }) => {
+    const values = tables?.[idx];
+    const value = avatar.cone?.rank && Array.isArray(values) ? values[avatar.cone.rank - 1] : undefined;
+    return finite(value) ? { key, value } : undefined;
+  });
+  return effects.every(row => row !== undefined) ? effects : undefined;
 }
 
 export function calculateEquipmentAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number) {

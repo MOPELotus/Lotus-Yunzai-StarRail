@@ -1,0 +1,19 @@
+{
+  "paths": {
+    "destruction": { "cone": "21005", "sets": ["102", "301"], "body": "crit_rate", "orb": "element", "rope": "atk_pct" },
+    "hunt": { "cone": "21010", "sets": ["102", "306"], "body": "crit_rate", "orb": "element", "rope": "atk_pct" },
+    "erudition": { "cone": "21027", "sets": ["102", "306"], "body": "crit_rate", "orb": "element", "rope": "atk_pct" },
+    "harmony": { "cone": "21018", "sets": ["102", "310"], "body": "crit_dmg", "orb": "hp_pct", "rope": "energy_regen" },
+    "nihility": { "cone": "21008", "sets": ["102", "301"], "body": "effect_hit", "orb": "element", "rope": "atk_pct" },
+    "preservation": { "cone": "21002", "sets": ["103", "310"], "body": "def_pct", "orb": "def_pct", "rope": "energy_regen" },
+    "abundance": { "cone": "21000", "sets": ["101", "310"], "body": "heal_bonus", "orb": "hp_pct", "rope": "energy_regen" },
+    "remembrance": { "cone": "21051", "sets": ["102", "306"], "body": "crit_rate", "orb": "element", "rope": "atk_pct" },
+    "elation": { "cone": "21065", "sets": ["102", "301"], "body": "crit_dmg", "orb": "element", "rope": "atk_pct" }
+  },
+  "characters": {
+    "1112": { "cone": "23016", "sets": ["120", "306"] },
+    "1220": { "cone": "23031", "sets": ["120", "315"] },
+    "1303": { "cone": "23019", "sets": ["114", "310"], "body": "hp_pct", "rope": "break_effect" },
+    "1308": { "cone": "23024", "sets": ["117", "310"], "body": "crit_rate", "rope": "atk_pct" }
+  }
+}

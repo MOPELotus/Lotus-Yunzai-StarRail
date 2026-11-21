@@ -9,9 +9,10 @@
   <main id="container">
     <img class="art" src="{{main}}" alt="">
     <header>
-      <h1>星铁队伍伤害</h1>
+      <h1>星铁队伍伤害{{if detailPage}} · 行动过程{{/if}}</h1>
       <p>UID {{uid}} · 档案 {{profileId}}</p>
     </header>
+    {{if !detailPage}}
     <table class="summary">
       <thead><tr>{{each summary row}}<th>{{row.label}}</th>{{/each}}</tr></thead>
       <tbody><tr>{{each summary row}}<td>{{row.value}}</td>{{/each}}</tr></tbody>
@@ -20,7 +21,7 @@
       <thead><tr><th>角色</th><th>等级 / 星魂</th><th>光锥</th></tr></thead>
       <tbody>
         {{each team member}}
-        <tr><td>{{if member.face}}<img class="face" src="{{member.face}}" alt="">{{/if}}{{member.name}}</td><td>Lv.{{member.level}} · {{member.rank}} 魂</td><td>{{member.weapon}}<br>Lv.{{member.weaponLevel}} · {{member.weaponRank}} 叠影</td></tr>
+        <tr><td>{{if member.face}}<img class="face" src="{{member.face}}" alt="">{{/if}}{{member.name}}</td><td>Lv.{{member.level}} · {{member.rank}} 魂</td><td>{{member.weapon}}{{if member.weaponRank}}<br>Lv.{{member.weaponLevel}} · {{member.weaponRank}} 叠影{{/if}}</td></tr>
         {{/each}}
       </tbody>
     </table>
@@ -43,6 +44,7 @@
     </table>
     {{/if}}
     {{if timeline}}<p class="timeline"><strong>起手顺序</strong> {{timeline}}</p>{{/if}}
+    {{/if}}
     {{if turns.length}}
     <table class="actions">
       <thead><tr><th>顺序</th><th>关键行动（前 8 项）</th><th>行动值</th></tr></thead>
@@ -53,7 +55,10 @@
       </tbody>
     </table>
     {{/if}}
-    <footer>数据来源 · 星穹铁道工坊<br>Lotus-Yunzai · StarRail</footer>
+    {{if warnings.length}}
+    <section class="team-notes"><strong>模拟说明</strong>{{each warnings note}}<p>{{note}}</p>{{/each}}</section>
+    {{/if}}
+    <footer>计算引擎 · {{engine}}<br>固定假人与自动行动策略，数值仅供参考<br>Lotus-Yunzai · StarRail</footer>
   </main>
 </body>
 </html>

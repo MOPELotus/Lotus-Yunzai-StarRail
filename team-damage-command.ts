@@ -2,12 +2,15 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
-import { calculateEquipmentAttributeRows } from "./panel-attributes.ts";
+import { calculateEquipmentAttributeRows, leveledAttributes, readPanelStaticConeEffects } from "./panel-attributes.ts";
 import { readPanelAvatarFace, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import type { createStarRailPersonalPanelReader } from "./panel.ts";
-import { canonicalStarRailPanelCharacter, id, object, text } from "./panel-model.ts";
-import { resolveTeamDamageRoles, teamPanelInput, teamRoleName, TeamDamageError, type TeamDamageCommand } from "./team-damage-model.ts";
-import { calculateTeamDamage, readTeamConePromotions, readTeamDamageRuntime, type TeamBattleResult } from "./team-damage-runtime.ts";
+import { canonicalStarRailPanelCharacter, text } from "./panel-model.ts";
+import { resolveTeamDamageRoles, teamRoleName, TeamDamageError, type TeamDamageCommand } from "./team-damage-model.ts";
+import { calculateTeamDamage, starRailTeamCatalog, starRailTeamCones, starRailTeamDefaultCone, starRailTeamEngine, type TeamBattleResult,
+  type TeamSimulationMember } from "./team-damage-runtime.ts";
+import { projectTeamOwnedPanel } from "./team-owned-panel.ts";
+import { starRailTraceOwner } from "./panel-trace-refresh.ts";
 
 interface TeamMember {
   readonly name: string;
@@ -33,7 +36,8 @@ function teamDamageReport(uid: string, command: TeamDamageCommand, team: readonl
     share: result.total > 0 ? `${(row.value / result.total * 100).toFixed(1)}%` : "0%" }));
   const timeline = result.actions.slice(0, 4).map(row => row.name).join(" → ");
   const turns = command.detail ? result.turns.slice(0, 8) : [];
-  return { uid, profileId: command.profileId, summary, team, contribution, timeline, turns, statNames };
+  return { uid, profileId: command.profileId, summary, team, contribution, timeline, turns, statNames,
+    engine: starRailTeamEngine, warnings: result.warnings.slice(0, command.detail ? 4 : 2) };
 }
 
 interface Context {
@@ -75,64 +79,71 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
             current.role.region !== region || current.role.gameBiz !== gameBiz) throw new ProfileError("changed", changed);
         signal.throwIfAborted();
       };
-      const runtime = await readTeamDamageRuntime();
-      const roles = resolveTeamDamageRoles(command.roles, runtime.dictionary.system_roles);
-      const [snapshot, theme] = await Promise.all([readPanel(qq, uid), readTheme()]);
-      const panels: Record<string, NonNullable<ReturnType<typeof teamPanelInput>>> = {};
-      const coneIds = new Set<string>();
+      const roles = resolveTeamDamageRoles(command.roles, starRailTeamCatalog);
+      const owner = starRailTraceOwner(account, account.role);
+      const [snapshot, theme] = await Promise.all([readPanel(qq, uid, owner), readTheme()]);
+      const members: TeamSimulationMember[] = [];
       const team: TeamMember[] = [];
       for (const role of roles) {
         const key = String(role.item_id);
         const enhanced = canonicalStarRailPanelCharacter(key, true);
         const avatar = snapshot?.avatars.find(candidate => enhanced !== key && candidate.id === enhanced) ??
           snapshot?.avatars.find(candidate => candidate.id === key);
+        const meta = avatar && await readPanelDamageMetadata(avatar, theme);
         let stats = avatar?.stats ?? [];
-        if (avatar && !stats.length) {
-          const meta = await readPanelDamageMetadata(avatar, theme);
-          const computed = meta && calculateEquipmentAttributeRows(avatar, meta);
-          // Keep attribute precision used by the simulator. Formatting is only for the reply.
+        if (avatar && meta && !stats.length) {
+          const computed = calculateEquipmentAttributeRows(avatar, meta);
           if (computed) stats = computed.map(row => ({ key: row.key, base: String(row.base), value: `${row.value}${row.ratio ? "%" : ""}` }));
         }
-        const panel = avatar && teamPanelInput(avatar, role, stats);
-        if (panel) panels[key] = panel;
-        const template = role.dps_template;
-        const defaultCone = object(template?.weapon);
-        const cone = panel?.weapon ?? defaultCone;
-        const coneId = id(cone?.id);
-        if (coneId) coneIds.add(coneId);
+        const staticCone = avatar ? (avatar.cone ? meta && readPanelStaticConeEffects(avatar, meta) : []) : undefined;
+        const coneBase = meta && avatar?.cone ? leveledAttributes(meta.cone, avatar.cone.level, avatar.cone.promote, true) : undefined;
+        const panel = avatar && projectTeamOwnedPanel(avatar, stats, staticCone, coneBase);
+        const version = role.hasLegacy && enhanced !== key && avatar?.id === key ? "legacy" : undefined;
+        members.push({ id: key, version, panel });
+        const cone = panel ? panel.cone : { id: starRailTeamDefaultCone(key, role.path ?? ""), level: 80, rank: 1 };
         team.push({
           name: teamRoleName(role).replaceAll("{NICKNAME}", "开拓者"),
-          level: Number(panel?.level ?? template?.level ?? 80), rank: Number(panel?.rank ?? template?.rank ?? 0),
-          weapon: (panel && text(avatar?.cone?.name)) || text(object(theme.weapons[coneId])?.name) || text(defaultCone?.name) || "光锥资料未记录",
-          weaponLevel: Number(cone?.level ?? 80), weaponRank: Number(cone?.rankLevel ?? 1),
-          source: panel ? "本人面板" : avatar ? "默认模板（本地属性不全）" : "默认模板",
+          level: panel?.level ?? 80, rank: panel?.rank ?? 0,
+          weapon: cone?.id ? (panel ? text(avatar?.cone?.name) : "") || starRailTeamCones[cone.id] || "光锥资料未记录" : "未装备",
+          weaponLevel: cone?.id ? cone.level ?? 0 : 0, weaponRank: cone?.id ? cone.rank : 0,
+          source: panel ? "本人面板" : avatar ? "基准配装（本地数据不全）" : "基准配装",
           face: await readPanelAvatarFace(theme, avatar?.id ?? key),
           stats: ["cpct", "cdmg", "atk", "speed", "stance", "effPct"].map(key =>
             panel ? stats.find(row => row.key === key)?.value ?? "未记录" : "未记录"),
         });
       }
-      const promotions = await readTeamConePromotions([...coneIds]);
       await verify();
-      const result = await calculateTeamDamage(runtime, roles, panels, promotions, command.cycle, command.enemies, signal);
+      const result = await calculateTeamDamage(members, command.cycle, command.enemies, signal);
       await verify();
       const report = teamDamageReport(uid, command, team, result);
       const art = (name: string) => pathToFileURL(join(theme.root, "character", "imgs", name)).href;
-      const files = await renderTemplate({
-        ...report, tplFile: fileURLToPath(new URL("character/team-damage.html", themeDirectory)),
-        css: new URL("character/team-damage.css", themeDirectory).href,
-        background: art("bg-02.jpg"), main: art("main-02.png"),
-        imgType: "png", viewport: { width: 600, height: 1500 }, scale: 1,
-      }).catch(() => false as const);
-      await verify();
-      const picture = files && files[0];
-      return picture ? { type: "image" as const, file: picture } : [
+      const pages = report.turns.length ? [
+        { ...report, detailPage: false, turns: [], warnings: [] },
+        { ...report, detailPage: true },
+      ] : [{ ...report, detailPage: false }];
+      const attachments: { type: "image"; file: Buffer }[] = [];
+      for (const page of pages) {
+        const files = await renderTemplate({
+          ...page, tplFile: fileURLToPath(new URL("character/team-damage.html", themeDirectory)),
+          css: new URL("character/team-damage.css", themeDirectory).href,
+          background: art("bg-02.jpg"), main: art("main-02.png"),
+          imgType: "png", viewport: { width: 720, height: 1400 }, scale: 4,
+          multiPage: true, multiPageHeight: 1400,
+        }).catch(() => false as const);
+        await verify();
+        if (!files || !files.length) { attachments.length = 0; break; }
+        attachments.push(...files.map(file => ({ type: "image" as const, file })));
+      }
+      if (attachments.length) return attachments;
+      return [
         `星铁队伍伤害 · UID ${uid} · 档案 ${profileId}`,
         report.summary.map(row => `${row.label} ${row.value}`).join(" · "),
         ...team.map(member => `${member.name} · ${member.source}`),
         ...report.contribution.map(row => `${row.name} · ${row.value}（${row.share}）`),
         ...(report.timeline ? [`起手顺序 ${report.timeline}`] : []),
         ...report.turns.flatMap(turn => [turn.title, ...turn.lines.slice(0, 1)]),
-        "数据来源 · 星穹铁道工坊",
+        ...report.warnings.map(note => `模拟说明 · ${note}`),
+        `计算引擎 · ${report.engine}。固定假人和自动行动策略，数值仅供参考。`,
       ].join("\n");
     } catch (error) {
       if (signal.aborted) return [];

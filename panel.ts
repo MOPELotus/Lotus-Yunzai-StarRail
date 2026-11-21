@@ -77,9 +77,13 @@ function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty
 
 export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock) {
   const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
-  return async (qq: string, uid: string) => {
-    const snapshot = managedSnapshot(uid, await store.read(qq, uid), false, true);
-    return snapshot?.avatars.length ? snapshot : (await legacySnapshot(uid))?.snapshot;
+  const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
+  return async (qq: string, uid: string, owner?: StarRailTraceOwner) => {
+    const managed = managedSnapshot(uid, await store.read(qq, uid), false, true);
+    const snapshot = managed?.avatars.length ? managed : (await legacySnapshot(uid))?.snapshot;
+    if (!snapshot || !owner || owner.qq !== qq || owner.uid !== uid) return snapshot;
+    const records = await traces.read(qq, uid).then(raw => readStarRailTraceArchive(owner, raw)).catch(() => undefined);
+    return records ? applyStarRailTraces(snapshot, records) : snapshot;
   };
 }
 
