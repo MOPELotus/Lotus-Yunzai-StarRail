@@ -1,9 +1,9 @@
 // Action execution and hit event order follow HSR_Nous 00185dd (MIT).
-import { type ActorState, type CombatModifier, applyToughnessDamage,
+import { type ActorState, applyToughnessDamage,
   numericConstant, settleDamage, toughnessDamageAmount } from "../combat/index.ts";
 import { entries, map, number, numeric, string } from "../compile/library.ts";
 import type { CompiledAction, Numbers } from "../compile/types.ts";
-import type { ActionOptions, ActionResult } from "./contracts.ts";
+import type { ActionOptions, ActionResult, ModifierWithDefinition } from "./contracts.ts";
 import type { BattleRunner } from "./runner.ts";
 import { isBlast, resolveTargets } from "./targets.ts";
 
@@ -11,8 +11,6 @@ interface ResolvedAction extends CompiledAction {
   readonly toughness: number;
   readonly blastToughness?: number;
 }
-
-type ToughnessModifier = CombatModifier & { readonly toughnessLock?: boolean };
 
 function variant(action: ResolvedAction, definition: unknown): ResolvedAction {
   const raw = map(definition);
@@ -52,7 +50,7 @@ export function executeAction(runner: BattleRunner, source: ActorState, action: 
   runner.applyActionEffects(source, action);
   if (action.raw.cleanse_self) {
     for (const modifier of [...source.modifiers.values()]) {
-      if (modifier.type === "debuff" && (modifier as CombatModifier & { dispellable?: boolean }).dispellable !== false) {
+      if (modifier.type === "debuff" && (modifier as ModifierWithDefinition).dispellable !== false) {
         runner.removeModifier(source, modifier.id, "cleanse");
       }
     }
@@ -168,7 +166,7 @@ function applyToughness(runner: BattleRunner, source: ActorState, target: ActorS
   const scopes = Array.isArray(action.raw.toughness_scope) ? action.raw.toughness_scope.map(s => String(s).toLowerCase()) : [];
   const weak = runner.panelOf(target).weakness ?? target.actor.weakness ?? [];
   const canReduce = (action.raw.toughness_scope === "all" || weak.includes(element) || scopes.includes(element))
-    && ![...target.modifiers.values()].some(m => (m as ToughnessModifier).toughnessLock);
+    && ![...target.modifiers.values()].some(m => (m as ModifierWithDefinition).model?.raw.toughness_lock);
   const scoped = runner.mechanics.scopedBoost?.(source, {
     action_type: action.kind, damage_type: element, target_broken: false, target_controlled: false,
   }, key => key === "break_efficiency_boost", target) ?? 0;
@@ -196,7 +194,7 @@ function applyToughness(runner: BattleRunner, source: ActorState, target: ActorS
   runner.checkDeath(target, source.actor.id, sourceActionId);
 }
 
-function triggerBreak(runner: BattleRunner, source: ActorState, target: ActorState, action: ResolvedAction): void {
+export function triggerBreak(runner: BattleRunner, source: ActorState, target: ActorState, action: CompiledAction): void {
   const { rules } = runner.encounter;
   const element = action.damageType ?? "physical";
   const declared = target.actor.toughnessBars ?? [];

@@ -1,6 +1,6 @@
 // Turn loop and event boundaries follow HSR_Nous 00185dd (MIT).
-import { ActionScheduler, type ActorState, BattleState, basePanel, consumeEnergy, gainEnergy,
-  numericConstant, type CombatModifier, type DamageInput, type EffectivePanel, type TurnKind } from "../combat/index.ts";
+import { ActionScheduler, ActorState, BattleState, basePanel, consumeEnergy, gainEnergy,
+  numericConstant, type DamageInput, type EffectivePanel, type TurnKind } from "../combat/index.ts";
 import { numeric, number, string } from "../compile/library.ts";
 import type { CompiledAction, CompiledActor, CompiledEncounter } from "../compile/types.ts";
 import { evaluate } from "../rules/expression.ts";
@@ -8,16 +8,11 @@ import { actionPayload, executeAction } from "./action.ts";
 import { FormBook } from "./forms.ts";
 import type {
   ActionOptions, ActionResult, BattleEvent, BattleMechanics, BattleParty, EnergySource,
-  MechanicFactory, Payload, RunnerOptions, TerminationReason, Waterfall,
+  MechanicFactory, ModifierWithDefinition, Payload, RunnerOptions, TerminationReason, Waterfall,
 } from "./contracts.ts";
 
 const ALLY_EXCLUDED = new Set(["untargetable", "no_wipe", "no_aura"]);
 const TURN_LIMIT = 2500; // the vendored worker's configured safety limit
-type TurnModifier = CombatModifier & {
-  readonly preventAction?: boolean;
-  readonly dispellable?: boolean;
-  readonly tickAnchor?: string;
-};
 
 export interface BattleStep {
   readonly actorId: string;
@@ -49,6 +44,8 @@ export class BattleRunner {
   #end?: TerminationReason;
   #wave = 0;
   #actionDepth = 0;
+  #turnActorId?: string;
+  #autoTargetDepth = 0;
 
   constructor(readonly encounter: CompiledEncounter, factory?: MechanicFactory, readonly options: RunnerOptions = {}) {
     this.mode = options.mode ?? "expected";
@@ -66,6 +63,8 @@ export class BattleRunner {
   get wave(): number { return this.#wave; }
   get terminationReason(): TerminationReason | undefined { return this.#end; }
   get poolOverride(): number | undefined { return this.#poolOverride; }
+  get currentTurnActorId(): string | undefined { return this.#turnActorId; }
+  get autoTargeting(): boolean { return this.#autoTargetDepth > 0; }
 
   actorTemplate(id: string): CompiledActor {
     const actor = this.#templates.get(id);
@@ -89,30 +88,26 @@ export class BattleRunner {
     const previous = this.state.actors.get(template.id);
     if (previous?.alive) return previous;
     this.#templates.set(template.id, template);
-    const actor = previous ?? this.state.spawn(template);
+    const actor = previous ? new ActorState(template) : this.state.spawn(template);
     if (previous) {
-      actor.currentHp = template.stats.hp;
-      actor.currentEnergy = 0;
-      actor.alive = true;
-      actor.banished = false;
-      actor.broken = false;
-      actor.toughness = template.party === "enemy" ? template.stats.max_toughness : 0;
-      actor.barIndex = 0;
-      actor.addedBars.length = 0;
-      actor.modifiers.clear();
-      actor.resources.clear();
-      this.scheduler.unfreeze(template.id);
-      this.scheduler.changeSpeed(template.id, template.stats.spd);
+      this.state.actors.set(template.id, actor);
+      this.scheduler.rejoinActor(template);
     } else {
       this.scheduler.addActor(template);
     }
     if (template.systemFlags.includes("wave_reset_exempt")) this.scheduler.exemptFromWaveReset(template.id);
+    if (template.summon?.capabilities.av === false) this.scheduler.freeze(template.id);
     const reference = options.after ?? options.before;
     if (reference) {
       const formation = [...this.state.actors].filter(([id]) => id !== template.id);
       const index = formation.findIndex(([id]) => id === reference);
       if (index >= 0) {
-        formation.splice(index + (options.after ? 1 : 0), 0, [template.id, actor]);
+        let at = index;
+        if (options.after) {
+          at += 1;
+          while (at < formation.length && this.actorTemplate(formation[at]![0]).ownerId === options.after) at += 1;
+        }
+        formation.splice(at, 0, [template.id, actor]);
         this.state.actors.clear();
         for (const [id, state] of formation) this.state.actors.set(id, state);
       }
@@ -120,7 +115,7 @@ export class BattleRunner {
     for (const [id, decl] of Object.entries(template.resources)) actor.resources.set(id, number(decl.raw.current));
     this.mechanics.onActorSpawn?.(actor, template);
     if (options.reason) this.emit("actor_enter", {
-      actor: template.id, reason: options.reason, actor_type: template.kind,
+      actor: template.id, reason: options.reason, actor_type: template.kind, wave_index: this.#wave,
     });
     return actor;
   }
@@ -131,17 +126,18 @@ export class BattleRunner {
     this.emit("before_actor_exit", { actor: id, reason });
     actor.alive = false;
     this.scheduler.freeze(id);
+    if (reason !== "banish") this.mechanics.onActorLeave?.(actor, reason);
     this.emit("actor_exit", { actor: id, reason });
     return true;
   }
 
-  dismiss(id: string, reason = "dismiss"): boolean { return this.leave(id, reason); }
+  dismiss(id: string, reason = "dismiss"): boolean {
+    return this.state.actors.get(id)?.actor.kind === "summon" && this.leave(id, reason);
+  }
 
   emit(kind: string, payload: Payload): void {
-    if (this.#eventsEnabled) {
-      this.events.push({ kind, time: this.state.clock, payload: { ...payload } });
-      this.mechanics.onEvent?.(kind, payload);
-    }
+    this.events.push({ kind, time: this.state.clock, payload: { ...payload } });
+    if (this.#eventsEnabled) this.mechanics.onEvent?.(kind, payload);
   }
 
   waterfall(kind: string, payload: Waterfall): Waterfall {
@@ -241,6 +237,8 @@ export class BattleRunner {
     if (this.#actionDepth >= 128) throw new Error("Battle action recursion limit reached");
     const previous = this.#poolOverride;
     if (options.poolOverride !== undefined) this.#poolOverride = options.poolOverride;
+    const automatic = Boolean(options.insert || options.autoTarget);
+    if (automatic) this.#autoTargetDepth += 1;
     this.#actionDepth += 1;
     try {
       const result = executeAction(this, source, action, options);
@@ -255,6 +253,7 @@ export class BattleRunner {
       return result;
     } finally {
       this.#actionDepth -= 1;
+      if (automatic) this.#autoTargetDepth -= 1;
       this.#poolOverride = previous;
     }
   }
@@ -296,6 +295,7 @@ export class BattleRunner {
 
   enterState(actor: ActorState): boolean { return this.#forms.enter(actor); }
   exitState(actor: ActorState, reason = "exit"): void { this.#forms.exit(actor, reason); }
+  activeForm(actor: ActorState): string { return string(this.#forms.current(actor)?.raw.state); }
 
   #ultimateOf(actor: ActorState): CompiledAction | undefined {
     return this.#formActions(actor, this.actionsOf(actor).filter(action => action.kind === "ultimate"))[0];
@@ -338,8 +338,8 @@ export class BattleRunner {
   }
 
   endCurrentTurn(actor: ActorState): void {
-    for (const modifier of actor.modifiers.values() as Iterable<TurnModifier>) {
-      if (modifier.duration > 0 && (modifier.tickAnchor ?? "owner_turn_end") === "owner_turn_end") modifier.duration += 1;
+    for (const modifier of actor.modifiers.values() as Iterable<ModifierWithDefinition>) {
+      if (modifier.duration > 0 && (modifier.anchor ?? "owner_turn_end") === "owner_turn_end") modifier.duration += 1;
     }
     this.mechanics.tick?.(actor, "owner_turn_end");
     this.#turnConsumed = true;
@@ -356,7 +356,7 @@ export class BattleRunner {
     }
     const context = this.#policyContext(actor);
     const want = this.encounter.policy.actionRules.find(rule =>
-      !rule.condition || evaluate(rule.condition, { context, rng: this.rng, trace: false }).value)?.action;
+      !rule.condition || evaluate(rule.condition, { context, rng: this.rng, trace: false }).value)?.action ?? "basic";
     return legal.find(action => action.id === want) ?? legal.find(action => action.kind === want) ?? legal[0];
   }
 
@@ -399,6 +399,7 @@ export class BattleRunner {
   }
 
   #runTurn(actor: ActorState, kind: TurnKind): void {
+    this.#turnActorId = actor.actor.id;
     const countdown = kind === "countdown";
     const event = { actor: actor.actor.id, kind };
     if (!countdown) this.emit("on_turn_start", event);
@@ -407,7 +408,7 @@ export class BattleRunner {
     this.mechanics.tickDots?.(actor);
     if (!actor.alive) return;
     const forced = this.#forcedBasic(actor, "outrage") || this.#forcedBasic(actor, "dominate");
-    const prevented = [...actor.modifiers.values()].some(mod => (mod as TurnModifier).preventAction);
+    const prevented = [...actor.modifiers.values()].some(mod => (mod as ModifierWithDefinition).model?.raw.prevent_action);
     if (!forced && !prevented) {
       const template = this.actorTemplate(actor.actor.id);
       const prior = this.mechanics.stateOf?.(actor) ?? this.#forms.current(actor);
@@ -420,7 +421,7 @@ export class BattleRunner {
         const finalAction = !summon && countdown ? this.#forms.lastAction(actor) : undefined;
         const action = finalAction || this.#playerAction(actor, summon);
         if (action && !this.#turnConsumed) {
-          this.execute(actor, action);
+          this.execute(actor, action, { autoTarget: summon && template.summon?.control !== "manual" });
           if (!summon) {
             if (!finalAction) this.#ultimateWindow(actor);
             if (this.mechanics.onTurnActionEnd) this.mechanics.onTurnActionEnd(actor, prior);
@@ -452,7 +453,7 @@ export class BattleRunner {
       (this.actorTemplate(a.actor.id).elationNumber || 9999) - (this.actorTemplate(b.actor.id).elationNumber || 9999));
     if (!members.length) return;
     for (const actor of members) {
-      for (const mod of [...actor.modifiers.values()] as TurnModifier[]) {
+      for (const mod of [...actor.modifiers.values()] as ModifierWithDefinition[]) {
         if (mod.controlKind && mod.dispellable !== false) this.removeModifier(actor, mod.id, "cleanse");
       }
     }

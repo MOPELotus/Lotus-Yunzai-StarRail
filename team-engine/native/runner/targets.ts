@@ -1,6 +1,7 @@
 // Default scripted/compiled target resolution follows HSR_Nous 00185dd (MIT).
-import type { ActorState, CombatModifier } from "../combat/index.ts";
+import type { ActorState } from "../combat/index.ts";
 import type { CompiledAction } from "../compile/types.ts";
+import type { ModifierWithDefinition } from "./contracts.ts";
 import type { BattleRunner } from "./runner.ts";
 
 export interface Targets {
@@ -8,11 +9,6 @@ export interface Targets {
   readonly members: readonly ActorState[];
 }
 
-type TargetModifier = CombatModifier & {
-  readonly lockOn?: boolean;
-  readonly forcedTaunt?: boolean;
-  readonly dotElement?: string;
-};
 const DOT_ELEMENTS: Readonly<Record<string, string>> = { shock: "thunder", wind_shear: "wind", burn: "fire", bleed: "physical" };
 
 export function isBlast(target: string): boolean {
@@ -28,8 +24,8 @@ function around(primary: ActorState | undefined, pool: readonly ActorState[], ty
 }
 
 function forcedTaunt(runner: BattleRunner, source: ActorState, candidates: readonly ActorState[]): ActorState | undefined {
-  for (const mod of source.modifiers.values() as Iterable<TargetModifier>) {
-    const issuer = mod.forcedTaunt && mod.sourceId ? runner.state.actors.get(mod.sourceId) : undefined;
+  for (const mod of source.modifiers.values() as Iterable<ModifierWithDefinition>) {
+    const issuer = mod.model?.raw.forced_taunt && mod.sourceId ? runner.state.actors.get(mod.sourceId) : undefined;
     if (issuer && candidates.includes(issuer)) return issuer;
   }
 }
@@ -46,13 +42,14 @@ function preferred(runner: BattleRunner, source: ActorState, action: CompiledAct
   const element = DOT_ELEMENTS[spec.slice(4)];
   if (!element) return;
   return candidates.find(candidate => [...candidate.modifiers.values()].some(mod =>
-    mod.type === "dot" && (mod as TargetModifier).dotElement === element));
+    mod.type === "dot" && (mod as ModifierWithDefinition).dot?.element === element));
 }
 
 function enemyTarget(runner: BattleRunner, source: ActorState, candidates: readonly ActorState[]): ActorState | undefined {
   const taunter = forcedTaunt(runner, source, candidates);
   if (taunter) return taunter;
-  const locked = candidates.find(actor => [...actor.modifiers.values()].some(mod => (mod as TargetModifier).lockOn));
+  const locked = candidates.find(actor =>
+    [...actor.modifiers.values()].some(mod => (mod as ModifierWithDefinition).model?.raw.lock_on));
   if (locked) return locked;
   const weights = candidates.map(actor => {
     if (runner.actorTemplate(actor.actor.id).summon?.capabilities.taunt === false) return 0;
@@ -92,12 +89,12 @@ export function resolveTargets(runner: BattleRunner, source: ActorState, action:
   });
   if (forced) return candidates.includes(forced) ? around(forced, candidates, type) : { members: [] };
   if (type === "aoe" || type === "ally_aoe") return around(candidates[0], candidates, type);
-  if (allied && !enemy) return around(source, candidates, type);
+  if (allied && !enemy) return around(runner.autoTargeting ? source : candidates[0] ?? source, candidates, type);
 
   const taunter = enemy ? undefined : forcedTaunt(runner, source, candidates);
   if (taunter) return around(taunter, candidates, type);
   if (type === "bounce" || type === "bounce_blast") {
-    const index = runner.mode === "roll" && runner.rng ? Math.floor(runner.rng() * candidates.length) : 0;
+    const index = candidates.length && runner.mode === "roll" && runner.rng ? Math.floor(runner.rng() * candidates.length) : 0;
     return around(candidates[index], candidates, type);
   }
   const pick = preferred(runner, source, action, candidates)

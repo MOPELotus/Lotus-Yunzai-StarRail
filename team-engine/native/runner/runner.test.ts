@@ -33,6 +33,10 @@ const b = unit("b", "乙", "player", { spd: 103, max_energy: 80, atk: 1650 }, [
   skill("b1", "basic", "single", "imaginary", { skill_point_gain: 1 }, [{ atk: .93 }]),
   skill("b2", "skill", "bounce", "imaginary", { skill_point_cost: 1, instances: 3 }, [{ atk: .4 }]),
 ]);
+const support = unit("b", "乙", "player", { max_energy: 80, spd: 103 }, [
+  skill("b1", "basic", "single", "imaginary", { skill_point_gain: 1 }, [{ atk: .93 }]),
+  skill("b2", "skill", "ally_single", "", { skill_point_cost: 1 }, []),
+]);
 const small = unit("small", "守卫", "enemy", { hp: 3900, max_toughness: 10, spd: 98 }, [
   skill("m1", "basic", "single", "fire", { energy_grant: 8 }, [{ atk: .2 }]),
 ]);
@@ -42,19 +46,38 @@ const breaker = unit("a", "甲", "player", { max_energy: 90, atk: 1600 }, [
   skill("a1", "basic", "single", "imaginary", { skill_point_gain: 1 }, [{ atk: 1 }]),
   skill("a2", "skill", "single", "imaginary", { skill_point_cost: 1, toughness_dmg: 20, instances: 3 }, [{ atk: 1 }]),
 ]);
+const summon: CompiledActor = { ...unit("pet", "小伴侣", "player", { spd: 132, max_energy: 0 }, [
+  skill("p1", "basic", "single", "imaginary", {}, [{ atk: .51 }]),
+]), kind: "summon", ownerId: a.id,
+  summon: { control: "auto", capabilities: {}, inheritance: "none", maxHpRatio: 0 },
+};
 
-const fixtures = [
+interface Fixture {
+  readonly team: readonly CompiledActor[];
+  readonly enemies: readonly CompiledActor[];
+  readonly waves: readonly (readonly CompiledActor[])[];
+  readonly limit: number;
+  readonly summons?: readonly CompiledActor[];
+  readonly operations?: readonly (readonly ["spawn" | "dismiss" | "step", string])[];
+}
+const fixtures: readonly Fixture[] = [
   { team: [a, b], enemies: [large, far], waves: [], limit: 450 },
   { team: [breaker], enemies: [small], waves: [[large]], limit: 530 },
   { team: [breaker], enemies: [small], waves: [], limit: 100 },
+  { team: [a, support], enemies: [large], waves: [], limit: 200 },
+  { team: [a], enemies: [large], waves: [], limit: 350, summons: [summon],
+    operations: [["spawn", summon.id], ["step", ""], ["dismiss", summon.id],
+      ["step", ""], ["step", ""], ["spawn", summon.id], ["step", ""], ["step", ""], ["step", ""]] },
 ];
 
-async function fixtureRunner(fixture: typeof fixtures[number]) {
+async function fixtureRunner(fixture: Fixture) {
   const rules = await getRulebook();
   const encounter: CompiledEncounter = {
-    team: fixture.team, systemActors: [], summons: new Map(), hooks: [], caveats: [], rules,
+    team: fixture.team, systemActors: [], summons: new Map(fixture.summons?.map(actor => [actor.id, actor])),
+    hooks: [], caveats: [], rules,
     expr: new ExpressionCompiler(),
-    actionsByActor: new Map([...fixture.team, ...fixture.enemies, ...fixture.waves.flat()].map(actor => [actor.id, actor.actions])),
+    actionsByActor: new Map([...fixture.team, ...fixture.enemies, ...fixture.waves.flat(), ...fixture.summons ?? []]
+      .map(actor => [actor.id, actor.actions])),
     stage: { id: "stage", mode: "forgotten_hall", terminationMode: "fixed_av",
       maxActionValue: fixture.limit, cycle: rules.modes.forgotten_hall!, enemies: fixture.enemies },
     policy: { mode: "rule_based", ultimateTiming: "after_action", enemyRules: new Map(), actionRules: [
@@ -64,13 +87,27 @@ async function fixtureRunner(fixture: typeof fixtures[number]) {
   };
   return new BattleRunner(encounter, undefined, { laterWaves: fixture.waves });
 }
-async function result(fixture: typeof fixtures[number]) {
+async function result(fixture: Fixture) {
   const runner = await fixtureRunner(fixture);
   const steps = [];
+  runner.setup();
+  for (const [op, id] of fixture.operations ?? []) {
+    if (op === "spawn") {
+      const template = runner.actorTemplate(id);
+      runner.spawn(template, { after: template.ownerId, reason: "summon" });
+    } else if (op === "dismiss") {
+      runner.dismiss(id);
+    } else {
+      const step = runner.step();
+      if (step) steps.push([step.actorId, step.kind, step.clock, step.skipped]);
+    }
+  }
   for (let step; (step = runner.step());) steps.push([step.actorId, step.kind, step.clock, step.skipped]);
   const state = runner.state;
+  const targets = runner.events.filter(event => event.kind === "on_action").map(({ payload }) =>
+    [payload.actor, payload.action_id, payload.target]);
   return {
-    steps, end: [runner.terminationReason], clock: state.clock, turns: state.turnCount, sp: state.skillPoints,
+    steps, targets, end: [runner.terminationReason], clock: state.clock, turns: state.turnCount, sp: state.skillPoints,
     units: Object.fromEntries([...state.actors].map(([id, unit]) =>
       [id, [unit.currentHp, unit.currentEnergy, unit.toughness, unit.alive, unit.broken, unit.barIndex]])),
     report: reportBattle(runner, 4),

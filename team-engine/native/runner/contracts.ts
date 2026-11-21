@@ -1,4 +1,4 @@
-import type { ActorState, DamageInput, EffectivePanel } from "../combat/index.ts";
+import type { ActorState, CombatModifier, DamageInput, EffectivePanel } from "../combat/index.ts";
 import type { CompiledAction, CompiledActor, Mechanic } from "../compile/types.ts";
 import type { BattleRunner } from "./runner.ts";
 
@@ -11,11 +11,19 @@ export interface BattleEvent {
 }
 export type ModifierAnchor = "owner_turn_start" | "owner_turn_end" | "source_turn_start" | "source_turn_end" | "on_action";
 
+export type ModifierWithDefinition = CombatModifier & {
+  readonly model?: Mechanic;
+  readonly anchor?: ModifierAnchor;
+  readonly dispellable?: boolean;
+  readonly dot?: { readonly element: string };
+};
+
 export interface ActionOptions {
   readonly insert?: boolean;
   readonly forcedTarget?: ActorState;
   readonly tag?: string;
   readonly poolOverride?: number;
+  readonly autoTarget?: boolean;
 }
 export interface ActionResult {
   readonly target: ActorState | undefined;
@@ -50,6 +58,7 @@ export interface BattleMechanics {
   filterActions?(actor: ActorState, actions: readonly CompiledAction[]): readonly CompiledAction[];
   stateOf?(actor: ActorState): unknown;
   onActorSpawn?(actor: ActorState, template: CompiledActor): void;
+  onActorLeave?(actor: ActorState, reason: string): void;
   applyModifier?(target: ActorState, definition: Mechanic, source: ActorState): void;
   policyContext?(actor: ActorState): Payload;
 }
