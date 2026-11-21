@@ -20,6 +20,7 @@ type Avatar = { readonly id: number | ""; readonly icon: string };
 
 export interface ChallengePortraitOptions {
   readonly themeDirectory?: string;
+  readonly challengeThemeDirectory?: string;
   readonly resolveItem?: StarRailRecordItemResolver;
   readonly cacheFile?: string;
   readonly transport?: NonNullable<Parameters<typeof loadOfficialArtwork>[1]>["transport"];
@@ -52,30 +53,33 @@ async function decode(bytes: Uint8Array | null | undefined, maxBytes: number) {
   if (image && image.width > 0 && image.height > 0 && image.width <= maxImageSide && image.height <= maxImageSide) return image;
 }
 
+async function localArtwork(root: string, candidate: string, signal: AbortSignal) {
+  signal.throwIfAborted();
+  try {
+    const file = await realpath(join(root, candidate));
+    const path = relative(root, file);
+    if (!path || path === ".." || path.startsWith(".." + sep) || isAbsolute(path)) return;
+    const input = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    try {
+      const info = await input.stat();
+      if (!info.isFile() || info.size <= 0 || info.size > maxLocalBytes) return;
+      // Read at most the validated size plus one byte if a concurrent writer grows the file.
+      const bytes = Buffer.alloc(info.size + 1);
+      const count = (await input.read({ buffer: bytes, position: 0 })).bytesRead;
+      if (count === info.size) return await decode(bytes.subarray(0, count), maxLocalBytes);
+    } finally {
+      await input.close();
+    }
+  } catch {
+    // Missing or invalid theme files are local misses.
+  }
+}
+
 async function localPortrait(root: string, name: string, signal: AbortSignal) {
   if (!name || name === "." || name === ".." || /[/\\\p{Cc}]/u.test(name)) return;
   for (const filename of ["face.webp", "face-q.webp"]) {
-    signal.throwIfAborted();
-    try {
-      const file = await realpath(join(root, "meta-sr", "character", name, "imgs", filename));
-      const path = relative(root, file);
-      if (!path || path === ".." || path.startsWith(".." + sep) || isAbsolute(path)) continue;
-      const input = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-      try {
-        const info = await input.stat();
-        if (!info.isFile() || info.size <= 0 || info.size > maxLocalBytes) continue;
-        // Read at most the validated size plus one byte if a concurrent writer grows the file.
-        const bytes = Buffer.alloc(info.size + 1);
-        const count = (await input.read({ buffer: bytes, position: 0 })).bytesRead;
-        if (count !== info.size) continue;
-        const portrait = await decode(bytes.subarray(0, count), maxLocalBytes);
-        if (portrait) return portrait;
-      } finally {
-        await input.close();
-      }
-    } catch {
-      // Missing or invalid theme files are local misses.
-    }
+    const image = await localArtwork(root, join("meta-sr", "character", name, "imgs", filename), signal);
+    if (image) return image;
   }
 }
 
@@ -102,7 +106,7 @@ function remember(db: Database | undefined, rows: readonly (readonly [string, Ui
 }
 
 export async function loadStarRailChallengePortraits<T extends Avatar>(avatars: readonly T[], signal: AbortSignal,
-  { themeDirectory, resolveItem, cacheFile = defaultCache, transport }: ChallengePortraitOptions = {}) {
+  { themeDirectory, challengeThemeDirectory, resolveItem, cacheFile = defaultCache, transport }: ChallengePortraitOptions = {}) {
   const urls = avatars.map(({ icon }) => normalizeProfileRoleArtworkUrl(icon));
   const images = new Map<string, Image>();
   const requested = [...new Set(urls.filter((url): url is string => url !== undefined))];
@@ -139,7 +143,8 @@ export async function loadStarRailChallengePortraits<T extends Avatar>(avatars: 
     return image ? [] : [avatar];
   });
   const root = unresolved.length && themeDirectory ? await realpath(themeDirectory).catch(() => undefined) : undefined;
-  if (!root) return result;
+  const fallback = unresolved.length && challengeThemeDirectory ? await realpath(challengeThemeDirectory).catch(() => undefined) : undefined;
+  if (!root && !fallback) return result;
   const local = new Map<string, Promise<Image | undefined>>();
   for (const avatar of unresolved) {
     signal.throwIfAborted();
@@ -147,10 +152,12 @@ export async function loadStarRailChallengePortraits<T extends Avatar>(avatars: 
     const id = String(avatar.id);
     const item = resolveItem?.(id);
     const name = item?.kind === "char" && item.id === id ? item.name : names[id];
-    if (!name) continue;
     let image = local.get(id);
     if (!image) {
-      image = localPortrait(root, name, signal);
+      image = (async () => {
+        const configured = root && name ? await localPortrait(root, name, signal) : undefined;
+        return configured ?? (fallback ? localArtwork(fallback, join("portraits", id + ".webp"), signal) : undefined);
+      })();
       local.set(id, image);
     }
     const portrait = await image;

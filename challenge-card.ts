@@ -1,8 +1,8 @@
 import { createReadStream, type ReadStream } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Canvas, FontLibrary, loadImage, type CanvasGradient, type Image } from "skia-canvas";
 import { loadStarRailChallengePortraits, type ChallengePortraitOptions } from "./challenge-portraits.ts";
+import { starRailChallengeThemeDirectory } from "./challenge-theme.ts";
 import type { ChallengeResult } from "./challenge-model.ts";
 
 type ChallengeData = { uid?: string; results?: readonly ChallengeResult[] };
@@ -19,7 +19,6 @@ type Section = {
 // Native adaptation of genshin/resources/html/abyss/abyss-floor.{html,css}.
 // All four SR modes share its inset frame, floor separators, four-avatar teams,
 // original scene, star asset, fonts and cream level strips.
-const defaultTheme = fileURLToPath(new URL("../../data/starrail/challenge-theme/", import.meta.url))
 const GOLD = "#d3bc8d", WHITE = "#f1f1f4", MUTED = "#afb9ce"
 const allowedHosts = new Set(["act-webstatic.mihoyo.com", "upload-bbs.mihoyo.com", "fastcdn.mihoyo.com"])
 const imageLimit = 4 * 1024 * 1024
@@ -102,9 +101,7 @@ async function image(src: string, local: boolean, signal: AbortSignal) {
   }
 }
 
-export function starRailChallengeThemeDirectory() {
-  return Bun.env.LOTUS_STAR_RAIL_CHALLENGE_THEME_DIR?.trim() || defaultTheme
-}
+export { starRailChallengeThemeDirectory } from "./challenge-theme.ts";
 
 /**
  * @param {() => Promise<boolean>} [checkNapCat]
@@ -196,7 +193,7 @@ export async function renderStarRailAbyss(data: ChallengeData, signal: AbortSign
   const refs = new Set(nodes.flatMap(node => node.icon ? [node.icon] : []))
   const [bg, star, portraits] = await Promise.all([
     image(bgPath, true, signal), image(starPath, true, signal),
-    loadStarRailChallengePortraits(nodes.flatMap(node => node.avatars || []), signal, portraitOptions),
+    loadStarRailChallengePortraits(nodes.flatMap(node => node.avatars || []), signal, { ...portraitOptions, challengeThemeDirectory: theme }),
   ])
   const images = new Map<string, Image | null>()
   const sources = [...refs]
