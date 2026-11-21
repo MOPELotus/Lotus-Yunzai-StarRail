@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import type { RuleValues } from "../rules/rulebook.ts";
 import type { Numbers, TemplateKind, TemplateVersion } from "./types.ts";
 
@@ -27,11 +28,11 @@ export class TemplateLibrary {
     const legacy = version === "legacy";
     const folder = new URL(kind + "/", this.root);
     return this.#read(version + "/" + kind + "/" + id, async () => {
-      const names = Array.from(new Bun.Glob(id + "_*.yaml").scanSync({ cwd: decodeURIComponent(folder.pathname) }))
+      const names = Array.from(new Bun.Glob(id + "_*.yaml").scanSync({ cwd: fileURLToPath(folder) }))
         .filter(name => name !== id + "_legacy.yaml" && name.endsWith("_legacy.yaml") === legacy);
       if (names.length > 1) throw new TypeError(`模板 ${kind}/${id} 重复`);
       const pathname = names[0] ?? id + (legacy ? "_legacy" : "") + ".yaml";
-      const file = Bun.file(new URL(pathname, folder));
+      const file = Bun.file(new URL(encodeURIComponent(pathname), folder));
       if (!await file.exists()) throw new MissingTemplate(kind, id, version);
       return map(Bun.YAML.parse(await file.text()));
     });
