@@ -9,23 +9,16 @@ interface MonthlyContext {
   readonly user_id?: number;
   readonly message_type?: string;
   readonly isDelegated?: boolean;
+  readonly privateCredentialSignal?: AbortSignal;
 }
 
 export function createStarRailMonthlyQuery(profiles: ReturnType<typeof createProfileStore>,
-  client: ReturnType<typeof createProfileHoyoClient>, signal: AbortSignal) {
+  client: ReturnType<typeof createProfileHoyoClient>, lifecycle: AbortSignal) {
   const changed = "星铁档案已变更，请重新查询月收入。";
-  async function selectedRole(qq: string, profileId: number) {
-    const before = await profiles.requestContext(qq, profileId, "sr");
-    const selected = await profiles.savedRole(qq, profileId, "sr");
-    const source = await profiles.requestContext(qq, profileId, "sr", selected.uid);
-    if (before.revision !== source.revision) throw new ProfileError("changed", changed);
-    if (!source.role.region || !source.role.gameBiz || source.role.region !== selected.region || source.role.gameBiz !== selected.gameBiz) {
-      throw new ProfileError("role-missing", "档案没有已同步的星铁角色。");
-    }
-    return source;
-  }
 
   return async function query(context: MonthlyContext, profileId: number) {
+    const signal = context.privateCredentialSignal ? AbortSignal.any([lifecycle, context.privateCredentialSignal]) : lifecycle;
+    if (signal.aborted) return [];
     const user = context.user_id;
     if ((context.message_type !== "private" && context.message_type !== "group") || context.isDelegated ||
         typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) {
@@ -34,15 +27,16 @@ export function createStarRailMonthlyQuery(profiles: ReturnType<typeof createPro
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
     const qq = String(user);
     try {
-      const source = await selectedRole(qq, profileId);
+      const source = await profiles.requestSelectedContext(qq, profileId, "sr");
       const { snapshot, revision } = await client.fetchStarRailMonthly(source, { signal });
       const verify = async () => {
         signal.throwIfAborted();
-        const active = await selectedRole(qq, profileId).catch(() => undefined);
+        const active = await profiles.requestSelectedContext(qq, profileId, "sr").catch(() => undefined);
         if (active?.revision !== revision || active.role.uid !== source.role.uid ||
             active.role.region !== source.role.region || active.role.gameBiz !== source.role.gameBiz) {
           throw new HoyoRequestError("profile-changed", changed);
         }
+        signal.throwIfAborted();
       };
       await verify();
       if (!snapshot) return "暂无星铁月收入数据。";
