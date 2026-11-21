@@ -1,0 +1,402 @@
+// Native drawing of the Star Rail profile-detail layout. Geometry and artwork follow
+// the fixed MIT Miao reference in panel-theme/character/profile-detail.{html,css}.
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Canvas, loadImage, type CanvasRenderingContext2D, type Image } from "skia-canvas";
+import { renderPng } from "@lotus-yunzai/skia";
+import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
+import type { makePanelDetailCard } from "./panel-card.ts";
+
+type Model = Awaited<ReturnType<typeof makePanelDetailCard>>;
+type Context = CanvasRenderingContext2D;
+const width = 600;
+const density = 4;
+const white = "#fff", gold = "#ffe699", tan = "#d3bc8e";
+const dark = "rgba(0,0,0,.4)", darkOdd = "rgba(50,50,50,.4)";
+const elementNames: Readonly<Record<string, string>> = { 风: "anemo", 雷: "electro", 冰: "cryo", 火: "pyro", 虚数: "geo", 量子: "quantum", 物理: "sr" };
+const attributeLabels = [
+  ["hp", "生命值", 1], ["atk", "攻击力", 2], ["def", "防御力", 3], ["speed", "速度", 10],
+  ["cpct", "暴击率", 5], ["cdmg", "暴击伤害", 6], ["dmg", "伤害加成", 8], ["stance", "击破特攻", 4],
+  ["effPct", "效果命中", 11], ["effDef", "效果抵抗", 12], ["heal", "治疗加成", 9], ["joy", "欢愉度", 13],
+] as const;
+const skillNames = { a: "普攻", e: "战技", t: "天赋", q: "爆发", me: "忆灵技", mt: "忆灵天赋", xe: "欢愉技" } as const;
+const rankColors: Readonly<Record<string, string>> = { ACE: "#e85656", MAX: "#e85656", SSS: gold, SS: gold, S: "#d699ff", A: "#d699ff" };
+const soulColors = ["#666", "#5cbac2", "#49a3cc", "#9578dd", "#9d66d1", "#dc838a", "#e5ae46"];
+const relicShortTitles: Readonly<Record<string, string>> = {
+  hp: "生命", hpPlus: "生命", atk: "攻击", atkPlus: "攻击", def: "防御", defPlus: "防御",
+  cpct: "暴击", cdmg: "爆伤", recharge: "充能", effPct: "命中", effDef: "抵抗", stance: "击破",
+};
+const bundledTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
+
+function rounded(ctx: Context, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+}
+
+function fill(ctx: Context, color: string, x: number, y: number, w: number, h: number, radius = 0) {
+  ctx.fillStyle = color;
+  if (!radius) ctx.fillRect(x, y, w, h);
+  else {
+    rounded(ctx, x, y, w, h, radius);
+    ctx.fill();
+  }
+}
+
+function picture(ctx: Context, image: Image | undefined, x: number, y: number, w: number, h: number,
+  fit: "contain" | "cover" = "contain", alignX = .5, alignY = .5) {
+  if (!image) return;
+  const scale = (fit === "contain" ? Math.min : Math.max)(w / image.width, h / image.height);
+  const iw = image.width * scale, ih = image.height * scale;
+  ctx.drawImage(image, x + (w - iw) * alignX, y + (h - ih) * alignY, iw, ih);
+}
+
+async function image(source: string | undefined) {
+  if (!source) return;
+  try {
+    if (source.startsWith("file:")) return await loadImage(fileURLToPath(source));
+    if (source.startsWith("data:image/")) return await loadImage(source);
+    if (source.startsWith("/")) return await loadImage(source);
+  } catch {}
+}
+
+async function loadArt(model: Model, theme: string) {
+  const urls = [
+    ...Object.values(model.data.imgs),
+    ...model.data.treeData.flatMap(row => Array.isArray(row) ? row.map(node => node.img) : row?.img || []),
+    ...model.artisDetail.artis.map(part => part.img), model.data.weapon?.splash,
+  ].filter((url): url is string => Boolean(url));
+  const files = new Map(await Promise.all([...new Set(urls)].map(async url => [url, await image(url)] as const)));
+  async function themeArt(relative: string) {
+    return await image(join(theme, relative)) ?? image(join(bundledTheme, relative));
+  }
+  const element = Object.hasOwn(elementNames, model.element) ? elementNames[model.element] : "sr";
+  const [back, ring, texture, icons, unusedRolls, rolls, activeRolls, hp, atk, def] = await Promise.all([
+    themeArt(`common/bg/bg-${element}.webp`), themeArt(`common/bg/talent-${element}.webp`), themeArt("common/cont/card-bg.png"),
+    themeArt("character/imgs/icon-sr.png"), ...[0, 1, 2].map(i => themeArt(`character/imgs/up-num-icon${i}.png`)), ...["hp", "atk", "def"].map(key => themeArt(`meta-sr/public/icons/attr-${key}.webp`)),
+  ]);
+  return { back, ring, texture, icons, rolls: [unusedRolls, rolls, activeRolls], coneIcons: { hp, atk, def }, get: (url: string | undefined) => url ? files.get(url) : undefined };
+}
+
+function themeFont(theme: string, scope: string, name: string) {
+  try {
+    return registerGachaThemeFont(scope, join(theme, "common/font", name));
+  } catch {
+    return "";
+  }
+}
+
+function typography(theme: string) {
+  const number = themeFont(theme, "StarRailPanelNumbers", "tttgbnumber.ttf");
+  const body = themeFont(theme, "StarRailPanelBody", "HYWH-65W.ttf");
+  const title = themeFont(theme, "StarRailPanelTitle", "NZBZ.ttf");
+  const fallback = '"Noto Sans CJK SC", sans-serif';
+  return {
+    body: [number, body, fallback].filter(Boolean).join(", "),
+    title: [number, title, body, fallback].filter(Boolean).join(", "),
+  };
+}
+
+function styles(ctx: Context, font: ReturnType<typeof typography>) {
+  function write(value: string | number | undefined, x: number, y: number, size: number, color = white,
+    align: CanvasTextAlign = "left", bold = false, header = false, maxWidth?: number) {
+    if (value === undefined || value === "") return;
+    ctx.font = `${bold ? "bold " : ""}${size}px ${header ? font.title : font.body}`;
+    ctx.textAlign = align;
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = color;
+    if (maxWidth) ctx.fillText(String(value), x, y, maxWidth);
+    else ctx.fillText(String(value), x, y);
+  }
+  return write;
+}
+
+function wrapDescription(ctx: Context, description: NonNullable<Model["data"]["weapon"]>["descriptionParts"]) {
+  const lines: { value: string; highlight?: boolean; width: number }[][] = [[]];
+  let used = 0;
+  function nextLine() { lines.push([]); used = 0; }
+  for (const part of description) {
+    if (part.line) { nextLine(); continue; }
+    const words = part.highlight ? [part.value ?? ""] : [...(part.value ?? "")];
+    for (const value of words) {
+      const size = ctx.measureText(value).width + (part.highlight ? 10 : 0);
+      if (used > 0 && used + size > 365) nextLine();
+      lines.at(-1)!.push({ value, highlight: part.highlight, width: size });
+      used += size;
+    }
+  }
+  return lines;
+}
+
+export async function renderStarRailPanelDetail(model: Model, theme: string, mode: "auto" | "gpu" = "auto") {
+  const art = await loadArt(model, theme);
+  const font = typography(theme);
+  const measure = new Canvas(1, 1).getContext("2d");
+  measure.font = `12px ${font.body}`;
+  const { data, artisDetail, attr, damageRows } = model;
+  const { weapon } = data;
+  const weaponText = weapon ? wrapDescription(measure, weapon.descriptionParts) : [];
+  const weaponHeight = weapon ? Math.max(100, 68 + weaponText.length * 15 + weaponText.filter(line => line.some(part => part.highlight)).length) : 0;
+  const relicRows = Math.ceil(artisDetail.artis.length / 3);
+  const summaryY = 617 + (weapon ? weaponHeight + 10 : 0);
+  const relicY = summaryY + (artisDetail.mark === undefined ? 0 : 113);
+  const damageY = relicY + relicRows * 200 + (relicRows ? 10 : 0);
+  const damageHeight = damageRows.length ? 115 + 40 * damageRows.length : 0;
+  const height = Math.ceil(damageY + damageHeight + 37);
+
+  return renderPng(width * density, height * density, ctx => {
+    ctx.scale(density, density);
+    const text = styles(ctx, font);
+    function box(x: number, y: number, w: number, h: number, tall = false) {
+      ctx.save();
+      rounded(ctx, x, y, w, h, 10);
+      ctx.clip();
+      if (art.texture) {
+        const imageHeight = h * (tall ? 1.5 : 1);
+        const imageWidth = imageHeight * art.texture.width / art.texture.height;
+        for (let left = x; left < x + w; left += imageWidth) ctx.drawImage(art.texture, left, y, imageWidth, imageHeight);
+      } else fill(ctx, "#233348", x, y, w, h);
+    }
+    function closeBox(x: number, y: number, w: number, h: number) {
+      ctx.restore();
+      rounded(ctx, x, y, w, h, 10);
+      ctx.strokeStyle = "#ffffff38";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    function icon(url: string | undefined, x: number, y: number, w: number, h = w, active = true) {
+      ctx.save();
+      if (!active) {
+        ctx.globalAlpha = .4;
+        ctx.filter = "grayscale(1)";
+      }
+      picture(ctx, art.ring, x, y, w, h);
+      picture(ctx, art.get(url), x + .27 * w, y + .28 * h, .46 * w, .46 * h);
+      ctx.restore();
+    }
+    function relicStat(stat: { key: string; value: string; eff?: string; upNum?: number }, x: number, y: number, w: number,
+      main = false, short = false) {
+      const weight = artisDetail.charWeight[stat.key] ?? 0;
+      const muted = !main && weight <= 0;
+      const value = stat.value.startsWith("+") ? stat.value : "+" + stat.value;
+      const title = (short && relicShortTitles[stat.key]) || model.artisKeyTitle[stat.key] || stat.key;
+      const eff = "eff" in stat && stat.eff && stat.eff !== "-" ? stat.eff : "";
+      if (eff) {
+        fill(ctx, "#0008", x + 3, y + 4, 23, 18, 4);
+        text(eff, x + 14.5, y + 13, 12, muted ? "#999" : weight >= 80 ? gold : white, "center");
+      }
+      const titleX = x + (short ? 36 : main ? 9 : 30);
+      text(title, titleX, y + 13, 14, muted ? "#888" : !main && weight >= 80 ? gold : white, "left", main, false, short ? 55 : 94);
+      const rolls = art.rolls[muted ? 0 : weight >= 80 ? 2 : 1];
+      if (!short && rolls && stat.upNum && stat.upNum > 1 && stat.upNum <= 6) {
+        const row = rolls.height / 5;
+        ctx.drawImage(rolls, 0, (6 - stat.upNum) * row, rolls.width, row, x + 91, y + 9, rolls.width / row * 8, 8);
+      }
+      text(value, x + w - (short ? 5 : 10), y + 13, short ? 13 : 14, muted ? "#888" : white, "right", main);
+    }
+
+    fill(ctx, "#242e45", 0, 0, width, height);
+    picture(ctx, art.back, 0, 0, width, height, "cover", 0, 0);
+    rounded(ctx, 8, 115, 584, 405, 5);
+    ctx.strokeStyle = "#ffffff40";
+    ctx.stroke();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, width, 520);
+    ctx.clip();
+    picture(ctx, art.get(data.imgs.splash), -545, 0, 1400, 520);
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowColor = "#000b";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    text(data.name, 580, 51, 50, white, "right", false, true, 545);
+    measure.font = `18px ${font.body}`;
+    const soul = `${data.cons}魂`, soulWidth = Math.ceil(measure.measureText(soul).width) + 12;
+    fill(ctx, soulColors[Number(data.cons)] ?? soulColors[0]!, 580 - soulWidth, 79, soulWidth, 21, 4);
+    text(soul, 580 - soulWidth / 2, 90, 18, white, "center");
+    text(`UID ${model.uid} - Lv.${data.level}`, 574 - soulWidth, 90, 18, white, "right");
+    ctx.restore();
+
+    ctx.save();
+    rounded(ctx, 280, 125, 300, 384, 8);
+    ctx.clip();
+    if (art.get(data.imgs.splash)) {
+      ctx.filter = "blur(2px)";
+      picture(ctx, art.back, 0, 0, width, height, "cover", 0, 0);
+      picture(ctx, art.get(data.imgs.splash), -545, 0, 1400, 520);
+      ctx.filter = "none";
+    }
+    fill(ctx, "#0003", 280, 125, 300, 384);
+    attributeLabels.forEach(([key, title, ticker], index) => {
+      const y = 125 + index * 32;
+      fill(ctx, index % 2 ? dark : darkOdd, 280, y, 300, 32);
+      if (art.icons) {
+        const tile = art.icons.height;
+        ctx.drawImage(art.icons, ticker * tile, 0, tile, tile, 288, y + 8, 16, 16);
+      }
+      text(title, 309, y + 16, 17);
+      const weight = artisDetail.charWeight[key];
+      if (weight) {
+        fill(ctx, "#0008", 383.5, y + 7, 30, 18, 5);
+        text(weight, 398.5, y + 16, 12, weight >= 80 ? gold : white, "center");
+      }
+      text(attr[key], 502, y + 16, 17, white, "right");
+      fill(ctx, "#0003", 512.3, y, 67.7, 32);
+      text(attr[key + "Base"], 570, y + 11, 12, attr[key + "Base"] === "0.0%" ? "#bbb9" : "#eee", "right");
+      text(attr[key + "Plus"], 570, y + 24, 12, "#90e800", "right");
+    });
+    ctx.restore();
+    for (let i = 1; i <= 6; i++) icon(data.imgs[`cons${i}`], 15 + (i - 1) * 40, 465, 50, 50, i <= Number(data.cons));
+    text([`数据源：${data.dataSource}`, data.updateTime].filter(Boolean).join("  "), 585, 520, 12, "#fffd", "right", false, false, 560);
+
+    const extras = model.hsr_paths === "记忆" ? ["me", "mt"] as const : model.charWeapon === "欢愉" ? ["xe"] as const : [];
+    const skills = ["a", "e", "t", "q", ...extras] as const;
+    const skillSize = extras.length ? 55 : 60, shift = extras.length === 2 ? 49 : extras.length === 1 ? 59 : 65;
+    box(10, 535, 575, 72, true);
+    for (const [i, key] of skills.entries()) {
+      const x = 17 + i * shift;
+      icon(data.imgs[key], x, 543, skillSize);
+      text(skillNames[key], x + skillSize / 2, 548, 12, white, "center");
+      const level = data.talent[key];
+      const center = x + skillSize / 2, pillWidth = extras.length ? 18 : 22, pillHeight = extras.length ? 16 : 20;
+      const raised = level?.original !== undefined && level.level > level.original;
+      fill(ctx, raised ? "#2e353e" : white, center - pillWidth / 2, extras.length ? 580 : 581, pillWidth, pillHeight, 4);
+      text(level?.level, center, extras.length ? 588 : 591, extras.length ? 10 : 13, raised ? "#ffdfa0" : "#111", "center", true);
+    }
+    let treeX = extras.length === 2 ? 319 : extras.length === 1 ? 313 : 285;
+    const treeWide = extras.length === 2 ? 49.67 : extras.length === 1 ? 48 : 59.33;
+    for (const node of data.treeData) {
+      if (Array.isArray(node)) {
+        node.forEach((entry, i) => icon(entry.img, treeX, node.length === 1 ? 556 : 543 + i * 28, 30, node.length === 1 ? 30 : 28, entry.value));
+        treeX += 20;
+      } else {
+        if (node) icon(node.img, treeX + 2, 543, skillSize, skillSize, node.value);
+        treeX += treeWide;
+      }
+    }
+    closeBox(10, 535, 575, 72);
+
+    if (weapon) {
+      box(10, 617, 575, weaponHeight, true);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(10, 617, 185, weaponHeight);
+      ctx.clip();
+      const cone = art.get(weapon.splash);
+      if (cone) {
+        const imageHeight = 185 * cone.height / cone.width;
+        ctx.drawImage(cone, 10, 617 + (weaponHeight - imageHeight) * .05, 185, imageHeight);
+      }
+      ctx.restore();
+      measure.font = `18px ${font.body}`;
+      const labelWidth = Math.min(237, measure.measureText(weapon.name).width);
+      text(weapon.name, 210, 638, 18, tan, "left", false, false, 237);
+      text(`Lv.${weapon.level} 叠影${weapon.affix}阶`, 216 + labelWidth, 640, 14, white, "left", false, false, 354 - labelWidth);
+      let x = 210;
+      for (const key of ["hp", "atk", "def"] as const) {
+        measure.font = `12px ${font.body}`;
+        const value = weapon.attrs[key];
+        const w = measure.measureText(value ?? "").width + 29;
+        fill(ctx, "#0008", x, 648, w, 22, 4);
+        picture(ctx, art.coneIcons[key], x, 648, 22, 22);
+        text(value, x + 22, 659, 12, gold);
+        x += w + 10;
+      }
+      weaponText.forEach((line, index) => {
+        let x = 210;
+        for (const part of line) {
+          if (part.highlight) fill(ctx, "#0008", x + 2, 681 + 15 * index, part.width - 4, 16, 4);
+          text(part.value, x + (part.highlight ? 5 : 0), 689 + 15 * index, 12, part.highlight ? gold : white);
+          x += part.width;
+        }
+      });
+      closeBox(10, 617, 575, weaponHeight);
+    }
+
+    if (artisDetail.mark !== undefined) {
+      box(10, summaryY, 575, 103);
+      fill(ctx, dark, 10, summaryY, 185, 103);
+      text("遗器总分", 70, summaryY + 22, 12, "#ddd", "center");
+      text("遗器评级", 153, summaryY + 22, 12, "#ddd", "center");
+      text(artisDetail.mark, 70, summaryY + 49, 30, white, "center", true);
+      text(artisDetail.markClass, 153, summaryY + 49, 30, rankColors[artisDetail.markClass ?? ""] ?? white, "center", true);
+      artisDetail.allAttr.forEach((stat, index) => {
+        const y = summaryY + index % 3 * 26, x = 195 + Math.floor(index / 3) * 130;
+        fill(ctx, index % 2 ? dark : darkOdd, x, y, 130, 26);
+        if (stat) relicStat(stat, x, y, 130, false, true);
+      });
+      fill(ctx, "#000b", 10, summaryY + 78, 575, 25);
+      text(`评分规则：${artisDetail.classTitle ?? ""}`, 102.5, summaryY + 91, 11, white, "center");
+      text(`使用 *${data.abbr}遗器 查看评分详情`, 390, summaryY + 91, 10, "#ddd", "center");
+      closeBox(10, summaryY, 575, 103);
+    }
+    artisDetail.artis.forEach((part, index) => {
+      const x = 10 + index % 3 * 195, y = relicY + Math.floor(index / 3) * 200 + 5;
+      box(x, y, 185, 190);
+      const heading = ctx.createLinearGradient(x, y, x + 185, y);
+      heading.addColorStop(0, "#000b");
+      heading.addColorStop(.25, "#000b");
+      heading.addColorStop(.5, "#1919194d");
+      heading.addColorStop(.75, "#19191900");
+      ctx.fillStyle = heading;
+      ctx.fillRect(x, y, 185, 60);
+      ctx.restore();
+      const relic = art.get(part.img);
+      if (relic) {
+        const size = 90;
+        const mask = new Canvas(size * density, size * density);
+        const layer = mask.getContext("2d");
+        layer.scale(density, density);
+        picture(layer, relic, 0, 0, size, size);
+        layer.globalCompositeOperation = "destination-in";
+        const fade = layer.createLinearGradient(0, size, size, 0);
+        fade.addColorStop(0, "#0000");
+        fade.addColorStop(.3, "#0005");
+        fade.addColorStop(.5, "#000");
+        layer.fillStyle = fade;
+        layer.fillRect(0, 0, size, size);
+        ctx.drawCanvas(mask, x + 95, y - 12, size, size);
+      }
+      ctx.save();
+      rounded(ctx, x, y, 185, 190, 10);
+      ctx.clip();
+      text(part.abbr || part.name, x + 15, y + 25, 15, white, "left", true, false, 161);
+      if (part.markClass) text(`${part.mark}分 - ${part.markClass}`, x + 15, y + 45, 14, rankColors[part.markClass] ?? white, "left", true);
+      fill(ctx, "#000c", x + 151, y + 38, 27, 18, 4);
+      if (part.level !== "") text("+" + part.level, x + 164.5, y + 47, 12, white, "center");
+      [part.main, ...part.attrs].forEach((stat, i) => {
+        const top = y + 60 + i * 26;
+        if (i >= 5) return;
+        fill(ctx, i === 0 ? "#19191980" : i % 2 ? dark : darkOdd, x, top, 185, 26);
+        if (stat) relicStat(stat, x, top, 185, i === 0);
+      });
+      closeBox(x, y, 185, 190);
+    });
+
+    if (damageHeight) {
+      box(10, damageY, 575, damageHeight);
+      fill(ctx, dark, 10, damageY, 575, 40);
+      text("伤害计算", 30, damageY + 20, 16, tan);
+      text(`使用 *${data.abbr}伤害 查看伤害详情`, 109, damageY + 20, 12, "#bbb");
+      const rows = [{ title: "伤害类型", critical: "暴击伤害", average: "期望伤害" }, ...damageRows];
+      rows.forEach((row, index) => {
+        const y = damageY + 40 + index * 40;
+        fill(ctx, index % 2 ? dark : darkOdd, 10, y, 575, 40);
+        ctx.strokeStyle = "#ffffff28";
+        ctx.strokeRect(10, y, 230, 40);
+        ctx.strokeRect(240, y, 184, 40);
+        ctx.strokeRect(424, y, 161, 40);
+        text(row.title, 220, y + 20, 15, tan, "right", false, false, 201);
+        if (row.critical) text(row.critical, 332, y + 20, index ? 18 : 15, index ? white : tan, "center");
+        text(row.average, row.critical ? 504 : 412, y + 20, index ? 18 : 15, index ? white : tan, "center", false, false, row.critical ? 151 : 330);
+      });
+      fill(ctx, "#0008", 10, damageY + damageHeight - 35, 575, 35);
+      text("目标为80级弱点敌人", 25, damageY + damageHeight - 17, 12, "#bbb");
+      if (model.damageAuthor) text(`伤害计算来源：${model.damageAuthor}`, 573, damageY + damageHeight - 17, 12, tan, "right");
+      closeBox(10, damageY, 575, damageHeight);
+    }
+    text(model.cardBrand, width / 2, height - 18, 14, white, "center");
+  }, mode, { allowHalfScale: true });
+}

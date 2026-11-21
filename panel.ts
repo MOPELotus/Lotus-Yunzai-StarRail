@@ -21,6 +21,7 @@ import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
+import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
@@ -465,7 +466,9 @@ export function createStarRailPanel(
       const images = [];
       for (const model of models) {
         await verify();
-        const result = await renderTemplate(model, true);
+        const result = "damageRows" in model
+          ? await renderStarRailPanelDetail(model, theme.root).then(card => [card.png]).catch(() => false as const)
+          : await renderTemplate(model, true);
         if (!result) {
           await verify();
           if (type === "update") return `UID ${uid} 星铁面板已更新，共 ${snapshot.avatars.length} 位角色。图片暂时无法生成。`;
