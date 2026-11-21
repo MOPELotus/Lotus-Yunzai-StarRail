@@ -17,6 +17,7 @@ import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { panelExportFile } from "./panel-file.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
+import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -156,7 +157,7 @@ export function createStarRailPanel(
         if (bound.uid !== uid || bound.region !== role.region || bound.gameBiz !== role.gameBiz) {
           return "所选档案当前绑定的星铁角色无法核验。";
         }
-        const target = showcaseTarget(bound);
+        const target = showcaseTarget(bound, await readShowcaseServer());
         const refreshKey = `showcase:${key}`;
         if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询，请稍后再试。";
         refreshing.add(refreshKey);
@@ -168,7 +169,11 @@ export function createStarRailPanel(
             snapshot = cached;
           } else {
             await verify();
-            if (type === "reload") await context?.reply?.(`本地暂无星铁面板，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`);
+            if (type === "reload") {
+              const notice = `本地暂无星铁面板，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`;
+              const delivered = await Promise.resolve().then(() => context?.reply?.(notice)).catch(() => false);
+              if (!delivered) return `通知发送失败，已取消公开展板回退。可使用 *展板更新面板${profileId === 1 ? "" : profileId} 主动查询。`;
+            }
             await verify();
             const next = await fetchStarRailShowcase(target, signal, undefined, started);
             snapshot = await showcases.update({ qq, uid }, verify, current => {

@@ -22,7 +22,7 @@ test("旧展板和备用入口选择原服务器位，拒绝错区服和私有 T
   expect(showcaseTarget({ ...os, region: "", gameBiz: "" }, "2").region).toBe("prod_official_asia");
   expect(() => showcaseTarget({ ...os, region: cn.region }, "0")).toThrow("区服不一致");
   expect(() => showcaseTarget({ ...os, gameBiz: "hkrpg_cn" }, "0")).toThrow("区服不一致");
-  expect(() => showcaseTarget(cn, "1")).toThrow("未配置");
+  expect(() => showcaseTarget(cn, "1")).toThrow("旧私有 Token");
 });
 
 test("Mihomo 原始接口仅发绑定 UID，展板覆盖同名助战，角色和词条迁入同一面板模型", async () => {
