@@ -2,6 +2,7 @@ import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yu
 import { HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { renderGridFight } from "./grid-fight-card.ts";
+import { readGridFightRecentCount } from "./grid-fight-config.ts";
 import { gridFightHistoryMax, gridFightText, makeGridFightCard, type GridFightQuery } from "./grid-fight-model.ts";
 
 type Profiles = Pick<ReturnType<typeof createProfileStore>, "requestSelectedContext">;
@@ -14,14 +15,23 @@ type GridContext = {
   readonly isDelegated?: boolean;
   readonly privateCredentialSignal?: AbortSignal;
   readonly inlineImageByteLimit?: number;
+  readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
 };
+
+// Same measured reverse WebSocket budget as the simulation sender. Account for
+// base64 expansion before handing the image or a batch to the adapter.
+const oneBotImageBytes = Math.floor((96 * 1024 * 1024 - 4096) / 4) * 3;
+type GridImageReply = { readonly type: "image"; readonly file: Uint8Array };
+type GridReply = string | GridImageReply;
+type Draw = (...args: Parameters<typeof renderGridFight>) => Promise<{ png: Uint8Array }>;
 
 const changed = "星铁档案已变更，请重新查询货币战争。";
 
 export function createStarRailGridFightQuery(profiles: Profiles, client: Client, lifecycle: AbortSignal, {
   draw = renderGridFight,
   theme = starRailGachaThemeDirectory,
-} = {}) {
+  recentCount = readGridFightRecentCount,
+}: { draw?: Draw; theme?: typeof starRailGachaThemeDirectory; recentCount?: typeof readGridFightRecentCount } = {}) {
   return async function query(context: GridContext, request: GridFightQuery) {
     const signal = context.privateCredentialSignal ? AbortSignal.any([lifecycle, context.privateCredentialSignal]) : lifecycle;
     if (signal.aborted) return [];
@@ -51,13 +61,33 @@ export function createStarRailGridFightQuery(profiles: Profiles, client: Client,
       await verify();
       if (index !== undefined && index > records.length) return `未找到货币战争第 ${index} 条记录。`;
       if (!brief) return "该档案尚无米游社货币战争战绩。";
-      const card = makeGridFightCard(source.role.uid, brief, records, index, request.mode === "recent");
+      const count = request.mode === "recent" ? await recentCount() : undefined;
+      const card = makeGridFightCard(source.role.uid, brief, records, index, count);
       if (index !== undefined && !card.battle) return "米游社未返回此场货币战争的完整战绩。";
-      const image = await draw(card, theme(), signal, { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
-      await verify();
-      return image && (context.inlineImageByteLimit === undefined || image.png.length <= context.inlineImageByteLimit)
-        ? { type: "image" as const, file: image.png }
-        : gridFightText(card);
+      const limit = context.inlineImageByteLimit ?? oneBotImageBytes;
+      const directory = theme();
+      let napCat: Promise<boolean> | undefined;
+      const clientIsNapCat = context.isNapCat;
+      const checkNapCat = clientIsNapCat && (() => napCat ??= clientIsNapCat(signal).catch(() => false));
+      async function render(model: typeof card): Promise<GridImageReply | undefined> {
+        const image = await draw(model, directory, signal, { inlineImageByteLimit: limit, checkNapCat }).catch(() => undefined);
+        await verify();
+        if (image && image.png.length <= limit) return { type: "image", file: image.png };
+      }
+
+      const image = await render(card);
+      if (image) return image;
+      if (!card.recent || card.recent.length < 2) return gridFightText(card);
+
+      const nodes: GridReply[] = [];
+      let mediaBytes = 0;
+      for (const entry of card.recent) {
+        const page = { ...card, recent: [entry] };
+        const rendered = await render(page);
+        if (rendered) mediaBytes += rendered.file.byteLength;
+        nodes.push(rendered ?? gridFightText(page));
+      }
+      return { type: "forward" as const, nodes, ...(mediaBytes > limit ? { batchSize: 1 } : {}) };
     } catch (error) {
       if (signal.aborted) return [];
       if (error instanceof ProfileError) {

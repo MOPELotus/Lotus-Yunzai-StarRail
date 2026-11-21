@@ -1,6 +1,11 @@
 import { expect, test } from "bun:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { ProfileRequestContext } from "@lotus-yunzai/account";
 import { createStarRailGridFightQuery } from "../grid-fight-command.ts";
+import { readGridFightRecentCount } from "../grid-fight-config.ts";
 import { gridFightStats, gridFightText, makeGridFightCard, parseStarRailGridFight } from "../grid-fight-model.ts";
 
 const brief = { season_level: "12", weekly_score_cur: 800, weekly_score_max: 1000, handbook_progress: "66.2",
@@ -23,6 +28,13 @@ const record = { archive_type: "ArchiveTypeHard", brief: { division: { level: 4,
       { id: 77, damage: -1, damage_type: "DamageTypeRole" },
     ],
   } };
+
+const source: ProfileRequestContext = {
+  qq: "42", profileId: 2, revision: "grid-fixture", game: "sr",
+  role: { uid: "500000123", region: "prod_qd_cn", gameBiz: "hkrpg_cn", nickname: "合成开拓者", chosen: true },
+  account: { cookie: "cookie_token=fixture-cookie", stoken: "", stuid: "", stokenCookie: "", ltuid: "", ltoken: "", mid: "" },
+  device: { id: "device-2", fp: "fingerprint-2", name: "fixture", model: "Android", androidVersion: "13", raw: {} },
+};
 
 test("supports old grid-fight handles and keeps record ordinals separate from saved profiles", () => {
   for (const command of ["*货币战争", "#星铁货币战争", "星铁货币战争", "星轨货币", "＊币战"])
@@ -57,7 +69,7 @@ test("uses original battle counts and matches role, trait and strategy damage by
 test("preserves the two unprefixed overview entries in official order with complete battle information", () => {
   const second = { ...record, archive_type: "ArchiveTypePromotion", brief: { ...record.brief, archive_time: "2026-11-22 08:00", remain_hp: 27 } };
   const third = { ...record, brief: { ...record.brief, remain_hp: 30 } };
-  const model = makeGridFightCard("500000123", brief, [record, second, third], undefined, true);
+  const model = makeGridFightCard("500000123", brief, [record, second, third], undefined, 2);
   expect(model.recent?.map(({ ordinal, battle }) => [ordinal, battle.health, battle.mode])).toEqual([
     [1, 0, "超频博弈"], [2, 27, "标准博弈"],
   ]);
@@ -69,18 +81,12 @@ test("preserves the two unprefixed overview entries in official order with compl
   expect(gridFightText(model)).toContain("战绩 1");
   expect(gridFightText(model)).toContain("战绩 2");
   expect(gridFightText(model)).not.toContain("小队生命值 30");
-  expect(makeGridFightCard("500000123", brief, [{}, record, third], undefined, true).recent?.map(row => row.ordinal)).toEqual([2]);
+  expect(makeGridFightCard("500000123", brief, [{}, record, third], undefined, 2).recent?.map(row => row.ordinal)).toEqual([2]);
 });
 
 test("does not query delegated or mentioned users and refuses to deliver after changing the selected role", async () => {
   const actor = { user_id: 42, self_id: 99, message_type: "group" };
   const query = parseStarRailGridFight("*币战战报1 档案2")!;
-  const source: ProfileRequestContext = {
-    qq: "42", profileId: 2, revision: "grid-fixture", game: "sr",
-    role: { uid: "500000123", region: "prod_qd_cn", gameBiz: "hkrpg_cn", nickname: "合成开拓者", chosen: true },
-    account: { cookie: "cookie_token=fixture-cookie", stoken: "", stuid: "", stokenCookie: "", ltuid: "", ltoken: "", mid: "" },
-    device: { id: "device-2", fp: "fingerprint-2", name: "fixture", model: "Android", androidVersion: "13", raw: {} },
-  };
   let active = source, requests = 0, changeWhenDrawing = false;
   const get = createStarRailGridFightQuery({ requestSelectedContext: async (qq, id, game) => {
     expect([qq, id, game]).toEqual(["42", 2, "sr"]);
@@ -100,5 +106,58 @@ test("does not query delegated or mentioned users and refuses to deliver after c
   expect(await get({ ...actor, at: 99 }, query)).toContain("伤害");
   changeWhenDrawing = true;
   expect(await get(actor, query)).toContain("档案已变更");
+  expect(requests).toBe(2);
+});
+
+test("rereads the legacy count without restart and gives the modern count precedence", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "lotus-grid-config-"));
+  const root = pathToFileURL(folder + "/");
+  const old = join(folder, "plugins/xhh/config");
+  const modern = join(folder, "config");
+  try {
+    await mkdir(old, { recursive: true });
+    await mkdir(modern, { recursive: true });
+    expect(await readGridFightRecentCount(root)).toBe(2);
+    for (const [value, expected] of [["1", 1], ["3", 3], ['"3"', 3], ["0", 2], ["4", 2], ["2.5", 2], ["true", 2], ["[3]", 2]] as const) {
+      await writeFile(join(old, "config.yaml"), `huobi_num: ${value}\nunrelated: undisplayed\n`);
+      expect(await readGridFightRecentCount(root)).toBe(expected);
+    }
+    await writeFile(join(old, "config.yaml"), "huobi_num: 3\n");
+    await writeFile(join(modern, "global.yaml"), "starrail:\n  grid_fight_recent_count: 1\n");
+    expect(await readGridFightRecentCount(root)).toBe(1);
+    await writeFile(join(modern, "global.yaml"), "starrail:\n  showcase_server: 1\n");
+    expect(await readGridFightRecentCount(root)).toBe(3);
+    await writeFile(join(modern, "global.yaml"), "starrail:\n  grid_fight_recent_count: broken\n");
+    expect(await readGridFightRecentCount(root)).toBe(2);
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
+});
+
+test("only the unprefixed overview consults settings and every oversized record survives in original order", async () => {
+  const actor = { user_id: 42, self_id: 99, message_type: "private", inlineImageByteLimit: 10 };
+  let configReads = 0, requests = 0;
+  const rendered: number[][] = [];
+  const get = createStarRailGridFightQuery({ requestSelectedContext: async () => source },
+    { fetchStarRailGridFight: async () => {
+      requests++;
+      return { brief, records: [record, record, record], revision: source.revision, refreshedCookie: false };
+    } }, new AbortController().signal, { recentCount: async () => { configReads++; return 3; },
+      draw: async (card, _theme, _signal, options) => {
+        expect(options?.inlineImageByteLimit).toBe(10);
+        const ordinals = card.recent?.map(entry => entry.ordinal) ?? [card.index ?? 0];
+        rendered.push(ordinals);
+        return { png: Buffer.alloc(ordinals.length > 1 || ordinals[0] === 2 ? 11 : 6, ordinals[0]) };
+      },
+    });
+  expect(await get(actor, parseStarRailGridFight("*货币战争2")!)).toEqual({ type: "image", file: Buffer.alloc(6) });
+  expect(configReads).toBe(0);
+  const grouped = await get(actor, parseStarRailGridFight("#货币战争2")!);
+  expect(grouped).toMatchObject({ type: "forward", batchSize: 1, nodes: [
+    { type: "image", file: Buffer.alloc(6, 1) }, expect.stringContaining("战绩 2"),
+    { type: "image", file: Buffer.alloc(6, 3) },
+  ] });
+  expect(rendered).toEqual([[0], [1, 2, 3], [1], [2], [3]]);
+  expect(configReads).toBe(1);
   expect(requests).toBe(2);
 });

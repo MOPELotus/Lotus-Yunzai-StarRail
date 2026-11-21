@@ -1,5 +1,6 @@
 import { normalizeProfileRoleArtworkUrl } from "@lotus-yunzai/account";
 import names from "./challenge-character-names.json";
+import type { GridFightRecentCount } from "./grid-fight-config.ts";
 
 const recent = /^#*货币战争(?:\s*(?:档案\s*)?(\d{1,3}))?$/u;
 const overview = /^([#*＊]?(?:星穹铁道|星铁|星轨|崩铁|铁道|sr)|[#*＊])?\s*(货币战争|货币|币战)(?:\s*(?:档案\s*)?(\d{1,3}))?$/u;
@@ -129,10 +130,10 @@ function battle(raw: Row, recent = false): Battle | undefined {
     value: num(brief.lineup_coin), front, back, traits, portals, augments, damage };
 }
 
-export function makeGridFightCard(uid: string, brief: Row, source: readonly Row[], index?: number, recent = false): GridFightCard {
+export function makeGridFightCard(uid: string, brief: Row, source: readonly Row[], index?: number, recent?: GridFightRecentCount): GridFightCard {
   const count = Math.min(gridFightHistoryMax, source.length);
   const row = source[(index ?? 1) - 1];
-  const summary = recent ? source.slice(0, 2).flatMap((entry, position) => {
+  const summary = recent ? source.slice(0, recent).flatMap((entry, position) => {
     const details = battle(entry, true);
     return details ? [{ ordinal: position + 1, battle: details }] : [];
   }) : undefined;
@@ -157,8 +158,14 @@ export function gridFightStats({ season, points, pointsMax, handbook, traits, qu
   };
 }
 
-function artLabels(items: readonly GridArt[]) {
-  return items.length ? items.map(item => item.name ?? "未提供名称").join("、") : "暂无";
+function artLabels(items: readonly (GridArt | GridMember)[], withEquipment = false) {
+  return items.length ? items.map(item => {
+    const name = item.name ?? "未提供名称";
+    if (withEquipment && "equipment" in item && item.equipment.length) {
+      return `${name}（${item.equipment.map(equip => equip.name ?? "未提供名称").join("、")}）`;
+    }
+    return name;
+  }).join("、") : "暂无";
 }
 
 export function gridFightText(model: GridFightCard) {
@@ -173,7 +180,7 @@ export function gridFightText(model: GridFightCard) {
     if (model.recent) lines.push(`战绩 ${ordinal}`);
     lines.push([row.division.name, row.mode, row.rank, row.time].filter(Boolean).join(" · "),
       `小队生命值 ${row.health ?? missing} · 总经济 ${row.coin ?? missing} · 阵容价值 ${row.value ?? missing}`,
-      `前台 ${artLabels(row.front)}`, `后台 ${artLabels(row.back)}`);
+      `前台 ${artLabels(row.front, !!model.recent)}`, `后台 ${artLabels(row.back, !!model.recent)}`);
     if (model.index !== undefined || model.recent) lines.push(`羁绊 ${artLabels(row.traits)}`, `投资环境 ${artLabels(row.portals)}`, `投资策略 ${artLabels(row.augments)}`,
       ...row.damage.map(hit => `${hit.entity.name ?? "未提供名称"} ${hit.label}`));
   }

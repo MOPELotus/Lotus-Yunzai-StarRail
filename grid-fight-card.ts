@@ -86,8 +86,8 @@ function patch(ctx: Context, color: string, x: number, y: number, w: number, h: 
 const divisionLevel = (level: number | undefined) => level === undefined ? "—" : `A${level}`;
 
 export async function renderGridFight(model: GridFightCard, fontTheme: string, signal: AbortSignal,
-  { mode = "auto", directory = Bun.env.LOTUS_STAR_RAIL_GRID_THEME_DIR?.trim() || defaultTheme, transport, inlineImageByteLimit }:
-    { mode?: "auto" | "gpu"; directory?: string; transport?: ArtTransport; inlineImageByteLimit?: number } = {}) {
+  { mode = "auto", directory = Bun.env.LOTUS_STAR_RAIL_GRID_THEME_DIR?.trim() || defaultTheme, transport, inlineImageByteLimit, checkNapCat }:
+    { mode?: "auto" | "gpu"; directory?: string; transport?: ArtTransport; inlineImageByteLimit?: number; checkNapCat?: () => Promise<boolean> } = {}) {
   const artworkSignal = AbortSignal.any([signal, AbortSignal.timeout(5_000)]);
   const media = await readArtwork(model, directory, artworkSignal, transport);
   signal.throwIfAborted();
@@ -290,8 +290,12 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
     if (!detail && model.historyCount > 0) text(`可查询 ${model.historyCount} 条战绩 · *币战战报1`, width / 2, footer + 9, 14, muted, "center");
     text("Lotus-Yunzai · 米游社战绩", width / 2, footer + 37, 17, gold, "center");
   }, mode);
-  const result = await render(4);
-  if (!grouped || inlineImageByteLimit === undefined || result.png.length <= inlineImageByteLimit) return result;
+  if (!grouped) return render(4);
+  const tooTall = height * 4 >= 30_680 && await checkNapCat?.();
+  if (!tooTall) {
+    const first = await render(4).catch(() => undefined);
+    if (first && (inlineImageByteLimit === undefined || first.png.length <= inlineImageByteLimit)) return first;
+  }
   signal.throwIfAborted();
   return render(2);
 }
