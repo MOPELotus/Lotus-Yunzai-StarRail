@@ -6,7 +6,7 @@ import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { calculateLegacyPanelAttributeRows, calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
 import { readStarRailPersonalDamage } from "./panel-damage.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
-import { alias, abbr } from "./panel-theme/character-alias.js";
+import { alias, abbr } from "./panel-theme/character-alias.ts";
 import { isStarRailTalentUnlocks, object, officialArtHosts, recoverStarRailSkillLevel, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 import { readStarRailPanelPortrait } from "./panel-portrait.ts";
 

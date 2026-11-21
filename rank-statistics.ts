@@ -2,7 +2,7 @@ import { fetchRankStats, rankPercentiles } from "../../lib/rank-statistics.ts";
 import { renderDamageRankStatsCard } from "../../packages/skia/rank-stats-card.ts";
 import characterNames from "./challenge-character-names.json";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
-import { abbr, alias } from "./panel-theme/character-alias.js";
+import { abbr, alias } from "./panel-theme/character-alias.ts";
 
 const normalize = (name: string) => name.normalize("NFKC").toLowerCase().replace(/[·・•\s]/gu, "");
 const aliases: Readonly<Record<string, string>> = alias;

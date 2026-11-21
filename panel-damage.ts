@@ -1,136 +1,123 @@
 import { calculateLegacyPanelAttributeRows, calculateManagedElation, damageAttribute, type PanelAttributeRows } from "./panel-attributes.ts";
 import type { readPanelDamageMetadata } from "./panel-card.ts";
 import { object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
-import DmgAttr from "./panel-damage-rules/DmgAttr.js";
-import DmgCalc from "./panel-damage-rules/DmgCalc.js";
-import { attrMap } from "./panel-damage-rules/relic-attributes.js";
-import relicRules from "./panel-damage-rules/relics.js";
-import * as seele from "./panel-damage-rules/characters/seele.js";
-import * as acheron from "./panel-damage-rules/characters/acheron.js";
-import * as aventurine from "./panel-damage-rules/characters/aventurine.js";
-import * as theHerta from "./panel-damage-rules/characters/the-herta.js";
-import * as blackSwan from "./panel-damage-rules/characters/black-swan.js";
-import * as kafka from "./panel-damage-rules/characters/kafka.js";
-import * as kafkaEnhanced from "./panel-damage-rules/characters/kafka-enhanced.js";
-import * as jingYuan from "./panel-damage-rules/characters/jing-yuan.js";
-import * as feixiao from "./panel-damage-rules/characters/feixiao.js";
-import * as lingsha from "./panel-damage-rules/characters/lingsha.js";
-import * as yunli from "./panel-damage-rules/characters/yunli.js";
-import * as boothill from "./panel-damage-rules/characters/boothill.js";
-import * as drRatio from "./panel-damage-rules/characters/dr-ratio.js";
-import * as imbibitorLunae from "./panel-damage-rules/characters/imbibitor-lunae.js";
-import * as firefly from "./panel-damage-rules/characters/firefly.js";
-import * as fireflyEnhanced from "./panel-damage-rules/characters/firefly-enhanced.js";
-import * as fugue from "./panel-damage-rules/characters/fugue.js";
-import * as ruanMei from "./panel-damage-rules/characters/ruan-mei.js";
-import * as blade from "./panel-damage-rules/characters/blade.js";
-import * as bladeEnhanced from "./panel-damage-rules/characters/blade-enhanced.js";
-import * as tribbie from "./panel-damage-rules/characters/tribbie.js";
-import * as bailu from "./panel-damage-rules/characters/bailu.js";
-import * as welt from "./panel-damage-rules/characters/welt.js";
-import * as weltEnhanced from "./panel-damage-rules/characters/welt-enhanced.js";
-import * as silverWolf from "./panel-damage-rules/characters/silver-wolf.js";
-import * as jiaoqiu from "./panel-damage-rules/characters/jiaoqiu.js";
-import * as jingliu from "./panel-damage-rules/characters/jingliu.js";
-import * as jingliuEnhanced from "./panel-damage-rules/characters/jingliu-enhanced.js";
-import * as yanqing from "./panel-damage-rules/characters/yanqing.js";
-import * as misha from "./panel-damage-rules/characters/misha.js";
-import * as argenti from "./panel-damage-rules/characters/argenti.js";
-import * as herta from "./panel-damage-rules/characters/herta.js";
-import * as himeko from "./panel-damage-rules/characters/himeko.js";
-import * as jade from "./panel-damage-rules/characters/jade.js";
-import * as castorice from "./panel-damage-rules/characters/castorice.js";
-import * as aglaea from "./panel-damage-rules/characters/aglaea.js";
-import * as evernight from "./panel-damage-rules/characters/evernight.js";
-import * as luocha from "./panel-damage-rules/characters/luocha.js";
-import * as natasha from "./panel-damage-rules/characters/natasha.js";
-import * as gallagher from "./panel-damage-rules/characters/gallagher.js";
-import * as huohuo from "./panel-damage-rules/characters/huohuo.js";
-import * as clara from "./panel-damage-rules/characters/clara.js";
-import * as xueyi from "./panel-damage-rules/characters/xueyi.js";
-import * as arlan from "./panel-damage-rules/characters/arlan.js";
-import * as hook from "./panel-damage-rules/characters/hook.js";
-import * as topaz from "./panel-damage-rules/characters/topaz.js";
-import * as moze from "./panel-damage-rules/characters/moze.js";
-import * as danHeng from "./panel-damage-rules/characters/dan-heng.js";
-import * as sushang from "./panel-damage-rules/characters/sushang.js";
-import * as archer from "./panel-damage-rules/characters/archer.js";
-import * as marchHunt from "./panel-damage-rules/characters/march-hunt.js";
-import * as luka from "./panel-damage-rules/characters/luka.js";
-import * as guinaifen from "./panel-damage-rules/characters/guinaifen.js";
-import * as sampo from "./panel-damage-rules/characters/sampo.js";
-import * as hysilens from "./panel-damage-rules/characters/hysilens.js";
-import * as serval from "./panel-damage-rules/characters/serval.js";
-import * as bronya from "./panel-damage-rules/characters/bronya.js";
-import * as tingyun from "./panel-damage-rules/characters/tingyun.js";
-import * as asta from "./panel-damage-rules/characters/asta.js";
-import * as robin from "./panel-damage-rules/characters/robin.js";
-import * as sparkle from "./panel-damage-rules/characters/sparkle.js";
-import * as sunday from "./panel-damage-rules/characters/sunday.js";
-import * as hanya from "./panel-damage-rules/characters/hanya.js";
-import * as yukong from "./panel-damage-rules/characters/yukong.js";
-import * as harmonyTrailblazer from "./panel-damage-rules/characters/harmony-trailblazer.js";
-import * as fuXuan from "./panel-damage-rules/characters/fu-xuan.js";
-import * as gepard from "./panel-damage-rules/characters/gepard.js";
-import * as marchPreservation from "./panel-damage-rules/characters/march-preservation.js";
-import * as preservationTrailblazer from "./panel-damage-rules/characters/preservation-trailblazer.js";
-import * as danHengPermansor from "./panel-damage-rules/characters/danheng-permansor.js";
-import * as saber from "./panel-damage-rules/characters/saber.js";
-import * as mydei from "./panel-damage-rules/characters/mydei.js";
-import * as phainon from "./panel-damage-rules/characters/phainon.js";
-import * as destructionTrailblazer from "./panel-damage-rules/characters/destruction-trailblazer.js";
-import * as anaxa from "./panel-damage-rules/characters/anaxa.js";
-import * as qingque from "./panel-damage-rules/characters/qingque.js";
-import * as pela from "./panel-damage-rules/characters/pela.js";
-import * as cipher from "./panel-damage-rules/characters/cipher.js";
-import * as seeleEnhanced from "./panel-damage-rules/characters/seele-enhanced.js";
-import * as lynx from "./panel-damage-rules/characters/lynx.js";
-import * as hyacine from "./panel-damage-rules/characters/hyacine.js";
-import * as cyrene from "./panel-damage-rules/characters/cyrene.js";
-import * as mortenaxBlade from "./panel-damage-rules/characters/mortenax-blade.js";
-import * as dahlia from "./panel-damage-rules/characters/dahlia.js";
-import * as silverWolfEnhanced from "./panel-damage-rules/characters/silver-wolf-enhanced.js";
-import * as ashveil from "./panel-damage-rules/characters/ashveil.js";
-import * as gilgamesh from "./panel-damage-rules/characters/gilgamesh.js";
-import * as elationTrailblazer from "./panel-damage-rules/characters/elation-trailblazer.js";
-import * as sparxie from "./panel-damage-rules/characters/sparxie.js";
-import * as yaoGuang from "./panel-damage-rules/characters/yao-guang.js";
-import * as pearl from "./panel-damage-rules/characters/pearl.js";
-import * as evanescia from "./panel-damage-rules/characters/evanescia.js";
-import elation from "./panel-damage-rules/weapons/elation.js";
-import * as himekoNova from "./panel-damage-rules/characters/himeko-nova.js";
-import * as aha from "./panel-damage-rules/characters/aha.js";
-import * as robinDahlia from "./panel-damage-rules/characters/robin-dahlia.js";
-import * as aventurineElation from "./panel-damage-rules/characters/aventurine-elation.js";
-import * as tohsakaRin from "./panel-damage-rules/characters/tohsaka-rin.js";
-import * as silverWolfElation from "./panel-damage-rules/characters/silver-wolf-elation.js";
-import * as cerydra from "./panel-damage-rules/characters/cerydra.js";
-import hunt from "./panel-damage-rules/weapons/hunt.js";
-import nihility from "./panel-damage-rules/weapons/nihility.js";
-import erudition from "./panel-damage-rules/weapons/erudition.js";
-import preservation from "./panel-damage-rules/weapons/preservation.js";
-import abundance from "./panel-damage-rules/weapons/abundance.js";
-import destruction from "./panel-damage-rules/weapons/destruction.js";
-import harmony from "./panel-damage-rules/weapons/harmony.js";
-import remembrance from "./panel-damage-rules/weapons/remembrance.js";
+import DmgAttr from "./panel-damage-rules/DmgAttr.ts";
+import DmgCalc from "./panel-damage-rules/DmgCalc.ts";
+import { attrMap } from "./panel-damage-rules/relic-attributes.ts";
+import relicRules from "./panel-damage-rules/relics.ts";
+import * as seele from "./panel-damage-rules/characters/seele.ts";
+import * as acheron from "./panel-damage-rules/characters/acheron.ts";
+import * as aventurine from "./panel-damage-rules/characters/aventurine.ts";
+import * as theHerta from "./panel-damage-rules/characters/the-herta.ts";
+import * as blackSwan from "./panel-damage-rules/characters/black-swan.ts";
+import * as kafka from "./panel-damage-rules/characters/kafka.ts";
+import * as kafkaEnhanced from "./panel-damage-rules/characters/kafka-enhanced.ts";
+import * as jingYuan from "./panel-damage-rules/characters/jing-yuan.ts";
+import * as feixiao from "./panel-damage-rules/characters/feixiao.ts";
+import * as lingsha from "./panel-damage-rules/characters/lingsha.ts";
+import * as yunli from "./panel-damage-rules/characters/yunli.ts";
+import * as boothill from "./panel-damage-rules/characters/boothill.ts";
+import * as drRatio from "./panel-damage-rules/characters/dr-ratio.ts";
+import * as imbibitorLunae from "./panel-damage-rules/characters/imbibitor-lunae.ts";
+import * as firefly from "./panel-damage-rules/characters/firefly.ts";
+import * as fireflyEnhanced from "./panel-damage-rules/characters/firefly-enhanced.ts";
+import * as fugue from "./panel-damage-rules/characters/fugue.ts";
+import * as ruanMei from "./panel-damage-rules/characters/ruan-mei.ts";
+import * as blade from "./panel-damage-rules/characters/blade.ts";
+import * as bladeEnhanced from "./panel-damage-rules/characters/blade-enhanced.ts";
+import * as tribbie from "./panel-damage-rules/characters/tribbie.ts";
+import * as bailu from "./panel-damage-rules/characters/bailu.ts";
+import * as welt from "./panel-damage-rules/characters/welt.ts";
+import * as weltEnhanced from "./panel-damage-rules/characters/welt-enhanced.ts";
+import * as silverWolf from "./panel-damage-rules/characters/silver-wolf.ts";
+import * as jiaoqiu from "./panel-damage-rules/characters/jiaoqiu.ts";
+import * as jingliu from "./panel-damage-rules/characters/jingliu.ts";
+import * as jingliuEnhanced from "./panel-damage-rules/characters/jingliu-enhanced.ts";
+import * as yanqing from "./panel-damage-rules/characters/yanqing.ts";
+import * as misha from "./panel-damage-rules/characters/misha.ts";
+import * as argenti from "./panel-damage-rules/characters/argenti.ts";
+import * as herta from "./panel-damage-rules/characters/herta.ts";
+import * as himeko from "./panel-damage-rules/characters/himeko.ts";
+import * as jade from "./panel-damage-rules/characters/jade.ts";
+import * as castorice from "./panel-damage-rules/characters/castorice.ts";
+import * as aglaea from "./panel-damage-rules/characters/aglaea.ts";
+import * as evernight from "./panel-damage-rules/characters/evernight.ts";
+import * as luocha from "./panel-damage-rules/characters/luocha.ts";
+import * as natasha from "./panel-damage-rules/characters/natasha.ts";
+import * as gallagher from "./panel-damage-rules/characters/gallagher.ts";
+import * as huohuo from "./panel-damage-rules/characters/huohuo.ts";
+import * as clara from "./panel-damage-rules/characters/clara.ts";
+import * as xueyi from "./panel-damage-rules/characters/xueyi.ts";
+import * as arlan from "./panel-damage-rules/characters/arlan.ts";
+import * as hook from "./panel-damage-rules/characters/hook.ts";
+import * as topaz from "./panel-damage-rules/characters/topaz.ts";
+import * as moze from "./panel-damage-rules/characters/moze.ts";
+import * as danHeng from "./panel-damage-rules/characters/dan-heng.ts";
+import * as sushang from "./panel-damage-rules/characters/sushang.ts";
+import * as archer from "./panel-damage-rules/characters/archer.ts";
+import * as marchHunt from "./panel-damage-rules/characters/march-hunt.ts";
+import * as luka from "./panel-damage-rules/characters/luka.ts";
+import * as guinaifen from "./panel-damage-rules/characters/guinaifen.ts";
+import * as sampo from "./panel-damage-rules/characters/sampo.ts";
+import * as hysilens from "./panel-damage-rules/characters/hysilens.ts";
+import * as serval from "./panel-damage-rules/characters/serval.ts";
+import * as bronya from "./panel-damage-rules/characters/bronya.ts";
+import * as tingyun from "./panel-damage-rules/characters/tingyun.ts";
+import * as asta from "./panel-damage-rules/characters/asta.ts";
+import * as robin from "./panel-damage-rules/characters/robin.ts";
+import * as sparkle from "./panel-damage-rules/characters/sparkle.ts";
+import * as sunday from "./panel-damage-rules/characters/sunday.ts";
+import * as hanya from "./panel-damage-rules/characters/hanya.ts";
+import * as yukong from "./panel-damage-rules/characters/yukong.ts";
+import * as harmonyTrailblazer from "./panel-damage-rules/characters/harmony-trailblazer.ts";
+import * as fuXuan from "./panel-damage-rules/characters/fu-xuan.ts";
+import * as gepard from "./panel-damage-rules/characters/gepard.ts";
+import * as marchPreservation from "./panel-damage-rules/characters/march-preservation.ts";
+import * as preservationTrailblazer from "./panel-damage-rules/characters/preservation-trailblazer.ts";
+import * as danHengPermansor from "./panel-damage-rules/characters/danheng-permansor.ts";
+import * as saber from "./panel-damage-rules/characters/saber.ts";
+import * as mydei from "./panel-damage-rules/characters/mydei.ts";
+import * as phainon from "./panel-damage-rules/characters/phainon.ts";
+import * as destructionTrailblazer from "./panel-damage-rules/characters/destruction-trailblazer.ts";
+import * as anaxa from "./panel-damage-rules/characters/anaxa.ts";
+import * as qingque from "./panel-damage-rules/characters/qingque.ts";
+import * as pela from "./panel-damage-rules/characters/pela.ts";
+import * as cipher from "./panel-damage-rules/characters/cipher.ts";
+import * as seeleEnhanced from "./panel-damage-rules/characters/seele-enhanced.ts";
+import * as lynx from "./panel-damage-rules/characters/lynx.ts";
+import * as hyacine from "./panel-damage-rules/characters/hyacine.ts";
+import * as cyrene from "./panel-damage-rules/characters/cyrene.ts";
+import * as mortenaxBlade from "./panel-damage-rules/characters/mortenax-blade.ts";
+import * as dahlia from "./panel-damage-rules/characters/dahlia.ts";
+import * as silverWolfEnhanced from "./panel-damage-rules/characters/silver-wolf-enhanced.ts";
+import * as ashveil from "./panel-damage-rules/characters/ashveil.ts";
+import * as gilgamesh from "./panel-damage-rules/characters/gilgamesh.ts";
+import * as elationTrailblazer from "./panel-damage-rules/characters/elation-trailblazer.ts";
+import * as sparxie from "./panel-damage-rules/characters/sparxie.ts";
+import * as yaoGuang from "./panel-damage-rules/characters/yao-guang.ts";
+import * as pearl from "./panel-damage-rules/characters/pearl.ts";
+import * as evanescia from "./panel-damage-rules/characters/evanescia.ts";
+import elation from "./panel-damage-rules/weapons/elation.ts";
+import * as himekoNova from "./panel-damage-rules/characters/himeko-nova.ts";
+import * as aha from "./panel-damage-rules/characters/aha.ts";
+import * as robinDahlia from "./panel-damage-rules/characters/robin-dahlia.ts";
+import * as aventurineElation from "./panel-damage-rules/characters/aventurine-elation.ts";
+import * as tohsakaRin from "./panel-damage-rules/characters/tohsaka-rin.ts";
+import * as silverWolfElation from "./panel-damage-rules/characters/silver-wolf-elation.ts";
+import * as cerydra from "./panel-damage-rules/characters/cerydra.ts";
+import hunt from "./panel-damage-rules/weapons/hunt.ts";
+import nihility from "./panel-damage-rules/weapons/nihility.ts";
+import erudition from "./panel-damage-rules/weapons/erudition.ts";
+import preservation from "./panel-damage-rules/weapons/preservation.ts";
+import abundance from "./panel-damage-rules/weapons/abundance.ts";
+import destruction from "./panel-damage-rules/weapons/destruction.ts";
+import harmony from "./panel-damage-rules/weapons/harmony.ts";
+import remembrance from "./panel-damage-rules/weapons/remembrance.ts";
+
+import type { BaseAttr as Attr, Buff, DamageValue, DamageMetric, Numbers, Rule, SkillValues, Variables, WeaponRule, WeaponRules } from "./panel-damage-rules/types.ts";
 
 type Metadata = NonNullable<Awaited<ReturnType<typeof readPanelDamageMetadata>>>;
-type Attr = { base: number; plus: number; pct: number; inc?: number };
-type Numbers = Record<string, number>;
-type Params = Record<string, number | boolean>;
-type SkillValues = Record<string, Numbers>;
-type Variables = {
-  attr: Readonly<Record<string, Attr>>;
-  calc: (attr: Attr) => number;
-  talent: SkillValues;
-  cons: number;
-  trees: Record<string, boolean>;
-  params: Params;
-};
-type DamageMetric = "damage" | "shield" | "heal" | "support";
 export const personalDamageMetricLabel: Readonly<Record<DamageMetric, string>> = { damage: "期望伤害", shield: "护盾量", heal: "治疗量", support: "辅助效果" };
-type DamageValue = { avg: number; dmg?: number; display?: string; metric?: DamageMetric };
-type RuleResult = DamageValue | { type: "text"; avg: string } | { note: string };
 type DamageRow = {
   title: string;
   metric: DamageMetric;
@@ -139,33 +126,6 @@ type DamageRow = {
   display?: string;
   percentage?: string;
 } & ({ average: number; note?: never } | { average?: never; note: string });
-type DamageFn = ((multiplier: number, skill: string, effect?: string) => DamageValue) & {
-  basic: (amount: number, skill: string) => DamageValue;
-  shield: (amount: number) => DamageValue;
-  heal: (amount: number) => DamageValue;
-};
-type Buff = {
-  title?: string;
-  data?: Record<string, number | string | ((variables: Variables) => string | number)>;
-  isStatic?: boolean;
-  sort?: number;
-  cons?: number;
-  tree?: number;
-};
-type Rule = {
-  createdBy?: string;
-  details: readonly {
-    title: string | ((variables: Variables) => string);
-    cons?: number;
-    params?: Readonly<Params>;
-    check?: (variables: Variables) => boolean;
-    dmg: (variables: Variables, damage: DamageFn) => RuleResult;
-  }[];
-  buffs?: readonly Buff[];
-  defDmgIdx?: number | ((meta: { cons: number }) => number);
-  mainAttr: string;
-  defParams?: Params | ((variables: Variables) => Params);
-};
 type Character = {
   name: string;
   element: string;
@@ -176,7 +136,7 @@ type Character = {
   rule: Rule;
   cones: Readonly<Record<string, string>>;
 };
-const setRules = relicRules as unknown as Readonly<Record<string, Readonly<Record<number, Buff | Buff[]>>>>;
+const setRules: Readonly<Record<string, Readonly<Record<number, Buff | Buff[]>>>> = relicRules;
 const destructionCones = {
   "20002": "天倾",
   "20009": "乐圮",
@@ -368,7 +328,7 @@ const abundanceCones = {
   "23032": "唯有香如故",
 };
 
-// The original JS rules share DmgAttr's numeric AttrItem coercion and variable shape.
+// The original rules share DmgAttr's numeric AttrItem coercion and variable shape.
 const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
   "1102": { name: "希儿", element: "量子", path: "巡猎", traces: [102], rule: seele,
     cones: huntCones },
@@ -563,7 +523,7 @@ const characters: ReadonlyMap<string, Character> = new Map(Object.entries({
     cones: elationCones },
   "1412": { name: "刻律德菈", element: "风", path: "同谐", traces: [101, 102, 103], rule: cerydra,
     cones: harmonyCones },
-}) as unknown as [string, Character][]);
+} satisfies Record<string, Character>));
 export const personalDamageNames = [...characters.values()].map(({ name }) => name).join("、");
 export const personalDamageEnemyLevel = 80;
 export const hasPersonalDamage = (id: string) => characters.has(id);
@@ -666,9 +626,6 @@ function relicEffects(avatar: PanelAvatar, metadata: Metadata) {
   return { effects, sets };
 }
 
-type IndexedBuff = Buff & { idx?: number; key?: string };
-type WeaponRule = IndexedBuff | ((tables: Numbers) => IndexedBuff);
-type WeaponRules = Readonly<Record<string, WeaponRule | WeaponRule[]>>;
 const staticIndex = () => ({ isStatic: true });
 function dynamicIndex(title: string, key: string | Numbers, idx?: number): WeaponRule {
   if (typeof key === "string") return { title, key, idx };
@@ -745,7 +702,7 @@ function originalDamage(
   const { values, staticAttr } = panelValues(avatar, metadata, character, rows);
   const weapon = { ...avatar.cone, name: avatar.cone ? character.cones[avatar.cone.id] : "", affix: avatar.cone?.rank ?? 0 };
   const originalAttr = DmgAttr.getAttr({ game: "sr", originalAttr: undefined, attr: { ...values, staticAttr },
-    char: { elem: character.element, sp: metadata.character.sp, weaponTypeName: character.path }, weapon: { name: weapon.name, affix: weapon.affix } });
+    char: { elem: character.element, sp: metadata.character.sp as number | undefined, weaponTypeName: character.path }, weapon: { name: weapon.name, affix: weapon.affix } });
   const weaponBuffs = weaponEffects(avatar, metadata, character, values);
   const relics = relicEffects(avatar, metadata);
   if (relics.sets["荡除蠹灾的铁骑"] === 4 && values.stance === undefined) throw new MissingDamageData("缺少击破特攻属性");
@@ -765,13 +722,13 @@ function originalDamage(
     const ds = { ...DmgAttr.getDs(attr, meta, params), artis: relics.sets };
     const variables = ds as unknown as Variables;
     if (detail.check && !detail.check(variables)) return;
-    const damage = DmgCalc.getDmgFn({ ds, attr, level, enemyLv: personalDamageEnemyLevel, game: "sr", showDetail: false }) as unknown as DamageFn;
+    const damage = DmgCalc.getDmgFn({ ds, attr, level, enemyLv: personalDamageEnemyLevel, game: "sr", showDetail: false });
     const { heal, shield } = damage;
     damage.heal = amount => ({ ...heal(amount), metric: "heal" });
     damage.shield = amount => ({ ...shield(amount), metric: "shield" });
     const result = detail.dmg(variables, damage);
     const title = typeof detail.title === "function" ? detail.title(variables) : detail.title;
-    const active = msg as string[];
+    const active = msg;
     if ("note" in result) return { title, note: result.note, metric: "support", active };
     const percentage = "type" in result ? result.avg : undefined;
     const { dmg, avg, display, metric = "damage" }: DamageValue = "type" in result
@@ -795,7 +752,7 @@ function originalDamage(
   }
   const statKeys = rule.mainAttr.split(",") as (keyof typeof attrMap)[];
   const swaps = current.row.average === undefined ? [] : statKeys.map(from => ({
-    title: attrMap[from].title, amount: String(attrMap[from].value) + (from === "speed" ? "" : "%"),
+    title: attrMap[from]!.title, amount: String(attrMap[from]!.value) + (from === "speed" ? "" : "%"),
     values: statKeys.map(to => {
       if (from === to) return;
       const result = calculate(current.detail, to, from);

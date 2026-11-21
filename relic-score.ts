@@ -2,7 +2,7 @@
 // Licensed MIT. Original rules and assets are recorded in README.md.
 import baseStats from "./panel-theme/relic-character-base.json";
 import defaultValues from "./panel-theme/relic-values.json";
-import { usefulAttr } from "./panel-theme/relic-weights.js";
+import { usefulAttr } from "./panel-theme/relic-weights.ts";
 import { damageAttribute, readLegacyRelicAttributes } from "./panel-attributes.ts";
 import { object, type PanelAvatar } from "./panel-model.ts";
 

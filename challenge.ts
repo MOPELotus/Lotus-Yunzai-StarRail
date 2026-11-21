@@ -1,7 +1,7 @@
 import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import characterNames from "./challenge-character-names.json";
-import { renderStarRailAbyss } from "./challenge-card.js";
+import { renderStarRailAbyss } from "./challenge-card.ts";
 import { makeChallengeText, normalizeStarRailChallenge, type ChallengeQuery } from "./challenge-model.ts";
 import { readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 

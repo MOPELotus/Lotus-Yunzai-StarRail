@@ -4,7 +4,7 @@ import { readLiteralObjectExport } from "@lotus-yunzai/gacha/literal-exports";
 import { renderGachaPoolCard, type GachaPoolCardModel } from "@lotus-yunzai/skia/gacha-pool";
 import { readStarRailGachaCatalog, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { readStarRailGachaSchedule, type StarRailGachaPeriod } from "./gacha-schedule.ts";
-import { alias as characterAliases, abbr as characterAbbreviations } from "./panel-theme/character-alias.js";
+import { alias as characterAliases, abbr as characterAbbreviations } from "./panel-theme/character-alias.ts";
 
 const sections = [
   { key: "char5", kind: "characters", star: 5, title: "五星角色" },
