@@ -133,6 +133,7 @@ async function readLegacy(directory: string, source: "legacy" | "backup", identi
   const records: Record<string, unknown>[] = [];
   const fingerprints = new Map<string, Stats | undefined>();
   const languages = new Set<string>();
+  let hasSummaryRows = false;
   let availableBytes = maxArchiveBytes;
   for (const pool of pools) {
     const file = join(path, `${pool}.json`);
@@ -143,6 +144,11 @@ async function readLegacy(directory: string, source: "legacy" | "backup", identi
     for (const row of snapshot.records) {
       if (!record(row) || !sameIdentifier(row.gacha_type, pool)) corrupt("星铁旧逐抽档案的卡池编号与文件不一致。");
       if (row.uid !== undefined && !sameIdentifier(row.uid, identity.uid)) corrupt("星铁旧逐抽档案包含其他 UID 的记录。");
+      // These summaries can share a pool file with real game records.
+      if (row.xhh_ph === 1 || row.xhh_src === "mini") {
+        hasSummaryRows = true;
+        continue;
+      }
       if (typeof row.lang === "string" && row.lang.trim()) languages.add(row.lang.trim());
       records.push(row);
     }
@@ -152,7 +158,7 @@ async function readLegacy(directory: string, source: "legacy" | "backup", identi
     const current = await readStat(file);
     if (original ? !sameFile(original, current) : current !== undefined) changedLegacy();
   }
-  if (!records.length) return { status: "unavailable", reason: "missing" };
+  if (!records.length) return { status: "unavailable", reason: hasSummaryRows ? "mirror" : "missing" };
   if (records.some(mirrorDatum) || records.every(mirrorFiveStar)) return { status: "unavailable", reason: "mirror" };
   if (legacyTimezone === undefined) corrupt("无法确认星铁旧逐抽档案的服务器时区，请使用带时区的 UIGF 文件。");
   const lang = languages.size === 1 ? languages.values().next().value : undefined;
