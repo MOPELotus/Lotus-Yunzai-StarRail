@@ -13,7 +13,7 @@ export function starRailTeamDefaultCone(id: string, path: string) {
   return (defaults.characters as Readonly<Record<string, { cone: string }>>)[id]?.cone ??
     (defaults.paths as Readonly<Record<string, { cone: string }>>)[path]?.cone;
 }
-const workerFile = fileURLToPath(new URL("./team-engine/worker.py", import.meta.url));
+const workerFile = fileURLToPath(new URL("./team-engine/worker.ts", import.meta.url));
 const workerRoot = fileURLToPath(new URL("./team-engine/", import.meta.url));
 
 export interface TeamSimulationMember {
@@ -32,7 +32,6 @@ export interface TeamBattleResult {
 }
 
 function teamBattleResult(result: ReturnType<typeof object>): TeamBattleResult {
-  if (result?.error === "python-version") throw new TeamDamageError("星铁队伍伤害需要 Python 3.10 或更新版本。");
   if (result?.error === "data" || result?.error === "invalid") throw new TeamDamageError("HSR_Nous 模板或面板数据校验失败，请检查资源和所选面板。");
   if (result?.error === "limit") throw new TeamDamageError("队伍伤害达到模拟行动上限，请减少轮次后重试。");
   if (result?.error === "characters" && id(result.id)) throw new TeamDamageError(`此版本的 HSR_Nous 暂无角色 ID ${result.id} 的机制模板。`);
@@ -82,13 +81,12 @@ async function readWorkerStream(stream: ReadableStream<Uint8Array>, signal: Abor
 
 export async function calculateTeamDamage(roles: readonly TeamSimulationMember[], cycle: number, enemies: number, cancellation: AbortSignal) {
   cancellation.throwIfAborted();
-  const python = Bun.which("python3") ?? (process.platform === "win32" ? Bun.which("python") : null);
-  if (!python) throw new TeamDamageError("星铁队伍伤害需要本机 Python 3.10 或更新版本。");
   if (!(await Bun.file(workerFile).exists())) throw new TeamDamageError("本地队伍伤害模块文件缺失，请检查安装。");
+  cancellation.throwIfAborted();
   const timeout = AbortSignal.timeout(8_000);
   const signal = AbortSignal.any([cancellation, timeout]);
   const bytes = JSON.stringify({ roles, cycle, enemies });
-  const child = Bun.spawn([python, "-I", "-B", "-S", workerFile], {
+  const child = Bun.spawn([process.execPath, "--no-env-file", workerFile], {
     cwd: workerRoot, env: { LANG: "C.UTF-8" }, stdin: new Blob([bytes]), stdout: "pipe", stderr: "ignore",
   });
   const kill = () => child.kill("SIGKILL");
@@ -97,7 +95,7 @@ export async function calculateTeamDamage(roles: readonly TeamSimulationMember[]
   try {
     const [output, exit] = await Promise.all([readWorkerStream(child.stdout, signal), child.exited]);
     signal.throwIfAborted();
-    if (exit !== 0 || !output) throw new TeamDamageError("HSR_Nous 计算进程未完成，请检查 Python 3.10+ 或重试。");
+    if (exit !== 0 || !output) throw new TeamDamageError("星铁队伍伤害计算进程未完成，请稍后重试。");
     return teamBattleResult(object(JSON.parse(output)));
   } catch (error) {
     if (timeout.aborted && !cancellation.aborted) throw new TeamDamageError("星铁队伍伤害计算超时，请减少轮次后重试。");

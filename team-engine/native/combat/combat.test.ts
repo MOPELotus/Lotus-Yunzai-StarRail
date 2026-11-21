@@ -182,9 +182,11 @@ async function supportTrace() {
   ];
 }
 
-test("fixed Python scheduler, initial battle state and damage settlement agree with native combat", async () => {
+const referencePython = Bun.which("python3") ?? (process.platform === "win32" ? Bun.which("python") : null);
+
+test.skipIf(!referencePython)("fixed Python scheduler, initial battle state and damage settlement agree with native combat", async () => {
   const oracle = fileURLToPath(new URL("./python-oracle.py", import.meta.url));
-  const python = Bun.spawnSync(["python3", "-I", "-S", "-B", oracle], {
+  const python = Bun.spawnSync([referencePython!, "-I", "-S", "-B", oracle], {
     stdin: Buffer.from(JSON.stringify({ actors, newcomer, ticks, scheduler, settlement })), stderr: "pipe",
   });
   if (python.exitCode !== 0) throw new Error(python.stderr.toString());

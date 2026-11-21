@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
+import { fileURLToPath } from "node:url";
 import { calculateTeamDamage, starRailTeamCatalog } from "../team-damage-runtime.ts";
 
-const python = Bun.which("python3") ?? (process.platform === "win32" ? Bun.which("python") : null);
 const members = ["1220", "1112", "1303", "8005"].map(id => ({ id }));
 
-test.skipIf(!python)("固定开源引擎无需旧安装即可计算，并保留多目标与确定性", async () => {
+test("固定开源引擎无需旧安装即可计算，并保留多目标与确定性", async () => {
   const signal = new AbortController().signal;
   const single = await calculateTeamDamage(members, 1, 1, signal);
   const [multi, repeated] = await Promise.all([calculateTeamDamage(members, 3, 5, signal), calculateTeamDamage(members, 3, 5, signal)]);
@@ -29,12 +29,42 @@ test.skipIf(!python)("固定开源引擎无需旧安装即可计算，并保留�
   expect(starRailTeamCatalog.every(role => role.item_id.length === 4)).toBe(true);
 }, 16_000);
 
-test.skipIf(!python)("本地工作进程尊重提前取消", async () => {
+test("本地工作进程尊重提前取消", async () => {
   const cancelled = AbortSignal.abort();
   await expect(calculateTeamDamage(members, 20, 5, cancelled)).rejects.toBeDefined();
 });
 
-test.skipIf(!python)("行动详情显示官方形态与角色名称", async () => {
+test("计算期间保留调用方取消原因", async () => {
+  const abort = new AbortController();
+  const reason = new Error("fixture owner disconnected");
+  const outcome = calculateTeamDamage(members, 20, 5, abort.signal).then(() => undefined, error => error);
+  await Bun.sleep(5);
+  abort.abort(reason);
+  expect(await outcome).toBe(reason);
+});
+
+test("工作进程保持单 JSON 回包和输入边界", async () => {
+  const worker = fileURLToPath(new URL("../team-engine/worker.ts", import.meta.url));
+  const run = async (input: string) => {
+    const child = Bun.spawn([process.execPath, "--no-env-file", worker], {
+      stdin: new Blob([input]), stdout: "pipe", stderr: "pipe", timeout: 8_000, killSignal: "SIGKILL",
+    });
+    return await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
+  };
+  const valid = JSON.stringify({ roles: members, cycle: 1, enemies: 1 });
+  const unknown = JSON.stringify({ roles: [{ id: "9999" }], cycle: 1, enemies: 1 });
+  const [success, invalid, missing, oversized] = await Promise.all([
+    run(valid.padEnd(512 * 1024, " ")), run("{"), run(unknown), run(valid.padEnd(512 * 1024 + 1, " ")),
+  ]);
+  expect(success[0]).toBe(0);
+  expect(success[1].trim().split("\n")).toHaveLength(1);
+  expect(JSON.parse(success[1]).total).toBeGreaterThan(0);
+  expect(invalid.slice(0, 2)).toEqual([0, '{"error":"invalid"}\n']);
+  expect(missing.slice(0, 2)).toEqual([0, '{"error":"characters","id":"9999"}\n']);
+  expect(oversized).toEqual([1, "", "Invalid team request\n"]);
+});
+
+test("行动详情显示官方形态与角色名称", async () => {
   const signal = new AbortController().signal;
   const roster = ["1310", "1303", "1014", "1015"].map(id => ({ id }));
   const report = await calculateTeamDamage(roster, 3, 3, signal);
