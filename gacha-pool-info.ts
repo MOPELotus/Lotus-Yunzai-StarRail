@@ -13,6 +13,8 @@ const sections = [
   { key: "weapon4", kind: "weapons", star: 4, title: "四星武器" },
 ] as const;
 const version = /^(?:\d+\.)+\d+(?:上半|下半)?$/u;
+const legacyReprintCommand = /^#星铁([^\s#\p{Cc}\p{Cf}]{1,60})复刻$/u;
+const permanentCharacters = new Set(["姬子", "瓦尔特", "杰帕德", "布洛妮娅", "彦卿", "白露", "克拉拉"]);
 const oneDay = 86_400_000;
 const help = ["星铁历史卡池", "*3.0卡池 查询整版，*4.1下半卡池 查询单期。",
   "*白厄卡池、*舞舞舞卡池 查看角色或光锥历次入池，末尾加「详情」显示全套卡池。"].join("\n");
@@ -118,6 +120,16 @@ function formatPeriod(period: StarRailGachaPeriod, catalog: Catalog, target?: Ca
   return { version: period.version, half: period.half, from: period.from, to: period.to, isMix: false, groups };
 }
 
+function itemHistory(periods: readonly StarRailGachaPeriod[], catalog: Catalog, item: string, character = item) {
+  const role = findItem(catalog.characters, character);
+  const target = role ?? findItem(catalog.weapons, item);
+  if (!target) return;
+  const kind: Kind = role ? "characters" : "weapons";
+  const keys = sections.filter(section => section.kind === kind).map(section => section.key);
+  const selected = periods.filter(period => keys.some(key => period[key]?.some(name => fromPeriod(catalog[kind], name) === target)));
+  return { kind, target, selected };
+}
+
 export async function readStarRailPoolInfo(root: string, query: Query, now = Date.now()): Promise<GachaPoolCardModel | undefined> {
   const [periods, catalog] = await Promise.all([readStarRailGachaSchedule(root), readPoolItems(root)]);
   if (query.type === "version") {
@@ -125,25 +137,47 @@ export async function readStarRailPoolInfo(root: string, query: Query, now = Dat
     if (selected.length) return { game: "sr", pools: selected.map((period) => formatPeriod(period, catalog)) };
     return;
   }
-  let kind: Kind = "characters";
-  let target = findItem(catalog.characters, query.item);
-  if (!target) {
-    kind = "weapons";
-    target = findItem(catalog.weapons, query.item);
-  }
-  if (!target) return;
-  const keys = sections.filter((section) => section.kind === kind).map((section) => section.key);
-  const selected = sortPeriods(periods.filter((period) => keys.some((key) =>
-    period[key]?.some((name) => fromPeriod(catalog[kind], name) === target))));
-  if (selected.length) return {
-    game: "sr", pools: selected.map((period) => formatPeriod(period, catalog, query.detail ? undefined : target)),
-    reprint: reprint(selected, now),
+  const history = itemHistory(periods, catalog, query.item);
+  if (history?.selected.length) return {
+    game: "sr", pools: sortPeriods(history.selected).map(period => formatPeriod(period, catalog, query.detail ? undefined : history.target)),
+    reprint: reprint(history.selected, now),
   };
 }
 
+export async function readStarRailReprint(root: string, item: string, now = Date.now()) {
+  const [periods, catalog] = await Promise.all([readStarRailGachaSchedule(root), readPoolItems(root)]);
+  const history = itemHistory(periods, catalog, item, item.replace(/老婆|老公|(18|[1-9])[0-9]{8}/gu, ""));
+  if (!history) return `未找到 ${item} 的复刻信息。`;
+  const name = history.target.card.name;
+  if (history.kind === "characters" && permanentCharacters.has(name)) return "常驻角色不支持查询";
+  const ordered = history.selected.sort((a, b) => poolTime(b.from) - poolTime(a.from) || poolTime(a.to) - poolTime(b.to));
+  const latest = ordered[0];
+  if (!latest) return `未找到 ${name} 的复刻信息。`;
+  const chinaDay = (time: number) => Math.floor((time + 8 * 3_600_000) / oneDay);
+  const today = chinaDay(now);
+  const before = chinaDay(poolTime(latest.from)) - today;
+  const after = chinaDay(poolTime(latest.to)) - today;
+  const status = after < 0 ? `${-after}天未复刻` : before > 0 ? `下期UP，还有${before}天开启卡池`
+    : `当期UP，${after ? `还有${after}天` : "今天"}结束卡池`;
+  const roster = sections.filter(section => section.kind === history.kind);
+  const pools = ordered.map(period => [`所属版本：${period.version} ${period.half}`,
+    ...roster.flatMap(({ key, star }) => {
+      const names = period[key]?.map(entry => fromPeriod(catalog[history.kind], entry)?.card.name ?? entry);
+      return names?.length ? [`${star === 5 ? "五星" : "四星"}UP：${names.join("，")}`] : [];
+    }), `开始时间：${period.from}`, `结束时间：${period.to}`].join("\n"));
+  return { type: "forward" as const, nodes: [`${name}卡池详情`, status, ...pools] };
+}
+
 export async function queryStarRailPoolInfo(message: string, signal: AbortSignal) {
+  if (signal.aborted) return;
+  const legacy = legacyReprintCommand.exec(message.trim())?.[1];
+  if (legacy) {
+    const reply = await readStarRailReprint(starRailGachaThemeDirectory(), legacy).catch(() => "星铁历史卡池暂时无法读取，请检查本地卡池资料。");
+    if (!signal.aborted) return reply;
+    return;
+  }
   const query = parseStarRailPoolInfo(message);
-  if (!query || signal.aborted) return;
+  if (!query) return;
   if (query.type === "help") return help;
   const themeDirectory = starRailGachaThemeDirectory();
   const explicit = query.type === "version" || query.explicit;
