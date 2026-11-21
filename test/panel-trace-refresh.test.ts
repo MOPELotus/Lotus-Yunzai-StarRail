@@ -4,6 +4,7 @@ import { normalizePanel, parsePanelCommand, readLegacyPanel } from "../panel-mod
 import { applyStarRailTraces, confirmedStarRailTraces, readStarRailTraceArchive } from "../panel-trace-refresh.ts";
 
 const uid = "500000123", start = 1_800_000_000_000;
+const owner = { qq: "42", uid, region: "prod_gf_cn", gameBiz: "hkrpg_cn", accountId: "60" };
 const base = {
   id: 1001, name: "三月七", level: 80, rank: 4, equip: { id: 21001, level: 75, rank: 2 },
   relics: [{ id: 61011, pos: 1, level: 12, rarity: 5 }],
@@ -30,8 +31,13 @@ test("确认完整四项后仅叠加本人同星魂角色等级，装备、树�
   const snapshot = normalizePanel(uid, [base], new Date(start - 1_000));
   const incoming = confirmedStarRailTraces(snapshot, [update, { ...update, id: 1002 }], start);
   expect(incoming).toEqual({ "1001": { rank: 4, at: start, levels: { a: 6, e: 12, q: 10, t: 9 } } });
-  expect(readStarRailTraceArchive(uid, { version: 1, uid, records: incoming })).toEqual(incoming);
-  expect(() => readStarRailTraceArchive("500000124", { version: 1, uid, records: incoming })).toThrow("档案无效");
+  const archive = { version: 2, owner, records: incoming };
+  expect(readStarRailTraceArchive(owner, archive)).toEqual(incoming);
+  for (const change of [{ qq: "41" }, { uid: "500000124" }, { region: "prod_qd_cn" }, { gameBiz: "hkrpg_global" }, { accountId: "61" }]) {
+    expect(readStarRailTraceArchive({ ...owner, ...change }, archive)).toEqual({});
+  }
+  expect(readStarRailTraceArchive(owner, { version: 1, uid, records: incoming })).toEqual({});
+  expect(() => readStarRailTraceArchive(owner, { ...archive, records: [] })).toThrow("档案无效");
   const refreshed = applyStarRailTraces(snapshot, incoming);
   expect(refreshed.avatars[0]).toMatchObject({
     cone: { id: "21001", level: 75, rank: 2 }, relics: [{ id: "61011", level: 12 }],

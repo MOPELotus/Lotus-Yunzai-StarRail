@@ -1,3 +1,5 @@
+import type { GameRole, ProfileRequestContext } from "@lotus-yunzai/account";
+import { previewRedeemIdentity } from "@lotus-yunzai/hoyo-client/redeem-submit";
 import { array, canonicalStarRailPanelCharacter, id, object, readOfficialPanelSkill, starRailLegacySkillLevel, whole,
   type PanelSnapshot } from "./panel-model.ts";
 
@@ -9,6 +11,27 @@ interface Entry {
   readonly levels: Record<CoreKey, number>;
 }
 export type ConfirmedTraces = Record<string, Entry>;
+export interface StarRailTraceOwner {
+  readonly qq: string;
+  readonly uid: string;
+  readonly region: string;
+  readonly gameBiz: string;
+  readonly accountId: string;
+}
+
+export function starRailTraceOwner(source: ProfileRequestContext, role: GameRole): StarRailTraceOwner | undefined {
+  const { uid, region, gameBiz } = role;
+  const accountId = source.account.stuid || source.account.ltuid;
+  if (source.game !== "sr" || !region || !gameBiz || source.role.uid !== uid || source.role.region !== region ||
+      source.role.gameBiz !== gameBiz || !accountId || previewRedeemIdentity(source) !== accountId) return;
+  return { qq: source.qq, uid, region, gameBiz, accountId };
+}
+
+export function matchesStarRailTraceOwner(owner: StarRailTraceOwner, stored: unknown): boolean {
+  const candidate = object(stored);
+  return !!candidate && candidate.qq === owner.qq && candidate.uid === owner.uid && candidate.region === owner.region &&
+    candidate.gameBiz === owner.gameBiz && candidate.accountId === owner.accountId;
+}
 
 function confirmedLevels(rows: Record<string, unknown>) {
   const levels = coreKeys.map(key => whole(rows[key], 15));
@@ -47,10 +70,15 @@ export function confirmedStarRailTraces(snapshot: PanelSnapshot, upstream: reado
   return results;
 }
 
-export function readStarRailTraceArchive(uid: string, raw: unknown): ConfirmedTraces {
+export function readStarRailTraceArchive(owner: StarRailTraceOwner, raw: unknown): ConfirmedTraces {
   if (raw === null) return {};
-  const stored = object(raw), records = object(stored?.records);
-  if (stored?.version !== 1 || stored.uid !== uid || !records || Object.keys(records).length > 256) throw new Error("星铁行迹档案无效。");
+  const stored = object(raw);
+  // Pre-release archives without a verified owner cannot authorize reads.
+  if (stored?.version === 1 && stored.uid === owner.uid) return {};
+  if (stored?.version !== 2 || !object(stored.owner)) throw new Error("星铁行迹档案无效。");
+  if (!matchesStarRailTraceOwner(owner, stored.owner)) return {};
+  const records = object(stored.records);
+  if (!records || Object.keys(records).length > 256) throw new Error("星铁行迹档案无效。");
   return Object.fromEntries(Object.entries(records).map(([key, value]) => {
     const row = object(value), rank = whole(row?.rank, 6), at = whole(row?.at, Number.MAX_SAFE_INTEGER);
     const levels = confirmedLevels(object(row?.levels) ?? {});

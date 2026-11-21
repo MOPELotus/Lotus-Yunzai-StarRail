@@ -16,7 +16,8 @@ import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { panelExportFile } from "./panel-file.ts";
-import { applyStarRailTraces, confirmedStarRailTraces, readStarRailTraceArchive } from "./panel-trace-refresh.ts";
+import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner, readStarRailTraceArchive,
+  starRailTraceOwner, type StarRailTraceOwner } from "./panel-trace-refresh.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
@@ -111,17 +112,19 @@ export function createStarRailPanel(
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
       const key = `${qq}:${uid}`;
       let revision = account?.revision;
+      let traceOwner: StarRailTraceOwner | undefined;
       let snapshot: PanelSnapshot | undefined;
       let legacy: Record<string, unknown> | undefined;
       let updated = false;
       let publicLookup = false;
       async function verify() {
         signal.throwIfAborted();
-        const latest = await (account
-          ? profiles.requestContext(qq, profileId, "sr")
-          : profiles.savedRole(qq, profileId, "sr").then(role => ({ role, revision: undefined }))).catch(() => undefined);
-        if (!latest || latest.revision !== revision || latest.role.uid !== uid || latest.role.region !== role.region ||
-            latest.role.gameBiz !== role.gameBiz) {
+        const selectedRole = traceOwner ? await profiles.savedRole(qq, profileId, "sr").catch(() => undefined) : undefined;
+        const latestAccount = account ? await profiles.requestContext(qq, profileId, "sr").catch(() => undefined) : undefined;
+        const latestRole = account ? latestAccount?.role : await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
+        if (!latestRole || latestAccount?.revision !== revision || latestRole.uid !== uid || latestRole.region !== role.region ||
+            latestRole.gameBiz !== role.gameBiz || (traceOwner && (!latestAccount || !selectedRole ||
+              !matchesStarRailTraceOwner(traceOwner, starRailTraceOwner(latestAccount, selectedRole))))) {
           throw new ProfileError("changed", "星铁面板档案已变更，请重新查询。");
         }
       }
@@ -160,6 +163,9 @@ export function createStarRailPanel(
         if (selectedRole.uid !== uid || selectedRole.region !== role.region || selectedRole.gameBiz !== role.gameBiz) {
           return "所选档案当前绑定的星铁角色无法核验。";
         }
+        const owner = starRailTraceOwner(account, selectedRole);
+        if (!owner) return "档案的登录凭据与账号不一致，请重新登录。";
+        traceOwner = owner;
         if (!snapshot?.avatars.length) return `请先使用 *更新面板${profileId === 1 ? "" : profileId} 获取本人星铁面板。`;
         if (refreshing.has(key)) return "此星铁角色面板正在更新，请稍后查询。";
         refreshing.add(key);
@@ -174,15 +180,16 @@ export function createStarRailPanel(
           if (!entries.length) return "米游社未返回可核对的角色技能等级，已保留原行迹。";
           const avatarIds = new Set(snapshot.avatars.map(avatar => avatar.id));
           const count = await traces.update({ qq, uid }, verify, current => {
-            const records = Object.fromEntries(Object.entries(readStarRailTraceArchive(uid, current)).filter(([id]) => avatarIds.has(id)));
+            const records = Object.fromEntries(Object.entries(readStarRailTraceArchive(owner, current)).filter(([id]) => avatarIds.has(id)));
             let saved = 0;
             for (const [id, entry] of entries) {
               if ((records[id]?.at ?? 0) >= entry.at) continue;
               records[id] = entry;
               saved++;
             }
-            return saved ? { document: { version: 1, uid, records }, result: saved } : { result: 0 };
+            return saved ? { document: { version: 2, owner, records }, result: saved } : { result: 0 };
           });
+          await verify();
           if (!count) return "此档案已有更新的星铁角色行迹，原存档已保留。";
           return `星铁角色行迹刷新成功，共核对 ${count} 位角色的普攻、战技、终结技和天赋。可用 *角色名详情${profileId === 1 ? "" : profileId} 查看。`;
         } finally {
@@ -244,9 +251,18 @@ export function createStarRailPanel(
         if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
         return `已导出 ${name}（${format}）。`;
       }
-      if ((type === "detail" || type === "damage") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
-        const records = await traces.read(qq, uid).then(raw => readStarRailTraceArchive(uid, raw)).catch(() => undefined);
-        if (records) snapshot = applyStarRailTraces(snapshot, records);
+      if (account && context?.user_id?.toString() === qq && !context.isDelegated &&
+          (type === "detail" || type === "damage") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
+        const selectedRole = await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
+        const owner = selectedRole && starRailTraceOwner(account, selectedRole);
+        if (owner) {
+          const records = await traces.read(qq, uid).then(raw => readStarRailTraceArchive(owner, raw)).catch(() => undefined);
+          if (records && Object.keys(records).length) {
+            traceOwner = owner;
+            await verify();
+            snapshot = applyStarRailTraces(snapshot, records);
+          }
+        }
       }
       const theme = await readTheme();
       if (type === "relic-list") {
