@@ -4,7 +4,7 @@ import { object, recoverStarRailSkillLevel, starRailLegacySkillLevel, type Panel
 export function changePanelEidolon(target: PanelAvatar, rank: number, talentCons: unknown) {
   const upgrades = object(talentCons);
   const missing = { error: `「${target.name}」换星魂暂不可用，缺少可确认的星魂、技能等级或加级资料。` };
-  if (!upgrades || (!target.legacy && target.rank === undefined)) return missing;
+  if (!upgrades || (target.rank === undefined && (!target.legacy || target.skills.some(skill => skill.effective)))) return missing;
 
   const skillKeys = ["a", "e", "q", "t", ...["me", "mt", "xe"].filter(key => Object.hasOwn(upgrades, key))];
   const skills = new Map(target.skills.map(skill => [skill.key, skill.level]));
@@ -18,7 +18,7 @@ export function changePanelEidolon(target: PanelAvatar, rank: number, talentCons
 
   const adjusted: PanelAvatar["skills"] = [];
   for (const skill of target.skills) {
-    if (target.legacy || !skillKeys.includes(skill.key)) {
+    if ((target.legacy && !skill.effective) || !skillKeys.includes(skill.key)) {
       adjusted.push(skill);
       continue;
     }

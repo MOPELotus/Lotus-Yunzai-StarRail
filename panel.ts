@@ -16,6 +16,7 @@ import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { panelExportFile } from "./panel-file.ts";
+import { applyStarRailTraces, confirmedStarRailTraces, readStarRailTraceArchive } from "./panel-trace-refresh.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
@@ -26,6 +27,7 @@ import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, typ
 const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
 const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
+const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
 const maxBytes = 8 * 1024 * 1024;
 
 async function legacySnapshot(uid: string) {
@@ -78,6 +80,7 @@ export function createStarRailPanel(
 ) {
   const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
   const showcases = createRoleJsonArchive(showcaseDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
+  const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   const refreshing = new Set<string>();
 
   return async function query(qq: string, command: PanelCommand,
@@ -85,6 +88,7 @@ export function createStarRailPanel(
     const { type, profileId, name } = command;
     const uploadFile = context?.uploadFile;
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+    if (type === "refresh-traces" && context?.isDelegated) return "请在本人 QQ 会话刷新星铁角色行迹。";
     if ((type === "reload" || type === "showcase") && context?.isDelegated) return "请在本人 QQ 会话重新加载或查询星铁公开展板。";
     if (type === "export") {
       const group = context?.message_type === "group";
@@ -97,7 +101,7 @@ export function createStarRailPanel(
     }
     try {
       const account = await profiles.requestContext(qq, profileId, "sr").catch(error => {
-        if (type !== "update" && type !== "export" && error instanceof ProfileError && error.code === "login-required") return undefined;
+        if (type !== "update" && type !== "export" && type !== "refresh-traces" && error instanceof ProfileError && error.code === "login-required") return undefined;
         throw error;
       });
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
@@ -148,7 +152,42 @@ export function createStarRailPanel(
           snapshot = old?.snapshot;
           if (old?.snapshot.avatars.length) legacy = old.data;
         }
-        if (!snapshot?.avatars.length) snapshot = managedSnapshot(uid, await showcases.read(qq, uid), true) ?? snapshot;
+        if (type !== "refresh-traces" && !snapshot?.avatars.length) snapshot = managedSnapshot(uid, await showcases.read(qq, uid), true) ?? snapshot;
+      }
+
+      if (type === "refresh-traces" && account) {
+        const selectedRole = await profiles.savedRole(qq, profileId, "sr");
+        if (selectedRole.uid !== uid || selectedRole.region !== role.region || selectedRole.gameBiz !== role.gameBiz) {
+          return "所选档案当前绑定的星铁角色无法核验。";
+        }
+        if (!snapshot?.avatars.length) return `请先使用 *更新面板${profileId === 1 ? "" : profileId} 获取本人星铁面板。`;
+        if (refreshing.has(key)) return "此星铁角色面板正在更新，请稍后查询。";
+        refreshing.add(key);
+        try {
+          await verify();
+          const started = Date.now();
+          const result = await client.fetchStarRailPanel(account, { signal });
+          revision = result.revision;
+          await verify();
+          const incoming = confirmedStarRailTraces(snapshot, result.avatars, started);
+          const entries = Object.entries(incoming);
+          if (!entries.length) return "米游社未返回可核对的角色技能等级，已保留原行迹。";
+          const avatarIds = new Set(snapshot.avatars.map(avatar => avatar.id));
+          const count = await traces.update({ qq, uid }, verify, current => {
+            const records = Object.fromEntries(Object.entries(readStarRailTraceArchive(uid, current)).filter(([id]) => avatarIds.has(id)));
+            let saved = 0;
+            for (const [id, entry] of entries) {
+              if ((records[id]?.at ?? 0) >= entry.at) continue;
+              records[id] = entry;
+              saved++;
+            }
+            return saved ? { document: { version: 1, uid, records }, result: saved } : { result: 0 };
+          });
+          if (!count) return "此档案已有更新的星铁角色行迹，原存档已保留。";
+          return `星铁角色行迹刷新成功，共核对 ${count} 位角色的普攻、战技、终结技和天赋。可用 *角色名详情${profileId === 1 ? "" : profileId} 查看。`;
+        } finally {
+          refreshing.delete(key);
+        }
       }
 
       if (type === "showcase" || (type === "reload" && !snapshot?.avatars.length && context?.reply)) {
@@ -204,6 +243,10 @@ export function createStarRailPanel(
         if (outcome === "rejected") return "星铁面板文件发送失败，请检查网关的文件发送功能。";
         if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
         return `已导出 ${name}（${format}）。`;
+      }
+      if ((type === "detail" || type === "damage") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
+        const records = await traces.read(qq, uid).then(raw => readStarRailTraceArchive(uid, raw)).catch(() => undefined);
+        if (records) snapshot = applyStarRailTraces(snapshot, records);
       }
       const theme = await readTheme();
       if (type === "relic-list") {
@@ -404,6 +447,7 @@ export function createStarRailPanel(
       }
       if (type === "export") return "星铁面板导出失败，请检查本地面板档案。";
       if (type === "reload") return "星铁面板暂时无法重新加载，请检查本地面板档案。";
+      if (type === "refresh-traces") return "星铁角色行迹暂时无法刷新，已保留原行迹。";
       return "星铁面板暂时无法读取或更新，请稍后重试。";
     }
   };

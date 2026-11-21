@@ -88,6 +88,7 @@ interface Skill {
   key: string;
   level: number;
   original?: number;
+  effective?: true;
   icon: string;
 }
 interface Trace {
@@ -152,6 +153,7 @@ const leadingPanelUid = /^(#星铁|\*)\s*((?:18|[1-9])\d{8})(?!\d)\s*(?=[\p{L}\p
 
 const panelTarget = String.raw`(?:\s*([1-9]\d{8,9})(?:\s+档案\s*([1-9]\d{0,2}))?|\s*(?:档案\s*)?(\d{1,3}))?`;
 const showcasePanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:展板|备用)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "u");
+const traceRefresh = /^(?:#星铁|\*)\s*(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:天赋|技能|行迹)(?:\s*(?:档案\s*)?(\d{1,3}))?$/u;
 const reloadPanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:加载|重新加载|重载)面板${panelTarget}$`, "u");
 const refreshPanel = new RegExp(
   String.raw`^(?:(?:#星铁|\*)\s*(?:(?:米游社|mys)\s*)?|#?(?:米游社|mys)\s*星铁\s*)` +
@@ -159,6 +161,8 @@ const refreshPanel = new RegExp(
 );
 
 export function parsePanelCommand(message: string) {
+  const traces = traceRefresh.exec(message);
+  if (traces) return { type: "refresh-traces" as const, name: "", profileId: Number(traces[1] ?? 1) };
   const reload = reloadPanel.exec(message);
   const showcase = reload ? undefined : showcasePanel.exec(message);
   const refresh = reload || showcase ? undefined : refreshPanel.exec(message);
@@ -232,7 +236,7 @@ function relic(row: Json): Relic | undefined {
   };
 }
 
-function skill(row: Json): Skill | undefined {
+export function readOfficialPanelSkill(row: Json): Skill | undefined {
   const key = remakeMap[text(row.remake)];
   const level = whole(row.level, 25);
   if (key && level !== undefined && level > 0) return { key, level, icon: safeArt(row.icon) };
@@ -264,7 +268,7 @@ function officialAvatar(row: Json): PanelAvatar | undefined {
     id: avatarId, name, level, rank: whole(row.rank, 6), rarity: whole(row.rarity, 5),
     element: elements[rawElement] ?? rawElement, path: text(row.avatar_path ?? row.path), face: safeArt(row.icon ?? row.image),
     splash: safeArt(row.large_icon ?? row.image), stats: array(row.properties).slice(0, 45).flatMap(row => property(row, true) ?? []),
-    skills: allSkills.flatMap(row => skill(row) ?? []).filter(row => !seen.has(row.key) && Boolean(seen.add(row.key))),
+    skills: allSkills.flatMap(row => readOfficialPanelSkill(row) ?? []).filter(row => !seen.has(row.key) && Boolean(seen.add(row.key))),
     traces: allSkills.filter(row => row.point_type !== 2 && !remakeMap[text(row.remake)]).slice(0, 24).map(row => ({
       id: id(row.point_id), icon: safeArt(row.icon), name: text(row.name ?? row.remake), active: row.is_activated === true,
     })),

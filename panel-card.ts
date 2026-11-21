@@ -296,7 +296,7 @@ export async function makePanelDetailCard(
   for (const skill of avatar.skills) {
     talent[skill.key] = { level: skill.level, original: skill.original };
     const upgrade = levels?.[skill.key];
-    if (avatar.legacy && upgrade && skill.original === undefined) {
+    if (avatar.legacy && upgrade && skill.original === undefined && !skill.effective) {
       const rank = avatar.rank ?? 0;
       talent[skill.key] = { original: skill.level,
         level: starRailLegacySkillLevel(skill.key, skill.level, rank, upgrade) };

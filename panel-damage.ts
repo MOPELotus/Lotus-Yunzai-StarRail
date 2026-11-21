@@ -590,7 +590,7 @@ function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number, ski
       const missing = skill ? !skill.level : !skillPreview || !["xe", "me", "mt"].includes(originalKey);
       if (missing || (avatar.legacy && !upgrades)) throw new MissingDamageData("缺少技能等级");
       const upgradeAt = upgrades?.[originalKey];
-      const level = !skill ? 1 : avatar.legacy && skill.original === undefined
+      const level = !skill ? 1 : avatar.legacy && skill.original === undefined && !skill.effective
         ? starRailLegacySkillLevel(originalKey, skill.level, rank, upgradeAt) : skill.level;
       const tables = object(object(cfg?.[key])?.tables);
       const rows = Object.values(tables ?? {}).map(object);
