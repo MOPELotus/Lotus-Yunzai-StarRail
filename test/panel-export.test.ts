@@ -5,8 +5,9 @@ import { join } from "node:path";
 import { createProfileStore } from "@lotus-yunzai/account";
 import { createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import type { ChatFile, ChatFileResult } from "../../../lib/chat-files.ts";
-import { normalizePanel, parsePanelCommand } from "../panel-model.ts";
+import { normalizePanel, parsePanelCommand, readLegacyPanel, starRailLegacySkillLevel } from "../panel-model.ts";
 import { panelExportFile } from "../panel-file.ts";
+import { applyStarRailTraces } from "../panel-trace-refresh.ts";
 import { createStarRailPanel } from "../panel.ts";
 
 const uid = "100000122";
@@ -99,4 +100,56 @@ test("新版面板导出标明版本，只交付面板字段和公开图链接",
   expect(body).not.toContain("private-value");
   expect(file.format).toBe("Lotus-Yunzai 面板格式");
   expect(JSON.parse(body)).toMatchObject({ version: 1, uid, avatars: [{ id: "1102", face: "", stats: [{ key: "hp", value: "1000" }] }] });
+});
+
+
+test("旧面板只导出可唯一还原的刷新等级，沿用歧义等级和缺档位资料的原值", () => {
+  const old = { ...legacy, _profile: 1_700_000_000_000, avatars: { "1102": { ...legacy.avatars["1102"],
+    cons: 4, talent: { a: 3, e: 7, q: 8, t: 9, me: 3 }, _talent: 1_699_000_000_000,
+  } } };
+  const stored = JSON.stringify(old);
+  const traces = { "1102": { rank: 4, at: 1_800_000_000_000, levels: { a: 6, e: 12, q: 15, t: 11 } } };
+  const unlocks = { a: [3], e: 3, q: 3 };
+  const view = applyStarRailTraces(readLegacyPanel(uid, old), traces);
+  const file = panelExportFile(view, old, new Map([["1102", unlocks]]));
+  expect(file.name).toBe(`${uid}.json`);
+  expect(file.unresolved).toBe(2);
+  const body = file.bytes.toString();
+  expect(body).not.toContain(credential);
+  expect(body).not.toContain(String(traces["1102"].at));
+  const exported = JSON.parse(body);
+  expect(exported).toMatchObject({ uid, _profile: old._profile, avatars: { "1102": {
+    _talent: 1_699_000_000_000, talent: { a: 5, e: 10, q: 8, t: 9, me: 3 },
+    weapon: { id: "23001", level: 80, affix: 1 },
+  } } });
+  const avatar = readLegacyPanel(uid, exported).avatars[0]!;
+  expect(avatar.skills.slice(0, 2).map(skill => starRailLegacySkillLevel(skill.key, skill.level, avatar.rank!, unlocks[skill.key as "a" | "e"])))
+    .toEqual([6, 12]);
+  expect(JSON.stringify(old)).toBe(stored);
+
+  const rankZero = { uid, avatars: { "1102": { ...old.avatars["1102"], cons: 0 } } };
+  const rankZeroView = applyStarRailTraces(readLegacyPanel(uid, rankZero), { "1102": { ...traces["1102"], rank: 0 } });
+  const rankZeroFile = panelExportFile(rankZeroView, rankZero);
+  expect(JSON.parse(rankZeroFile.bytes.toString()).avatars["1102"].talent).toEqual({ a: 6, e: 12, q: 15, t: 11, me: 3 });
+  expect(rankZeroFile.unresolved).toBe(0);
+});
+
+test("新版 v1 使用四项明确有效等级并保持原有面板字段、日期与文件名", () => {
+  const snapshot = normalizePanel(uid, [{ id: 1102, level: 80, rank: 4,
+    skills: [{ remake: "战技", level: 7 }, { remake: "忆灵技", level: 3 }],
+  }], new Date("2025-01-01"));
+  const at = 1_800_000_000_000;
+  const view = applyStarRailTraces(snapshot, { "1102": { rank: 4, at, levels: { a: 6, e: 12, q: 15, t: 11 } } });
+  const file = panelExportFile(view);
+  expect(file.name).toBe(`${uid}.json`);
+  const body = file.bytes.toString();
+  const document = JSON.parse(body);
+  expect(document.updatedAt).toBe(snapshot.updatedAt);
+  expect(document.avatars[0].skills).toEqual([
+    { key: "e", level: 12, icon: "" }, { key: "me", level: 3, icon: "" }, { key: "a", level: 6, icon: "" },
+    { key: "q", level: 15, icon: "" }, { key: "t", level: 11, icon: "" },
+  ]);
+  expect(body).not.toMatch(/(?:accountId|owner|records|effective)/u);
+  expect(body).not.toContain(String(at));
+  expect(snapshot.avatars[0]?.skills[0]?.level).toBe(7);
 });

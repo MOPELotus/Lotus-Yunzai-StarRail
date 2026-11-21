@@ -1,4 +1,4 @@
-import { id, object, safeArt, type PanelSnapshot } from "./panel-model.ts";
+import { id, object, recoverStarRailSkillLevel, safeArt, type PanelSnapshot } from "./panel-model.ts";
 
 function scalarFields(value: unknown, names: readonly string[]) {
   const row = object(value);
@@ -20,19 +20,42 @@ function mapLegacyRelics(value: unknown) {
   }));
 }
 
-function legacyDocument(snapshot: PanelSnapshot, raw: Record<string, unknown>) {
+function provenTalentUnlocks(value: unknown): value is number | number[] {
+  const unlocks = Array.isArray(value) ? value : [value];
+  return unlocks.length > 0 && new Set(unlocks).size === unlocks.length && unlocks.every(
+    unlock => typeof unlock === "number" && Number.isInteger(unlock) && unlock >= 1 && unlock <= 6,
+  );
+}
+
+function legacyDocument(snapshot: PanelSnapshot, raw: Record<string, unknown>, talentCons?: ReadonlyMap<string, Record<string, unknown>>) {
+  let unresolved = 0;
   const storedAvatars = object(raw.avatars) ?? {};
   const avatars = Object.fromEntries(snapshot.avatars.map(avatar => {
     const row = object(storedAvatars[avatar.id]) ?? {};
+    let talent = scalarFields(row.talent, ["a", "e", "q", "t", "z", "xe", "me", "mt"]);
+    for (const skill of avatar.skills) {
+      if (!skill.effective || !["a", "e", "q", "t"].includes(skill.key)) continue;
+      const unlocks = talentCons?.get(avatar.id)?.[skill.key];
+      const rank = avatar.rank;
+      // Testing the inverse at rank zero rejects levels saturated by an active bonus.
+      const original = rank !== undefined && (rank === 0 || provenTalentUnlocks(unlocks))
+        ? recoverStarRailSkillLevel(skill.key, skill.level, rank, 0, unlocks)
+        : undefined;
+      if (original === undefined) {
+        unresolved++;
+        continue;
+      }
+      (talent ??= {})[skill.key] = original;
+    }
     return [avatar.id, {
       ...scalarFields(row, ["name", "id", "elem", "level", "promote", "cons", "_source", "_time", "_update", "_talent"]),
-      talent: scalarFields(row.talent, ["a", "e", "q", "t", "z", "xe", "me", "mt"]),
+      talent,
       trees: Array.isArray(row.trees) ? row.trees.filter(tree => id(tree)) : undefined,
       weapon: scalarFields(row.weapon, ["id", "level", "promote", "affix"]),
       artis: mapLegacyRelics(row.artis), mysArtis: mapLegacyRelics(row.mysArtis),
     }];
   }));
-  return { uid: snapshot.uid, ...scalarFields(raw, ["_profile"]), avatars };
+  return { document: { uid: snapshot.uid, ...scalarFields(raw, ["_profile"]), avatars }, unresolved };
 }
 
 const avatarKeys = ["id", "name", "element", "path", "level", "rank", "rarity"];
@@ -58,9 +81,10 @@ function managedDocument(snapshot: PanelSnapshot) {
   };
 }
 
-export function panelExportFile(snapshot: PanelSnapshot, legacy?: Record<string, unknown>) {
-  const document = legacy ? legacyDocument(snapshot, legacy) : managedDocument(snapshot);
+export function panelExportFile(snapshot: PanelSnapshot, legacy?: Record<string, unknown>,
+  talentCons?: ReadonlyMap<string, Record<string, unknown>>) {
+  const { document, unresolved } = legacy ? legacyDocument(snapshot, legacy, talentCons) : { document: managedDocument(snapshot), unresolved: 0 };
   const format = legacy ? "旧 PlayerData 格式" : "Lotus-Yunzai 面板格式";
   const name = `${snapshot.uid}.json`;
-  return { name, format, bytes: Buffer.from(JSON.stringify(document, null, "\t") + "\n") };
+  return { name, format, unresolved, bytes: Buffer.from(JSON.stringify(document, null, "\t") + "\n") };
 }

@@ -80,6 +80,16 @@ function lookup(avatar: PanelAvatar, theme: Metadata) {
   return { meta, name, abbr: text(meta?.abbr) || shortNames[name] || shortNames[avatar.name] || name };
 }
 
+function readPanelCharacter(name: string, theme: Metadata): Promise<Json> {
+  return safePart(name) ? readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : Promise.resolve({});
+}
+
+export async function readPanelTalentCons(avatar: PanelAvatar, theme: Metadata) {
+  const { name } = lookup(avatar, theme);
+  const character = await readPanelCharacter(name, theme);
+  return String(character.id) === avatar.id ? object(character.talentCons) : undefined;
+}
+
 export function findPanelAvatar(avatars: readonly PanelAvatar[], name: string, theme: Metadata) {
   const request = normalizeName(name);
   const exact = avatars.find(avatar => request === normalizeName(avatar.name) || request === normalizeName(lookup(avatar, theme).name) || name === avatar.id);
@@ -283,7 +293,7 @@ export async function makePanelDetailCard(
 ) {
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
-  const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
+  const character = await readPanelCharacter(name, theme);
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
   const path = text(meta?.weapon) || avatar.path;
   const cone = avatar.cone, weapon = cone && object(theme.weapons[cone.id]);
@@ -349,7 +359,7 @@ export async function makePanelDetailCard(
 
 async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata) {
   const { name, abbr, meta } = lookup(avatar, theme);
-  const character = safePart(name) ? await readJson(join(theme.root, "meta-sr", "character", name, "data.json")) : {};
+  const character = await readPanelCharacter(name, theme);
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
   let speed = avatar.stats.find(stat => stat.key === "speed")?.value;
   if (!speed && name === "缇宝" && avatar.legacy) {

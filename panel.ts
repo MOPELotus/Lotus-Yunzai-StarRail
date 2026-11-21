@@ -7,7 +7,7 @@ import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient 
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { MessageEvent } from "../../lib/messages.ts";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
-import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
+import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
@@ -243,16 +243,8 @@ export function createStarRailPanel(
         }
         return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
       }
-      if (type === "export" && uploadFile) {
-        const { name, bytes, format } = panelExportFile(snapshot, legacy);
-        await verify();
-        const outcome = await uploadFile({ name, bytes }).catch(() => "unknown");
-        if (outcome === "rejected") return "星铁面板文件发送失败，请检查网关的文件发送功能。";
-        if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
-        return `已导出 ${name}（${format}）。`;
-      }
       if (account && context?.user_id?.toString() === qq && !context.isDelegated &&
-          (type === "detail" || type === "damage") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
+          (type === "detail" || type === "damage" || type === "export") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
         const selectedRole = await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
         const owner = selectedRole && starRailTraceOwner(account, selectedRole);
         if (owner) {
@@ -263,6 +255,24 @@ export function createStarRailPanel(
             snapshot = applyStarRailTraces(snapshot, records);
           }
         }
+      }
+      if (type === "export" && uploadFile) {
+        const talentCons = new Map<string, Record<string, unknown>>();
+        const ranked = legacy && snapshot.avatars.filter(avatar => (avatar.rank ?? 0) > 0 && avatar.skills.some(skill => skill.effective));
+        if (ranked?.length) {
+          const theme = await readTheme();
+          await Promise.all(ranked.map(async avatar => {
+            const unlocks = await readPanelTalentCons(avatar, theme);
+            if (unlocks) talentCons.set(avatar.id, unlocks);
+          }));
+        }
+        const { name, bytes, format, unresolved } = panelExportFile(snapshot, legacy, talentCons);
+        await verify();
+        const outcome = await uploadFile({ name, bytes }).catch(() => "unknown");
+        if (outcome === "rejected") return "星铁面板文件发送失败，请检查网关的文件发送功能。";
+        if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
+        const retained = unresolved ? `旧格式有 ${unresolved} 项技能无法确认基础等级，已保留原档对应字段。` : "";
+        return `已导出 ${name}（${format}）。${retained}`;
       }
       const theme = await readTheme();
       if (type === "relic-list") {
