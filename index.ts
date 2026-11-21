@@ -238,6 +238,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     },
     async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & {
       readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
+      readonly adapter?: "milky";
+      readonly inlineImageByteLimit?: number;
     }) {
       const month = starRailMonthlyCommand.exec(context.normalizedMessage);
       if (month) return monthly(context, Number(month[1] ?? 1));
@@ -253,7 +255,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
           return "请从登录档案对应的 QQ 会话使用星铁挑战战绩。";
         }
-        return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat);
+        return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat,
+          context.adapter === "milky" ? context.inlineImageByteLimit : undefined);
       }
       const panelCommand = parsePanelCommand(context.normalizedMessage);
       if (panelCommand) {
