@@ -58,8 +58,10 @@ const specialPools = new Map<string, SpecialPool>([
   ["武器联动", "GachaType_CollabEquipmentUp"], ["新手", "GachaType_Newbie"],
 ]);
 const historyRoot = fileURLToPath(new URL("../../data/starRailGachaJson/", import.meta.url));
-const legacyHistoryRoots = ["Lotus-Plugin", "Lotus-ReFactor"].map(directory =>
-  fileURLToPath(new URL(`../${directory}/data/starRailGachaJson/`, import.meta.url)));
+const legacyHistoryRoots = ["Lotus-Plugin", "Lotus-ReFactor"].flatMap(directory => [
+  `../${directory}/data/starRailGachaJson/`,
+  `../../data/legacy-game-history/${directory}/starRailGachaJson/`,
+].map(path => fileURLToPath(new URL(path, import.meta.url))));
 const recordsRoot = fileURLToPath(new URL("../../data/starRailGachaRows/", import.meta.url));
 const legacyRecordsRoot = fileURLToPath(new URL("../../data/srJson/", import.meta.url));
 const help = [
