@@ -4,7 +4,7 @@ import { readLegacyPanel } from "../panel-model.ts";
 
 const uid = "100000123";
 const parts = Object.fromEntries([1, 2, 3, 4, 5, 6].map((slot) => [slot, {
-  id: String(61010 + slot), level: 15, star: 5, mainId: 1, attrIds: slot === 3 ? ["7,2,1"] : [],
+  id: String(61010 + slot), level: 15, mainId: 1, attrIds: slot === 3 ? ["7,2,1"] : [],
 }]));
 const data = {
   uid, avatars: { 1302: { id: 1302, name: "银枝", elem: "物理", level: 80, promote: 6, _source: "mysPanelHSR",
@@ -36,7 +36,7 @@ const relicMetadata = {
 const setForId = (id: string) => Number(id) < 61015 ? "野穗伴行的快枪手" : "盗贼公国塔利亚";
 const options = { character, cone, conePath: "智识", relicMetadata, setForId };
 
-test("matches the old static panel for promotes, trace, cone superimposition and set bonuses", () => {
+test("matches the old static panel with implicit relic rarity, promotions, traces and equipment", () => {
   const avatar = readLegacyPanel(uid, data).avatars[0]!;
   const stats = calculateLegacyPanelAttributes(avatar, options);
   expect(stats?.filter(({ key }) => ["hp", "atk", "speed", "cpct", "cdmg", "phy", "stance"].includes(key))).toEqual([

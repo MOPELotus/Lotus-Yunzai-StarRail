@@ -153,6 +153,7 @@ type Buff = {
   tree?: number;
 };
 type Rule = {
+  createdBy?: string;
   details: readonly {
     title: string | ((variables: Variables) => string);
     cons?: number;
@@ -587,7 +588,9 @@ function talentValues(avatar: PanelAvatar, metadata: Metadata, rank: number, ski
     get(_, key: string) {
       const originalKey = key.replace(/^([aeqtx]|xe|me|mt)[123]$/u, "$1");
       const skill = current.get(originalKey);
-      const missing = skill ? !skill.level : !skillPreview || !["xe", "me", "mt"].includes(originalKey);
+      // The old profile rules use Lv.1 for secondary skill records missing from PlayerData.
+      const optional = ["xe", "me", "mt"].includes(originalKey) && (avatar.legacy || skillPreview);
+      const missing = skill ? !skill.level : !optional;
       if (missing || (avatar.legacy && !upgrades)) throw new MissingDamageData("缺少技能等级");
       const upgradeAt = upgrades?.[originalKey];
       const level = !skill ? 1 : avatar.legacy && skill.original === undefined && !skill.effective
@@ -799,7 +802,7 @@ function originalDamage(
       return result?.average !== undefined ? { critical: result.critical, average: result.average, ...(result.display === undefined ? {} : { display: result.display }), ...(result.percentage === undefined ? {} : { percentage: result.percentage }) } : undefined;
     }),
   }));
-  return { name: character.name, element: character.element, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };
+  return { name: character.name, element: character.element, createdBy: rule.createdBy, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };
 }
 
 export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number, rows?: PanelAttributeRows, skillPreview = false) {

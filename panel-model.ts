@@ -142,7 +142,7 @@ export interface PanelAvatar {
   stats: Stat[];
   cone?: Cone;
   relics: Relic[];
-  legacy?: { source: string; promote?: number; dataComplete: boolean };
+  legacy?: { source: string; promote?: number; dataComplete: boolean; updatedAt?: string };
 }
 export type ShowcaseProvider = "mihomo" | "avocado" | "enka";
 
@@ -334,12 +334,18 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
     const relics = legacyParts.flatMap(([key, value]) => {
       const part = object(value), partId = id(part?.id), slot = whole(key, 6);
       if (!part || !partId || !slot) return [];
-      return [{ id: partId, slot, name: "", image: "", level: whole(part.level, 15), rarity: whole(part.star, 5), subs: [],
+      // Old PlayerData leaves rarity implicit when a Star Rail relic ID is recorded.
+      const tier = /^([3-6])[13]\d{3}$/u.exec(partId);
+      return [{ id: partId, slot, name: "", image: "", level: whole(part.level, 15),
+        rarity: whole(part.star, 5) ?? (tier ? Number(tier[1]) - 1 : undefined), subs: [],
         legacyMainId: String(part.mainId ?? ""), legacySubIds: Array.isArray(part.attrIds) ? part.attrIds.filter(id => typeof id === "string").slice(0, 4) : [] }];
     });
     const traces = Array.isArray(row.trees) ? row.trees.map(id).filter(Boolean).slice(0, 24).map(id => ({ id, active: true, icon: "", name: "" })) : [];
+    const stamp = typeof row._time === "string" ? Date.parse(row._time)
+      : typeof row._time === "number" && Number.isSafeInteger(row._time) && row._time >= 1e9 && row._time <= 9_999_999_999_999
+        ? (row._time < 1e11 ? row._time * 1000 : row._time) : NaN;
     parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), element: text(row.elem), path: "", face: "", splash: "",
-      skills, traces, stars: [], stats: [], legacy: { source, promote: whole(row.promote, 6),
+      skills, traces, stars: [], stats: [], legacy: { source, promote: whole(row.promote, 6), updatedAt: Number.isFinite(stamp) ? new Date(stamp).toISOString() : undefined,
         dataComplete: Array.isArray(row.trees) && relics.length === legacyParts.length }, cone: gear && coneId ? { id: coneId, name: text(gear.name), image: "", description: "",
         rank: whole(gear.affix, 5), level: whole(gear.level, 80), promote: whole(gear.promote, 6) } : undefined, relics });
   }

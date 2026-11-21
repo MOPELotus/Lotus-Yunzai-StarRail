@@ -160,17 +160,25 @@ export function scoreStarRailRelics(avatar: PanelAvatar, options: {
   const values = options.relicValues && object(options.relicValues.starData) ? options.relicValues : defaultValues;
   let total = 0;
   const artis: Record<number, ReturnType<typeof scorePart>> = {};
+  const combined = new Map<string, { key: string; value: number; eff: number }>();
   for (const part of avatar.relics) {
     if (Object.hasOwn(artis, part.slot)) continue;
     const roll = rollValue(part, values);
     if (!roll) continue;
+    for (const { key, value, eff } of roll.sub) {
+      const entry = combined.get(key) ?? { key, value: 0, eff: 0 };
+      entry.value += value;
+      entry.eff += eff ?? 0;
+      combined.set(key, entry);
+    }
     const result = scorePart(part.slot, roll);
     total += result._mark;
     artis[part.slot] = result;
   }
   if (!Object.keys(artis).length) return;
   const charWeight = Object.fromEntries(Object.entries(attrs).map(([key, cfg]) => [key, cfg.weight]));
-  return { charCfg: cfg, artis, charWeight, mark: total.toFixed(1), markClass: grade(total / 6), incomplete: avatar.relics.length - Object.keys(artis).length };
+  const allAttr = [...combined.values()].sort((a, b) => a.eff - b.eff).reverse().slice(0, 9).map(item => shownRoll(item, 0));
+  return { charCfg: cfg, artis, allAttr, charWeight, mark: total.toFixed(1), markClass: grade(total / 6), incomplete: avatar.relics.length - Object.keys(artis).length };
 
   function scorePart(slot: number, roll: { main: Roll; sub: readonly Roll[] }) {
     const key = roll.main.key;

@@ -3,7 +3,8 @@ import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
-import { calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
+import { calculateLegacyPanelAttributeRows, calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
+import { readStarRailPersonalDamage } from "./panel-damage.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.js";
 import { isStarRailTalentUnlocks, object, officialArtHosts, recoverStarRailSkillLevel, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
@@ -49,7 +50,7 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     readJson(join(lists, "artifact", "data.json")), readJson(join(lists, "artifact", "meta.json")),
     Bun.file(join(root, "common", "common.css")).exists(),
   ]);
-  const relicById = new Map<string, { name: string; asset: readonly [string, string, string] }>();
+  const relicById = new Map<string, { name: string; abbr?: string; asset: readonly [string, string, string] }>();
   const relicSets = new Map<string, { outer: boolean; pieces: Map<string, { id: string; name: string }> }>();
   for (const value of Object.values(relics)) {
     const row = object(value);
@@ -61,7 +62,7 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
       if (!name || !/^[1-6]$/u.test(slot)) continue;
       for (const [itemId, star] of Object.entries(object(part?.ids) ?? {})) {
         if (/^[1-9]\d{0,11}$/u.test(String(itemId))) {
-          relicById.set(itemId, { name, asset: ["artifact", row.name, `arti-${slot}.webp`] });
+          relicById.set(itemId, { name, abbr: text(part?.abbr), asset: ["artifact", row.name, `arti-${slot}.webp`] });
           const key = `${slot}:${star}`;
           if (typeof star === "number" && Number.isInteger(star) && star >= 2 && star <= 5 && !pieces.has(key)) {
             pieces.set(key, { id: itemId, name });
@@ -156,8 +157,8 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
   }
 }
 
-async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string, signal: AbortSignal) {
-  const selected = await readStarRailPanelPortrait(theme.root, avatar.id, name);
+async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string, signal: AbortSignal, special = false) {
+  const selected = await readStarRailPanelPortrait(theme.root, avatar.id, name, special);
   if (selected) return cssFile(selected.file);
   return remoteArt(avatar.splash || avatar.face, signal);
 }
@@ -315,18 +316,26 @@ function coneDetails(cone: PanelAvatar["cone"], metadata: Json) {
   const attrs: Record<string, string> = {};
   for (const key of ["hp", "atk", "def"]) {
     const value = attributes[key];
-    attrs[key] = value === undefined ? "—" : formatPanelAttribute(value, false);
+    attrs[key] = value === undefined ? "—" : panelNumber(value, 1);
   }
   const skill = object(metadata.skill);
   const tables = object(skill?.tables);
   const rank = cone?.rank;
-  const description = text(skill?.desc, 1600).replace(/<[^>]{1,100}>/gu, "").replace(/\$(\d{1,2})\[(i|f[1-4])\]/gu, (raw, key, format) => {
+  const description = (text(skill?.desc, 1600) || cone?.description || "").replace(/\$(\d{1,2})\[(i|f[1-4])\](%?)/gu, (_raw, key, format, percent) => {
     const values = tables?.[key];
     const value = rank && Array.isArray(values) ? values[rank - 1] : undefined;
     if (typeof value !== "number" || !Number.isFinite(value)) return "—";
-    return format === "i" ? String(Math.round(value)) : String(Number(value.toFixed(Number(format[1]))));
+    return percent ? value.toFixed(format === "f2" ? 2 : 1) + "%" : panelNumber(value);
   });
-  return { attrs, desc: { desc: cone?.description.replace(/<[^>]{1,100}>/gu, "") || description } };
+  const descriptionParts = [];
+  let highlight = false;
+  for (const token of description.match(/<[^>]{1,100}>|[^<]+|</gu) ?? []) {
+    if (token === "<nobr>") highlight = true;
+    else if (token === "</nobr>") highlight = false;
+    else if (/^<br\s*\/?>$/iu.test(token)) descriptionParts.push({ line: true });
+    else if (token === "<" || !token.startsWith("<")) descriptionParts.push({ value: token, highlight });
+  }
+  return { attrs, descriptionParts };
 }
 
 function showcase(stats: PanelAvatar["stats"], element: string) {
@@ -340,10 +349,23 @@ function showcase(stats: PanelAvatar["stats"], element: string) {
     const ratio = stat.value.endsWith("%");
     if (ratio !== stat.base.endsWith("%")) continue;
     const diff = Number.parseFloat(stat.value) - Number.parseFloat(stat.base);
-    if (diff) attr[key + "Plus"] = `${diff > 0 ? "+" : ""}${formatPanelAttribute(diff, ratio)}`;
+    if (Number.isFinite(diff)) attr[key + "Plus"] = `${diff >= 0 ? "+" : ""}${formatPanelAttribute(diff, ratio)}`;
   }
   return attr;
 }
+
+function panelNumber(value: number, digits = 0) {
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+}
+
+function detailTime(value: string | undefined) {
+  return formatDate(value).slice(5).replace("/", "-");
+}
+
+const legacySources: Readonly<Record<string, string>> = {
+  mys: "米游社", mysPanelHSR: "米游社", mysPanel: "米游社", homo: "Mihomo",
+  enka: "Enka.Network", EnkaHSR: "Enka.Network", "avocado.wiki": "avocado.wiki",
+};
 
 function relicStats(part: PanelAvatar["relics"][number], theme: Metadata) {
   const result = readLegacyRelicAttributes(part, theme.relicValues);
@@ -411,26 +433,32 @@ export async function makePanelDetailCard(
     imgs[skill.key] = await localArt(theme, ["character", name, "imgs", `talent-${skill.key}.webp`])
       || await remoteArt(skill.icon, artSignal);
   }
-  if (skillPreview) {
-    for (const key of ["xe", "me", "mt"]) {
-      if (object(character.talent)?.[key]) imgs[key] = await localArt(theme, ["character", name, "imgs", `talent-${key}.webp`]);
-    }
+  for (const key of ["xe", "me", "mt"]) {
+    if (!imgs[key] && object(character.talent)?.[key]) imgs[key] = await localArt(theme, ["character", name, "imgs", `talent-${key}.webp`]);
   }
   for (let i = 1; i <= 6; i++) {
     const oldKey = text(levels?.[i]);
     imgs[`cons${i}`] = (oldKey && imgs[oldKey]) || await localArt(theme, ["character", name, "imgs", `cons-${i}.webp`])
       || await remoteArt(avatar.stars[i - 1]?.image, artSignal);
   }
-  imgs.splash = await panelPortrait(theme, avatar, name, artSignal);
+  const { score } = await scorePanelAvatarRelics(avatar, theme, character);
+  const completeSkills = Object.entries({ a: 6, e: 10, q: 10, t: 10 }).every(([key, level]) =>
+    (talent[key]?.original ?? (!avatar.rank ? talent[key]?.level : undefined)) === level);
+  const traceIds = new Set(avatar.traces.filter(trace => trace.active).map(trace => trace.id.slice(-3)));
+  const special = avatar.rank === 6 || score?.markClass === "ACE" || score?.markClass === "MAX" ||
+    (completeSkills && ["101", "102", "103", "201", "202", "203", "204", "205", "206", "207", "208", "209", "210"].every(id => traceIds.has(id)));
+  imgs.splash = await panelPortrait(theme, avatar, name, artSignal, special);
   const treeData = await makeTraceTree(avatar, name, character, theme, artSignal);
   const artis = [];
   for (const row of avatar.relics) {
     const part = relicStats(row, theme);
     const local = theme.relicById.get(part.id);
+    const scored = score?.artis[row.slot];
     artis.push({
-      name: part.name || local?.name || `遗器 ${part.slot}`, level: part.level ?? "",
+      abbr: local?.abbr, name: part.name || local?.name || `遗器 ${part.slot}`, level: part.level ?? "",
       img: (local && await localArt(theme, local.asset)) || await remoteArt(part.image, artSignal),
-      main: part.main, attrs: part.subs.map(stat => ({ ...stat, upNum: stat.times })),
+      mark: scored?.mark, markClass: scored?.markClass,
+      main: scored?.main ?? part.main, attrs: scored?.attrs ?? part.subs.map(stat => ({ ...stat, upNum: stat.times })),
     });
   }
   const weaponImg = cone && (await localArt(theme, ["weapon", weaponType, weaponFolder, "splash.webp"])
@@ -438,19 +466,38 @@ export async function makePanelDetailCard(
     || await remoteArt(cone?.image, artSignal);
   const coneMeta = safePart(weaponType) && safePart(weaponFolder)
     ? await readJson(join(theme.root, "meta-sr", "weapon", weaponType, weaponFolder, "data.json")) : {};
-  const derived = avatar.stats.length ? undefined : calculateLegacyPanelAttributes(avatar, {
-    character, cone: coneMeta, conePath: weaponType, relicMetadata: theme.relicValues,
-    setForId: id => theme.relicById.get(id)?.asset[1],
-  });
+  const metadata = { character, cone: coneMeta, conePath: weaponType, relicMetadata: theme.relicValues,
+    setForId: (id: string) => theme.relicById.get(id)?.asset[1] };
+  const derived = avatar.stats.length ? undefined : calculateLegacyPanelAttributeRows(avatar, metadata);
+  const attr = showcase(avatar.stats, element);
+  for (const { key, base, value, ratio } of derived ?? []) {
+    const slot = key === damageAttribute[element] ? "dmg" : key;
+    const digits = slot === "hp" ? 0 : 1;
+    const format = (number: number) => ratio ? number.toFixed(1) + "%" : panelNumber(number, digits);
+    attr[slot] = format(value);
+    attr[slot + "Base"] = format(base);
+    const difference = value - base;
+    attr[slot + "Plus"] = (difference < 0 ? "" : "+") + format(difference);
+  }
+  const damage = equipmentLabel ? undefined : readStarRailPersonalDamage(avatar, metadata, undefined, derived, skillPreview).damage;
+  const damageRows = damage?.rows.map(row => ({
+    title: row.title, critical: row.critical === undefined ? "" : panelNumber(row.critical),
+    average: row.note ?? row.percentage ?? row.display ?? panelNumber(row.average ?? 0),
+  })) ?? [];
+  const allAttr = Array.from({ length: 9 }, (_entry, index) => score?.allAttr[index]);
+  const source = avatar.legacy && Object.hasOwn(legacySources, avatar.legacy.source) ? legacySources[avatar.legacy.source] : undefined;
   return preparedModel(theme, "profile-detail", {
     mode: "profile", element, uid: snapshot.uid, charWeapon: path, hsr_paths: path,
+    bodyClass: [theme.defaultStyle ? "original-theme" : "", `char-${name}`].filter(Boolean).join(" "),
+    scale: 1.6, viewport: { width: 600, height: 900 }, damageRows, damageAuthor: damage?.createdBy,
     data: {
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
         ...coneDetails(cone, coneMeta) },
-      dataSource: equipmentLabel ?? (derived ? "旧面板静态复算" : fieldsSource(snapshot)), updateTime: formatDate(snapshot.updatedAt),
+      dataSource: equipmentLabel ?? (source || fieldsSource(snapshot)), updateTime: detailTime(avatar.legacy?.updatedAt ?? snapshot.updatedAt),
     },
-    attr: showcase(derived ?? avatar.stats, element), artisDetail: { charWeight: {}, artis }, artisKeyTitle: statTitles,
+    attr, artisDetail: { charWeight: score?.charWeight ?? {}, mark: score?.mark, markClass: score?.markClass,
+      classTitle: score?.charCfg.classTitle, allAttr, artis }, artisKeyTitle,
   });
 }
 
