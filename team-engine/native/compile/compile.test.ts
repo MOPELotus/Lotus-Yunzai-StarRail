@@ -26,6 +26,10 @@ test("the pinned worker's four representative teams compile the same actors, ene
     expect([...encounter.summons.keys()]).toEqual(summons);
     expect(encounter.systemActors.map(actor => actor.id)).toEqual(system);
     expect(encounter.hooks).toHaveLength(hooks);
+    for (const actor of encounter.team) {
+      expect(actor.modifiers[0]?.statEffects.dmg_crit).toBeUndefined();
+    }
+    if (ids.includes("8005")) expect(encounter.team[3]?.modifiers[0]?.statEffects.crit_dmg).toBeCloseTo(0.648);
     for (const actor of encounter.systemActors) expect(encounter.hooks[0]?.ownerId).toBe(actor.id);
   }
 });

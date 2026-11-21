@@ -24,6 +24,8 @@ const defaultPolicy: readonly RuleValues[] = [
   { condition: "skill_points > 0", action: "skill", priority: 50 },
   { condition: "true", action: "basic", priority: 0 },
 ];
+const elementalAffixes = new Set(["physical_dmg", "fire_dmg", "ice_dmg", "thunder_dmg",
+  "wind_dmg", "quantum_dmg", "imaginary_dmg"]);
 const add = (dest: Record<string, number>, key: string, value: number) => { dest[key] = (dest[key] ?? 0) + value; };
 
 export async function compileEncounter(build: EncounterBuild, library: TemplateLibrary = templateLibrary): Promise<CompiledEncounter> {
@@ -215,7 +217,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     const affix = (key: string, family: "main" | "sub", override?: number) => {
       const base = rules.relicAffixes[family]?.[key];
       if (base === undefined) throw new TypeError(`未知遗器${family === "main" ? "主" : "副"}词条 ${key}`);
-      add(affixes, key.endsWith("_dmg") ? "dmg_" + key.slice(0, -4) : key, override ?? base);
+      add(affixes, elementalAffixes.has(key) ? "dmg_" + key.slice(0, -4) : key, override ?? base);
     };
     for (const relic of member.relics ?? []) {
       if (relic.set) sets.set(relic.set, (sets.get(relic.set) ?? 0) + 1);
