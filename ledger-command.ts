@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient, type StarRailLedgerKind, type StarRailLedgerRow } from "@lotus-yunzai/hoyo-client";
-import { renderTemplate } from "../../lib/renderer/shotium.ts";
+import { renderStarRailLedgerCard } from "./account-report-renderer.ts";
 
 const pattern = /^(?:#星铁|\*|＊|[#*]?sr)\s*(星琼|古老梦华|体力|遗器|充值)记录(?:\s*(\d{1,6}))?(?:\s*档案\s*(\d{1,3}))?$/u;
 const names = {
@@ -36,6 +36,7 @@ interface Context {
   readonly message_type?: string;
   readonly isDelegated?: boolean;
   readonly privateCredentialSignal?: AbortSignal;
+  readonly inlineImageByteLimit?: number;
 }
 
 export function createStarRailLedgerQuery(profiles: ReturnType<typeof createProfileStore>,
@@ -65,9 +66,9 @@ export function createStarRailLedgerQuery(profiles: ReturnType<typeof createProf
       await verify();
       if (!rows.length) return "暂无记录。";
       const model = makeStarRailLedgerCard(source.role.uid, kind, page, rows);
-      const files = await renderTemplate(model).catch(() => false as const);
+      const image = await renderStarRailLedgerCard(model, { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
       await verify();
-      const photo = files && files[0];
+      const photo = image?.png;
       return photo ? { type: "image" as const, file: photo } : [
         `UID ${model.uid} · ${model.type}记录 · 第 ${page} 页`,
         ...rows.map(row => `${row.time} · +${row.count} · ${row.reason}`),

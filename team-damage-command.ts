@@ -1,7 +1,5 @@
-import { join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
-import { renderTemplate } from "../../lib/renderer/shotium.ts";
+import { renderStarRailTeamDamage, type TeamMember } from "./team-damage-card.ts";
 import { calculateEquipmentAttributeRows, leveledAttributes, readPanelStaticConeEffects } from "./panel-attributes.ts";
 import { readPanelAvatarFace, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import type { createStarRailPersonalPanelReader } from "./panel.ts";
@@ -12,19 +10,7 @@ import { calculateTeamDamage, starRailTeamCatalog, starRailTeamCones, starRailTe
 import { projectTeamOwnedPanel } from "./team-owned-panel.ts";
 import { starRailTraceOwner } from "./panel-trace-refresh.ts";
 
-interface TeamMember {
-  readonly name: string;
-  readonly level: number;
-  readonly rank: number;
-  readonly weapon: string;
-  readonly weaponLevel: number;
-  readonly weaponRank: number;
-  readonly source: string;
-  readonly stats: readonly string[];
-  readonly face: string;
-}
 const statNames = ["暴击率", "暴击伤害", "攻击力", "速度", "击破", "效果命中"];
-const themeDirectory = new URL("./panel-theme/", import.meta.url);
 const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 });
 
 function teamDamageReport(uid: string, command: TeamDamageCommand, team: readonly TeamMember[], result: TeamBattleResult) {
@@ -116,25 +102,9 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
       const result = await calculateTeamDamage(members, command.cycle, command.enemies, signal);
       await verify();
       const report = teamDamageReport(uid, command, team, result);
-      const art = (name: string) => pathToFileURL(join(theme.root, "character", "imgs", name)).href;
-      const pages = report.turns.length ? [
-        { ...report, detailPage: false, turns: [], warnings: [] },
-        { ...report, detailPage: true },
-      ] : [{ ...report, detailPage: false }];
-      const attachments: { type: "image"; file: Buffer }[] = [];
-      for (const page of pages) {
-        const files = await renderTemplate({
-          ...page, tplFile: fileURLToPath(new URL("character/team-damage.html", themeDirectory)),
-          css: new URL("character/team-damage.css", themeDirectory).href,
-          background: art("bg-02.jpg"), main: art("main-02.png"),
-          imgType: "png", viewport: { width: 720, height: 1400 }, scale: 4,
-          multiPage: true, multiPageHeight: 1400,
-        }).catch(() => false as const);
-        await verify();
-        if (!files || !files.length) { attachments.length = 0; break; }
-        attachments.push(...files.map(file => ({ type: "image" as const, file })));
-      }
-      if (attachments.length) return attachments;
+      const files = await renderStarRailTeamDamage(report, theme.root, signal, verify).catch(() => []);
+      await verify();
+      if (files.length) return files.map(file => ({ type: "image" as const, file }));
       return [
         `星铁队伍伤害 · UID ${uid} · 档案 ${profileId}`,
         report.summary.map(row => `${row.label} ${row.value}`).join(" · "),

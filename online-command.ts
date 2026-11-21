@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type GameRole } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient, type StarRailPowerRecovery } from "@lotus-yunzai/hoyo-client";
-import { renderTemplate } from "../../lib/renderer/shotium.ts";
+import { renderStarRailOnlineCard } from "./account-report-renderer.ts";
 import { text } from "./panel-model.ts";
 import { starRailOnlineReport } from "./online-model.ts";
 
@@ -27,6 +27,7 @@ interface Context {
   readonly message_type?: string;
   readonly isDelegated?: boolean;
   readonly privateCredentialSignal?: AbortSignal;
+  readonly inlineImageByteLimit?: number;
 }
 
 export function createStarRailOnlineQuery(profiles: ReturnType<typeof createProfileStore>,
@@ -55,9 +56,9 @@ export function createStarRailOnlineQuery(profiles: ReturnType<typeof createProf
       await verify();
       const model = makeStarRailOnlineCard(source.role, recoveries, complete);
       if (!model) return complete ? "暂无可用于估算在线时长的开拓力恢复记录。" : "已达到查询页数上限，暂无可用于估算的开拓力恢复记录。";
-      const files = await renderTemplate(model).catch(() => false as const);
+      const image = await renderStarRailOnlineCard(model, { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
       await verify();
-      const picture = files && files[0];
+      const picture = image?.png;
       return picture ? { type: "image" as const, file: picture } : [
         `UID ${model.uid} · 近期每日在线时长（估算）`, ...model.bars.map(bar => `${bar.date} · ${bar.hours} 小时`), note,
         ...(!complete ? ["已达到查询页数上限，仅显示本次读取的记录。"] : []),

@@ -58,11 +58,11 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     const indices = object(row?.idxs) ?? {};
     const pieces = new Map<string, { id: string; name: string }>();
     for (const [slot, entry] of Object.entries(indices)) {
-      const part = object(entry), name = text(part?.name);
+      const part = object(entry), name = text(part?.name), abbr = text(part?.abbr);
       if (!name || !/^[1-6]$/u.test(slot)) continue;
       for (const [itemId, star] of Object.entries(object(part?.ids) ?? {})) {
         if (/^[1-9]\d{0,11}$/u.test(String(itemId))) {
-          relicById.set(itemId, { name, abbr: text(part?.abbr), asset: ["artifact", row.name, `arti-${slot}.webp`] });
+          relicById.set(itemId, { name, ...(abbr ? { abbr } : {}), asset: ["artifact", row.name, `arti-${slot}.webp`] });
           const key = `${slot}:${star}`;
           if (typeof star === "number" && Number.isInteger(star) && star >= 2 && star <= 5 && !pieces.has(key)) {
             pieces.set(key, { id: itemId, name });

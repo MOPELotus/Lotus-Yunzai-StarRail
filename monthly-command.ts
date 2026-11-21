@@ -1,6 +1,6 @@
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
-import { renderTemplate } from "../../lib/renderer/shotium.ts";
+import { renderStarRailMonthlyCard } from "./account-report-renderer.ts";
 import { makeStarRailMonthlyCard, starRailMonthlyText } from "./monthly-card.ts";
 
 export const starRailMonthlyCommand = /^(?:#星铁|\*|＊|[#*]?sr)\s*(?:星琼获取|月历|月收入|收入|原石)(?:\s*(?:档案\s*)?(\d{1,3}))?$/u;
@@ -10,6 +10,7 @@ interface MonthlyContext {
   readonly message_type?: string;
   readonly isDelegated?: boolean;
   readonly privateCredentialSignal?: AbortSignal;
+  readonly inlineImageByteLimit?: number;
 }
 
 export function createStarRailMonthlyQuery(profiles: ReturnType<typeof createProfileStore>,
@@ -40,9 +41,11 @@ export function createStarRailMonthlyQuery(profiles: ReturnType<typeof createPro
       };
       await verify();
       if (!snapshot) return "暂无星铁月收入数据。";
-      const pictures = await renderTemplate(makeStarRailMonthlyCard(snapshot)).catch(() => false as const);
+      const picture = await renderStarRailMonthlyCard(makeStarRailMonthlyCard(snapshot), {
+        inlineImageByteLimit: context.inlineImageByteLimit,
+      }).catch(() => undefined);
       await verify();
-      const image = pictures && pictures[0];
+      const image = picture?.png;
       return image ? { type: "image" as const, file: image } : starRailMonthlyText(snapshot);
     } catch (error) {
       if (signal.aborted) return [];

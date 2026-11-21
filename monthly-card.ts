@@ -22,7 +22,7 @@ function incomeGroups(groups: StarRailMonthlySnapshot["groups"]) {
   return groups.map((group, index) => {
     const length = total ? Number(counts[index]) / Number(total) * circumference : 0;
     const angle = (offset + length / 2) / radius - Math.PI / 2;
-    const result = { ...group, percentage: percentages[index], color: colors[index % colors.length],
+    const result = { ...group, percentage: percentages[index]!, color: colors[index % colors.length]!,
       dash: `${Math.max(0, length - 2)} ${circumference}`, offset: -offset,
       x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius,
       visible: length > 2, showPercentage: length >= 20 };
@@ -35,7 +35,7 @@ const incomeLabels = ["当月共获取", "今日共获取", "昨日共获取"] a
 
 function incomeSections(snapshot: StarRailMonthlySnapshot) {
   return [snapshot.monthly, snapshot.today, snapshot.yesterday].map((income, index) => ({
-    ...income, label: incomeLabels[index],
+    ...income, label: incomeLabels[index]!,
   }));
 }
 
