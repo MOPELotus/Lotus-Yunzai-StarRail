@@ -2,6 +2,7 @@ import { createReadStream } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Canvas, FontLibrary, loadImage } from "skia-canvas";
+import { loadStarRailChallengePortraits } from "./challenge-portraits.ts";
 
 // Adapted from Lotus-ReFactor core/render/starrail-abyss.js. See README.md.
 // Native adaptation of genshin/resources/html/abyss/abyss-floor.{html,css}.
@@ -94,8 +95,12 @@ export function starRailChallengeThemeDirectory() {
   return Bun.env.LOTUS_STAR_RAIL_CHALLENGE_THEME_DIR?.trim() || defaultTheme
 }
 
-/** @param {() => Promise<boolean>} [checkNapCat] */
-export async function renderStarRailAbyss(data, signal, checkNapCat) {
+/**
+ * @param {() => Promise<boolean>} [checkNapCat]
+ * @param {import("./challenge-portraits.ts").ChallengePortraitOptions} [portraitOptions]
+ * @param {number} [inlineImageByteLimit]
+ */
+export async function renderStarRailAbyss(data, signal, checkNapCat, portraitOptions, inlineImageByteLimit) {
   const theme = starRailChallengeThemeDirectory()
   if (!fontsLoaded) {
     for (const [family, path] of [
@@ -114,8 +119,8 @@ export async function renderStarRailAbyss(data, signal, checkNapCat) {
   }
   const canvas = new Canvas(760, 10, { gpu: true })
   canvas.gpu = true
-  function checkGpu() {
-    const engine = canvas.engine
+  function checkGpu(target = canvas) {
+    const engine = target.engine
     if (engine.renderer !== "GPU" || !engine.device || /llvmpipe|lavapipe|swiftshader|software/iu.test(engine.device)) {
       throw new Error("星铁挑战渲染未启用物理 GPU。")
     }
@@ -176,12 +181,12 @@ export async function renderStarRailAbyss(data, signal, checkNapCat) {
   ctx.scale(scale, scale); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"
   const bgPath = join(theme, "floor12.png")
   const starPath = join(theme, "star.png")
-  const refs = new Set()
-  for (const section of sections) for (const node of section.nodes) {
-    if (node.icon) refs.add(node.icon)
-    for (const avatar of node.avatars || []) if (avatar.icon) refs.add(avatar.icon)
-  }
-  const [bg, star] = await Promise.all([image(bgPath, true, signal), image(starPath, true, signal)])
+  const nodes = sections.flatMap(section => section.nodes)
+  const refs = new Set(nodes.flatMap(node => node.icon ? [node.icon] : []))
+  const [bg, star, portraits] = await Promise.all([
+    image(bgPath, true, signal), image(starPath, true, signal),
+    loadStarRailChallengePortraits(nodes.flatMap(node => node.avatars || []), signal, portraitOptions),
+  ])
   const images = new Map()
   const sources = [...refs]
   for (let start = 0; start < sources.length; start += 12) {
@@ -247,11 +252,18 @@ export async function renderStarRailAbyss(data, signal, checkNapCat) {
         const rarity = ctx.createLinearGradient(x, top, x, top + 134)
         rarity.addColorStop(0, Number(avatar.rarity) >= 5 ? "#776058" : "#51456d"); rarity.addColorStop(1, Number(avatar.rarity) >= 5 ? "#c2996a" : "#9b81b3")
         rect(x, top, 141, 134, rarity)
-        const portrait = images.get(avatar.icon)
+        const portrait = portraits.get(avatar)
         if (portrait) {
           const ratio = Math.max(141 / portrait.width, 134 / portrait.height), sw = 141 / ratio, sh = 134 / ratio
           ctx.drawImage(portrait, (portrait.width - sw) / 2, 0, sw, sh, x, top, 141, 134)
-        } else text(avatar.name || "角色资料未记录", x + 5, top + 54, 23, WHITE, 131, "center")
+        } else {
+          ctx.fillStyle = "rgba(25,27,43,0.40)"
+          ctx.beginPath()
+          ctx.arc(x + 70.5, top + 54, 21, 0, Math.PI * 2)
+          ctx.moveTo(x + 108.5, top + 117)
+          ctx.ellipse(x + 70.5, top + 117, 38, 35, 0, 0, Math.PI * 2)
+          ctx.fill()
+        }
         rect(x, top + 133, 141, 24, "#e9e5dc"); text(hasValue(avatar.level) ? `Lv.${avatar.level}` : "等级未记录", x, top + 138, 16, "#25252c", 141, "center", true)
         if (hasValue(avatar.rank)) {
           const rank = Number(avatar.rank)
@@ -271,5 +283,16 @@ export async function renderStarRailAbyss(data, signal, checkNapCat) {
   line(44, offset + 6, 672); text("Lotus-Yunzai · 米游社", 44, offset + 27, 16, MUTED, 672, "center")
   const png = await canvas.toBuffer("png", { filters: "auto" })
   signal.throwIfAborted()
-  return { png, engine: checkGpu() }
+  const engine = checkGpu()
+  if (inlineImageByteLimit === undefined || png.byteLength <= inlineImageByteLimit) return { png, engine }
+  if (scale === 4) {
+    const reduced = new Canvas(760 * 2, Math.round(height * 2), { gpu: true })
+    reduced.gpu = true
+    checkGpu(reduced)
+    reduced.getContext("2d").drawCanvas(canvas, 0, 0, reduced.width, reduced.height)
+    const image = await reduced.toBuffer("png", { filters: "auto" })
+    signal.throwIfAborted()
+    if (image.byteLength <= inlineImageByteLimit) return { png: image, engine: checkGpu(reduced) }
+  }
+  throw new Error("星铁挑战卡超过当前会话的图片大小上限。")
 }

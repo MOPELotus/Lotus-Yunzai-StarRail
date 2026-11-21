@@ -9,6 +9,7 @@ export async function queryStarRailChallenge(
   qq: string, query: ChallengeQuery, profiles: ReturnType<typeof createProfileStore>,
   client: ReturnType<typeof createProfileHoyoClient>, signal: AbortSignal,
   isNapCat?: (signal: AbortSignal) => Promise<boolean>,
+  inlineImageByteLimit?: number,
 ) {
   const { profileId } = query;
   try {
@@ -21,14 +22,15 @@ export async function queryStarRailChallenge(
     };
     if (!await current()) return "星铁档案已变更，请重新查询。";
     const { uid } = source.role;
-    const lookup = await readStarRailRecordItems(starRailGachaThemeDirectory()).catch(() => undefined);
+    const themeDirectory = starRailGachaThemeDirectory();
+    const lookup = await readStarRailRecordItems(themeDirectory).catch(() => undefined);
     const bundledNames: Readonly<Record<string, string>> = characterNames;
     const results = normalizeStarRailChallenge(records, query, (id) => lookup?.(id)?.name || bundledNames[id]);
     let reply;
     try {
       const peak = results.length === 1 && results[0]?.kind === "peak" ? results[0].peak : undefined;
       const checkNapCat = isNapCat && query.period === "recent" && peak?.length === 3 ? () => isNapCat(signal) : undefined;
-      const { png } = await renderStarRailAbyss({ uid, results }, signal, checkNapCat);
+      const { png } = await renderStarRailAbyss({ uid, results }, signal, checkNapCat, { themeDirectory, resolveItem: lookup }, inlineImageByteLimit);
       reply = { type: "image" as const, file: png };
     } catch {
       reply = makeChallengeText(uid, results);

@@ -8,7 +8,7 @@
 
 可加「上期」「往期」或「简易」，例如 `*上期简易混沌 2`。`*往期异相仲裁` 展示官方返回的最近三期。指令默认使用档案 1，末尾可加档案编号。查询个人战绩使用该档中已同步的国服角色。米游社要求验证时，请在官方客户端处理后重试。
 
-出图沿用旧深渊模板。可把有权使用的原版 `floor12.png`、`star.png`、`fonts/HYWenHei-55W.ttf` 与 `fonts/tttgbnumber.ttf` 放入宿主的 `data/starrail/challenge-theme/`，或用 `LOTUS_STAR_RAIL_CHALLENGE_THEME_DIR` 指定资源目录。缺少素材时使用模板底色、星标和系统字体。头像与关卡敌人图来自米游社响应中的官方 CDN。头像请求单独进行，无需发送登录信息。角色名称优先取米游社响应，随后使用部署中的星铁抽卡资料及模块自带的名称表补齐。
+出图沿用旧深渊模板。可把有权使用的原版 `floor12.png`、`star.png`、`fonts/HYWenHei-55W.ttf` 与 `fonts/tttgbnumber.ttf` 放入宿主的 `data/starrail/challenge-theme/`，或用 `LOTUS_STAR_RAIL_CHALLENGE_THEME_DIR` 指定资源目录。缺少主题素材时使用模板底色、星标和系统字体。角色头像从米游社回包的官方 CDN 匿名获取并缓存。官方图不可用时按角色 ID 查本机原版头像，仍缺图时显示缺图图标。角色名称优先取米游社响应，随后使用部署中的星铁抽卡资料及模块自带的名称表补齐。
 
 ## 原实现和素材来源
 
