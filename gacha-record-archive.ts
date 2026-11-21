@@ -2,7 +2,7 @@ import { constants, type Stats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
-import { convertStarRailUigfTimezone, validateStarRailUigfArchive, type StarRailUigfArchive,
+import { convertStarRailUigfTimezone, exportStarRailUigf, validateStarRailUigfArchive, type StarRailUigfArchive,
   type StarRailUigfPool } from "./gacha-uigf.ts";
 
 const pools = ["11", "12", "21", "22", "2", "1"] as const;
@@ -218,6 +218,50 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
       catch { corrupt("无法读取星铁逐抽档案，请核对 JSON 文件、大小和目录。"); }
       if (saved !== null) return { status: "available", source: "managed", archive: decodeManaged(saved, identity) };
       return existingLegacy(identity, options);
+    },
+    async prepareLegacyHandback(identity: Identity, legacyTimezone: number) {
+      checkIdentity(identity);
+      const saved = await managed.read(identity.qq, identity.uid);
+      if (saved === null) throw new Error("没有找到指定 QQ 和 UID 的新版星铁逐抽档案副本。");
+      const modern = convertStarRailUigfTimezone(decodeManaged(saved, identity), legacyTimezone);
+      const local = await readLegacy(legacyDirectory, "legacy", identity, { legacyTimezone });
+      if (local.status === "unavailable" && local.reason === "mirror") {
+        throw new Error("旧逐抽副本含显示占位记录，无法安全交还。");
+      }
+      const legacy = local.status === "available" ? local.archive : undefined;
+      if (legacy?.lang && modern.lang && legacy.lang !== modern.lang) {
+        throw new Error("新旧星铁逐抽档案的语言不同，无法安全交还到同一旧档。");
+      }
+
+      const legacyRows = legacy?.records ?? [];
+      const existing = new Map(legacyRows.map(row => [row.id, row]));
+      for (const row of modern.records) {
+        const previous = existing.get(row.id);
+        if ((previous?.name && row.name && previous.name !== row.name) ||
+            (previous?.item_type && row.item_type && previous.item_type !== row.item_type)) {
+          throw new Error("星铁抽卡文件存在编号相同但名称或物品种类不同的记录。");
+        }
+      }
+      const merged = validateStarRailUigfArchive({
+        ...modern, lang: legacy?.lang ?? modern.lang, records: [...legacyRows, ...modern.records],
+      }, identity.uid);
+      // The old importer requests metadata only when its first row lacks it.
+      if (merged.records.some(({ name, item_type, rank_type }) =>
+        !name || (item_type !== "角色" && item_type !== "光锥" && item_type !== "武器") || !rank_type)) {
+        throw new Error("旧导入需要每条记录的名称、物品种类和星级，无法安全交还缺少旧显示字段的记录。");
+      }
+
+      const version = merged.lang && !merged.records.some(({ gacha_type }) => gacha_type === "21" || gacha_type === "22") ? "v2" : "v4";
+      const latestDraw = merged.records.reduce((latest, { time }) => time > latest ? time : latest, "");
+      // Anchor the export metadata to a record instant so identical input produces identical bytes.
+      const exportedAt = new Date(Date.parse(latestDraw.replace(" ", "T") + "Z") - Math.round(legacyTimezone * 60) * 60_000);
+      const document = exportStarRailUigf(merged, {
+        uid: identity.uid, version, exportedAt, app: { name: "Lotus-Yunzai", version: "legacy-handoff" },
+      });
+      return {
+        document, format: version === "v2" ? "SRGF v1.0" : "UIGF v4.1",
+        counts: { modern: modern.records.length, legacy: legacyRows.length, total: merged.records.length },
+      };
     },
     async merge(identity: Identity, input: StarRailUigfArchive, verifyProfile: () => Promise<void>, options: LegacyOptions) {
       checkIdentity(identity);
