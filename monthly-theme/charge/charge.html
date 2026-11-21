@@ -1,0 +1,34 @@
+<!doctype html>
+<!-- Adapted from the Apache-2.0 source 308a83d. The markup uses the current renderer layout. -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="{{css}}"/>
+<title>{{type}}记录</title>
+<style>body {font-family:"Noto Sans CJK SC",sans-serif} .container {background:#203042} .list-table td {overflow-wrap:anywhere}</style>
+</head>
+<body>
+<div id="container" class="container">
+  <div class="bkg"><img src="{{background}}" alt=""/></div>
+  <div class="bkg"><img src="{{decoration}}" alt=""/></div>
+  <div class="header">
+    <div class="uid">UID {{uid}}</div>
+    <div class="title">{{type}}记录</div>
+    <div class="subtitle">{{typeen}} History</div>
+  </div>
+  <div class="lists">
+    <div class="s-list">
+      <table class="list-table">
+        <thead><tr><th>时间</th><th>获取数量</th><th>变化原因</th></tr></thead>
+        <tbody>
+          {{each rows row}}
+          <tr><td>{{row.time}}</td><td>{{row.count}}</td><td>{{row.reason}}</td></tr>
+          {{/each}}
+        </tbody>
+      </table>
+      <div class="page">当前第{{page}}页</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

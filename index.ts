@@ -24,6 +24,7 @@ import { renderStarRailGachaVersion } from "./gacha-version-card.ts";
 import { parseChallengeQuery } from "./challenge-model.ts";
 import { queryStarRailChallenge } from "./challenge.ts";
 import { createStarRailMonthlyQuery, starRailMonthlyCommand } from "./monthly-command.ts";
+import { createStarRailLedgerQuery, matchStarRailLedger } from "./ledger-command.ts";
 import { createStarRailPanel } from "./panel.ts";
 import { parsePanelCommand } from "./panel-model.ts";
 import { createStarRailGroupRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -110,6 +111,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
+  const ledger = createStarRailLedgerQuery(profiles, client, signal);
   const simulate = createStarRailSimulation({ lockFile, signal });
   const history = createStarRailGachaHistoryStore(historyRoot, lockFile, legacyHistoryRoots);
   const archive = createStarRailGachaRecordArchive({ directory: recordsRoot, legacyDirectory: legacyRecordsRoot }, lockFile);
@@ -222,6 +224,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
       if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
+      if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
       if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
@@ -229,6 +232,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext) {
       const month = starRailMonthlyCommand.exec(context.normalizedMessage);
       if (month) return monthly(context, Number(month[1] ?? 1));
+      const historyPage = matchStarRailLedger(context.normalizedMessage);
+      if (historyPage) return ledger(context, historyPage);
       const challenge = parseChallengeQuery(context.normalizedMessage);
       if (challenge) {
         const userId = context.user_id;
