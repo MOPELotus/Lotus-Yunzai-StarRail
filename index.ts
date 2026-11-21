@@ -30,6 +30,8 @@ import { createStarRailPanel, createStarRailPersonalPanelReader } from "./panel.
 import { createStarRailTeamDamageQuery } from "./team-damage-command.ts";
 import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
+import { createStarRailRosterQuery } from "./personal-roster-command.ts";
+import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
 import { createStarRailGroupRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
@@ -113,6 +115,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const client = createProfileHoyoClient(profiles);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
+  const roster = createStarRailRosterQuery(profiles, client, signal);
   const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
   const ledger = createStarRailLedgerQuery(profiles, client, signal);
@@ -258,6 +261,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat,
           context.adapter === "milky" ? context.inlineImageByteLimit : undefined);
       }
+      const rosterCommand = parseStarRailPersonalRoster(context.normalizedMessage);
+      if (rosterCommand) return roster(context, rosterCommand);
       const panelCommand = parsePanelCommand(context.normalizedMessage);
       if (panelCommand) {
         const userId = context.user_id;
