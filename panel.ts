@@ -21,6 +21,7 @@ import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
+import { renderStarRailPanelPractice } from "./panel-practice-skia.ts";
 import { renderStarRailPanelList } from "./panel-list-skia.ts";
 import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
@@ -298,7 +299,7 @@ export function createStarRailPanel(
         const title = `UID ${uid} · 面板练度统计 · 共 ${first.total} 名角色`;
         const nodes = [];
         for (const model of models) {
-          const files = await renderTemplate(model, true).catch(() => false as const);
+          const files = await renderStarRailPanelPractice(model, theme.root).then(card => [card.png]).catch(() => false as const);
           await verify();
           if (files && files.length) nodes.push(...files.map(file => ({ type: "image" as const, file })));
           else {
