@@ -50,7 +50,7 @@
       <thead><tr><th>顺序</th><th>关键行动（前 8 项）</th><th>行动值</th></tr></thead>
       <tbody>
         {{each turns turn index}}
-        <tr><td>{{index + 1}}</td><td>{{turn.title}}<br>{{turn.lines[0]}}</td><td>{{turn.actionPoint}}</td></tr>
+        <tr><td>{{index + 1}}</td><td>{{turn.title}}<br>{{turn.lines[0]}}{{if turn.lines[1]}}<br><span class="action-note">{{turn.lines[1]}}</span>{{/if}}</td><td>{{turn.actionPoint}}</td></tr>
         {{/each}}
       </tbody>
     </table>

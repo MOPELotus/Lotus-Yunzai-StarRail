@@ -141,7 +141,7 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
         ...team.map(member => `${member.name} · ${member.source}`),
         ...report.contribution.map(row => `${row.name} · ${row.value}（${row.share}）`),
         ...(report.timeline ? [`起手顺序 ${report.timeline}`] : []),
-        ...report.turns.flatMap(turn => [turn.title, ...turn.lines.slice(0, 1)]),
+        ...report.turns.flatMap(turn => [turn.title, ...turn.lines.slice(0, 2)]),
         ...report.warnings.map(note => `模拟说明 · ${note}`),
         `计算引擎 · ${report.engine}。固定假人和自动行动策略，数值仅供参考。`,
       ].join("\n");

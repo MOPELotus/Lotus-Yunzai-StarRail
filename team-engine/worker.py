@@ -11,6 +11,7 @@ if sys.version_info < (3, 10):
 
 ROOT = Path(__file__).resolve().parent
 VENDOR = ROOT / "vendor"
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(VENDOR / "src"))
 
 import yaml
@@ -21,8 +22,9 @@ from hsr_nous.sim.compile import compile_encounter
 from hsr_nous.sim.compile.build_compiler import BuildCompiler
 from hsr_nous.sim.pipeline import SettlementPipeline
 from hsr_nous.sim.state import ActorState, Modifier
-from hsr_nous.sim.structured_log import StructuredLogger
 from hsr_nous.sim_schema.actor import PATH_ALIASES
+
+from timeline import capture, explain_approximations, localized_label, public_timeline
 
 LIBRARY = (VENDOR / "data" / "library",)
 DEFAULTS = json.loads((ROOT / "defaults.json").read_text(encoding="utf-8"))
@@ -201,42 +203,6 @@ def stage_for(count, cycles):
             "termination": {"mode": "fixed_av", "max_action_value": 150 + 100 * (cycles - 1)}}
 
 
-def action_log(events, engine, compiled, player_ids):
-    names = {aid: state.actor.name for aid, state in engine.state.actors.items()}
-    labels = {str(action.action_id): action.name for actions in compiled.actions_by_actor.values() for action in actions}
-    rows = []
-    opening = {}
-    for event in events:
-        av = event["timestamp"]
-        event_type = event["event_type"]
-        actor_id = event.get("actor_id")
-        if event_type == "turn_start" and actor_id in player_ids and actor_id not in opening:
-            opening[actor_id] = {"name":names.get(actor_id, "队员"),"value":av}
-        if len(rows) >= 36:
-            continue
-        if event_type == "action" and actor_id in player_ids:
-            name = names.get(actor_id, "队员")
-            action = labels.get(str(event["action_id"]), str(event["action_id"]))
-            if rows and rows[-1]["value"] == av and rows[-1]["actor"] == actor_id and not rows[-1]["action"]:
-                rows[-1]["lines"].insert(0, action)
-                rows[-1]["action"] = True
-            else:
-                rows.append({"actor":actor_id,"name":name,"value":av,"action":True,"lines":[action]})
-        elif event_type == "damage" and event["source_id"] in player_ids:
-            source = event["source_id"]
-            name = names.get(source, "队员")
-            target = names.get(event["target_id"], "目标")
-            line = f"{target}受到 {event['damage']:,.1f} 伤害"
-            if rows and rows[-1]["value"] == av and rows[-1]["actor"] == source:
-                if len(rows[-1]["lines"]) < 8:
-                    rows[-1]["lines"].append(line)
-            else:
-                rows.append({"actor":source,"name":name,"value":av,"action":False,"lines":[line]})
-    turns = [{"title":row["name"],"actionPoint":row["value"],"lines":row["lines"][:8]} for row in rows]
-    return list(opening.values())[:12], turns
-
-
-
 def simulate(request):
     rows = request["roles"]
     cycles = request["cycle"]
@@ -262,7 +228,7 @@ def simulate(request):
         modifiers[actor.actor_id] = mods
     compiled = replace(compiled, build_team=tuple(team), modifiers_by_actor=modifiers)
     engine = CombatEngine.from_compiled(compiled, mode=MODE_EXPECTED, seed=SEED)
-    logger = StructuredLogger(engine)
+    events = capture(engine)
     result = engine.run()
     if result.truncated:
         return {"error":"limit"}
@@ -276,12 +242,11 @@ def simulate(request):
         if target in damages:
             damages[target] += damage
         elif damage > 0 and actor and actor.actor.actor_type != "monster":
-            contributors[aid] = actor.actor.name
+            contributors[aid] = localized_label(actor.actor.name, "助战单位")
             damages[aid] = damage
-    actions, turns = action_log(logger.entries, engine, compiled, set(damages))
+    actions, turns = public_timeline(events, engine, compiled, contributors)
     damage = [{"name":contributors[aid],"value":value} for aid,value in sorted(damages.items(),key=lambda item:-item[1])]
-    notes = [f"{contributors.get(entry.get('actor'), '装备')}：{entry['text']}"
-             for entry in compiled.caveats if entry.get("text")][:6]
+    notes = explain_approximations(compiled.caveats, contributors)
     # The engine's aggregate includes damage dealt by enemies. This report is for the allied side.
     total = sum(damages.values())
     return {"total":total,"dps":total/cycles,"damage":damage,"actions":actions,

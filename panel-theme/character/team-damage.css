@@ -19,6 +19,7 @@ th, td { padding: 7px 3px; border: 1px solid #fff3; overflow-wrap: anywhere }
 .stats th, .stats td { font-size: 14px }
 .actions th:first-child { width: 67px }
 .actions th:last-child { width: 93px }
+.action-note { color: #f4ddb2; font-size: 14px }
 .timeline { padding: 8px 12px; margin: 0 0 12px; background: #15101cde }
 .timeline strong { color: #f4ddb2; margin-right: 5px }
 footer { color: #f4ddb2; font-size: 14px }
