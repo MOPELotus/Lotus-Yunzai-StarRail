@@ -423,12 +423,15 @@ export async function makePanelDetailCard(
   const talent: Record<string, { level: number; original?: number }> = {};
   const levels = object(character.talentCons ?? meta?.talentCons);
   for (const skill of avatar.skills) {
-    talent[skill.key] = { level: skill.level, original: skill.original };
     const upgrade = levels?.[skill.key];
+    const rank = avatar.rank;
     if (avatar.legacy && upgrade && skill.original === undefined && !skill.effective) {
-      const rank = avatar.rank ?? 0;
       talent[skill.key] = { original: skill.level,
-        level: starRailLegacySkillLevel(skill.key, skill.level, rank, upgrade) };
+        level: starRailLegacySkillLevel(skill.key, skill.level, rank ?? 0, upgrade) };
+    } else {
+      const original = skill.original ?? (rank !== undefined && (rank === 0 || isStarRailTalentUnlocks(upgrade))
+        ? recoverStarRailSkillLevel(skill.key, skill.level, rank, 0, upgrade) : undefined);
+      talent[skill.key] = { level: skill.level, original };
     }
     imgs[skill.key] = await localArt(theme, ["character", name, "imgs", `talent-${skill.key}.webp`])
       || await remoteArt(skill.icon, artSignal);

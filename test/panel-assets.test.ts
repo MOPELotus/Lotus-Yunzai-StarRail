@@ -71,3 +71,25 @@ test("draw records resolve character separator variants without mixing forms", a
     expect(resolve({ name: "丹恒・饮月", item_type: "角色" })).toBeUndefined();
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test("official panel detail keeps the effective skill level and recovers the original where supported", async () => {
+  const root = await mkdtemp(join(tmpdir(), "lotus-star-rail-panel-skill-"));
+  try {
+    const characters = join(root, "meta-sr", "character");
+    const avatar = join(characters, "飞霄");
+    await mkdir(avatar, { recursive: true });
+    await writeFile(join(characters, "data.json"), JSON.stringify({ 1220: { name: "飞霄", weapon: "巡猎" } }));
+    await writeFile(join(avatar, "data.json"), JSON.stringify({ id: 1220, talentCons: { q: 3, a: 3, e: 5 } }));
+    const sample = normalizePanel("100000121", [{ id: 1220, name: "飞霄", level: 80, rank: 3,
+      skills: [{ remake: "终结技", level: 12 }, { remake: "普攻", level: 6 },
+        { remake: "战技", level: 10 }, { remake: "天赋", level: 9 }] }]);
+    const theme = await readTheme(root);
+    const signal = AbortSignal.abort();
+    const model = await makePanelDetailCard(sample, sample.avatars[0]!, theme, signal);
+    expect(model.data.talent.q).toEqual({ level: 12, original: 10 });
+    expect(model.data.talent.a).toEqual({ level: 6, original: 5 });
+    expect(model.data.talent.e).toEqual({ level: 10, original: 10 });
+    expect(model.data.talent.t).toEqual({ level: 9, original: undefined });
+    expect(sample.avatars[0]?.skills.find(skill => skill.key === "q")).toEqual({ key: "q", level: 12, icon: "" });
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
