@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="{{css}}">
+  <style>body { background-image: url("{{background}}") }</style>
+</head>
+<body>
+  <main id="container">
+    <img class="art" src="{{main}}" alt="">
+    <header>
+      <h1>星铁队伍伤害</h1>
+      <p>UID {{uid}} · 档案 {{profileId}}</p>
+    </header>
+    <table class="summary">
+      <thead><tr>{{each summary row}}<th>{{row.label}}</th>{{/each}}</tr></thead>
+      <tbody><tr>{{each summary row}}<td>{{row.value}}</td>{{/each}}</tr></tbody>
+    </table>
+    <table>
+      <thead><tr><th>角色</th><th>等级 / 星魂</th><th>光锥</th></tr></thead>
+      <tbody>
+        {{each team member}}
+        <tr><td>{{if member.face}}<img class="face" src="{{member.face}}" alt="">{{/if}}{{member.name}}</td><td>Lv.{{member.level}} · {{member.rank}} 魂</td><td>{{member.weapon}}<br>Lv.{{member.weaponLevel}} · {{member.weaponRank}} 叠影</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <table class="stats">
+      <thead><tr><th>面板属性</th>{{each team member}}<th>{{member.name}}</th>{{/each}}</tr></thead>
+      <tbody>
+        {{each statNames name index}}
+        <tr><th scope="row">{{name}}</th>{{each team member}}<td>{{member.stats[index]}}</td>{{/each}}</tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>角色</th><th>面板来源</th></tr></thead>
+      <tbody>{{each team member}}<tr><td>{{member.name}}</td><td>{{member.source}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{if contribution.length}}
+    <table>
+      <thead><tr><th>伤害贡献</th><th>伤害</th><th>占比</th></tr></thead>
+      <tbody>{{each contribution row}}<tr><td>{{row.name}}</td><td>{{row.value}}</td><td>{{row.share}}</td></tr>{{/each}}</tbody>
+    </table>
+    {{/if}}
+    {{if timeline}}<p class="timeline"><strong>起手顺序</strong> {{timeline}}</p>{{/if}}
+    {{if turns.length}}
+    <table class="actions">
+      <thead><tr><th>顺序</th><th>关键行动（前 8 项）</th><th>行动值</th></tr></thead>
+      <tbody>
+        {{each turns turn index}}
+        <tr><td>{{index + 1}}</td><td>{{turn.title}}<br>{{turn.lines[0]}}</td><td>{{turn.actionPoint}}</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{/if}}
+    <footer>数据来源 · 星穹铁道工坊<br>Lotus-Yunzai · StarRail</footer>
+  </main>
+</body>
+</html>

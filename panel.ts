@@ -75,6 +75,14 @@ function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty
   return stored as unknown as PanelSnapshot;
 }
 
+export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock) {
+  const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
+  return async (qq: string, uid: string) => {
+    const snapshot = managedSnapshot(uid, await store.read(qq, uid), false, true);
+    return snapshot?.avatars.length ? snapshot : (await legacySnapshot(uid))?.snapshot;
+  };
+}
+
 export function createStarRailPanel(
   profiles: ReturnType<typeof createProfileStore>, client: ReturnType<typeof createProfileHoyoClient>,
   lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,

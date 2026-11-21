@@ -1,0 +1,26 @@
+* { box-sizing: border-box }
+body {
+  width: 600px;
+  margin: 0;
+  background-color: #26142a;
+  background-position: left center;
+  background-size: 100% auto;
+  color: #fff;
+  font: 17px "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+}
+main { position: relative; isolation: isolate; padding: 24px 14px 12px }
+.art { position: absolute; z-index: -1; top: -25px; left: 0; width: 100%; pointer-events: none }
+header, footer { text-align: center; text-shadow: 0 1px 3px #130d1b }
+h1 { margin: 18px 0 2px; color: #f4ddb2; font-size: 32px }
+header p { margin: 4px 0 18px }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0 0 12px; text-align: center; background: #15101cba }
+thead { background: #15101cde; color: #f4ddb2 }
+th, td { padding: 7px 3px; border: 1px solid #fff3; overflow-wrap: anywhere }
+.stats th, .stats td { font-size: 14px }
+.actions th:first-child { width: 67px }
+.actions th:last-child { width: 93px }
+.timeline { padding: 8px 12px; margin: 0 0 12px; background: #15101cde }
+.timeline strong { color: #f4ddb2; margin-right: 5px }
+footer { color: #f4ddb2; font-size: 14px }
+
+.face { width: 31px; height: 31px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 4px }

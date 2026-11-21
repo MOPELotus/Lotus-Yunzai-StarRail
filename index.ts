@@ -26,7 +26,9 @@ import { queryStarRailChallenge } from "./challenge.ts";
 import { createStarRailMonthlyQuery, starRailMonthlyCommand } from "./monthly-command.ts";
 import { createStarRailLedgerQuery, matchStarRailLedger } from "./ledger-command.ts";
 import { createStarRailOnlineQuery, starRailOnlineCommand } from "./online-command.ts";
-import { createStarRailPanel } from "./panel.ts";
+import { createStarRailPanel, createStarRailPersonalPanelReader } from "./panel.ts";
+import { createStarRailTeamDamageQuery } from "./team-damage-command.ts";
+import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
 import { createStarRailGroupRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats } from "./rank-statistics.ts";
@@ -111,6 +113,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const client = createProfileHoyoClient(profiles);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
+  const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
   const ledger = createStarRailLedgerQuery(profiles, client, signal);
   const online = createStarRailOnlineQuery(profiles, client, signal);
@@ -228,6 +231,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
+      if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
@@ -239,6 +243,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (historyPage) return ledger(context, historyPage);
       const onlineMatch = starRailOnlineCommand.exec(context.normalizedMessage);
       if (onlineMatch) return online(context, Number(onlineMatch[1] ?? 1));
+      const team = parseStarRailTeamDamage(context.normalizedMessage);
+      if (team) return teamDamage(context, team);
       const challenge = parseChallengeQuery(context.normalizedMessage);
       if (challenge) {
         const userId = context.user_id;

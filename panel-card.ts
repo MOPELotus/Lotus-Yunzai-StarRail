@@ -121,6 +121,12 @@ async function localArt(theme: Metadata, paths: readonly string[]) {
   return (await Bun.file(file).exists()) ? cssFile(file) : "";
 }
 
+export async function readPanelAvatarFace(theme: Metadata, avatarId: string) {
+  const name = text(object(theme.characters[avatarId])?.name);
+  return name ? await localArt(theme, ["character", name, "imgs", "face-q.webp"])
+    || await localArt(theme, ["character", name, "imgs", "face.webp"]) : "";
+}
+
 const maxImageBytes = 768 * 1024;
 async function remoteArt(source: string | undefined, signal: AbortSignal) {
   if (!source || signal.aborted) return "";
