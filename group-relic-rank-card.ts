@@ -1,6 +1,6 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { loadImage, type CanvasRenderingContext2D, type Image } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { readTheme } from "./panel-card.ts";
@@ -68,7 +68,7 @@ function drawBadge(ctx: CanvasRenderingContext2D, rank: number, y: number, image
 
 /** Draws the old element backdrop, score badges, portraits and rank rows with the native renderer. */
 export async function renderStarRailRelicRank(
-  character: Character, rows: readonly RelicRankRow[], mode: "auto" | "gpu" | "cpu" = "auto",
+  character: Character, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
 ) {
   if (!rows.length || rows.length > 15) throw new RangeError("星铁遗器榜须为 1 至 15 行。");
   const theme = await readTheme();
@@ -89,7 +89,7 @@ export async function renderStarRailRelicRank(
   const [background, texture, badge, firstBadge, fonts] = art ?? [];
   const { body: font, heading } = fonts ?? { body: families, heading: families };
   const width = 600, height = 159 + rows.length * 65;
-  return renderPng(width, height, (ctx) => {
+  return renderStarRailCard(width, height, (ctx) => {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.fillStyle = "#242e45";
@@ -143,5 +143,5 @@ export async function renderStarRailRelicRank(
     ctx.shadowBlur = 1;
     ctx.shadowOffsetY = 1;
     label(ctx, "Lotus-Yunzai · StarRail", 305, height - 25, `14px ${font}`, "#fff", "center");
-  }, mode);
+  }, { mode, inlineImageByteLimit });
 }

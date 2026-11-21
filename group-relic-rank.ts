@@ -10,6 +10,7 @@ import { findStarRailRankCharacter } from "./rank-statistics.ts";
 export interface StarRailGroupRankContext {
   readonly message_type?: string;
   readonly adapter?: string;
+  readonly inlineImageByteLimit?: number;
   readonly self_id?: number;
   readonly group_id?: number;
   readonly user_id?: number;
@@ -178,7 +179,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         const rows = ranked.map(({ role, summary: { characterId, score, grade } }) => ({ uid: role.uid, characterId, score, grade }));
         let png: Uint8Array | undefined;
         try {
-          png = (await render(character, rows))?.png;
+          png = (await render(character, rows, undefined, context.inlineImageByteLimit))?.png;
         } catch {}
         const latest = await groupMembers(scope, context);
         if (signal.aborted) return;

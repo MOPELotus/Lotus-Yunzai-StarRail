@@ -23,6 +23,7 @@ interface WarpContext {
   readonly user_id?: number;
   readonly group_id?: number;
   readonly isMaster?: boolean;
+  readonly inlineImageByteLimit?: number;
 }
 
 type Reply = string | { readonly type: "image"; readonly file: Uint8Array };
@@ -104,7 +105,7 @@ export function createStarRailSimulation({
         const pulls = result.pulls.slice(start, start + 10);
         try {
           const image = await render({ title: pool.title, pity: result.pity, pulls, page: start / 10 + 1,
-            pages: Math.ceil(result.pulls.length / 10) });
+            pages: Math.ceil(result.pulls.length / 10), inlineImageByteLimit: context.inlineImageByteLimit });
           nodes.push({ type: "image", file: image.png });
         } catch {
           nodes.push(pulls.map(format).join("\n"));

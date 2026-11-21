@@ -1,6 +1,6 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard } from "./render-card.ts";
 import { Canvas, loadImage } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
@@ -24,7 +24,7 @@ function conditionLines(buff: string) {
   return lines;
 }
 
-export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string, avatarId: string) {
+export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string, avatarId: string, inlineImageByteLimit?: number) {
   const root = await realpath(theme);
   async function asset(parts: string[]) {
     try {
@@ -84,7 +84,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     : baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}`
     : "词条替换 · 期望变化 / 期望与暴击伤害";
 
-  return renderPng(width, height, ctx => {
+  return renderStarRailCard(width, height, ctx => {
     function text(value: string, x: number, y: number, size: number, color = "#f5f3f7", align: CanvasTextAlign = "left", family = body) {
       ctx.textAlign = align;
       ctx.fillStyle = color;
@@ -176,5 +176,5 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     box(buffTop, 45 + buffLines.length * 25, "计算条件");
     buffLines.forEach((buff, i) => text(buff, 42, buffTop + 58 + i * 25, 17));
     text("Lotus-Yunzai · StarRail", width / 2, height - 12, 13, "#fff", "center");
-  }, "gpu");
+  }, { mode: "gpu", inlineImageByteLimit });
 }

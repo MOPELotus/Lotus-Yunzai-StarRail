@@ -1,23 +1,22 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { resolve, sep } from "node:path";
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard, type StarRailCardOptions } from "../render-card.ts";
 import { loadImage } from "skia-canvas";
 import { readStarRailGachaItems, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
 import type { WarpPull } from "./draw.ts";
 
 type Picture = Awaited<ReturnType<typeof loadImage>>;
-type Context = Parameters<Parameters<typeof renderPng>[2]>[0];
+type Context = Parameters<Parameters<typeof renderStarRailCard>[2]>[0];
 const palette = { 3: "#81b5dc", 4: "#c7a1f3", 5: "#ffd07b" };
 const fonts = '"Noto Sans CJK SC", sans-serif';
 
-interface WarpCard {
+interface WarpCard extends StarRailCardOptions {
   readonly title: string;
   readonly pity: number;
   readonly pulls: readonly WarpPull[];
   readonly page: number;
   readonly pages: number;
   readonly themeDirectory?: string;
-  readonly mode?: Parameters<typeof renderPng>[3];
 }
 
 async function portraits(pulls: readonly WarpPull[], directory: string) {
@@ -53,7 +52,7 @@ function text(ctx: Context, label: string, x: number, y: number, size: number, c
   ctx.fillText(label, x, y);
 }
 
-export async function renderWarpCard({ title, pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode = "auto" }: WarpCard) {
+export async function renderWarpCard({ title, pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode, inlineImageByteLimit }: WarpCard) {
   if (pulls.length < 1 || pulls.length > 10) throw new RangeError("每张跃迁卡需有 1–10 抽。");
   const visible = [...pulls].sort((left, right) => right.rarity - left.rarity || left.order - right.order);
   const artwork = await portraits(visible, themeDirectory).catch(() => []);
@@ -62,7 +61,7 @@ export async function renderWarpCard({ title, pity, pulls, page, pages, themeDir
   const gap = 10;
   const itemWidth = pulls.length === 1 ? 420 : 104;
   const left = (width - visible.length * itemWidth - (visible.length - 1) * gap) / 2;
-  return renderPng(width, height, (ctx) => {
+  return renderStarRailCard(width, height, (ctx) => {
     const background = ctx.createLinearGradient(0, 0, width, height);
     background.addColorStop(0, "#172539");
     background.addColorStop(1, "#08131e");
@@ -108,5 +107,5 @@ export async function renderWarpCard({ title, pity, pulls, page, pages, themeDir
     text(ctx, `模拟跃迁 · 当前垫 ${pity} 抽`, 25, 335, 16, "#d1dded", width - 210);
     ctx.textAlign = "right";
     text(ctx, "Lotus-Yunzai · StarRail", width - 25, 335, 14, "#aebfd5", 205);
-  }, mode);
+  }, { mode, inlineImageByteLimit });
 }

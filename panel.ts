@@ -441,7 +441,7 @@ export function createStarRailPanel(
         }
         if (!result.damage) return `${selected.name}伤害计算暂不可用。${result.reason}。`;
         const damage = equipmentLabel ? { ...result.damage, buffs: [equipmentLabel, ...result.damage.buffs] } : result.damage;
-        const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id).catch(() => undefined);
+        const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id, context?.inlineImageByteLimit).catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
         return [equipmentLabel, ...damage.rows.map(row => {

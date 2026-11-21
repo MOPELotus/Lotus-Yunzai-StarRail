@@ -1,4 +1,4 @@
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { Canvas, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 import type { makeStarRailLedgerCard } from "./ledger-command.ts";
 import type { makeStarRailMonthlyCard } from "./monthly-card.ts";
@@ -8,26 +8,6 @@ const theme = new URL("./monthly-theme/", import.meta.url);
 const font = '"Noto Sans CJK SC", sans-serif';
 const colors = ["#5470c6", "#91cc75", "#fac858"];
 const image = (path: string) => loadImage(new URL(path, theme));
-
-interface ReportOptions {
-  readonly inlineImageByteLimit?: number;
-  readonly mode?: Parameters<typeof renderPng>[3];
-}
-
-async function drawReport(width: number, height: number, draw: (ctx: Context) => void,
-  { mode = "auto", inlineImageByteLimit }: ReportOptions) {
-  const render = (scale: 2 | 4) => renderPng(width * scale, height * scale, ctx => {
-    ctx.scale(scale, scale);
-    draw(ctx);
-  }, mode, { allowHalfScale: scale === 4 });
-  const full = await render(4);
-  if (inlineImageByteLimit === undefined || full.png.byteLength <= inlineImageByteLimit) return full;
-  if (!full.reducedScaleReason) {
-    const smaller = await render(2);
-    if (smaller.png.byteLength <= inlineImageByteLimit) return smaller;
-  }
-  throw new Error("星铁报告超出当前会话的图片大小限制。");
-}
 
 function label(ctx: Context, value: string, x: number, y: number, size: number,
   { color = "#111", weight = 400, align = "left", maxWidth }: {
@@ -67,7 +47,7 @@ function cover(ctx: Context, art: Image, width: number, height: number) {
   ctx.drawImage(art, (width - art.width * factor) / 2, (height - art.height * factor) / 2, art.width * factor, art.height * factor);
 }
 
-export async function renderStarRailLedgerCard(model: ReturnType<typeof makeStarRailLedgerCard>, options: ReportOptions = {}) {
+export async function renderStarRailLedgerCard(model: ReturnType<typeof makeStarRailLedgerCard>, options: StarRailCardOptions = {}) {
   const [background, decoration] = await Promise.all([image("charge/bg_main.b435ab02..png"), image("charge/Deco4.png")]);
   const width = 730, columnWidths = [297, 143, 144], textSize = 22.4, tableY = 215;
   const metrics = new Canvas(1, 1).getContext("2d");
@@ -78,7 +58,7 @@ export async function renderStarRailLedgerCard(model: ReturnType<typeof makeStar
   });
   const tableBottom = tableY + 54 + rows.reduce((total, row) => total + row.height, 0);
   const height = tableBottom + 77;
-  return drawReport(width, height, ctx => {
+  return renderStarRailCard(width, height, ctx => {
     ctx.fillStyle = "#203042";
     ctx.fillRect(0, 0, width, height);
     cover(ctx, background, width, height);
@@ -112,14 +92,14 @@ export async function renderStarRailLedgerCard(model: ReturnType<typeof makeStar
   }, options);
 }
 
-export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeStarRailMonthlyCard>, options: ReportOptions = {}) {
+export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeStarRailMonthlyCard>, options: StarRailCardOptions = {}) {
   const [background, jade, pass] = await Promise.all([image("month/kll.jpg"), image("month/星琼.png"), image("month/车票.png")]);
   const width = 625, metrics = new Canvas(1, 1).getContext("2d");
   metrics.font = `400 17px ${font}`;
   const groups = model.groups.map(group => ({ ...group, lines: wrap(metrics, `${group.name} ${group.count}`, 185) }));
   const legendHeight = groups.reduce((height, group) => height + 23 * group.lines.length + 7, 0);
   const chartY = 514, chartHeight = Math.max(300, legendHeight + 20), height = chartY + chartHeight + 71;
-  return drawReport(width, height, ctx => {
+  return renderStarRailCard(width, height, ctx => {
     ctx.fillStyle = "#faf9f7";
     ctx.fillRect(0, 0, width, height);
     cover(ctx, background, width, height);
@@ -165,13 +145,13 @@ export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeSta
   }, options);
 }
 
-export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typeof makeStarRailOnlineCard>>, options: ReportOptions = {}) {
+export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typeof makeStarRailOnlineCard>>, options: StarRailCardOptions = {}) {
   const [logo, mascot, timeline] = await Promise.all([
     image("online/logo.png"), image("online/pamu.png"), image("online/jeremy-thomas-E0AHdsENmDg-unsplash.jpg"),
   ]);
   const width = 800, detailsY = 854, detailStride = 110;
   const footerY = detailsY + model.details.length * detailStride + 7, height = footerY + (model.complete ? 96 : 120);
-  return drawReport(width, height, ctx => {
+  return renderStarRailCard(width, height, ctx => {
     ctx.fillStyle = "#f5edd6";
     ctx.fillRect(0, 0, width, height);
     box(ctx, 5.5, 43.5, 779, 141, 20, "#fcf3cc", "#f5daa9");
