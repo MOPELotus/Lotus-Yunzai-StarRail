@@ -23,6 +23,8 @@ import { renderStarRailGachaVersion } from "./gacha-version-card.ts";
 
 import { parseChallengeQuery } from "./challenge-model.ts";
 import { queryStarRailChallenge } from "./challenge.ts";
+import { createStarRailGridFightQuery } from "./grid-fight-command.ts";
+import { parseStarRailGridFight } from "./grid-fight-model.ts";
 import { createStarRailMonthlyQuery, starRailMonthlyCommand } from "./monthly-command.ts";
 import { createStarRailLedgerQuery, matchStarRailLedger } from "./ledger-command.ts";
 import { createStarRailOnlineQuery, starRailOnlineCommand } from "./online-command.ts";
@@ -116,6 +118,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const roster = createStarRailRosterQuery(profiles, client, signal);
+  const gridFight = createStarRailGridFightQuery(profiles, client, signal);
   const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
   const ledger = createStarRailLedgerQuery(profiles, client, signal);
@@ -235,11 +238,13 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
+      if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
       if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
     },
     async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & {
+      readonly at?: string | number;
       readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
       readonly adapter?: "milky";
       readonly inlineImageByteLimit?: number;
@@ -252,6 +257,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (onlineMatch) return online(context, Number(onlineMatch[1] ?? 1));
       const team = parseStarRailTeamDamage(context.normalizedMessage);
       if (team) return teamDamage(context, team);
+      const gridFightCommand = parseStarRailGridFight(context.normalizedMessage);
+      if (gridFightCommand) return gridFight(context, gridFightCommand);
       const challenge = parseChallengeQuery(context.normalizedMessage);
       if (challenge) {
         const userId = context.user_id;
