@@ -296,7 +296,7 @@ export function createStarRailPanel(
         const title = `UID ${uid} · 面板练度统计 · 共 ${first.total} 名角色`;
         const nodes = [];
         for (const model of models) {
-          const files = await renderTemplate(model).catch(() => false as const);
+          const files = await renderTemplate(model, true).catch(() => false as const);
           await verify();
           if (files && files.length) nodes.push(...files.map(file => ({ type: "image" as const, file })));
           else {
@@ -317,7 +317,7 @@ export function createStarRailPanel(
         if (!model.eligible) return "请先获取角色面板数据后再查看遗器列表。";
         if (!model.artis.length) return "当前面板没有符合旧版词条筛选条件的遗器。";
         const title = `UID ${uid} · 遗器列表`;
-        const files = await renderTemplate(model);
+        const files = await renderTemplate(model, true);
         await verify();
         if (files && files.length) {
           const images = files.map(file => ({ type: "image" as const, file }));
@@ -465,7 +465,7 @@ export function createStarRailPanel(
       const images = [];
       for (const model of models) {
         await verify();
-        const result = await renderTemplate(model);
+        const result = await renderTemplate(model, true);
         if (!result) {
           await verify();
           if (type === "update") return `UID ${uid} 星铁面板已更新，共 ${snapshot.avatars.length} 位角色。图片暂时无法生成。`;
