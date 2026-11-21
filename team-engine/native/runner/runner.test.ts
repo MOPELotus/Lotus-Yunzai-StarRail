@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test";
-import { fileURLToPath } from "node:url";
 import type { CompiledAction, CompiledActor, CompiledEncounter } from "../compile/types.ts";
 import { parse } from "../rules/expression.ts";
 import { getRulebook, type RuleValues } from "../rules/rulebook.ts";
@@ -114,14 +113,7 @@ async function result(fixture: Fixture) {
   };
 }
 
-const referencePython = Bun.which("python3") ?? (process.platform === "win32" ? Bun.which("python") : null);
-
-test.skipIf(!referencePython)("fixed Python battle steps, health, energy, SP and public timeline match the native runner", async () => {
-  const oracle = fileURLToPath(new URL("./python-oracle.py", import.meta.url));
-  const python = Bun.spawnSync([referencePython!, "-I", "-S", "-B", oracle], {
-    stdin: Buffer.from(JSON.stringify(fixtures)), stderr: "pipe",
-  });
-  if (python.exitCode !== 0) throw new Error(python.stderr.toString());
-  const expected = JSON.parse(python.stdout.toString()) as Awaited<ReturnType<typeof result>>[];
+test("battle steps, health, energy, SP and public timeline match the pinned HSR_Nous reference", async () => {
+  const expected: Awaited<ReturnType<typeof result>>[] = await Bun.file(new URL("./fixed-reference.json", import.meta.url)).json();
   for (const [index, fixture] of fixtures.entries()) expect(await result(fixture)).toEqual(expected[index]!);
 });

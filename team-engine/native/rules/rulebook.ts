@@ -32,7 +32,7 @@ export interface Rulebook {
   readonly settleGates: Readonly<Record<string, PreparedExpression>>;
 }
 
-export const rulebookUrl = new URL("../../vendor/src/hsr_nous/sim_schema/rulebook.yaml", import.meta.url);
+export const rulebookUrl = new URL("../../vendor/rulebook.yaml", import.meta.url);
 const cache = new Map<string, Promise<Rulebook>>();
 function record(value: unknown, label: string): RuleValues {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError(label + " 应为映射");
