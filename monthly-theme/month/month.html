@@ -1,0 +1,62 @@
+<!doctype html>
+<!-- Month card layout and assets adapted from the Apache-2.0 source 308a83d. The chart is now rendered without client-side JavaScript. -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>{{month}} | 开拓日历</title>
+<link rel="stylesheet" href="{{css}}"/>
+<style>
+body {margin:0; font-family:"Noto Sans CJK SC",sans-serif;}
+.container {background-color:#faf9f7;}
+.income-chart {min-height:300px; display:flex; align-items:center; justify-content:space-around; gap:9px; padding-inline:10px; font-size:17px;}
+.income-chart ul {margin:0; padding:0; list-style:none; min-width:0;}
+.income-chart li {display:flex; align-items:center; gap:6px; margin-block:5px; overflow-wrap:anywhere;}
+.income-chart li span {width:19px; height:11px; flex:none; border-radius:2px;}
+.income-chart svg {width:290px; height:290px; flex:none;}
+.income-total {font-size:24px; font-weight:bold;}
+.income-percent {font-size:15px; fill:#20202a;}
+</style>
+</head>
+<body>
+<div id="container" class="container">
+    <div class="title">{{month}} | 开拓日历</div>
+    <div class="hint">继续努力，星辰大海在等着你呢！</div>
+    {{each incomes income}}
+    <div class="general">
+        <div class="general-title">{{income.label}}</div>
+        <div class="xq">
+            <img src="{{jadeIcon}}" class="icon" alt=""/>
+            星琼：{{income.hcoin}}
+            <img src="{{passIcon}}" class="icon" style="margin-left:20px" alt=""/>
+            星轨通票&星轨专票：{{income.railsPass}}
+        </div>
+    </div>
+    {{/each}}
+    <div class="general">
+        <div class="general-title">本月星琼收入</div>
+        <div class="income-chart">
+            <ul>
+                {{each groups group}}<li><span style="background:{{group.color}}"></span>{{group.name}} {{group.count}}</li>{{/each}}
+            </ul>
+            <svg viewBox="0 0 290 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="本月星琼收入">
+                <circle cx="145" cy="145" r="111" fill="none" stroke="#edeae5" stroke-width="39"/>
+                {{each groups group}}
+                {{if group.visible}}
+                <circle cx="145" cy="145" r="111" fill="none" stroke="{{group.color}}" stroke-width="39"
+                    stroke-dasharray="{{group.dash}}" stroke-dashoffset="{{group.offset}}" transform="rotate(-90 145 145)"/>
+                {{/if}}
+                {{/each}}
+                {{each groups group}}
+                {{if group.showPercentage}}
+                <text x="{{group.x}}" y="{{group.y}}" text-anchor="middle" dominant-baseline="middle" class="income-percent">{{group.percentage}}%</text>
+                {{/if}}
+                {{/each}}
+                <text x="145" y="140" text-anchor="middle" class="income-total">总计</text>
+                <text x="145" y="173" text-anchor="middle" class="income-total">{{total}}</text>
+            </svg>
+        </div>
+    </div>
+    <div class="logo">{{cardBrand}}</div>
+</div>
+</body>
+</html>
