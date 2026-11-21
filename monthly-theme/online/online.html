@@ -1,0 +1,70 @@
+<!doctype html>
+<!-- Adapted from Apache-2.0 source 308a83d. Static graphs replace the original client-side graph runtime. Timeline photo by Jeremy Thomas on Unsplash. -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="{{css}}"/>
+<title>星铁在线时长</title>
+<style>
+body {margin:0;font-family:"Noto Sans CJK SC",sans-serif}
+.container {font-family:"Noto Sans CJK SC",sans-serif;position:relative}
+.role-name {max-width:350px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plot {margin:20px 50px;width:700px;text-align:center}
+.plot h2 {font-size:24px;font-weight:400;margin:10px 0 20px}
+.bars {display:flex;gap:14px;height:220px;align-items:stretch}
+.bar {display:flex;position:relative;flex:1;align-items:end;justify-content:center;background:#98979733;color:#20282e}
+.bar-value {position:relative;width:68%;background:#5470c6;min-height:2px}
+.bar-value span {position:absolute;bottom:100%;width:100%;left:0}
+.bar-date {position:absolute;top:100%;left:0;width:100%;white-space:nowrap}
+.bar:nth-child(2n) .bar-value {background:#91cc75}.bar:nth-child(3n) .bar-value {background:#fac858}
+.heatmap {margin-top:43px}.heatmap svg {width:700px;height:176px}.heatmap text {font-size:13px}
+#detail {width:700px;margin:18px 50px}.label-x {display:grid;grid-template-columns:repeat(4,1fr) auto}
+.label-x div {width:auto}.detail-daily-blocks {overflow:hidden;background-position:center}
+.detail-daily-label {flex:none;font-size:12px;overflow-wrap:normal;white-space:nowrap;padding-right:4px;margin-left:-10px;width:60px}
+.detail-daily-blocks > div {flex:none}.detail-daily-blocks.uncovered {opacity:.35}
+</style>
+</head>
+<body>
+<div id="container" class="container">
+  <div class="user"><div class="user-inner">
+    <div class="srlogo"><img src="{{logo}}" alt="崩坏：星穹铁道"/></div>
+    <div class="role-name">{{nickname}} <span class="uid">{{uid}}</span></div>
+    <div class="region">{{region}} {{if level}}{{level}}级{{/if}}</div>
+    <div class="pamu"><img class="pamu-img" src="{{pamu}}" alt=""/></div>
+  </div></div>
+  <section class="plot" aria-label="近期每日在线时长">
+    <h2>近期每日在线时长</h2>
+    <div class="bars">
+      {{each bars bar}}
+      <div class="bar"><div class="bar-value" style="height:{{bar.height}}%"><span>{{bar.hours}}</span></div><span class="bar-date">{{bar.shortDate}}</span></div>
+      {{/each}}
+    </div>
+  </section>
+  <section class="plot heatmap" aria-label="每日在线时长热力图">
+    <h2>{{year}} 年每日在线时长热力图</h2>
+    <svg viewBox="0 0 700 176" xmlns="http://www.w3.org/2000/svg">
+      {{each months month}}<text x="{{month.x}}" y="30">{{month.label}}</text>{{/each}}
+      {{each cells cell}}
+      <rect x="{{cell.x}}" y="{{cell.y}}" width="11" height="16" fill="{{cell.color}}" stroke="#b9b5a9" stroke-width=".25"><title>{{cell.title}}</title></rect>
+      {{/each}}
+    </svg>
+  </section>
+  <section id="detail">
+    <div class="detail-title">近期在线可视化</div>
+    <div class="label-x"><div>0</div><div>6</div><div>12</div><div>18</div><div>24</div></div>
+    {{each details day}}
+    <div class="detail-daily">
+      <div class="detail-daily-label">{{day.date}}</div>
+      <div class="detail-daily-blocks {{day.covered ? '' : 'uncovered'}}">
+        {{each day.blocks segment}}
+        <div class="detail-daily-block-{{segment.online ? 'online' : 'offline'}}" style="width:{{segment.width}}%"></div>
+        {{/each}}
+      </div>
+    </div>
+    {{/each}}
+  </section>
+  <div class="hint">{{note}}{{if !complete}}<br/>已达到查询页数上限，仅显示本次读取的记录。{{/if}}</div>
+  <div class="logo">{{cardBrand}}</div>
+</div>
+</body>
+</html>
