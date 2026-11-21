@@ -1,14 +1,27 @@
 import { readFile, realpath, stat } from "node:fs/promises";
-import { resolve, sep } from "node:path";
-import { renderStarRailCard, type StarRailCardOptions } from "../render-card.ts";
+import { dirname, join, resolve, sep } from "node:path";
 import { loadImage } from "skia-canvas";
+import { registerGachaThemeFont } from "../../../packages/skia/gacha-theme-fonts.ts";
 import { readStarRailGachaItems, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
+import { renderStarRailCard, type StarRailCardOptions } from "../render-card.ts";
 import type { WarpPull } from "./draw.ts";
 
 type Picture = Awaited<ReturnType<typeof loadImage>>;
 type Context = Parameters<Parameters<typeof renderStarRailCard>[2]>[0];
-const palette = { 3: "#81b5dc", 4: "#c7a1f3", 5: "#ffd07b" };
-const fonts = '"Noto Sans CJK SC", sans-serif';
+const width = 2200, height = 1040;
+const cardWidth = 484, cardHeight = 246.4, gutter = 20;
+const palette = { 3: "#7ba5d7", 4: "#b892ff", 5: "#fefe8b" };
+const fallbackFont = '"Noto Sans CJK SC", sans-serif';
+const backgroundLayers = [
+  ["bg2.png", 0.85], ["bkg-line.png", 0.4], ["CS_Gacha_BG_Stars3.png", 0.3], ["GachaImg_Common_Star.png", 0.5],
+] as const;
+const elementName: Readonly<Record<string, string>> = {
+  火: "Fire", 冰: "Ice", 雷: "Thunder", 风: "Wind", 量子: "Quantum", 虚数: "Imaginary", 物理: "Physical",
+};
+const elementIcon: Readonly<Record<string, string>> = {
+  火: "elem-fire", 冰: "elem-ice", 雷: "elem-elec", 风: "elem-wind", 量子: "elem-auantum", 虚数: "elem-imaginary", 物理: "elem-phy",
+};
+const paths = new Set(["开拓", "毁灭", "巡猎", "智识", "同谐", "虚无", "存护", "丰饶", "记忆", "欢愉"]);
 
 interface WarpCard extends StarRailCardOptions {
   readonly title: string;
@@ -19,93 +32,220 @@ interface WarpCard extends StarRailCardOptions {
   readonly themeDirectory?: string;
 }
 
-async function portraits(pulls: readonly WarpPull[], directory: string) {
-  const root = await realpath(directory).catch(() => undefined);
-  if (!root) return [];
-  const item = await readStarRailGachaItems(root);
-  const assets = new Map<string, Promise<Picture | undefined>>();
-  async function picture(path: string) {
-    try {
-      const file = await realpath(resolve(root!, path.replace(/^\//u, "")));
-      if (!file.startsWith(`${root}${sep}`)) return;
-      const info = await stat(file);
-      if (!info.isFile() || info.size > 4 * 1024 * 1024) return;
-      const bytes = await readFile(file);
-      if (bytes.toString("ascii", 0, 4) !== "RIFF" || bytes.toString("ascii", 8, 12) !== "WEBP") return;
-      return await loadImage(bytes);
-    } catch { return; }
-  }
-  return Promise.all(pulls.map((pull) => {
-    const path = item({ name: pull.name, item_type: pull.kind })?.img;
-    if (!path) return;
-    const file = pull.kind === "光锥" ? path.replace(/icon\.webp$/u, "splash.webp") : path.replace(/face\.webp$/u, "preview.webp");
-    if (!assets.has(file)) assets.set(file, picture(file));
-    return assets.get(file);
-  }));
+async function asset(root: string | undefined, relative: string, maxBytes = 8 * 1024 * 1024) {
+  if (!root) return;
+  try {
+    const file = await realpath(resolve(root, relative.replace(/^\//u, "")));
+    if (!file.startsWith(root + sep)) return;
+    const info = await stat(file);
+    if (info.isFile() && info.size > 0 && info.size <= maxBytes) return file;
+  } catch {}
 }
 
-function text(ctx: Context, label: string, x: number, y: number, size: number, color: string, width: number) {
+async function loadTheme(directory: string, pulls: readonly WarpPull[]) {
+  const configured = Bun.env.LOTUS_STAR_RAIL_WARP_THEME_DIR?.trim();
+  const [root, warp] = await Promise.all([
+    realpath(directory).catch(() => undefined),
+    realpath(configured || resolve(directory, "simulation")).catch(() => undefined),
+  ]);
+  const images = new Map<string, Promise<Picture | undefined>>();
+  function picture(root: string | undefined, relative: string) {
+    const key = (root ?? "") + "\0" + relative;
+    let pending = images.get(key);
+    if (!pending) {
+      pending = asset(root, relative).then(async file => {
+        if (!file) return;
+        const bytes = await readFile(file);
+        const png = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+        const webp = bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP";
+        const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+        if (png || webp || jpeg) return loadImage(bytes);
+      }).catch(() => undefined);
+      images.set(key, pending);
+    }
+    return pending;
+  }
+  const item = root && await readStarRailGachaItems(root).catch(() => undefined);
+  const [layers, backdrop, titleIcon, star, fonts, artwork] = await Promise.all([
+    Promise.all(backgroundLayers.map(async ([name, opacity]) => ({ image: await picture(warp, "img/bg/" + name), opacity }))),
+    picture(root, "common/bg/bg-sr.webp"),
+    picture(warp, "img/bg/DrawcardIcon.png"),
+    picture(warp, "img/bg/StarBig.png"),
+    asset(warp, "font/SR.ttf").then(async file => file ?? asset(root, "common/font/HYWH-65W.ttf"))
+      .then(file => file ? registerGachaThemeFont("StarRailWarp", file) : undefined).catch(() => undefined),
+    Promise.all(pulls.map(async pull => {
+      const path = typeof item === "function" ? item({ name: pull.name, item_type: pull.kind })?.img : undefined;
+      if (!path) return {};
+      const cone = pull.kind === "光锥";
+      const full = cone ? path : path.replace(/face\.webp$/u, "splash.webp");
+      const cropped = cone ? path : path.replace(/face\.webp$/u, "preview.webp");
+      const target = pulls.length === 1 ? full : cropped;
+      const metadataFile = cone ? undefined : await asset(root, join(dirname(path.replace(/^\//u, "")), "../data.json"), 128 * 1024);
+      const metadata = metadataFile ? await readFile(metadataFile, "utf8").then(content => JSON.parse(content)).catch(() => undefined) : undefined;
+      const rawPath = cone ? path.split("/")[2] : metadata?.weapon;
+      const pathName = typeof rawPath === "string" && paths.has(rawPath) ? rawPath : undefined;
+      const element = typeof metadata?.elem === "string" ? metadata.elem : "";
+      const [portrait, pathArt, elementArt] = await Promise.all([
+        picture(root, target).then(image => image ?? picture(root, path)),
+        pathName ? (cone && pulls.length === 1
+          ? picture(root, `meta-sr/public/icons/type-${pathName}s.webp`)
+              .then(image => image ?? picture(warp, `img/icon/weaponlife/${pathName}.png`))
+          : picture(warp, `img/icon/weaponlife/${pathName}.png`)
+              .then(image => image ?? picture(root, `meta-sr/public/icons/type-${pathName}s.webp`))) : undefined,
+        elementName[element] ? picture(warp, `img/icon/damage/${elementName[element]}.png`)
+          .then(image => image ?? picture(root, `meta-sr/public/icons/${elementIcon[element]}.webp`)) : undefined,
+      ]);
+      return { portrait, pathArt, elementArt, pathName };
+    })),
+  ]);
+  return { layers, backdrop, titleIcon, star, artwork, font: fonts ? `${fonts}, ${fallbackFont}` : fallbackFont };
+}
+
+type Theme = Awaited<ReturnType<typeof loadTheme>>;
+type Art = Theme["artwork"][number];
+
+function imageBox(ctx: Context, image: Picture, x: number, y: number, w: number, h: number, cover = false) {
+  const zoom = (cover ? Math.max : Math.min)(w / image.width, h / image.height);
+  const drawnWidth = image.width * zoom, drawnHeight = image.height * zoom;
+  ctx.drawImage(image, x + (w - drawnWidth) / 2, y + (h - drawnHeight) / 2, drawnWidth, drawnHeight);
+}
+
+function label(ctx: Context, value: string, x: number, y: number, font: string, size: number,
+  maxWidth: number, align: CanvasTextAlign = "left", color = "#fff") {
   ctx.fillStyle = color;
-  ctx.font = `600 ${size}px ${fonts}`;
-  const measuredWidth = ctx.measureText(label).width;
-  if (measuredWidth > width) ctx.font = `600 ${Math.floor(size * width / measuredWidth)}px ${fonts}`;
-  ctx.fillText(label, x, y);
+  ctx.font = `${size}px ${font}`;
+  ctx.textAlign = align;
+  ctx.fillText(value, x, y, maxWidth);
+}
+
+function rankStars(ctx: Context, pull: WarpPull, theme: Theme, x: number, y: number, size: number) {
+  if (!theme.star) {
+    label(ctx, "★".repeat(pull.rarity), x, y + size, theme.font, size, 220, "left", palette[pull.rarity]);
+    return;
+  }
+  for (let index = 0; index < pull.rarity; index++) imageBox(ctx, theme.star, x + index * size * 0.96, y, size, size);
+}
+
+function drawSingle(ctx: Context, pull: WarpPull, art: Art, theme: Theme) {
+  const cone = pull.kind === "光锥";
+  if (art.portrait) {
+    const fraction = cone ? 0.6 : 1;
+    imageBox(ctx, art.portrait, width * (1 - fraction) / 2, height * (1 - fraction) / 2, width * fraction, height * fraction);
+  }
+  const x = 300, top = 500, captionWidth = 480;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(x + 195, top, 90, 44);
+  label(ctx, [...pull.kind].join(" "), x + 240, top + 34, theme.font, 30, 84, "center", "#111");
+  const caption = ctx.createLinearGradient(x, top, x + captionWidth, top);
+  caption.addColorStop(0, "#777c");
+  caption.addColorStop(0.5, "#000e");
+  caption.addColorStop(1, "#6b6b6bc2");
+  ctx.fillStyle = caption;
+  ctx.fillRect(x, top + 59, captionWidth, 130);
+  const icon = cone ? art.pathArt : art.elementArt;
+  if (icon) imageBox(ctx, icon, x + 39, top + 68, 110, 110);
+  label(ctx, pull.name, x + 169, top + 115, theme.font, 45, 286);
+  rankStars(ctx, pull, theme, x + 169, top + 132, 39);
+  if (!cone && art.pathName) {
+    if (art.pathArt) imageBox(ctx, art.pathArt, x + 156, top + 193, 46, 46);
+    label(ctx, art.pathName, x + 213, top + 227, theme.font, 30, 160);
+  }
+}
+
+function drawResult(ctx: Context, pull: WarpPull, art: Art, theme: Theme, x: number, y: number) {
+  const accent = palette[pull.rarity];
+  const cone = pull.kind === "光锥";
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.shadowColor = accent + "90";
+  ctx.shadowBlur = pull.rarity > 3 ? 20 : 8;
+  ctx.fillStyle = "#0b0c11";
+  ctx.fillRect(0, 0, cardWidth, cardHeight);
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.rect(0, 0, cardWidth, cardHeight);
+  ctx.clip();
+  const wash = ctx.createLinearGradient(0, cardHeight, 0, 0);
+  wash.addColorStop(0, accent + "88");
+  wash.addColorStop(0.67, "#0b0c11");
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, cardWidth, cardHeight);
+  const stars = theme.layers[2]?.image;
+  if (stars) {
+    ctx.globalAlpha = 0.6;
+    ctx.drawImage(stars, 0, -cardHeight * 3.2, cardWidth * 2, cardWidth * 2 * stars.height / stars.width);
+    ctx.globalAlpha = 1;
+  }
+  if (art.portrait) {
+    if (cone) {
+      const zoom = Math.min(cardHeight * 1.5 / art.portrait.height, 0.82 * cardWidth / art.portrait.width);
+      const w = art.portrait.width * zoom, h = art.portrait.height * zoom;
+      ctx.drawImage(art.portrait, cardWidth - w, 0, w, h);
+    } else {
+      imageBox(ctx, art.portrait, cardWidth * 0.1, 0, cardWidth * 0.9, cardHeight, true);
+    }
+  }
+  const icon = cone ? art.pathArt : art.elementArt;
+  const iconSize = cone ? 88 : 62;
+  if (icon) imageBox(ctx, icon, cone ? 66 : 28, cone ? 54 : 108, iconSize, iconSize);
+  rankStars(ctx, pull, theme, cone ? 58 : 44, 151, 32);
+  label(ctx, pull.name, 24, 220, theme.font, 32, cardWidth - 48);
+  if (pull.featured || pull.pity !== undefined) {
+    const text = [pull.featured && "UP", pull.pity !== undefined && `${pull.pity} 抽`].filter(Boolean).join(" · ");
+    ctx.fillStyle = accent;
+    ctx.fillRect(cardWidth - 166, cardHeight - 46, 166, 46);
+    label(ctx, text, cardWidth - 18, cardHeight - 16, theme.font, 27, 142, "right", "#0b0c11");
+  }
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, cardHeight - 7, cardWidth, 7);
+  ctx.restore();
 }
 
 export async function renderWarpCard({ title, pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode, inlineImageByteLimit }: WarpCard) {
   if (pulls.length < 1 || pulls.length > 10) throw new RangeError("每张跃迁卡需有 1–10 抽。");
-  const visible = [...pulls].sort((left, right) => right.rarity - left.rarity || left.order - right.order);
-  const artwork = await portraits(visible, themeDirectory).catch(() => []);
-  const width = pulls.length === 1 ? 530 : 1190;
-  const height = 352;
-  const gap = 10;
-  const itemWidth = pulls.length === 1 ? 420 : 104;
-  const left = (width - visible.length * itemWidth - (visible.length - 1) * gap) / 2;
-  return renderStarRailCard(width, height, (ctx) => {
-    const background = ctx.createLinearGradient(0, 0, width, height);
-    background.addColorStop(0, "#172539");
-    background.addColorStop(1, "#08131e");
-    ctx.fillStyle = background;
+  const theme = await loadTheme(themeDirectory, pulls);
+  return renderStarRailCard(width, height, ctx => {
+    ctx.fillStyle = "#0b0c11";
     ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = "#80acd025";
-    ctx.beginPath();
-    ctx.moveTo(24, 65);
-    ctx.lineTo(width - 24, 65);
-    ctx.moveTo(24, 312);
-    ctx.lineTo(width - 24, 312);
-    ctx.stroke();
-    text(ctx, title, 25, 49, 26, "#f6f8fc", width - 165);
-    ctx.textAlign = "right";
-    text(ctx, `${page} / ${pages}`, width - 25, 48, 18, "#c7d7e7", 85);
-    for (const [index, pull] of visible.entries()) {
-      const accent = palette[pull.rarity];
-      const x = left + index * (itemWidth + gap);
-      const top = 85;
-      const content = ctx.createLinearGradient(x, top, x, top + 206);
-      content.addColorStop(0, "#213044");
-      content.addColorStop(1, "#0d1725");
-      ctx.fillStyle = content;
-      ctx.fillRect(x, top, itemWidth, 206);
-      ctx.fillStyle = accent;
-      ctx.fillRect(x, top, itemWidth, 3);
-      const art = artwork[index];
-      if (art) {
-        const scale = Math.min((itemWidth - 6) / art.width, 122 / art.height);
-        const artWidth = art.width * scale;
-        const artHeight = art.height * scale;
-        ctx.drawImage(art, x + (itemWidth - artWidth) / 2, top + 15 + (122 - artHeight) / 2, artWidth, artHeight);
-      } else {
-        ctx.textAlign = "center";
-        text(ctx, pull.kind, x + itemWidth / 2, top + 91, 22, "#c0cde0", itemWidth - 8);
-      }
-      ctx.textAlign = "center";
-      text(ctx, "★".repeat(pull.rarity), x + itemWidth / 2, top + 154, 16, accent, itemWidth - 9);
-      text(ctx, pull.name, x + itemWidth / 2, top + 177, 17, "#f6f8fc", itemWidth - 9);
-      text(ctx, pull.featured ? "UP" : pull.kind, x + itemWidth / 2, top + 197, 13, "#c4d0df", itemWidth - 9);
+    if (!theme.layers[0]?.image && theme.backdrop) {
+      imageBox(ctx, theme.backdrop, 0, 0, width, height, true);
     }
-    ctx.textAlign = "left";
-    text(ctx, `模拟跃迁 · 当前垫 ${pity} 抽`, 25, 335, 16, "#d1dded", width - 210);
-    ctx.textAlign = "right";
-    text(ctx, "Lotus-Yunzai · StarRail", width - 25, 335, 14, "#aebfd5", 205);
+    for (const { image, opacity } of theme.layers) {
+      if (!image) continue;
+      ctx.globalAlpha = opacity;
+      imageBox(ctx, image, 0, 0, width, height, true);
+    }
+    ctx.globalAlpha = 1;
+    if (pulls.length === 1) {
+      drawSingle(ctx, pulls[0]!, theme.artwork[0]!, theme);
+    } else {
+      // The original three lines keep the draw order and lean at ten degrees.
+      for (const [row, [start, end]] of ([[0, 3], [3, 7], [7, 10]] as const).entries()) {
+        const group = pulls.slice(start, end);
+        if (!group.length) break;
+        const groupWidth = group.length * (cardWidth + gutter) - gutter;
+        ctx.save();
+        ctx.translate(width / 2 + (row - 1) * 165, 220 + row * (cardHeight + gutter));
+        ctx.rotate(-Math.PI / 18);
+        for (const [index, pull] of group.entries()) {
+          const step = row === 0 && index === 1 ? -6.6 : row === 2 && index === 1 ? 44 : 0;
+          drawResult(ctx, pull, theme.artwork[start + index]!, theme, index * (cardWidth + gutter) - groupWidth / 2, -cardHeight / 2 + step);
+        }
+        ctx.restore();
+      }
+    }
+    if (theme.titleIcon) imageBox(ctx, theme.titleIcon, 110, 42, 55, 55);
+    label(ctx, "跃迁记录", theme.titleIcon ? 185 : 110, 82, theme.font, 44, 240);
+    ctx.font = `46px ${theme.font}`;
+    const poolWidth = Math.min(820, ctx.measureText(title).width + 36);
+    const count = `当前垫 ${pity} 抽`;
+    const countWidth = ctx.measureText(count).width + 36;
+    ctx.fillStyle = "#05050599";
+    ctx.fillRect(width - 55 - poolWidth, 20, poolWidth, 82);
+    ctx.fillRect(50, 120, countWidth, 82);
+    label(ctx, title, width - 73, 81, theme.font, 46, poolWidth - 36, "right");
+    label(ctx, count, 68, 181, theme.font, 46, countWidth - 36);
+    label(ctx, `${page} / ${pages}`, width - 54, height - 19, theme.font, 27, 155, "right");
+    label(ctx, "Lotus-Yunzai · StarRail", 17, height - 14, theme.font, 24, 408);
   }, { mode, inlineImageByteLimit });
 }

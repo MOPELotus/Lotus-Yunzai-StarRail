@@ -5,6 +5,7 @@ import { renderWarpCard } from "./card.ts";
 import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory } from "./store.ts";
 
 const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星轨通|星轨|专属|普通|专|通)?票?$/u;
+const oneBotForwardLimit = 96 * 1024 * 1024;
 const help = /^#星铁模拟(?:抽卡|跃迁)(?:帮助)?$/u;
 const drawCommand = /^#星铁(?<before>角色池?|光锥池?|武器池?|常驻池?)?(?<size>单抽|(?:[一二三四五六七八九]?十|百|10)[连抽卡奖]|抽[卡奖])(?<after>角色池?|光锥池?|武器池?|常驻池?)?(?:池?(?<slot>[1-4]))?$/u;
 
@@ -20,6 +21,8 @@ export function parseWarpCommand(message: string) {
 }
 
 interface WarpContext {
+  readonly adapter?: "milky";
+  readonly forward?: unknown;
   readonly user_id?: number;
   readonly group_id?: number;
   readonly isMaster?: boolean;
@@ -27,7 +30,7 @@ interface WarpContext {
 }
 
 type Reply = string | { readonly type: "image"; readonly file: Uint8Array };
-type WarpReply = Reply | { readonly type: "forward"; readonly nodes: readonly Reply[] };
+type WarpReply = Reply | { readonly type: "forward"; readonly nodes: readonly Reply[]; readonly batchSize?: number };
 type WarpResult = { readonly text: string } | { readonly pulls: readonly WarpPull[]; readonly pity: number };
 
 function format(pull: WarpPull) {
@@ -113,6 +116,15 @@ export function createStarRailSimulation({
       }
       if (signal.aborted) return;
       if (nodes.length === 2) return typeof nodes[1] === "string" ? `${intro}\n${nodes[1]}` : nodes[1];
+      if (typeof context.forward === "function" && context.adapter !== "milky") {
+        // Reverse WebSocket RPC carries each image as base64. The gateway accepted 96 MiB in the transport probe.
+        const bytes = nodes.map(node => 1024 + (typeof node === "string"
+          ? Buffer.byteLength(node) : 4 * Math.ceil(node.file.byteLength / 3)));
+        if (bytes.reduce((total, size) => total + size, 0) > oneBotForwardLimit) {
+          const batchSize = Math.max(1, Math.floor(oneBotForwardLimit / Math.max(...bytes)));
+          return { type: "forward", nodes, batchSize };
+        }
+      }
       return { type: "forward", nodes };
     } catch {
       if (!signal.aborted) return "星铁模拟跃迁暂时无法完成，请检查活动卡池配置与模拟存档。";
