@@ -21,6 +21,7 @@ import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
+import { renderStarRailPanelList } from "./panel-list-skia.ts";
 import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -466,8 +467,10 @@ export function createStarRailPanel(
       const images = [];
       for (const model of models) {
         await verify();
-        const result = "damageRows" in model
-          ? await renderStarRailPanelDetail(model, theme.root).then(card => [card.png]).catch(() => false as const)
+        const native = "damageRows" in model ? renderStarRailPanelDetail(model, theme.root)
+          : "chars" in model ? renderStarRailPanelList(model, theme.root) : undefined;
+        const result = native
+          ? await native.then(card => [card.png]).catch(() => false as const)
           : await renderTemplate(model, true);
         if (!result) {
           await verify();

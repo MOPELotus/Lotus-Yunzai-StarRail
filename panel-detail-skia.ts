@@ -1,14 +1,11 @@
 // Native drawing of the Star Rail profile-detail layout. Geometry and artwork follow
 // the fixed MIT Miao reference in panel-theme/character/profile-detail.{html,css}.
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { Canvas, loadImage, type CanvasRenderingContext2D, type Image } from "skia-canvas";
+import { Canvas, type CanvasRenderingContext2D as Context } from "skia-canvas";
 import { renderPng } from "@lotus-yunzai/skia";
-import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
+import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import type { makePanelDetailCard } from "./panel-card.ts";
 
 type Model = Awaited<ReturnType<typeof makePanelDetailCard>>;
-type Context = CanvasRenderingContext2D;
 const width = 600;
 const density = 4;
 const white = "#fff", gold = "#ffe699", tan = "#d3bc8e";
@@ -21,43 +18,10 @@ const attributeLabels = [
 ] as const;
 const skillNames = { a: "普攻", e: "战技", t: "天赋", q: "爆发", me: "忆灵技", mt: "忆灵天赋", xe: "欢愉技" } as const;
 const rankColors: Readonly<Record<string, string>> = { ACE: "#e85656", MAX: "#e85656", SSS: gold, SS: gold, S: "#d699ff", A: "#d699ff" };
-const soulColors = ["#666", "#5cbac2", "#49a3cc", "#9578dd", "#9d66d1", "#dc838a", "#e5ae46"];
 const relicShortTitles: Readonly<Record<string, string>> = {
   hp: "生命", hpPlus: "生命", atk: "攻击", atkPlus: "攻击", def: "防御", defPlus: "防御",
   cpct: "暴击", cdmg: "爆伤", recharge: "充能", effPct: "命中", effDef: "抵抗", stance: "击破",
 };
-const bundledTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
-
-function rounded(ctx: Context, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-}
-
-function fill(ctx: Context, color: string, x: number, y: number, w: number, h: number, radius = 0) {
-  ctx.fillStyle = color;
-  if (!radius) ctx.fillRect(x, y, w, h);
-  else {
-    rounded(ctx, x, y, w, h, radius);
-    ctx.fill();
-  }
-}
-
-function picture(ctx: Context, image: Image | undefined, x: number, y: number, w: number, h: number,
-  fit: "contain" | "cover" = "contain", alignX = .5, alignY = .5) {
-  if (!image) return;
-  const scale = (fit === "contain" ? Math.min : Math.max)(w / image.width, h / image.height);
-  const iw = image.width * scale, ih = image.height * scale;
-  ctx.drawImage(image, x + (w - iw) * alignX, y + (h - ih) * alignY, iw, ih);
-}
-
-async function image(source: string | undefined) {
-  if (!source) return;
-  try {
-    if (source.startsWith("file:")) return await loadImage(fileURLToPath(source));
-    if (source.startsWith("data:image/")) return await loadImage(source);
-    if (source.startsWith("/")) return await loadImage(source);
-  } catch {}
-}
 
 async function loadArt(model: Model, theme: string) {
   const urls = [
@@ -66,48 +30,13 @@ async function loadArt(model: Model, theme: string) {
     ...model.artisDetail.artis.map(part => part.img), model.data.weapon?.splash,
   ].filter((url): url is string => Boolean(url));
   const files = new Map(await Promise.all([...new Set(urls)].map(async url => [url, await image(url)] as const)));
-  async function themeArt(relative: string) {
-    return await image(join(theme, relative)) ?? image(join(bundledTheme, relative));
-  }
+  const asset = (relative: string) => themeArt(theme, relative);
   const element = Object.hasOwn(elementNames, model.element) ? elementNames[model.element] : "sr";
   const [back, ring, texture, icons, unusedRolls, rolls, activeRolls, hp, atk, def] = await Promise.all([
-    themeArt(`common/bg/bg-${element}.webp`), themeArt(`common/bg/talent-${element}.webp`), themeArt("common/cont/card-bg.png"),
-    themeArt("character/imgs/icon-sr.png"), ...[0, 1, 2].map(i => themeArt(`character/imgs/up-num-icon${i}.png`)), ...["hp", "atk", "def"].map(key => themeArt(`meta-sr/public/icons/attr-${key}.webp`)),
+    asset(`common/bg/bg-${element}.webp`), asset(`common/bg/talent-${element}.webp`), asset("common/cont/card-bg.png"),
+    asset("character/imgs/icon-sr.png"), ...[0, 1, 2].map(i => asset(`character/imgs/up-num-icon${i}.png`)), ...["hp", "atk", "def"].map(key => asset(`meta-sr/public/icons/attr-${key}.webp`)),
   ]);
   return { back, ring, texture, icons, rolls: [unusedRolls, rolls, activeRolls], coneIcons: { hp, atk, def }, get: (url: string | undefined) => url ? files.get(url) : undefined };
-}
-
-function themeFont(theme: string, scope: string, name: string) {
-  try {
-    return registerGachaThemeFont(scope, join(theme, "common/font", name));
-  } catch {
-    return "";
-  }
-}
-
-function typography(theme: string) {
-  const number = themeFont(theme, "StarRailPanelNumbers", "tttgbnumber.ttf");
-  const body = themeFont(theme, "StarRailPanelBody", "HYWH-65W.ttf");
-  const title = themeFont(theme, "StarRailPanelTitle", "NZBZ.ttf");
-  const fallback = '"Noto Sans CJK SC", sans-serif';
-  return {
-    body: [number, body, fallback].filter(Boolean).join(", "),
-    title: [number, title, body, fallback].filter(Boolean).join(", "),
-  };
-}
-
-function styles(ctx: Context, font: ReturnType<typeof typography>) {
-  function write(value: string | number | undefined, x: number, y: number, size: number, color = white,
-    align: CanvasTextAlign = "left", bold = false, header = false, maxWidth?: number) {
-    if (value === undefined || value === "") return;
-    ctx.font = `${bold ? "bold " : ""}${size}px ${header ? font.title : font.body}`;
-    ctx.textAlign = align;
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = color;
-    if (maxWidth) ctx.fillText(String(value), x, y, maxWidth);
-    else ctx.fillText(String(value), x, y);
-  }
-  return write;
 }
 
 function wrapDescription(ctx: Context, description: NonNullable<Model["data"]["weapon"]>["descriptionParts"]) {
