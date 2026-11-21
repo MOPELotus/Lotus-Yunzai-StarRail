@@ -52,6 +52,7 @@ export const eventFields = {
   toughness_recovered: "amount target",
 } as const;
 export type BattleEvent = keyof typeof eventFields;
+const payloadFields = new Map(Object.entries(eventFields).map(([name, keys]) => [name, new Set(keys.split(" "))]));
 export type EventPayload = RuleValues;
 export interface EventUpdate {
   readonly amount?: number;
@@ -63,10 +64,11 @@ export function validateEvent(event: string, payload: EventPayload, waterfall: b
   if (waterfallEvents.has(event) !== waterfall) {
     throw new TypeError(event + (waterfall ? " 是只读战斗事件" : " 须逐个结算事件处理者"));
   }
-  if (!Object.hasOwn(eventFields, event)) return;
-  const known = new Set(eventFields[event as BattleEvent].split(" "));
-  if (waterfall) known.add("cancel");
-  for (const key of Object.keys(payload)) if (!known.has(key)) throw new TypeError(event + " 不支持字段 " + key);
+  const known = payloadFields.get(event);
+  if (!known) return;
+  for (const key of Object.keys(payload)) {
+    if (!known.has(key) && !(waterfall && key === "cancel")) throw new TypeError(event + " 不支持字段 " + key);
+  }
 }
 
 interface HookGroup {

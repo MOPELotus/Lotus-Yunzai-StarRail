@@ -10,12 +10,12 @@ function hook(ownerId: string, event: string, patch: Partial<CompiledHook> = {})
 test("event contracts match the pinned bus and reject misspelled payload fields", async () => {
   const source = await Bun.file(new URL("../../vendor/src/hsr_nous/sim/bus.py", import.meta.url)).text();
   const [contracts, fields] = source.split("DEFAULT_PAYLOAD_FIELDS: Dict[str, frozenset] = {");
-  expect([...contracts!.matchAll(/"([a-z_]+)": "(emit|waterfall)",/g)].map(match => match[1]).sort())
+  expect([...contracts!.matchAll(/"([a-z_]+)": "(emit|waterfall)",/g)].map(match => match[1]!).sort())
     .toEqual(Object.keys(eventFields).sort());
-  expect([...contracts!.matchAll(/"([a-z_]+)": "waterfall",/g)].map(match => match[1]).sort())
+  expect([...contracts!.matchAll(/"([a-z_]+)": "waterfall",/g)].map(match => match[1]!).sort())
     .toEqual([...waterfallEvents].sort());
   for (const [, event, names] of fields!.matchAll(/"([a-z_]+)": frozenset\(\{([^}]+)\}\)/g)) {
-    const pinned = [...names!.matchAll(/'([a-z_]+)'/g)].map(match => match[1]).sort();
+    const pinned = [...names!.matchAll(/'([a-z_]+)'/g)].map(match => match[1]!).sort();
     expect(eventFields[event! as keyof typeof eventFields].split(" ").sort()).toEqual(pinned);
   }
   expect(() => validateEvent("before_take_damage", { amount: 50 }, false)).toThrow();
