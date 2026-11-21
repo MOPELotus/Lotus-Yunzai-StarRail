@@ -54,7 +54,7 @@ def scheduler_trace(fixture, actors):
             scheduler.undo_gauge_reset(by_id[args[0]])
         elif op == "eta":
             results.append(scheduler.form_exit_eta(*args))
-        elif op == "add":
+        elif op in ("add", "rejoin"):
             new_actor = actor(args[0])
             by_id[new_actor.actor_id] = new_actor
             scheduler.add_actor(new_actor)

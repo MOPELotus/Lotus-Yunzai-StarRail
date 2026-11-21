@@ -26,6 +26,7 @@ const actors: [CombatActor, CombatActor] = [
 
 const newcomer: CombatActor = { id: "next", level: 90, kind: "monster",
   stats: { spd: 140.2, hp: 130_000, max_toughness: 70 } };
+const returned = { ...newcomer, stats: { ...newcomer.stats, spd: 195.7 } };
 const ticks = [149.99, 150, 349.2, 450];
 const scheduler = [
   ["preview"], ["pop"], ["pop"], ["extra", "enemy"], ["extra", "ally", "countdown"],
@@ -35,6 +36,8 @@ const scheduler = [
   ["extra", "ally"], ["preview"], ["pop"], ["pop"], ["unfreeze", "ally"], ["eta", "ally"],
   ["now", "enemy"], ["shift", "enemy", .15], ["pop"], ["delay", "enemy", .35], ["undo", "enemy"],
   ["undo", "next"], ["preview"], ["pop"], ["pop"], ["pop"], ["pop"], ["pop"], ["preview"],
+  ["extra", "next"], ["freeze", "next"], ["rejoin", returned], ["preview"], ["pop"],
+  ["pop"], ["pop"], ["pop"], ["pop"], ["preview"], ["pop"], ["pop"], ["pop"],
 ] as const;
 
 const action: CombatAction = { kind: "skill", damageType: "wind", scaling: [{ atk: .4 }, { atk: 1.3, hp: .12, def: .22 }] };
@@ -94,6 +97,7 @@ function schedulerTrace() {
       case "speed": queue.changeSpeed(op[1], op[2]); break;
       case "eta": output.push(queue.formExitEta(op[1]) ?? null); break;
       case "add": queue.addActor(op[1]); break;
+      case "rejoin": queue.rejoinActor(op[1]); break;
       case "reset": queue.resetActionGauge(op[1]); break;
       case "exempt": queue.exemptFromWaveReset(op[1]); break;
       case "freeze": queue.freeze(op[1]); break;

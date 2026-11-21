@@ -28,6 +28,7 @@ interface Entry<T> {
 
 export class ActionScheduler<T extends ScheduledActor> {
   readonly #entries = new Map<string, Entry<T>>();
+  readonly #slots: Entry<T>[] = [];
   readonly #extra: { entry: Entry<T>; kind: Exclude<TurnKind, "normal"> }[] = [];
   #clock = 0;
 
@@ -38,16 +39,25 @@ export class ActionScheduler<T extends ScheduledActor> {
   get clock(): number { return this.#clock; }
 
   addActor(actor: T): void {
-    this.#add(actor, this.#entries.size + 1);
+    this.#add(actor, this.#slots.length + 1);
+  }
+
+  rejoinActor(actor: T): void {
+    const old = this.#entry(actor.id);
+    old.frozen = true;
+    this.#entries.delete(actor.id);
+    this.addActor(actor);
   }
 
   #add(actor: T, tie: number): void {
     if (this.#entries.has(actor.id)) throw new Error("Duplicate scheduled actor " + actor.id);
     const speed = Math.max(actor.stats.spd, MIN_SPEED);
-    this.#entries.set(actor.id, {
+    const entry = {
       actor, tie, speed, distance: ACTION_DISTANCE, time: this.#clock + ACTION_DISTANCE / speed,
       frozen: false, waveResetExempt: false,
-    });
+    };
+    this.#entries.set(actor.id, entry);
+    this.#slots.push(entry);
   }
 
   #entry(id: string): Entry<T> {
@@ -91,19 +101,19 @@ export class ActionScheduler<T extends ScheduledActor> {
   nextActor(): ScheduledTurn<T> | undefined {
     const extra = this.#extra.shift();
     if (extra) return { actor: extra.entry.actor, kind: extra.kind, time: this.#clock };
-    if (![...this.#entries.values()].some(entry => !entry.frozen)) return undefined;
+    if (!this.#slots.some(entry => !entry.frozen)) return undefined;
 
     // Preserve the absolute key for each queued actor. Recomputing all keys after
     // every pop changes equal-AV order when subtraction introduces a rounding error.
     while (true) {
       let next: Entry<T> | undefined;
-      for (const entry of this.#entries.values()) {
+      for (const entry of this.#slots) {
         if (!next || entry.time < next.time || (entry.time === next.time && entry.tie < next.tie)) next = entry;
       }
       if (!next) return undefined;
       const delta = next.time - this.#clock;
       if (delta > 0) {
-        for (const entry of this.#entries.values()) {
+        for (const entry of this.#slots) {
           entry.distance = Math.max(0, entry.distance - delta * this.#speed(entry));
         }
       }
@@ -127,7 +137,7 @@ export class ActionScheduler<T extends ScheduledActor> {
   }
 
   resetActionGauge(exceptCountdown = false): void {
-    for (const entry of this.#entries.values()) {
+    for (const entry of this.#slots) {
       if (exceptCountdown && (entry.countdown || entry.waveResetExempt)) continue;
       entry.distance = ACTION_DISTANCE;
       entry.time = this.#eta(entry);
