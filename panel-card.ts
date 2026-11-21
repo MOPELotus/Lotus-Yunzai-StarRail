@@ -167,13 +167,14 @@ function formatDate(value: string | undefined) {
   }).format(new Date(millis)) : "";
 }
 
-export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadata, profileId: number, signal: AbortSignal, updated = false) {
+export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadata, profileId: number, signal: AbortSignal,
+  updated = false, localOnly = false) {
   const avatars = snapshot.avatars.map(avatar => {
     const catalog = lookup(avatar, theme);
     return { avatar, ...catalog, star: avatar.rarity ?? whole(catalog.meta?.star, 5) };
   }).sort((a, b) => (b.star ?? 0) - (a.star ?? 0) || (b.avatar.level ?? 0) - (a.avatar.level ?? 0) || Number(b.avatar.id) - Number(a.avatar.id));
   const pages = [];
-  const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
+  const artSignal = localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const pageSize = 48;
   for (let start = 0; start < avatars.length; start += pageSize) {
     const chars = [];

@@ -78,8 +78,9 @@ export function createStarRailPanel(
     context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile">) {
     const { type, profileId, name } = command;
     const uploadFile = context?.uploadFile;
+    if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+    if (type === "reload" && context?.isDelegated) return "请在本人 QQ 会话重新加载星铁面板。";
     if (type === "export") {
-      if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
       const group = context?.message_type === "group";
       if (group && !command.share) {
         return `请私聊发送【*导出面板${profileId === 1 ? "" : profileId}】。如确认将本人面板发到本群，请发送【*强制导出面板${profileId === 1 ? "" : profileId}】。`;
@@ -108,7 +109,8 @@ export function createStarRailPanel(
         const latest = await (account
           ? profiles.requestContext(qq, profileId, "sr")
           : profiles.savedRole(qq, profileId, "sr").then(role => ({ role, revision: undefined }))).catch(() => undefined);
-        if (!latest || latest.revision !== revision || latest.role.uid !== uid || latest.role.region !== role.region) {
+        if (!latest || latest.revision !== revision || latest.role.uid !== uid || latest.role.region !== role.region ||
+            latest.role.gameBiz !== role.gameBiz) {
           throw new ProfileError("changed", "星铁面板档案已变更，请重新查询。");
         }
       }
@@ -142,6 +144,7 @@ export function createStarRailPanel(
       }
 
       if (!snapshot?.avatars.length) {
+        if (type === "reload") await verify();
         if (type === "relic-list") {
           await verify();
           return "请先获取角色面板数据后再查看遗器列表。";
@@ -306,7 +309,7 @@ export function createStarRailPanel(
           models = [await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid })];
         }
       } else {
-        models = await makePanelListCards(snapshot, theme, profileId, signal, updated);
+        models = await makePanelListCards(snapshot, theme, profileId, signal, updated, type === "reload");
       }
       const images = [];
       for (const model of models) {
@@ -350,7 +353,9 @@ export function createStarRailPanel(
         if (error.code === "invalid-input") return "星铁面板更新需使用档案中已同步的国服星铁角色。";
         if (error.retcode === 10102) return "米游社面板未公开或当前档案没有绑定该角色，原面板已保留。";
       }
-      return type === "export" ? "星铁面板导出失败，请检查本地面板档案。" : "星铁面板暂时无法读取或更新，请稍后重试。";
+      if (type === "export") return "星铁面板导出失败，请检查本地面板档案。";
+      if (type === "reload") return "星铁面板暂时无法重新加载，请检查本地面板档案。";
+      return "星铁面板暂时无法读取或更新，请稍后重试。";
     }
   };
 }

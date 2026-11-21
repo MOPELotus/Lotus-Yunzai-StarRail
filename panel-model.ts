@@ -147,7 +147,22 @@ export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 
 const leadingPanelUid = /^(#星铁|\*)\s*((?:18|[1-9])\d{8})(?!\d)\s*(?=[\p{L}\p{N}])/u;
 
+const panelTarget = String.raw`(?:\s*([1-9]\d{8,9})(?:\s+档案\s*([1-9]\d{0,2}))?|\s*(?:档案\s*)?(\d{1,3}))?`;
+const reloadPanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:加载|重新加载|重载)面板${panelTarget}$`, "u");
+const refreshPanel = new RegExp(
+  String.raw`^(?:(?:#星铁|\*)\s*(?:(?:米游社|mys)\s*)?|#?(?:米游社|mys)\s*星铁\s*)` +
+    `(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "iu",
+);
+
 export function parsePanelCommand(message: string) {
+  const reload = reloadPanel.exec(message);
+  const refresh = reload ? undefined : refreshPanel.exec(message);
+  const operation = reload ?? refresh;
+  if (operation) {
+    const profileId = Number(operation[2] ?? operation[3] ?? 1);
+    if (refresh && (profileId < 1 || profileId > MAX_PROFILE_ID)) return;
+    return { type: reload ? "reload" as const : "update" as const, name: "", profileId, ...(operation[1] && { uid: operation[1] }) };
+  }
   const exporting = /^(?:#星铁|\*)(强制)?导出面板(?:\s*(?:档案\s*)?(\d+))?$/u.exec(message);
   if (exporting) return { type: "export" as const, name: "", profileId: Number(exporting[2] ?? 1), share: Boolean(exporting[1]) };
   const relicList = /^(?:(?:#星铁|\*)(?:遗器|圣遗物)|#遗器)列表(?:\s*(\d{9,10})(?!\d))?(?:\s*(?:档案\s*)?([1-9]\d{0,2}))?$/u.exec(message);
@@ -182,13 +197,11 @@ function parseLocalPanelCommand(message: string) {
   const body = command[1].trim();
   const profileId = Number(command[2] ?? 1);
   if (profileId > MAX_PROFILE_ID) return;
-  if (/^(?:更新面板|面板更新|全部面板更新|更新全部面板|获取游戏角色详情)$/u.test(body))
-    return { type: "update" as const, profileId, name: "" };
   if (/^(?:面板角色|角色面板|面板)(?:列表)?$/u.test(body))
     return { type: "list" as const, profileId, name: "" };
   if (/卡池(?:详情|详细)$/u.test(body)) return;
   const detail = /^([\p{L}\p{N}·・•_.&★ -]{1,28}?)(详细|详情|面板|面版|遗器|圣遗物)$/u.exec(body);
-  if (detail?.[1] && !detail[1].includes("换") && !/^(?:展板|备用|删除|加载|重载|清理|重新加载|刷新|修复|重建)|列表$/u.test(detail[1])) {
+  if (detail?.[1] && !detail[1].includes("换") && !/^(?:展板|备用|删除|加载|重载|清理|重新加载|更新|刷新|修复|重建)|列表$/u.test(detail[1])) {
     return { type: detail[2] === "遗器" || detail[2] === "圣遗物" ? "relics" as const : "detail" as const, profileId, name: detail[1].trim() };
   }
 }
