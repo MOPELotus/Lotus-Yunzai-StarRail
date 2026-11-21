@@ -2,9 +2,10 @@ import { constants } from "node:fs";
 import { open } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
+import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
+import type { MessageEvent } from "../../lib/messages.ts";
 import { renderTemplate } from "../../lib/renderer/shotium.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
@@ -14,6 +15,7 @@ import { changePanelFullTraces } from "./panel-trace-preview.ts";
 import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
+import { panelExportFile } from "./panel-file.ts";
 import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -47,7 +49,7 @@ async function legacySnapshot(uid: string) {
       throw new Error("旧星铁面板档案已变更。");
     }
     const data: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-    return readLegacyPanel(uid, data);
+    return { snapshot: readLegacyPanel(uid, data), data: object(data)! };
   } finally {
     await handle.close();
   }
@@ -72,11 +74,23 @@ export function createStarRailPanel(
   const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
   const refreshing = new Set<string>();
 
-  return async function query(qq: string, command: PanelCommand, context?: StarRailGroupRankContext) {
+  return async function query(qq: string, command: PanelCommand,
+    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile">) {
     const { type, profileId, name } = command;
+    const uploadFile = context?.uploadFile;
+    if (type === "export") {
+      if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+      const group = context?.message_type === "group";
+      if (group && !command.share) {
+        return `请私聊发送【*导出面板${profileId === 1 ? "" : profileId}】。如确认将本人面板发到本群，请发送【*强制导出面板${profileId === 1 ? "" : profileId}】。`;
+      }
+      if (context?.isDelegated || (context?.message_type !== "private" && (!group || !context.group_id || !context.self_id ||
+          (context.adapter !== undefined && context.adapter !== "onebot" && context.adapter !== "milky")))) return "请在绑定网关的私聊会话中导出星铁面板。";
+      if (!uploadFile) return "当前会话不支持发送星铁面板文件。";
+    }
     try {
       const account = await profiles.requestContext(qq, profileId, "sr").catch(error => {
-        if (type !== "update" && error instanceof ProfileError && error.code === "login-required") return undefined;
+        if (type !== "update" && type !== "export" && error instanceof ProfileError && error.code === "login-required") return undefined;
         throw error;
       });
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
@@ -87,6 +101,7 @@ export function createStarRailPanel(
       const key = `${qq}:${uid}`;
       let revision = account?.revision;
       let snapshot: PanelSnapshot | undefined;
+      let legacy: Record<string, unknown> | undefined;
       let updated = false;
       async function verify() {
         signal.throwIfAborted();
@@ -118,7 +133,12 @@ export function createStarRailPanel(
           refreshing.delete(key);
         }
       } else {
-        snapshot = managedSnapshot(uid, await store.read(qq, uid)) ?? await legacySnapshot(uid);
+        snapshot = managedSnapshot(uid, await store.read(qq, uid));
+        if (!snapshot) {
+          const old = await legacySnapshot(uid);
+          snapshot = old?.snapshot;
+          legacy = old?.data;
+        }
       }
 
       if (!snapshot?.avatars.length) {
@@ -127,6 +147,14 @@ export function createStarRailPanel(
           return "请先获取角色面板数据后再查看遗器列表。";
         }
         return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
+      }
+      if (type === "export" && uploadFile) {
+        const { name, bytes, format } = panelExportFile(snapshot, legacy);
+        await verify();
+        const outcome = await uploadFile({ name, bytes }).catch(() => "unknown");
+        if (outcome === "rejected") return "星铁面板文件发送失败，请检查网关的文件发送功能。";
+        if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
+        return `已导出 ${name}（${format}）。`;
       }
       const theme = await readTheme();
       if (type === "relic-list") {
@@ -322,7 +350,7 @@ export function createStarRailPanel(
         if (error.code === "invalid-input") return "星铁面板更新需使用档案中已同步的国服星铁角色。";
         if (error.retcode === 10102) return "米游社面板未公开或当前档案没有绑定该角色，原面板已保留。";
       }
-      return "星铁面板暂时无法读取或更新，请稍后重试。";
+      return type === "export" ? "星铁面板导出失败，请检查本地面板档案。" : "星铁面板暂时无法读取或更新，请稍后重试。";
     }
   };
 }

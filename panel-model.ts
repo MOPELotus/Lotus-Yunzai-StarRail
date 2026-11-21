@@ -61,11 +61,12 @@ const elements: Readonly<Record<string, string>> = {
 export const officialArtHosts = new Set(["act-webstatic.mihoyo.com", "upload-bbs.mihoyo.com", "fastcdn.mihoyo.com"]);
 const mappedNames: Readonly<Record<string, string>> = names;
 
-function safeArt(value: unknown) {
+export function safeArt(value: unknown, allowParameters = true) {
   if (typeof value !== "string" || value.length > 2048) return "";
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && officialArtHosts.has(url.hostname) && !url.username && !url.password && !url.port ? url.href : "";
+    return url.protocol === "https:" && officialArtHosts.has(url.hostname) && !url.username && !url.password && !url.port &&
+      (allowParameters || (!url.search && !url.hash)) ? url.href : "";
   } catch {
     return "";
   }
@@ -147,6 +148,8 @@ export type PanelCommand = NonNullable<ReturnType<typeof parsePanelCommand>>;
 const leadingPanelUid = /^(#星铁|\*)\s*((?:18|[1-9])\d{8})(?!\d)\s*(?=[\p{L}\p{N}])/u;
 
 export function parsePanelCommand(message: string) {
+  const exporting = /^(?:#星铁|\*)(强制)?导出面板(?:\s*(?:档案\s*)?(\d+))?$/u.exec(message);
+  if (exporting) return { type: "export" as const, name: "", profileId: Number(exporting[2] ?? 1), share: Boolean(exporting[1]) };
   const relicList = /^(?:(?:#星铁|\*)(?:遗器|圣遗物)|#遗器)列表(?:\s*(\d{9,10})(?!\d))?(?:\s*(?:档案\s*)?([1-9]\d{0,2}))?$/u.exec(message);
   if (relicList) {
     const profileId = Number(relicList[2] ?? 1);
