@@ -39,24 +39,33 @@ async function galleryFiles(base: string, name: string) {
 }
 
 /** Uses the exact roster ID for gallery art and preserves the theme's original illustration. */
-export async function readStarRailPanelPortrait(theme: string, id: string, themeName: string) {
+export async function readStarRailPanelPortrait(theme: string, id: string, themeName: string, special = false) {
   const root = await realpath(theme).catch(() => undefined);
   const configured = Bun.env.LOTUS_CHARACTER_GALLERY_DIR?.trim();
   const gallery = configured ? await realpath(configured).catch(() => undefined) : root;
   const name = Object.hasOwn(names, id) ? names[id] : undefined;
   if (gallery && name) {
-    const base = join(gallery, configured ? "sr-character" : "profile/normal-character");
-    const candidates = await galleryFiles(base, name);
-    const legacy = legacyGalleryNames.get(id);
-    if (legacy) candidates.push(...await galleryFiles(base, legacy));
-    while (candidates.length) {
-      const [file] = candidates.splice(randomInt(candidates.length), 1);
-      const selected = await portrait(file!);
-      if (selected) return selected;
+    const profile = join(gallery, "profile");
+    const normal = join(gallery, configured ? "sr-character" : "profile/normal-character");
+    const specialGallery = configured ? join(gallery, "sr-character", "super-character") : join(profile, "super-character");
+    for (const base of special ? [specialGallery, normal] : [normal]) {
+      const candidates = await galleryFiles(base, name);
+      const legacy = legacyGalleryNames.get(id);
+      if (legacy) candidates.push(...await galleryFiles(base, legacy));
+      while (candidates.length) {
+        const [file] = candidates.splice(randomInt(candidates.length), 1);
+        const selected = await portrait(file!);
+        if (selected) return selected;
+      }
     }
   }
   const originalName = name ?? themeName;
   if (root && originalName && originalName !== "." && originalName !== ".." && !/[\/\\\p{Cc}]/u.test(originalName)) {
-    return portrait(join(root, "meta-sr", "character", originalName, "imgs", "splash.webp"));
+    const original = join(root, "meta-sr", "character", originalName, "imgs");
+    if (special) {
+      const selected = await portrait(join(original, "splash0.webp"));
+      if (selected) return selected;
+    }
+    return portrait(join(original, "splash.webp"));
   }
 }
