@@ -8,6 +8,7 @@ import { readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-de
 export async function queryStarRailChallenge(
   qq: string, query: ChallengeQuery, profiles: ReturnType<typeof createProfileStore>,
   client: ReturnType<typeof createProfileHoyoClient>, signal: AbortSignal,
+  isNapCat?: (signal: AbortSignal) => Promise<boolean>,
 ) {
   const { profileId } = query;
   try {
@@ -25,7 +26,9 @@ export async function queryStarRailChallenge(
     const results = normalizeStarRailChallenge(records, query, (id) => lookup?.(id)?.name || bundledNames[id]);
     let reply;
     try {
-      const { png } = await renderStarRailAbyss({ uid, results }, signal);
+      const peak = results.length === 1 && results[0]?.kind === "peak" ? results[0].peak : undefined;
+      const checkNapCat = isNapCat && query.period === "recent" && peak?.length === 3 ? () => isNapCat(signal) : undefined;
+      const { png } = await renderStarRailAbyss({ uid, results }, signal, checkNapCat);
       reply = { type: "image" as const, file: png };
     } catch {
       reply = makeChallengeText(uid, results);

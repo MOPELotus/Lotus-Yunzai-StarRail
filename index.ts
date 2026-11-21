@@ -236,7 +236,9 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
     },
-    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext) {
+    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & {
+      readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
+    }) {
       const month = starRailMonthlyCommand.exec(context.normalizedMessage);
       if (month) return monthly(context, Number(month[1] ?? 1));
       const historyPage = matchStarRailLedger(context.normalizedMessage);
@@ -251,7 +253,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
           return "请从登录档案对应的 QQ 会话使用星铁挑战战绩。";
         }
-        return queryStarRailChallenge(String(userId), challenge, profiles, client, signal);
+        return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat);
       }
       const panelCommand = parsePanelCommand(context.normalizedMessage);
       if (panelCommand) {
