@@ -36,12 +36,12 @@ const defaultTheme = fileURLToPath(new URL("../../data/starrail/grid-fight-theme
 type ArtTransport = NonNullable<Parameters<typeof loadOfficialArtwork>[1]>["transport"];
 
 async function readArtwork(model: GridFightCard, directory: string, signal: AbortSignal, transport?: ArtTransport) {
-  const urls = [model.division.background, model.division.icon, model.battle?.division.icon];
-  const row = model.battle;
-  if (row) {
+  const urls = [model.division.background, model.division.icon];
+  const rows = model.recent?.map(entry => entry.battle) ?? (model.battle ? [model.battle] : []);
+  for (const row of rows) {
     const { front, back, traits, portals, augments, damage } = row;
-    urls.push(...[...front, ...back].map(item => item.icon));
-    if (model.index !== undefined) {
+    urls.push(row.division.icon, ...[...front, ...back].map(item => item.icon));
+    if (model.index !== undefined || model.recent) {
       urls.push(...[...traits, ...portals, ...augments, ...damage.map(hit => hit.entity)].map(item => item.icon),
         ...[...front, ...back].flatMap(role => role.equipment.map(item => item.icon)));
     }
@@ -86,31 +86,40 @@ function patch(ctx: Context, color: string, x: number, y: number, w: number, h: 
 const divisionLevel = (level: number | undefined) => level === undefined ? "—" : `A${level}`;
 
 export async function renderGridFight(model: GridFightCard, fontTheme: string, signal: AbortSignal,
-  { mode = "auto", directory = Bun.env.LOTUS_STAR_RAIL_GRID_THEME_DIR?.trim() || defaultTheme, transport }:
-    { mode?: "auto" | "gpu"; directory?: string; transport?: ArtTransport } = {}) {
+  { mode = "auto", directory = Bun.env.LOTUS_STAR_RAIL_GRID_THEME_DIR?.trim() || defaultTheme, transport, inlineImageByteLimit }:
+    { mode?: "auto" | "gpu"; directory?: string; transport?: ArtTransport; inlineImageByteLimit?: number } = {}) {
   const artworkSignal = AbortSignal.any([signal, AbortSignal.timeout(5_000)]);
   const media = await readArtwork(model, directory, artworkSignal, transport);
   signal.throwIfAborted();
   const metrics = gridFightStats(model);
   const detail = model.index !== undefined;
-  const row = model.battle;
+  const grouped = model.recent !== undefined;
+  const expanded = detail || grouped;
   const roleRows = (count: number) => Math.max(1, Math.ceil(count / 8));
-  const roleSize = detail ? 105 : 78;
-  const track = row ? (roleRows(row.front.length) + roleRows(row.back.length) - 2) * roleSize : 0;
-  const contentY = detail ? 290 : 397;
-  const recordHeight = row ? (detail ? 528 : 477) + track : 115;
-  const groups = row && detail ? [
-    { title: "羁绊信息", values: row.traits, kind: "trait", columns: 3 },
-    { title: "投资环境", values: row.portals, kind: "environment", columns: 1 },
-    { title: "投资策略", values: row.augments, kind: "strategy", columns: 3 },
-  ] as const : [];
-  const groupRows = (n: number, columns: number) => Math.max(1, Math.ceil(n / columns));
-  const extras = groups.reduce((sum, group) => sum + 69 + groupRows(group.values.length, group.columns) * 80, 0);
-  const hitHeight = 120;
-  const hitsHeight = row && detail && row.damage.length ? 45 + row.damage.length * hitHeight : 0;
-  const footer = contentY + recordHeight + extras + hitsHeight + 16;
+  const groupRows = (count: number, columns: number) => Math.max(1, Math.ceil(count / columns));
+  const firstSection = expanded ? 290 : 397;
+  let nextSection = firstSection;
+  const records = model.recent ?? (model.battle ? [{ ordinal: model.index ?? 1, battle: model.battle }] : []);
+  const layout = records.map(({ ordinal, battle: row }) => {
+    const moreEquipmentRows = grouped ? Math.max(0, ...[...row.front, ...row.back]
+      .map(role => Math.ceil(role.equipment.length / 3) - 1)) : 0;
+    const roleSize = expanded ? 105 + moreEquipmentRows * 24 : 78;
+    const track = (roleRows(row.front.length) + roleRows(row.back.length) - 2) * roleSize + moreEquipmentRows * 48;
+    const recordHeight = (expanded ? 528 : 477) + track;
+    const groups = expanded ? [
+      { title: "羁绊信息", values: row.traits, kind: "trait", columns: 3 },
+      { title: "投资环境", values: row.portals, kind: "environment", columns: 1 },
+      { title: "投资策略", values: row.augments, kind: "strategy", columns: 3 },
+    ] as const : [];
+    const extras = groups.reduce((sum, group) => sum + 69 + groupRows(group.values.length, group.columns) * 80, 0);
+    const hitHeight = 120 + moreEquipmentRows * 24;
+    const hitsHeight = expanded && row.damage.length ? 45 + row.damage.length * hitHeight : 0;
+    const y = nextSection;
+    nextSection += recordHeight + extras + hitsHeight + 10;
+    return { y, ordinal, row, recordHeight, roleSize, groups, hitHeight, hitsHeight };
+  });
+  const footer = layout.length ? nextSection + 6 : firstSection + 131;
   const height = footer + 62;
-  const density = 4;
   let face = '"Noto Sans CJK SC", serif';
   for (const path of [join(directory, "../common/font/SR.ttf"), join(fontTheme, "common/font/SR.ttf")]) {
     try {
@@ -119,7 +128,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
     } catch {}
   }
   const font = { body: face, title: face };
-  return renderPng(width * density, height * density, ctx => {
+  const render = (density: number) => renderPng(width * density, height * density, ctx => {
     ctx.scale(density, density);
     const text = styles(ctx, font);
     fill(ctx, "#0c1220", 0, 0, width, height);
@@ -141,7 +150,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
     text(model.division.name, 630, 161, 16, "#fff", "left", false, false, 124);
     text("职级", 653, 204, 18, "#cacaca", "center");
 
-    if (!detail) {
+    if (!expanded) {
       patch(ctx, "#ffffff0d", 30, 300, contentWidth, 77, 10);
       metrics.progress.forEach(([label, value], i) => {
         const x = 30 + (i + .5) * contentWidth / 3;
@@ -149,9 +158,6 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
         text(value, x, 347, 20, "#fdfdfd", "center", true);
       });
     }
-    patch(ctx, "#0005", 30, contentY, contentWidth, recordHeight, 8);
-    text(detail ? `挑战记录 ${model.index} / ${model.historyCount}` : "最新通关战绩",
-      detail ? width / 2 : 50, contentY + 26, 20, gold, detail ? "center" : "left", true);
     function drawMember(role: GridMember, x: number, y: number, details: boolean) {
       const pair = rarityColors[Math.max(0, Math.min(4, (role.rarity ?? 1) - 1))] ?? rarityColors[0];
       const gradient = ctx.createLinearGradient(x, y, x, y + 72);
@@ -178,16 +184,28 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
       fill(ctx, pair[0], x, y + 69, 72, 3);
       ctx.restore();
       if (details) role.equipment.forEach((equip, j) => {
-        const ex = x + j * 24;
-        fill(ctx, "#131522", ex, y + 74, 22, 22, 4);
+        const ex = x + j % 3 * 24, ey = y + 74 + Math.floor(j / 3) * 24;
+        fill(ctx, "#131522", ex, ey, 22, 22, 4);
         const eq = media.get(equip.icon);
-        picture(ctx, eq, ex + 1, y + 75, 20, 20);
-        if (!eq && equip.name) text(equip.name.slice(0, 2), ex + 11, y + 85, 9, muted, "center", false, false, 18);
+        picture(ctx, eq, ex + 1, ey + 1, 20, 20);
+        if (!eq && equip.name) text(equip.name.slice(0, 2), ex + 11, ey + 11, 9, muted, "center", false, false, 18);
+        const special = grouped && equip.name?.includes("白昼·") ? "#fff2a5"
+          : grouped && equip.name?.includes("·特权") ? "#c89aff" : undefined;
+        if (special) {
+          rounded(ctx, ex, ey, 22, 22, 4);
+          ctx.strokeStyle = special;
+          ctx.stroke();
+        }
       });
     }
-    if (!row) {
-      text("暂无通关战绩", width / 2, contentY + 80, 16, muted, "center");
-    } else {
+    if (!layout.length) {
+      patch(ctx, "#0005", 30, firstSection, contentWidth, 115, 8);
+      text("暂无通关战绩", width / 2, firstSection + 58, 16, muted, "center");
+    }
+    for (const { y: contentY, ordinal, row, recordHeight, roleSize, groups, hitHeight, hitsHeight } of layout) {
+      patch(ctx, "#0005", 30, contentY, contentWidth, recordHeight, 8);
+      text(expanded ? `挑战记录 ${ordinal} / ${model.historyCount}` : "最新通关战绩",
+        expanded ? width / 2 : 50, contentY + 26, 20, gold, expanded ? "center" : "left", true);
       const barY = contentY + 45;
       const bar = media.fixed("banner");
       ctx.save();
@@ -216,7 +234,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
         text(label, 68, baseline + 14, 15, "#fff", "left", true);
         if (!roles.length) text("暂无角色", 50, baseline + 60, 14, muted);
         roles.forEach((role, i) =>
-          drawMember(role, 50 + i % 8 * 80, baseline + 29 + Math.floor(i / 8) * roleSize, detail));
+          drawMember(role, 50 + i % 8 * 80, baseline + 29 + Math.floor(i / 8) * roleSize, expanded));
         baseline += roleRows(roles.length) * roleSize + 39;
       }
 
@@ -264,7 +282,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
           gradient.addColorStop(0, "#ecd38166");
           gradient.addColorStop(1, gold);
           ctx.fillStyle = gradient;
-          rounded(ctx, 145, y + 57, 620 * ratio, 8, 4);
+          rounded(ctx, 145, y + 57, 620 * Math.min(1, ratio), 8, 4);
           if (ratio) ctx.fill();
         });
       }
@@ -272,4 +290,8 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
     if (!detail && model.historyCount > 0) text(`可查询 ${model.historyCount} 条战绩 · *币战战报1`, width / 2, footer + 9, 14, muted, "center");
     text("Lotus-Yunzai · 米游社战绩", width / 2, footer + 37, 17, gold, "center");
   }, mode);
+  const result = await render(4);
+  if (!grouped || inlineImageByteLimit === undefined || result.png.length <= inlineImageByteLimit) return result;
+  signal.throwIfAborted();
+  return render(2);
 }

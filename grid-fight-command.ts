@@ -51,9 +51,9 @@ export function createStarRailGridFightQuery(profiles: Profiles, client: Client,
       await verify();
       if (index !== undefined && index > records.length) return `未找到货币战争第 ${index} 条记录。`;
       if (!brief) return "该档案尚无米游社货币战争战绩。";
-      const card = makeGridFightCard(source.role.uid, brief, records, index);
+      const card = makeGridFightCard(source.role.uid, brief, records, index, request.mode === "recent");
       if (index !== undefined && !card.battle) return "米游社未返回此场货币战争的完整战绩。";
-      const image = await draw(card, theme(), signal).catch(() => undefined);
+      const image = await draw(card, theme(), signal, { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
       await verify();
       return image && (context.inlineImageByteLimit === undefined || image.png.length <= context.inlineImageByteLimit)
         ? { type: "image" as const, file: image.png }

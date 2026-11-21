@@ -25,8 +25,11 @@ const record = { archive_type: "ArchiveTypeHard", brief: { division: { level: 4,
   } };
 
 test("supports old grid-fight handles and keeps record ordinals separate from saved profiles", () => {
-  for (const command of ["*货币战争", "#星铁货币战争", "#货币战争", "货币战争", "星轨货币", "＊币战"])
+  for (const command of ["*货币战争", "#星铁货币战争", "星铁货币战争", "星轨货币", "＊币战"])
     expect(parseStarRailGridFight(command)).toEqual({ mode: "overview", profileId: 1 });
+  for (const command of ["#货币战争", "货币战争", "##货币战争"])
+    expect(parseStarRailGridFight(command)).toEqual({ mode: "recent", profileId: 1 });
+  expect(parseStarRailGridFight("#货币战争 档案2")).toEqual({ mode: "recent", profileId: 2 });
   for (const title of ["战绩", "回顾", "战报", "记录"])
     expect(parseStarRailGridFight(`#星穹铁道币战${title}2 3`)).toEqual({ mode: "detail", index: 2, profileId: 3 });
   expect(parseStarRailGridFight("*币战记录 档案2")).toEqual({ mode: "detail", index: 1, profileId: 2 });
@@ -49,6 +52,24 @@ test("uses original battle counts and matches role, trait and strategy damage by
   expect(gridFightText(model)).toContain("小队生命值 0");
   expect(gridFightText(model)).toContain("羁绊 巡猎");
   expect(gridFightText(makeGridFightCard("500000123", { season_level: 0 }, []))).toContain("晋升等级 0");
+});
+
+test("preserves the two unprefixed overview entries in official order with complete battle information", () => {
+  const second = { ...record, archive_type: "ArchiveTypePromotion", brief: { ...record.brief, archive_time: "2026-11-22 08:00", remain_hp: 27 } };
+  const third = { ...record, brief: { ...record.brief, remain_hp: 30 } };
+  const model = makeGridFightCard("500000123", brief, [record, second, third], undefined, true);
+  expect(model.recent?.map(({ ordinal, battle }) => [ordinal, battle.health, battle.mode])).toEqual([
+    [1, 0, "超频博弈"], [2, 27, "标准博弈"],
+  ]);
+  expect(model.recent?.[0]?.battle.front[0]?.equipment.map(item => item.name)).toEqual(["光锥甲", "光锥乙", "光锥丙", "第四件"]);
+  expect(model.recent?.[0]?.battle.damage.slice(0, 2).map(hit => [hit.entity.name, hit.label])).toEqual([
+    ["巡猎", "2.90万"], ["飞霄", "10.00万"],
+  ]);
+  expect(gridFightStats(model).header).toEqual([["晋升等级", "12级"], ["货币积分", "800/1000"]]);
+  expect(gridFightText(model)).toContain("战绩 1");
+  expect(gridFightText(model)).toContain("战绩 2");
+  expect(gridFightText(model)).not.toContain("小队生命值 30");
+  expect(makeGridFightCard("500000123", brief, [{}, record, third], undefined, true).recent?.map(row => row.ordinal)).toEqual([2]);
 });
 
 test("does not query delegated or mentioned users and refuses to deliver after changing the selected role", async () => {
