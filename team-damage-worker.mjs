@@ -74,4 +74,6 @@ try {
   }
 } catch {
   console.log(JSON.stringify({ error: coneMissing ? "missing-cone" : "engine" }));
+} finally {
+  engine.clearTimers();
 }
