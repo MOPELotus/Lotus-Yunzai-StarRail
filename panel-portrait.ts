@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { open, readdir, realpath } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { loadImage } from "skia-canvas";
+import { localPanelGalleryRoot, retainedPanelGalleryDirectory } from "../../lib/panel-gallery-paths.ts";
 import characterNames from "./challenge-character-names.json";
 
 const names: Readonly<Record<string, string>> = characterNames;
@@ -39,16 +40,24 @@ async function galleryFiles(base: string, name: string) {
 }
 
 /** Uses the exact roster ID for gallery art and preserves the theme's original illustration. */
-export async function readStarRailPanelPortrait(theme: string, id: string, themeName: string, special = false) {
+export async function readStarRailPanelPortrait(theme: string, id: string, themeName: string, special = false, installation?: string) {
   const root = await realpath(theme).catch(() => undefined);
   const configured = Bun.env.LOTUS_CHARACTER_GALLERY_DIR?.trim();
-  const gallery = configured ? await realpath(configured).catch(() => undefined) : root;
+  const gallery = await realpath(configured || localPanelGalleryRoot(installation)).catch(() => undefined);
   const name = Object.hasOwn(names, id) ? names[id] : undefined;
-  if (gallery && name) {
-    const profile = join(gallery, "profile");
-    const normal = join(gallery, configured ? "sr-character" : "profile/normal-character");
-    const specialGallery = configured ? join(gallery, "sr-character", "super-character") : join(profile, "super-character");
-    for (const base of special ? [specialGallery, normal] : [normal]) {
+  if (name) {
+    const bases: string[] = [];
+    if (gallery) {
+      if (special) bases.push(join(gallery, "sr-character", "super-character"));
+      bases.push(join(gallery, "sr-character"));
+    }
+    if (!configured) {
+      if (root && special) bases.push(join(root, "profile", "super-character"));
+      const retained = await retainedPanelGalleryDirectory("sr", installation);
+      if (retained) bases.push(retained);
+      if (root) bases.push(join(root, "profile", "normal-character"));
+    }
+    for (const base of bases) {
       const candidates = await galleryFiles(base, name);
       const legacy = legacyGalleryNames.get(id);
       if (legacy) candidates.push(...await galleryFiles(base, legacy));

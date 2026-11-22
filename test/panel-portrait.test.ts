@@ -31,6 +31,10 @@ test("star rail uses decodable same-form gallery art before the matching origina
     expect((await readStarRailPanelPortrait(root, "2102", "希儿", true))?.file).toBe(specialFallback);
     expect((await readStarRailPanelPortrait(root, "2102", "希儿"))?.file).toBe(upgraded);
     expect((await readStarRailPanelPortrait(root, "8008", "穹·记忆"))?.file).toBe(trailblazer);
+    const retained = await write("backup/plugins/miao-plugin/resources/profile/normal-character/希儿/filter.png");
+    expect((await readStarRailPanelPortrait(root, "1102", "希儿", false, root))?.file).toBe(retained);
+    const selected = await write("data/character-gallery/sr-character/希儿/local.png");
+    expect((await readStarRailPanelPortrait(root, "1102", "希儿", false, root))?.file).toBe(selected);
 
     Bun.env.LOTUS_CHARACTER_GALLERY_DIR = join(root, "configured");
     const configured = await write("configured/sr-character/希儿.png");
