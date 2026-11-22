@@ -1,3 +1,5 @@
+import { gachaImageReply } from "../../lib/gacha-image-reply.ts";
+import type { MessageEvent } from "../../lib/messages.ts";
 import { fileURLToPath } from "node:url";
 import { createProfileStore, MAX_PROFILE_ID, ProfileError } from "@lotus-yunzai/account";
 import { createGachaUpdater } from "@lotus-yunzai/gacha/update";
@@ -135,7 +137,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const service = createStarRailGachaSync(profiles, client, history);
   const updateGacha = createGachaUpdater((qq, profileId) => service.sync(qq, profileId, { signal }));
 
-  async function query(qq: string, { profileId, view, all }: NonNullable<ReturnType<typeof matchGachaQuery>>, recordArchive: boolean) {
+  async function query(qq: string, { profileId, view, all }: NonNullable<ReturnType<typeof matchGachaQuery>>, recordArchive: boolean, context: Pick<MessageEvent, "inlineImageByteLimit" | "forward">) {
     if (!recordArchive && "special" in view && view.statistics) return "联动池和新手池请使用对应的记录指令。";
     try {
       const role = await profiles.savedRole(qq, profileId, "sr");
@@ -193,27 +195,25 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const first = buildPage(all ? 1 : undefined);
       if (!first) return `UID:${uid} 本地暂无该卡池抽卡记录。`;
       try {
-        const pages = [];
         const total = first.model.pageInfo?.total ?? 1;
-        for (let page = 1; page <= total; page++) {
-          if (signal.aborted) return;
-          const result = page === 1 ? first : buildPage(page);
-          if (!result) throw new Error("星铁抽卡记录缺少分页。");
-          const render = result.kind === "record-special" ? renderStarRailRecordSpecial(result.model, { themeDirectory })
-            : result.kind === "special" ? renderStarRailGachaSpecial(result.model, { themeDirectory })
-            : result.kind === "detail" ? renderStarRailGachaDetail(result.model, { themeDirectory })
-            : renderStarRailGachaVersion(result.model, { themeDirectory });
-          const { png } = await render;
-          pages.push({ type: "image" as const, file: png });
-        }
-        if (signal.aborted) return;
-        const role = await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
-        if (role?.uid !== uid) return "星铁档案角色已变化，请重新查询。";
-        if (pages.length === 1) return pages[0];
-        const title = first.kind === "version" ? `${first.model.poolName}统计，共${first.model.pageInfo!.count}期卡池`
+        const title = first.kind === "version" ? `${first.model.poolName}统计，共${first.model.pageInfo?.count}期卡池`
           : first.kind === "detail" ? `${first.model.poolName}池抽卡记录，共${first.model.gacha.stat.fiveNum}条五星`
           : `${first.model.poolName === "全部" ? "全部卡池" : `${first.model.poolName}池`}抽卡记录，共${first.model.fiveNum}条五星`;
-        return { type: "forward" as const, nodes: [`UID:${uid} ${title}，分${pages.length}张图`, ...pages] };
+        return await gachaImageReply({
+          total, title: `UID:${uid} ${title}，分${total}张图`, signal,
+          inlineImageByteLimit: context.inlineImageByteLimit, forward: context.forward,
+          async verifyRole() { return (await profiles.savedRole(qq, profileId, "sr").catch(() => undefined))?.uid === uid; },
+          changedRoleMessage: "星铁档案角色已变化，请重新查询。",
+          render(page, scale) {
+            const result = page === 1 ? first : buildPage(page);
+            if (!result) throw new Error("星铁抽卡记录缺少分页。");
+            const options = { themeDirectory, scale };
+            return result.kind === "record-special" ? renderStarRailRecordSpecial(result.model, options)
+              : result.kind === "special" ? renderStarRailGachaSpecial(result.model, options)
+              : result.kind === "detail" ? renderStarRailGachaDetail(result.model, options)
+              : renderStarRailGachaVersion(result.model, options);
+          },
+        });
       } catch {
         if (!signal.aborted) return "星铁抽卡记录已读取，原版详情图暂时无法生成。";
       }
@@ -245,7 +245,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
     },
-    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & {
+    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & Pick<MessageEvent, "forward"> & {
       readonly at?: string | number;
       readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
       readonly adapter?: "milky";
@@ -301,7 +301,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         return "请从登录档案对应的 QQ 会话使用星铁抽卡记录。";
       }
       const qq = String(user_id);
-      if (view) return query(qq, view, recordArchive);
+      if (view) return query(qq, view, recordArchive, context);
       try {
         const result = await updateGacha(qq, profileId, () =>
           context.reply(`[starrail] 正在为 profile ${profileId} 补齐官方范围内的星铁五星与垫抽记录。`));
