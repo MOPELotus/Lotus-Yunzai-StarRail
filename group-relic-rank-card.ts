@@ -1,5 +1,6 @@
 // Layout follows the MIT Miao rank-profile-list HTML/CSS at 28607618.
 import type { CanvasRenderingContext2D as Context, Image } from "skia-canvas";
+import { maxGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { readTheme, type readPanelRankAvatar } from "./panel-card.ts";
@@ -90,7 +91,7 @@ export async function renderStarRailRelicRank(
   character: Character, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
   coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark",
 ) {
-  if (!rows.length || rows.length > 15) throw new RangeError("星铁遗器榜须为 1 至 15 行。");
+  if (!rows.length || rows.length > maxGroupPanelRankLimit) throw new RangeError(`星铁遗器榜须为 1 至 ${maxGroupPanelRankLimit} 行。`);
   const theme = await readTheme();
   const meta = object(theme.characters[String(character.id)]);
   const path = text(meta?.weapon) || rows[0]?.presentation?.path;

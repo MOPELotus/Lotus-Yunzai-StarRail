@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createGroupRankRefresh, MAX_PROFILE_ID, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
-import { readGroupPanelRankEnabled } from "../../lib/group-panel-rank-settings.ts";
+import { readGroupPanelRankEnabled, readGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
 import { relicRankCoverageText, relicRankLabels, renderStarRailRelicRank, type RelicRankMetric, type RelicRankRow } from "./group-relic-rank-card.ts";
 import { makePanelDetailCard, readPanelDamageMetadata, readPanelRankAvatar, readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
 import { hasPersonalDamage, readStarRailPersonalDamage } from "./panel-damage.ts";
@@ -36,11 +36,13 @@ type BoundProfile = { readonly qq: number; readonly profileId: number; readonly 
 type Candidate = { readonly role: Role; readonly profiles: BoundProfile[] };
 
 const defaultDirectory = fileURLToPath(new URL("../../data/starrail/relic-rank/", import.meta.url));
-const displayLimit = 15;
+const defaultLimit = 15;
 const rosterLimit = 10_000;
 const rankTerm = "(?:遗器)?(?:双[暴爆](?:副?词条)?|加权(?:有效)?词条|有效词条|词条|评分)|遗器";
 const rankPrefix = new RegExp(`^(?:${rankTerm})`, "u");
 const rankSuffix = new RegExp(`(?:${rankTerm})$`, "u");
+const rankEnding = /(?:排行|排名)榜?$/u;
+const panelEnding = /\s*(?:面[板版]|详情|详细)$/u;
 
 function rankMetric(term: string): RelicRankMetric {
   if (/双[暴爆]/u.test(term)) return "crit";
@@ -50,9 +52,13 @@ function rankMetric(term: string): RelicRankMetric {
 type RelicRankTarget = { name: string; metric: RelicRankMetric; strongest: boolean };
 
 function relicRankTargets(message: string) {
+  const compound = /^(?:#星铁|\*)\s*(?:群内?)?\s*(?:(排名|排行)\s*)?(最高分|最强|最高|最牛|第一|最多)\s*([^#\r\n]{1,36})$/u.exec(message);
+  const compoundBody = compound?.[3]?.replace(panelEnding, "").trim();
+  const compoundList = compoundBody && (compound?.[1] || rankEnding.test(compoundBody))
+    ? compoundBody.replace(rankEnding, "").replace(panelEnding, "").trim() : undefined;
   const list = /^(?:#星铁|\*)\s*(?:群内?)?([^#]{1,36}?)(排行|排名|列表)榜?$/u.exec(message);
-  const leader = list ? undefined : /^(?:#星铁|\*)\s*(?:群内?)?(最高分|最强|最高|最牛|第一)([^#]{1,36}?)(?:面[板版]|详情|详细)?$/u.exec(message);
-  const body = (list?.[1] ?? leader?.[2])?.trim();
+  const leader = list || compoundList ? undefined : /^(?:#星铁|\*)\s*(?:群内?)?(最高分|最强|最高|最牛|第一)([^#]{1,36}?)(?:面[板版]|详情|详细)?$/u.exec(message);
+  const body = (compoundList ?? list?.[1] ?? leader?.[2])?.trim();
   if (!body) return;
   const targets: RelicRankTarget[] = [];
   if (leader) targets.push({ name: body, metric: leader[1] === "最高分" ? "mark" : "damage", strongest: true });
@@ -63,8 +69,8 @@ function relicRankTargets(message: string) {
   if (term && !(suffix && prefix && rankMetric(suffix) !== rankMetric(prefix))) {
     const name = prefix ? root.slice(prefix.length).trim() : root;
     if (name) targets.push({ name, metric: rankMetric(term), strongest: Boolean(leader) });
-  } else if (!term && list && list[2] !== "列表") {
-    targets.push({ name: body, metric: "damage", strongest: false });
+  } else if (!term && (compoundList || list && list[2] !== "列表")) {
+    targets.push({ name: body, metric: compoundList && compound?.[2] === "最高分" ? "mark" : "damage", strongest: false });
   }
   return targets.length ? targets : undefined;
 }
@@ -186,7 +192,7 @@ async function rankDamage(avatar: PanelAvatar, theme: RankTheme) {
 export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: AcquireRoleArchiveLock, signal: AbortSignal, {
   directory = defaultDirectory, groups = Bun.env.LOTUS_STAR_RAIL_PANEL_RANK_GROUPS ?? "", render = renderStarRailRelicRank,
   fetchShowcase = fetchStarRailShowcase, readServer = readShowcaseServer, readRankTheme = readTheme, panelDirectory,
-  renderStrongest = bestPanel, scoreDamage = rankDamage, readEnabled = readGroupPanelRankEnabled,
+  renderStrongest = bestPanel, scoreDamage = rankDamage, readEnabled = readGroupPanelRankEnabled, readLimit = readGroupPanelRankLimit,
 }: {
   readonly directory?: string;
   readonly groups?: string;
@@ -198,6 +204,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
   readonly renderStrongest?: RenderStrongest;
   readonly scoreDamage?: typeof rankDamage;
   readonly readEnabled?: typeof readGroupPanelRankEnabled;
+  readonly readLimit?: typeof readGroupPanelRankLimit;
 } = {}) {
   const refresh = createGroupRankRefresh();
   const refreshing = new Set<string>();
@@ -370,7 +377,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const heading = `${character.name} · 本轮${label}榜首 · UID ${uid}\n${summary}`;
           return card ? [heading, { type: "image" as const, file: card.png }] : `${heading}\n本轮公开数据已取得，暂时无法生成完整面板。`;
         }
-        const ranked = scored.slice(0, displayLimit);
+        const ranked = scored.slice(0, await readLimit("sr", defaultLimit));
         const rows: RelicRankRow[] = await Promise.all(ranked.map(async ({ value: { avatar, snapshot: _snapshot, ...row } }) => {
           const presentation = await readPanelRankAvatar(avatar, theme).catch(() => undefined);
           if (metric !== "damage") return { ...row, presentation };

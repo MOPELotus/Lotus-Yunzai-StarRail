@@ -34,6 +34,15 @@ test("matches ordinary group ranks, explicit relic metrics and strongest without
   }
 });
 
+test("旧复合群榜指令仍分发为列表并优先显式指标", () => {
+  for (const command of ["#星铁群内最强希儿排行", "*群内最强希儿排行", "#星铁群内排行最强希儿", "*群内最强希儿面版排行榜"]) {
+    expect(parseStarRailRelicRank(command)).toMatchObject({ character: { id: 1102 }, metric: "damage", strongest: false });
+  }
+  expect(parseStarRailRelicRank("*群内最高分希儿排行")).toMatchObject({ metric: "mark", strongest: false });
+  expect(parseStarRailRelicRank("#星铁群内排行最高分希儿双暴")).toMatchObject({ metric: "crit", strongest: false });
+  expect(parseStarRailRelicRank("#原神群内最强胡桃排行")).toBeUndefined();
+});
+
 test("自定义别名用于星铁普通群榜、遗器及榜首，保留独立排名统计", async () => {
   let reads = 0;
   const aliases = async () => {
@@ -89,7 +98,7 @@ async function fixture() {
   let selector = "0";
   const setProvider = (value: string) => { selector = value; };
   type Options = NonNullable<Parameters<typeof createStarRailGroupRelicRank>[3]>;
-  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage" | "readEnabled"> = {}) =>
+  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage" | "readEnabled" | "readLimit"> = {}) =>
     createStarRailGroupRelicRank(createProfileStore(accounts), lockFile, new AbortController().signal, {
       directory, panelDirectory, groups: "77, 78", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
       readEnabled: async (_game, _group, defaultEnabled) => defaultEnabled,
@@ -374,21 +383,31 @@ test("folds both Trailblazer forms, excludes departing and rebound members, and 
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
-test("refreshes the whole registration list before applying the 15-row display limit", async () => {
+test("refreshes the whole registration list before applying the current display limit", async () => {
   const { root, rank, account, asked } = await fixture();
   const users = Array.from({ length: 17 }, (_, index) => 50 + index);
   const uidOf = (qq: number) => "1000000" + qq;
   const context = { ...group77, listCurrentGroupMembers: async () => [42, 99, ...users].map(id => ({ id })) };
   try {
     await Promise.all(users.map(qq => account(qq, uidOf(qq))));
+    let configured: number | undefined;
     const board = rank(async (_character, rows, _mode, _byteLimit, coverage) => {
-      expect(rows).toHaveLength(15);
+      expect(rows).toHaveLength(Math.min(users.length, configured ?? 15));
       expect(coverage).toEqual({ registered: 17, scored: 17, notListed: 0, failed: 0 });
       return;
+    }, {
+      async readLimit(game, fallback) {
+        expect(game).toBe("sr");
+        return configured ?? fallback;
+      },
     });
     for (const qq of users) await board.observe({ ...context, user_id: qq }, 1, role(uidOf(qq)), shown("1001"), verified);
-    expect(await board.query(command, context)).toContain("17/17 已计分");
-    expect(asked.sort()).toEqual(users.map(uidOf));
+    for (const value of [undefined, 5, 30]) {
+      configured = value;
+      asked.length = 0;
+      expect(await board.query(command, context)).toContain("17/17 已计分");
+      expect(asked.sort()).toEqual(users.map(uidOf));
+    }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

@@ -9,15 +9,16 @@ import { parsePanelCommand } from "../panel-model.ts";
 import { createStarRailPanel } from "../panel.ts";
 
 test("匹配星铁极限面板的普通入口和角色名", async () => {
-  expect(parsePanelCommand("*极限希儿")).toMatchObject({ type: "extreme", name: "希儿" });
-  expect(parsePanelCommand("#星铁极限 希儿面板")).toMatchObject({ type: "extreme", name: "希儿" });
   expect(parsePanelCommand("#原神极限希儿")).toBeUndefined();
   expect(parsePanelCommand("*极限")).toBeUndefined();
   const { fallbackFeatures } = createModule({
     signal: AbortSignal.timeout(1000),
     lockFile: async () => { throw new Error("功能匹配不得写入"); },
   });
-  expect(await fallbackFeatures({ normalizedMessage: "*极限希儿", reply: async () => {} })).toEqual(["[starrail] 角色面板"]);
+  for (const command of ["*极限希儿", "#星铁极限 希儿面板", "#星铁群内排行极限希儿", "#星铁极限希儿详情", "*极限希儿详情"]) {
+    expect(parsePanelCommand(command)).toMatchObject({ type: "extreme", name: "希儿" });
+    expect(await fallbackFeatures({ normalizedMessage: command, reply: async () => {} })).toEqual(["[starrail] 角色面板"]);
+  }
 });
 
 test("星铁极限面板从本地固定样例读取并沿用角色别名", async () => {
@@ -43,7 +44,7 @@ test("星铁极限面板从本地固定样例读取并沿用角色别名", async
     } });
     await writeFile(archive, bytes);
     expect(await panel("42", parsePanelCommand("*极限银枝")!)).toBe("星铁极限面板样例档没有这个角色。");
-    expect(await panel("42", parsePanelCommand("#星铁极限蝴蝶面板")!, { message_type: "group", inlineImageByteLimit: 1 }))
+    expect(await panel("42", parsePanelCommand("#星铁极限蝴蝶详情")!, { message_type: "group", inlineImageByteLimit: 1 }))
       .toContain("星铁极限面板 · 希儿");
     const bundledBytes = JSON.stringify({ uid: 100000000, avatars: {
       "1302": { id: 1302, level: 80, cons: 6, _source: "homo", talent: { a: 6 }, artis: {}, trees: [] },
