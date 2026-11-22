@@ -12,6 +12,20 @@ export interface RelicRankRow {
   readonly score: number;
   readonly grade: string;
 }
+export interface RelicRankCoverage {
+  readonly registered: number;
+  readonly scored: number;
+  readonly notListed: number;
+  readonly failed: number;
+}
+
+export function relicRankCoverageText({ registered, scored, notListed, failed }: RelicRankCoverage) {
+  const parts = [`本轮公开展板 ${scored}/${registered} 已计分`];
+  if (notListed) parts.push(`未展示或词条不全 ${notListed}`);
+  if (failed) parts.push(`读取失败 ${failed}`);
+  return parts.join(" · ");
+}
+
 type Character = { readonly id: number; readonly name: string };
 const elementArt: Readonly<Record<string, string>> = { 物理: "sr", 火: "pyro", 冰: "cryo", 风: "anemo", 雷: "electro", 量子: "quantum", 虚数: "geo" };
 const gradeColors: Readonly<Record<string, string>> = { MAX: "#ff5722", ACE: "#ff5722", SSS: "#531ba9cf", SS: "#531ba9cf", S: "#3955b7", A: "#3955b7" };
@@ -69,6 +83,7 @@ function drawBadge(ctx: CanvasRenderingContext2D, rank: number, y: number, image
 /** Draws the old element backdrop, score badges, portraits and rank rows with the native renderer. */
 export async function renderStarRailRelicRank(
   character: Character, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
+  coverage?: RelicRankCoverage,
 ) {
   if (!rows.length || rows.length > 15) throw new RangeError("星铁遗器榜须为 1 至 15 行。");
   const theme = await readTheme();
@@ -102,7 +117,7 @@ export async function renderStarRailRelicRank(
     ctx.shadowBlur = 2;
     ctx.shadowOffsetY = 1;
     label(ctx, `${character.name}遗器评分排行`, 35, 71, `700 32px ${heading}`, "#fff");
-    label(ctx, "本群成员主动展示的评分", 35, 98, `16px ${font}`, "#fff");
+    label(ctx, coverage ? relicRankCoverageText(coverage) : "本群成员主动展示的评分", 35, 98, `16px ${font}`, "#fff");
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
     const cardTexture = texture ? ctx.createPattern(texture, "repeat-x") : null;

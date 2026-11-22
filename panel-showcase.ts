@@ -17,7 +17,11 @@ type Role = Pick<GameRole, "uid" | "region" | "gameBiz">;
 type Transport = (url: URL, init: RequestInit) => Promise<Response>;
 const maxBytes = 512 * 1024;
 
-export class ShowcaseError extends Error {}
+export class ShowcaseError extends Error {
+  constructor(message: string, readonly notListed = false) {
+    super(message);
+  }
+}
 
 export function showcaseTarget(role: Role, config = "0") {
   const uid = role.uid;
@@ -111,7 +115,7 @@ function normalizeShowcase(input: unknown, { uid, region, provider }: ReturnType
   const root = object(input), avocado = provider === "avocado";
   const profile = object(avocado ? root?.playerDetailInfo : root?.detailInfo);
   const claimed = [root?.uid, profile?.uid].filter(value => value !== undefined);
-  if (!profile) throw new ShowcaseError("公开星铁展板没有可用角色资料，请检查游戏内展板设置。");
+  if (!profile) throw new ShowcaseError("公开星铁展板没有可用角色资料，请检查游戏内展板设置。", true);
   const regions = [root?.region, profile.region, root?.server, profile.server];
   if (!claimed.length || claimed.some(value => id(value) !== uid) || regions.some(value => value !== undefined && value !== region)) {
     throw new ShowcaseError("公开星铁展板的 UID 或区服不匹配，未保存响应。");
@@ -126,7 +130,7 @@ function normalizeShowcase(input: unknown, { uid, region, provider }: ReturnType
   }
   const avatars = Object.fromEntries([...display.values()].map(row => [row.id, row]));
   const snapshot = readLegacyPanel(uid, { uid, avatars });
-  if (!snapshot.avatars.length) throw new ShowcaseError("公开星铁展板没有展示角色，请检查游戏内展板设置。");
+  if (!snapshot.avatars.length) throw new ShowcaseError("公开星铁展板没有展示角色，请检查游戏内展板设置。", true);
   return { ...snapshot, source: provider, updatedAt: started.toISOString(), showcaseTtl: Math.max(60, whole(root?.ttl, 86_400) ?? 60) };
 }
 
@@ -141,7 +145,7 @@ export async function fetchStarRailShowcase(target: ReturnType<typeof showcaseTa
     if (!response.ok || response.redirected) {
       await response.body?.cancel().catch(() => undefined);
       if (response.status === 429) throw new ShowcaseError("公开星铁展板请求过于频繁，请稍后再试。");
-      if (response.status === 404) throw new ShowcaseError("公开星铁展板未找到此角色，请检查游戏内展板设置。");
+      if (response.status === 404) throw new ShowcaseError("公开星铁展板未找到此角色，请检查游戏内展板设置。", true);
       throw new ShowcaseError("公开星铁展板暂时无法连接。");
     }
     return normalizeShowcase(await responseJson(response), target, started);

@@ -504,7 +504,7 @@ export async function makePanelDetailCard(
   });
 }
 
-async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata, characterData?: Json) {
+export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata, characterData?: Json) {
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = characterData ?? await readPanelCharacter(name, theme);
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
