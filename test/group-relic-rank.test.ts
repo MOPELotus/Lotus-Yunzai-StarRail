@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { createProfileStore } from "@lotus-yunzai/account";
 import { lockFile } from "../../../lib/file-lock.ts";
 import { createStarRailGroupRelicRank, matchStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
-import { readTheme } from "../panel-card.ts";
-import { fetchStarRailShowcase } from "../panel-showcase.ts";
+import { readPanelRankAvatar, readTheme } from "../panel-card.ts";
+import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
 
 const command = "#星铁银枝遗器评分排行";
 const uid42 = "100000042", uid43 = "100000043", uid44 = "100000044", uid45 = "100000045", uid42alt = "100000242";
@@ -203,4 +203,34 @@ test("refreshes the whole registration list before applying the 15-row display l
     expect(await board.query(command, context)).toContain("17/17 已计分");
     expect(asked.sort()).toEqual(users.map(uidOf));
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("projects public gear, original talent levels, and absent damage into the old rank columns", async () => {
+  const root = await mkdtemp(join(tmpdir(), "lotus-sr-rank-model-"));
+  try {
+    for (const key of ["character/希儿", "weapon", "artifact"]) await mkdir(join(root, "meta-sr", key), { recursive: true });
+    const catalog = { name: "希儿", weapon: "巡猎", elem: "量子", star: 5,
+      talentCons: { a: 5, e: 3, q: 5, t: 3 } };
+    await writeFile(join(root, "meta-sr/character/data.json"), JSON.stringify({ 1102: catalog }));
+    await writeFile(join(root, "meta-sr/character/希儿/data.json"), JSON.stringify({ id: 1102, ...catalog }));
+    await writeFile(join(root, "meta-sr/weapon/data.json"), JSON.stringify({ 23001: { name: "于夜色中", type: "巡猎", star: 5 } }));
+    await writeFile(join(root, "meta-sr/artifact/data.json"), JSON.stringify({
+      102: { name: "野穗伴行的快枪手", idxs: {
+        1: { name: "快枪手的毡帽", ids: { 61021: 5 } }, 3: { name: "快枪手的披肩", ids: { 61023: 5 } },
+      } },
+    }));
+    const signal = new AbortController().signal;
+    const data = { ...avatar(2, 1102), rank: 5, equipment: { tid: 23001, promotion: 6, level: 80, rank: 2 },
+      skillTreeList: [{ pointId: 1102001, level: 6 }, { pointId: 1102002, level: 10 },
+        { pointId: 1102003, level: 10 }] };
+    const snapshot = await fetchStarRailShowcase(showcaseTarget(role(uid42)), signal, async () => visible(uid42, data));
+    const projection = await readPanelRankAvatar(snapshot.avatars[0]!, await readTheme(root));
+    expect(projection).toMatchObject({ name: "希儿", element: "量子", path: "巡猎", rarity: 5, rank: 5,
+      talents: [{ level: 7, original: 6 }, { level: 12, original: 10 }, { level: undefined }, { level: 12, original: 10 }],
+      lightCone: { name: "于夜色中", level: 80, affix: 2, rarity: 5 },
+      sets: [{ name: "快枪手2" }], damage: undefined,
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

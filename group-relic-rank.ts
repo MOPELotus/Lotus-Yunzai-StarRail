@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createGroupRankRefresh, MAX_PROFILE_ID, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { relicRankCoverageText, renderStarRailRelicRank, type RelicRankRow } from "./group-relic-rank-card.ts";
-import { readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
+import { readPanelRankAvatar, readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
 import { object } from "./panel-model.ts";
@@ -24,7 +24,7 @@ export interface StarRailGroupRankContext {
 
 type Scope = { readonly adapter: "onebot" | "milky"; readonly bot: number; readonly group: number; readonly qq: number };
 type Role = Pick<GameRole, "uid" | "region" | "gameBiz">;
-type Summary = Omit<RelicRankRow, "uid"> & { readonly observedAt: number };
+type Summary = Pick<RelicRankRow, "characterId" | "grade" | "score"> & { readonly observedAt: number };
 type Observation = { readonly profileId: number; readonly role: Role; readonly summary: Record<string, Summary> };
 type BoundProfile = { readonly qq: number; readonly profileId: number; readonly role: Role };
 type Candidate = { readonly role: Role; readonly profiles: BoundProfile[] };
@@ -214,7 +214,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
             const { score } = await scorePanelAvatarRelics(avatar, theme);
             const mark = score && score.incomplete === 0 ? Number(score.mark) : NaN;
             if (!score || !Number.isFinite(mark) || mark <= 0 || mark > 420) return;
-            return { uid: snapshot.uid, characterId: avatar.id, score: mark, grade: score.markClass };
+            return { uid: snapshot.uid, characterId: avatar.id, score: mark, grade: score.markClass, avatar };
           } catch (error) {
             if (error instanceof ShowcaseError && error.notListed) return;
             throw error;
@@ -233,7 +233,9 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         scored.sort((a, b) => b.value.score - a.value.score ||
           (b.value.uid > a.value.uid ? 1 : b.value.uid < a.value.uid ? -1 : 0));
         const ranked = scored.slice(0, displayLimit);
-        const rows = ranked.map(({ value }) => value);
+        const rows: RelicRankRow[] = await Promise.all(ranked.map(async ({ value: { avatar, ...row } }) => ({
+          ...row, presentation: await readPanelRankAvatar(avatar, theme).catch(() => undefined),
+        })));
         const coverage = {
           registered: current.length, scored: scored.length,
           notListed: current.filter(row => row.status === "not-listed").length,

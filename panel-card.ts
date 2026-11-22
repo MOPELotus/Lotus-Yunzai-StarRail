@@ -7,6 +7,7 @@ import { calculateLegacyPanelAttributeRows, calculateLegacyPanelAttributes, dama
 import { readStarRailPersonalDamage } from "./panel-damage.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.ts";
+import rankAbbreviations from "./panel-theme/rank-abbreviations.json";
 import { isStarRailTalentUnlocks, object, officialArtHosts, recoverStarRailSkillLevel, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 import { readStarRailPanelPortrait } from "./panel-portrait.ts";
 
@@ -524,6 +525,73 @@ export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadat
     base: object(character.baseAttr), relicValues: theme.relicValues,
   });
   return { name, element, score };
+}
+
+/** Projects only the current public avatar into the fixed Miao rank-profile-list columns. */
+export async function readPanelRankAvatar(avatar: PanelAvatar, theme: Metadata) {
+  const { name, abbr, meta } = lookup(avatar, theme);
+  const character = await readPanelCharacter(name, theme);
+  const element = avatar.element || text(character.elem ?? meta?.elem);
+  const path = text(character.weapon ?? meta?.weapon) || avatar.path;
+  const upgrades = object(character.talentCons ?? meta?.talentCons);
+  const keys = ["a", "e", "t", "q", ...(path === "记忆" ? ["me", "mt"] : path === "欢愉" ? ["xe"] : [])];
+  const talents = await Promise.all(keys.map(async key => {
+    const skill = avatar.skills.find(current => current.key === key);
+    const upgrade = upgrades?.[key];
+    const art = await localArt(theme, ["character", name, "imgs", `talent-${key}.webp`]);
+    if (!skill) return { icon: art, level: undefined, original: undefined };
+    const rank = avatar.rank;
+    if (avatar.legacy && !skill.effective) {
+      return { icon: art, level: starRailLegacySkillLevel(key, skill.level, rank ?? 0, upgrade), original: skill.level };
+    }
+    const original = skill.original ?? (rank !== undefined && (rank === 0 || isStarRailTalentUnlocks(upgrade))
+      ? recoverStarRailSkillLevel(key, skill.level, rank, 0, upgrade) : undefined);
+    return { icon: art, level: skill.level, original };
+  }));
+  const cone = avatar.cone, weapon = cone && object(theme.weapons[cone.id]);
+  const coneName = text(weapon?.name) || cone?.name || "";
+  const coneType = text(weapon?.type) || path;
+  const weaponNames: Readonly<Record<string, string>> = rankAbbreviations.weapons;
+  const lightCone = cone && {
+    name: coneName.length > 4 ? text(weapon?.abbr) || weaponNames[coneName] || coneName : coneName,
+    level: cone.level, affix: cone.rank, rarity: whole(weapon?.star, 5),
+    icon: await localArt(theme, ["weapon", coneType, coneName, "icon.webp"])
+      || await localArt(theme, ["weapon", coneType, coneName, "icon-s.webp"]),
+  };
+
+  const counts = new Map<string, number>();
+  for (const relic of [...avatar.relics].sort((left, right) => left.slot - right.slot)) {
+    const set = theme.relicById.get(relic.id)?.asset[1];
+    if (set) counts.set(set, (counts.get(set) ?? 0) + 1);
+  }
+  const relicNames: Readonly<Record<string, string>> = rankAbbreviations.relics;
+  const selected = [...counts].filter(([, count]) => count >= 2).slice(0, 2);
+  const sets = await Promise.all(selected.map(async ([set, count]) => {
+    const quantity = count >= 4 ? 4 : 2;
+    const full = set + quantity;
+    return {
+      name: selected.length > 1 || full.length > 7 ? (relicNames[set] || set) + quantity : full,
+      icon: await localArt(theme, ["artifact", set, theme.relicSets.get(set)?.outer ? "arti-1.webp" : "arti-5.webp"]),
+    };
+  }));
+
+  let damage: { title: string; value: string } | undefined;
+  if (avatar.cone && avatar.legacy?.dataComplete) {
+    const metadata = await readPanelDamageMetadata(avatar, theme);
+    const result = metadata && readStarRailPersonalDamage(avatar, metadata).damage;
+    const expected = result?.rows[result.selected];
+    if (expected?.average && Number.isFinite(expected.average)) {
+      let title = expected.title;
+      if (title.length > 10) title = title.replace(/[ ·]/gu, "");
+      if (title.length > 10) title = title.replace(/伤害$/u, "");
+      damage = { title, value: expected.display ?? expected.percentage ??
+        new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 }).format(expected.average) };
+    }
+  }
+  return {
+    name: name.length < 4 ? name : abbr, element, path, rarity: avatar.rarity ?? whole(meta?.star, 5), rank: avatar.rank, lightCone, talents, sets, damage,
+    face: await localArt(theme, ["character", name, "imgs", "face.webp"]),
+  };
 }
 
 const artisKeyTitle = { ...statTitles, ...Object.fromEntries(Object.entries(relicAttributeMap).map(([key, attr]) => [key, attr.title])) };
