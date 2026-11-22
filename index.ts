@@ -42,6 +42,8 @@ import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
 import { createStarRailGroupRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
+import { createStarRailRogueQuery } from "./rogue-command.ts";
+import { parseStarRailRogue } from "./rogue-model.ts";
 
 const updateCommand = /^#星铁更新抽卡记录([1-9]\d{0,2})?$/u;
 const helpCommand = /^#星铁(?:抽卡|记录)帮助$/u;
@@ -129,6 +131,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const roster = createStarRailRosterQuery(profiles, client, signal);
   const gridFight = createStarRailGridFightQuery(profiles, client, signal);
+  const rogue = createStarRailRogueQuery(profiles, client, signal);
   const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
   const ledger = createStarRailLedgerQuery(profiles, client, signal);
@@ -251,6 +254,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
+      if (parseStarRailRogue(message)) return ["[starrail] 宇宙战绩"];
       const panelCommand = parsePanelCommand(message);
       if (parseStarRailRelicRank(message) || panelCommand?.type === "discard") return ["[starrail] 角色面板"];
       if (parseChallengeQuery(message) || parseStarRailPersonalRoster(message) || (panelCommand && panelCommand.type !== "detail")) return [];
@@ -282,6 +286,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (team) return teamDamage(context, team);
       const gridFightCommand = parseStarRailGridFight(context.normalizedMessage);
       if (gridFightCommand) return gridFight(context, gridFightCommand);
+      const rogueCommand = parseStarRailRogue(context.normalizedMessage);
+      if (rogueCommand) return rogue(context, rogueCommand);
       const challenge = parseChallengeQuery(context.normalizedMessage);
       if (challenge) {
         const userId = context.user_id;
