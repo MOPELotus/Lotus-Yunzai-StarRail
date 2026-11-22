@@ -17,32 +17,36 @@ const role = (uid: string) => ({ uid, region: "prod_gf_cn", gameBiz: "hkrpg_cn" 
 const verified = async () => {};
 const shown = (characterId: string, score = 399.9, observedAt = 111) => ({ characterId, score, grade: "D", observedAt });
 
-test("matches relic-score ranking aliases separately from damage and public ranking commands", () => {
+test("matches ordinary group ranks, explicit relic metrics and strongest without taking public ranking commands", () => {
   expect(matchStarRailRelicRank(command)?.id).toBe(1302);
   expect(matchStarRailRelicRank("#星铁群内三月七评分排名榜")?.id).toBe(1001);
   expect(parseStarRailRelicRank("#星铁三月七双暴排行")).toMatchObject({ character: { id: 1001 }, metric: "crit" });
   expect(parseStarRailRelicRank("*三月七加权有效词条排行")).toMatchObject({ character: { id: 1001 }, metric: "valid" });
   expect(parseStarRailRelicRank("*群内遗器双爆副词条三月七排行榜")).toMatchObject({ character: { id: 1001 }, metric: "crit" });
+  expect(parseStarRailRelicRank("*希儿排名")).toMatchObject({ character: { id: 1102 }, metric: "damage", strongest: false });
+  expect(parseStarRailRelicRank("#星铁群内希儿排行")).toMatchObject({ character: { id: 1102 }, metric: "damage", strongest: false });
   expect(parseStarRailRelicRank("*最强银枝面板")).toMatchObject({ character: { id: 1302 }, metric: "damage", strongest: true });
   expect(parseStarRailRelicRank("#星铁群内最高分银枝详情")).toMatchObject({ character: { id: 1302 }, metric: "mark", strongest: true });
   expect(parseStarRailRelicRank("*最强银枝双暴副词条")).toMatchObject({ character: { id: 1302 }, metric: "crit", strongest: true });
   expect(parseStarRailRelicRank("*极限银枝")).toBeUndefined();
-  for (const unrelated of ["#星铁三月七排行", "#星铁三月七遗器", "#星铁三月七排名统计", "#三月七遗器排名", "#原神三月七遗器排名"]) {
+  for (const unrelated of ["#星铁三月七列表", "#星铁三月七遗器", "#星铁三月七排名统计", "#三月七遗器排名", "#原神三月七遗器排名"]) {
     expect(matchStarRailRelicRank(unrelated)).toBeUndefined();
   }
 });
 
-test("自定义别名用于星铁遗器及榜首，保留内置角色与独立榜单", async () => {
+test("自定义别名用于星铁普通群榜、遗器及榜首，保留独立排名统计", async () => {
   let reads = 0;
   const aliases = async () => {
     reads++;
     return new Map([["花骑士", "银枝"], ["银枝", "三月七"]]);
   };
   expect(await resolveStarRailRelicRank("*最强银枝面板", aliases)).toMatchObject({ character: { id: 1302 }, strongest: true });
-  expect(await resolveStarRailRelicRank("*花骑士排行", aliases)).toBeUndefined();
   expect(await resolveStarRailRelicRank("*花骑士排名统计", aliases)).toBeUndefined();
   expect(await resolveStarRailRelicRank("#原神花骑士遗器排行", aliases)).toBeUndefined();
   expect(reads).toBe(0);
+  expect(await resolveStarRailRelicRank("*花骑士排行", aliases)).toMatchObject({
+    character: { id: 1302 }, metric: "damage", strongest: false,
+  });
   expect(await resolveStarRailRelicRank("*群内最高分花・骑士详情", aliases)).toMatchObject({
     character: { id: 1302 }, metric: "mark", strongest: true,
   });
@@ -53,7 +57,7 @@ test("自定义别名用于星铁遗器及榜首，保留内置角色与独立�
     character: { id: 1302 }, metric: "damage", strongest: true,
   });
   expect(await resolveStarRailRelicRank("*双暴花骑士加权有效词条排行", aliases)).toBeUndefined();
-  expect(reads).toBe(3);
+  expect(reads).toBe(4);
 });
 
 const relicList = [
@@ -142,6 +146,42 @@ test("星铁最强实时重刷所有登记，且只用当轮公开展板渲染�
     expect(await board.query("#星铁最高分银枝", group77)).toContain("群成员或档案已变化");
     expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
     expect(draw).toEqual([uid43, uid42, uid42]);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("普通星铁角色排行对本轮全名单一致使用伤害，无规则时整榜改用遗器评分", async () => {
+  const { root, rank, asked, use } = await fixture();
+  try {
+    const lists: { metric: string | undefined; scores: [string, number][] }[] = [];
+    let damageCalls = 0;
+    const board = rank(async (_character, rows, _mode, _limit, _coverage, metric) => {
+      lists.push({ metric, scores: rows.map(({ uid, score }) => [uid, score]) });
+      return;
+    }, {
+      scoreDamage: async avatar => {
+        damageCalls++;
+        return avatar.relics.length === 2 ? 500 : 200;
+      },
+      renderStrongest: async () => { throw new Error("普通排行榜不应走完整榜首面板"); },
+    });
+    await board.observe(group77, 1, role(uid42), shown("1001"), verified);
+    await board.observe({ ...group77, user_id: 43 }, 1, role(uid43), shown("1001"), verified);
+
+    use(uid => visible(uid, avatar(uid === uid42 ? 2 : 3, 1102)));
+    expect(await board.query("*希儿排名", group77)).toContain(`希儿 · 本群伤害排行\n本轮公开展板 2/2 已计分\n1. UID ${uid42} · 500.0`);
+    expect(lists[0]).toEqual({ metric: "damage", scores: [[uid42, 500], [uid43, 200]] });
+    expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
+
+    use(uid => visible(uid, avatar(uid === uid42 ? 3 : 2, 1102)));
+    expect(await board.query("#星铁群内希儿排行", group77)).toContain(`1. UID ${uid43} · 500.0`);
+    expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
+
+    use(uid => visible(uid, avatar(uid === uid42 ? 2 : 3, 1317)));
+    expect(await board.query("*乱破排名", group77)).toContain(`乱破 · 本群遗器评分排行\n本轮公开展板 2/2 已计分\n1. UID ${uid43}`);
+    expect(lists[2]?.metric).toBe("mark");
+    expect(lists[2]?.scores.every(([, score]) => score > 0 && score <= 420)).toBe(true);
+    expect(damageCalls).toBe(4);
+    expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

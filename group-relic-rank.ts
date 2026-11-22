@@ -46,12 +46,10 @@ function rankMetric(term: string): RelicRankMetric {
   return term.endsWith("词条") ? "valid" : "mark";
 }
 
-type RelicRankTarget = { name: string } & (
-  { metric: "damage"; strongest: true } | { metric: RelicRankMetric; strongest: boolean }
-);
+type RelicRankTarget = { name: string; metric: RelicRankMetric; strongest: boolean };
 
 function relicRankTargets(message: string) {
-  const list = /^(?:#星铁|\*)\s*(?:群内?)?([^#]{1,36}?)(?:排行|排名|列表)榜?$/u.exec(message);
+  const list = /^(?:#星铁|\*)\s*(?:群内?)?([^#]{1,36}?)(排行|排名|列表)榜?$/u.exec(message);
   const leader = list ? undefined : /^(?:#星铁|\*)\s*(?:群内?)?(最高分|最强|最高|最牛|第一)([^#]{1,36}?)(?:面[板版]|详情|详细)?$/u.exec(message);
   const body = (list?.[1] ?? leader?.[2])?.trim();
   if (!body) return;
@@ -64,6 +62,8 @@ function relicRankTargets(message: string) {
   if (term && !(suffix && prefix && rankMetric(suffix) !== rankMetric(prefix))) {
     const name = prefix ? root.slice(prefix.length).trim() : root;
     if (name) targets.push({ name, metric: rankMetric(term), strongest: Boolean(leader) });
+  } else if (!term && list?.[2] !== undefined && list[2] !== "列表") {
+    targets.push({ name: body, metric: "damage", strongest: false });
   }
   return targets.length ? targets : undefined;
 }
@@ -250,13 +250,15 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
       if (active.aborted) return;
       const command = typeof rank === "string" ? await resolveStarRailRelicRank(rank) : rank;
       if (!command || active.aborted) return;
-      const { character, metric, strongest } = command;
-      const label = metric === "damage" ? "伤害" : relicRankLabels[metric];
+      const { character, metric: requestedMetric, strongest } = command;
+      const damageSupported = requestedMetric !== "damage" || hasPersonalDamage(String(character.id));
+      const metric = damageSupported || strongest ? requestedMetric : "mark";
+      const label = relicRankLabels[metric];
       const title = `星铁群${label}排行`;
       const scope = scopeOf(context);
       if (!scope) return `${title}只能在群聊中查询。`;
       if (!groupEnabled(scope)) return `本群未启用${title}。`;
-      if (metric === "damage" && !hasPersonalDamage(String(character.id))) return `「${character.name}」暂无星铁个人伤害规则，无法计算伤害榜首。`;
+      if (!damageSupported && strongest) return `「${character.name}」暂无星铁个人伤害规则，无法计算伤害榜首。`;
       const groupKey = `${scope.adapter}:${scope.bot}:${scope.group}`;
       if (refreshing.has(groupKey)) return "本群星铁遗器排行正在刷新，请稍后再查。";
       refreshing.add(groupKey);
@@ -348,10 +350,16 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           return card ? [heading, { type: "image" as const, file: card.png }] : `${heading}\n本轮公开数据已取得，暂时无法生成完整面板。`;
         }
         const ranked = scored.slice(0, displayLimit);
-        const rows: RelicRankRow[] = await Promise.all(ranked.map(async ({ value: { avatar, snapshot: _snapshot, ...row } }) => ({
-          ...row, presentation: await readPanelRankAvatar(avatar, theme).catch(() => undefined),
-        })));
-        if (!rows.length) return `本群暂无${character.name}的本轮有效公开展板评分。\n${relicRankCoverageText(coverage)}`;
+        const rows: RelicRankRow[] = await Promise.all(ranked.map(async ({ value: { avatar, snapshot: _snapshot, ...row } }) => {
+          const presentation = await readPanelRankAvatar(avatar, theme).catch(() => undefined);
+          if (metric !== "damage") return { ...row, presentation };
+          const relics = await scorePanelAvatarRelics(avatar, theme).catch(() => undefined);
+          const score = relics?.score;
+          const mark = score?.incomplete === 0 ? Number(score.mark) : NaN;
+          return { ...row, presentation, relicMark: Number.isFinite(mark) && mark > 0 && mark <= 420 && score
+            ? { score: mark, grade: score.markClass } : undefined };
+        }));
+        if (!rows.length) return `本群暂无${character.name}的本轮有效公开展板${label}。\n${relicRankCoverageText(coverage)}`;
         let png: Uint8Array | undefined;
         try {
           png = (await render(character, rows, undefined, context.inlineImageByteLimit, coverage, metric))?.png;
@@ -364,7 +372,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         active.throwIfAborted();
         if (png) return { type: "image" as const, file: png };
         return [`${character.name} · 本群${label}排行`, relicRankCoverageText(coverage), ...rows.map(({ uid, score, grade }, index) =>
-          `${index + 1}. UID ${uid} · ${score.toFixed(1)} · ${grade}`)].join("\n");
+          [`${index + 1}. UID ${uid}`, score.toFixed(1), grade].filter(Boolean).join(" · "))].join("\n");
       } catch {
         if (!active.aborted) return `暂时无法刷新本群公开展板，未生成本轮${label}排行。`;
       } finally {

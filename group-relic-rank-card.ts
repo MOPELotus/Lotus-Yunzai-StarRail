@@ -5,7 +5,7 @@ import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { readTheme, type readPanelRankAvatar } from "./panel-card.ts";
 import { object, text } from "./panel-model.ts";
 
-export const relicRankLabels = { mark: "遗器评分", crit: "双爆副词条", valid: "加权有效词条" } as const;
+export const relicRankLabels = { damage: "伤害", mark: "遗器评分", crit: "双爆副词条", valid: "加权有效词条" } as const;
 export type RelicRankMetric = keyof typeof relicRankLabels;
 
 export interface RelicRankRow {
@@ -13,6 +13,7 @@ export interface RelicRankRow {
   readonly characterId: string;
   readonly score: number;
   readonly grade: string;
+  readonly relicMark?: { readonly score: number; readonly grade: string };
   readonly presentation?: Awaited<ReturnType<typeof readPanelRankAvatar>>;
 }
 export interface RelicRankCoverage {
@@ -184,10 +185,12 @@ export async function renderStarRailRelicRank(
       const known = row.presentation;
       const { face, weapon, talents, sets } = rowImages[index]!;
       const lightCone = known?.lightCone;
+      const badgeVariant = metric === "damage" ? "damage" : "mark";
+      const relicMark = metric === "damage" ? row.relicMark : row;
       box(y, 60, () => {
-        if (index === 0 && first && metric === "mark") badgeArt(ctx, first, "mark", 15, y + 18, 48, 24);
+        if (index === 0 && first && (metric === "damage" || metric === "mark")) badgeArt(ctx, first, badgeVariant, 15, y + 18, 48, 24);
         else {
-          badgeArt(ctx, badge, "mark", 27, y + 18, 24, 24);
+          badgeArt(ctx, badge, badgeVariant, 27, y + 18, 24, 24);
           write(index + 1, 39, y + 30, 12, white, "center");
         }
         framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, face, true);
@@ -230,11 +233,12 @@ export async function renderStarRailRelicRank(
         } else picture(ctx, sets[0] ?? emptyRelics, layout.setX + 1, y + 13, 34, 34);
         cell(known?.sets.map(set => set.name).join("+") || "—", layout.setX + 45, y + 22, 12, gold,
           layout.dmgX - layout.setX - 61);
-        pill(row.grade, gradeColors[row.grade] ?? "#aaa", layout.setX + 44, y + 34, 25);
-        write(row.score.toFixed(1), layout.setX + 73, y + 42, 16, white);
+        if (relicMark) pill(relicMark.grade, gradeColors[relicMark.grade] ?? "#aaa", layout.setX + 44, y + 34, 25);
+        cell(relicMark?.score.toFixed(1) ?? "—", layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
         divider(ctx, layout.dmgX - 15, y + 10);
         cell(known?.damage?.title || "期望伤害", layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
-        cell(known?.damage?.value ?? "—", layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
+        const damageValue = known?.damage?.value ?? (metric === "damage" ? row.score.toFixed(1) : "—");
+        cell(damageValue, layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
         divider(ctx, layout.secondX - 15, y + 10);
       });
     });
