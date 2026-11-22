@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type GameRole } from "@lotus-yunzai/account";
+import { gameRegionDisplayName, MAX_PROFILE_ID, ProfileError, type createProfileStore, type GameRole } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient, type StarRailPowerRecovery } from "@lotus-yunzai/hoyo-client";
 import { renderStarRailOnlineCard } from "./account-report-renderer.ts";
 import { text } from "./panel-model.ts";
@@ -16,7 +16,7 @@ export function makeStarRailOnlineCard(role: GameRole, recoveries: readonly Star
     ...report, complete, note, tplFile: fileURLToPath(new URL("online.html", theme)), css: new URL("online.css", theme).href,
     logo: new URL("logo.png", theme).href, pamu: new URL("pamu.png", theme).href, uid: role.uid,
     nickname: text(role.nickname, 30) || "开拓者",
-    region: text(role.regionName, 20) || (role.region === "prod_qd_cn" ? "国服 B 服" : "国服"),
+    region: gameRegionDisplayName("sr", role.region, text(role.regionName, 20)),
     level: text(String(role.level ?? ""), 8),
     cardBrand: "Lotus-Yunzai · StarRail", imgType: "png" as const, viewport: { width: 820, height: 1800 }, scale: 1,
   };

@@ -38,8 +38,10 @@ test("在线估算用北京时间日桶，一次单点六分钟，跨午夜按�
 });
 
 test("旧近七天时间、年度热力图和来源提示均进入真实模板，短页上限有明确提示", async () => {
-  const view = makeStarRailOnlineCard({ uid: "100000732", region: "prod_gf_cn", gameBiz: "hkrpg_cn", chosen: true, nickname: "模拟开拓者" },
+  const view = makeStarRailOnlineCard({ uid: "100000732", region: "prod_gf_cn", regionName: "prod_gf_cn",
+    gameBiz: "hkrpg_cn", chosen: true, nickname: "模拟开拓者" },
     samples, false, now)!;
+  expect(view.region).toBe("国服");
   const compiler = require("art-template") as { compile(template: string, options: { filename: string }): (data: object) => string };
   const markup = compiler.compile(await Bun.file(view.tplFile).text(), { filename: view.tplFile })(view);
   for (const phrase of ["近期每日在线时长", "2026 年每日在线时长热力图", "近期在线可视化", "推算估计", "已达到查询页数上限",
