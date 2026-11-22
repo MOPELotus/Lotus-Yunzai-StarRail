@@ -55,7 +55,7 @@ async function renderRosterPage(model: StarRailRosterModel, rows: StarRailRoster
     fill(ctx, white, 26, 36, 70, 70);
     clip(ctx, 29, 39, 64, 64, 32);
     picture(ctx, stars[4], 29, 39, 64, 64, "cover");
-    picture(ctx, portrait, 29, 39, 64, 64);
+    picture(ctx, portrait, 29, 39, 64, 64, "cover");
     ctx.restore();
     ctx.restore();
     const stats = model.stats.filter(([, value]) => Boolean(value));
