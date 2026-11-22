@@ -167,6 +167,7 @@ const refreshPanel = new RegExp(
   String.raw`^(?:(?:#星铁|\*)\s*(?:(?:米游社|mys)\s*)?|#?(?:米游社|mys)\s*星铁\s*)` +
     `(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "iu",
 );
+const characterShowcase = /^(?:#星铁|\*)\s*更新\s*([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:详细|详情|面板)(?:\s*(?:档案\s*)?([1-9]\d{0,2}))?$/u;
 
 const practiceTarget = String.raw`(?:\s*(?:档案\s*)?(\d{1,3}))?`;
 const practiceOverview = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:面板)?练度统计${practiceTarget}$`, "u");
@@ -195,6 +196,12 @@ export function parsePanelCommand(message: string) {
     const profileId = Number(operation[2] ?? operation[3] ?? 1);
     if (refresh && (profileId < 1 || profileId > MAX_PROFILE_ID)) return;
     return { type: reload ? "reload" as const : showcase ? "showcase" as const : "update" as const, name: "", profileId, ...(operation[1] && { uid: operation[1] }) };
+  }
+  const namedShowcase = characterShowcase.exec(message);
+  const showcaseName = namedShowcase?.[1]?.trim();
+  if (showcaseName) {
+    const profileId = Number(namedShowcase?.[2] ?? 1);
+    if (profileId <= MAX_PROFILE_ID) return { type: "showcase" as const, name: showcaseName, profileId };
   }
   const exporting = /^(?:#星铁|\*)(强制)?导出面板(?:\s*(?:档案\s*)?(\d+))?$/u.exec(message);
   if (exporting) return { type: "export" as const, name: "", profileId: Number(exporting[2] ?? 1), share: Boolean(exporting[1]) };

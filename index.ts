@@ -40,7 +40,7 @@ import { parsePanelCommand } from "./panel-model.ts";
 import { createStarRailRosterQuery } from "./personal-roster-command.ts";
 import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
 import { createStarRailGroupRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
-import { queryStarRailRankStats } from "./rank-statistics.ts";
+import { queryStarRailRankStats, resolveStarRailCharacter } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
 import { createStarRailRogueQuery } from "./rogue-command.ts";
 import { parseStarRailRogue } from "./rogue-model.ts";
@@ -303,7 +303,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const relicRank = await groupRank.query(resolvedRank, context);
       if (relicRank !== undefined) return relicRank;
       const panelCommand = parsePanelCommand(context.normalizedMessage);
-      if (panelCommand) {
+      if (panelCommand && (panelCommand.type !== "showcase" || !panelCommand.name || await resolveStarRailCharacter(panelCommand.name))) {
         const userId = context.user_id;
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
           return "请从登录档案对应的 QQ 会话使用星铁面板。";

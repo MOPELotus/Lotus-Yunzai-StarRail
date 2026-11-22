@@ -1,4 +1,12 @@
 import { expect, test } from "bun:test";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { normalizeGameCommand } from "../../../lib/command-prefix.ts";
+import { CommandRegistry } from "../../../lib/commands.ts";
+import { lockFile } from "../../../lib/file-lock.ts";
+import type { MessageEvent } from "../../../lib/messages.ts";
+import { createModule } from "../index.ts";
 import { parsePanelCommand } from "../panel-model.ts";
 import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
 
@@ -14,6 +22,9 @@ const character = {
 
 test("旧展板和备用入口选择原服务器位，拒绝错区服和私有 Token 服务", () => {
   expect(parsePanelCommand("*备用更新面板2")).toEqual({ type: "showcase", name: "", profileId: 2 });
+  expect(parsePanelCommand("*更新希儿面板2")).toEqual({ type: "showcase", name: "希儿", profileId: 2 });
+  expect(parsePanelCommand("#星铁更新希儿详情 档案2")).toEqual({ type: "showcase", name: "希儿", profileId: 2 });
+  expect(parsePanelCommand("#星铁更新希儿详情档案")).toBeUndefined();
   expect(parsePanelCommand(`#星铁展板获取游戏角色详情${os.uid} 档案2`)).toEqual({ type: "showcase", name: "", uid: os.uid, profileId: 2 });
   expect(parsePanelCommand("#原神展板更新面板")).toBeUndefined();
   expect(showcaseTarget(cn, "0").provider).toBe("mihomo");
@@ -23,6 +34,69 @@ test("旧展板和备用入口选择原服务器位，拒绝错区服和私有 T
   expect(() => showcaseTarget({ ...os, region: cn.region }, "0")).toThrow("区服不一致");
   expect(() => showcaseTarget({ ...os, gameBiz: "hkrpg_cn" }, "0")).toThrow("区服不一致");
   expect(() => showcaseTarget(cn, "1")).toThrow("旧私有 Token");
+});
+
+test("宿主将旧角色名刷新指令交给公开服务，普通和米游社刷新只调用官方角色接口", async () => {
+  const root = await mkdtemp(join(tmpdir(), "lotus-starrail-named-showcase-"));
+  const env = {
+    LOTUS_PROFILE_DIR: Bun.env.LOTUS_PROFILE_DIR,
+    LOTUS_STAR_RAIL_SHOWCASE_SERVER: Bun.env.LOTUS_STAR_RAIL_SHOWCASE_SERVER,
+  };
+  const originalFetch = globalThis.fetch;
+  try {
+    Bun.env.LOTUS_PROFILE_DIR = root;
+    Bun.env.LOTUS_STAR_RAIL_SHOWCASE_SERVER = "0";
+    await writeFile(join(root, "42-2.yaml"), `version: 1
+user: { qq: '42' }
+profile: { id: 2 }
+account:
+  ltuid: '12'
+  stuid: '12'
+  stoken: synthetic-stoken
+  stoken_cookie: 'stuid=12; stoken=synthetic-stoken'
+  cookie: 'account_id=12; cookie_token=synthetic-cookie'
+  game_roles: { sr: [{ uid: '${cn.uid}', region: ${cn.region}, game_biz: ${cn.gameBiz} }] }
+  current_uid: { sr: '${cn.uid}' }
+`);
+    const requests: { url: URL; headers: Headers }[] = [];
+    const fixtureFetch: typeof fetch = Object.assign(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      requests.push({ url, headers: new Headers(init?.headers) });
+      if (url.hostname === "api.mihomo.me") return new Response(null, { status: 429 });
+      return Response.json({ retcode: 0, data: { role: { role_id: cn.uid, region: cn.region }, avatar_list: [] } });
+    }, { preconnect: originalFetch.preconnect });
+    globalThis.fetch = fixtureFetch;
+    const registry = new CommandRegistry();
+    registry.registerModule({ name: "@lotus-yunzai/starrail", ...createModule({ signal, lockFile }) });
+    const dispatch = (msg: string, context: Partial<MessageEvent> = {}) => {
+      const event = normalizeGameCommand({ msg, message_type: "private", user_id: 42, isMaster: false, ...context } as MessageEvent);
+      return registry.dispatchFallback(event, () => true, () => false);
+    };
+    for (const cmd of ["#星铁更新希儿面板2", "*更新希儿详情 档案2"]) {
+      expect(await dispatch(cmd)).toContain("公开星铁展板请求过于频繁");
+    }
+    expect(await dispatch("*更新希儿面板2", { isDelegated: true })).toContain("本人");
+    expect(await dispatch("*更新不存在的角色面板2")).toBeUndefined();
+    expect(await dispatch("*更新面板2")).toContain("米游社未返回");
+    expect(await dispatch("#星铁米游社更新面板2")).toContain("米游社未返回");
+    expect(requests.map(({ url }) => [url.hostname, url.pathname])).toEqual([
+      ["api.mihomo.me", `/sr_info/${cn.uid}`],
+      ["api.mihomo.me", `/sr_info/${cn.uid}`],
+      ["api-takumi-record.mihoyo.com", "/game_record/app/hkrpg/api/avatar/info"],
+      ["api-takumi-record.mihoyo.com", "/game_record/app/hkrpg/api/avatar/info"],
+    ]);
+    expect(requests.slice(0, 2).map(({ headers }) => headers.get("cookie"))).toEqual([null, null]);
+    expect(requests.slice(2).map(({ headers }) => headers.get("cookie"))).toEqual([
+      "account_id=12; cookie_token=synthetic-cookie", "account_id=12; cookie_token=synthetic-cookie",
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(env)) {
+      if (value === undefined) delete Bun.env[key];
+      else Bun.env[key] = value;
+    }
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("Mihomo 原始接口仅发绑定 UID，展板覆盖同名助战，角色和词条迁入同一面板模型", async () => {

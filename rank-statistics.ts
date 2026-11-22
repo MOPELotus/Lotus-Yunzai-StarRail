@@ -27,11 +27,15 @@ export function findStarRailRankCharacter(name: string) {
   if (matches.length === 1) return matches[0];
 }
 
+export async function resolveStarRailCharacter(name: string) {
+  return findStarRailRankCharacter(name) ??
+    findStarRailRankCharacter((await readGameCharacterAliases("sr")).get(characterAliasKey(name)) ?? "");
+}
+
 export async function queryStarRailRankStats(message: string, signal: AbortSignal) {
   const name = rankStatsName(message);
   if (!name || signal.aborted) return;
-  const character = findStarRailRankCharacter(name) ??
-    findStarRailRankCharacter((await readGameCharacterAliases("sr")).get(characterAliasKey(name)) ?? "");
+  const character = await resolveStarRailCharacter(name);
   if (!character || signal.aborted) return;
   const result = await fetchRankStats(character.id, signal);
   if (signal.aborted) return;
