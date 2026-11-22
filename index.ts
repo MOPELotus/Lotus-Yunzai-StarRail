@@ -1,5 +1,6 @@
 import { gachaImageReply } from "../../lib/gacha-image-reply.ts";
 import type { MessageEvent } from "../../lib/messages.ts";
+import { isStarRailGachaLinkMessage, starRailLinkEntry } from "../../lib/private-access.ts";
 import { createGameCharacterAliasCommands, matchGameCharacterAliasCommand } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath } from "node:url";
 import { createProfileStore, MAX_PROFILE_ID, ProfileError } from "@lotus-yunzai/account";
@@ -20,6 +21,7 @@ import { readStarRailGachaSchedule, resolveStarRailDetailPool } from "./gacha-sc
 import { buildStarRailGachaSpecial, type StarRailGachaSpecialOptions } from "./gacha-special.ts";
 import { renderStarRailGachaSpecial } from "./gacha-special-card.ts";
 import { createStarRailGachaHistoryStore } from "./gacha-store.ts";
+import { createStarRailGachaLinkCommand } from "./gacha-link-command.ts";
 import { createStarRailGachaSync } from "./gacha-sync.ts";
 import { buildStarRailGachaVersion, type StarRailGachaVersionOptions } from "./gacha-version.ts";
 import { renderStarRailGachaVersion } from "./gacha-version-card.ts";
@@ -74,6 +76,7 @@ const help = [
   "*抽卡记录、*光锥记录、*常驻记录、*新手记录、*角色联动记录、*光锥联动记录 可查看指定卡池。",
   "*全部记录 可查看各池，*版本统计 可按活动卡池期次查看。",
   "私聊 *导入记录 可接收 UIGF / SRGF 文件，*导出记录 可发送本地逐抽档案。",
+  "私聊 *抽卡链接 可录入本档案的官方跃迁链接，更新本地逐抽。",
   "*逐抽记录、*逐抽版本统计、*逐抽全部记录 查看本地逐抽档案。",
   "末尾加档案编号可选档案，如 *抽卡记录2。单池可加「全部」查看各页，如 *角色全部记录2。",
 ].join("\n");
@@ -136,6 +139,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     (await history.read(qq, uid) ?? await history.readLegacy(qq, uid)) !== null;
   const gachaFiles = createStarRailGachaFiles(profiles, archive, signal, runtimeVersion?.version ?? runtimeVersion?.revision ?? "dev",
     hasDisplayHistory);
+  const gachaLink = createStarRailGachaLinkCommand(profiles, archive, signal);
   const service = createStarRailGachaSync(profiles, client, history);
   const updateGacha = createGachaUpdater((qq, profileId) => service.sync(qq, profileId, { signal }));
 
@@ -239,6 +243,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     },
     fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
+      if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
       if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
       if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
@@ -250,12 +255,14 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
     },
-    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & Pick<MessageEvent, "forward"> & {
+    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & Pick<MessageEvent, "forward" | "privateCredentialSignal"> & {
       readonly at?: string | number;
       readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
       readonly adapter?: "milky";
       readonly inlineImageByteLimit?: number;
     }) {
+      const linked = await gachaLink(context);
+      if (linked !== undefined) return linked;
       const aliases = matchGameCharacterAliasCommand(context.normalizedMessage);
       if (aliases?.game === "sr") return characterAliases(aliases, context);
       const month = starRailMonthlyCommand.exec(context.normalizedMessage);
