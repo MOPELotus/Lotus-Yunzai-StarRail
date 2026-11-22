@@ -31,16 +31,18 @@ import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./g
 import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
+const extremePanelUid = "100000000";
+const bundledExtremePanel = fileURLToPath(new URL("../../resources/extreme-panels/sr.json", import.meta.url));
 const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
 const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
 const maxBytes = 8 * 1024 * 1024;
 
-async function legacySnapshot(uid: string) {
+async function legacySnapshot(uid: string, sampleFile?: string) {
   if (!/^[1-9]\d{8,9}$/u.test(uid)) throw new Error("旧面板档案 UID 无效。");
   const root = resolve(Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR?.trim() || legacyDirectory);
   let handle;
   try {
-    handle = await open(join(root, `${uid}.json`), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    handle = await open(sampleFile ?? join(root, `${uid}.json`), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
     throw error;
@@ -101,12 +103,41 @@ export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock, 
 export function createStarRailPanel(
   profiles: ReturnType<typeof createProfileStore>, client: ReturnType<typeof createProfileHoyoClient>,
   lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,
-  archiveDirectory?: string,
+  archiveDirectory?: string, extremeSampleFile = bundledExtremePanel,
 ) {
   const store = createStarRailPanelArchive(lock, archiveDirectory);
   const showcases = createRoleJsonArchive(showcaseDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
   const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   const refreshing = new Set<string>();
+
+  async function queryExtremePanel(name: string, inlineImageByteLimit?: number) {
+    if (signal.aborted) return;
+    try {
+      let theme: Awaited<ReturnType<typeof readTheme>> | undefined;
+      let available = false;
+      let unreadable = false;
+      for (const sampleFile of [undefined, extremeSampleFile]) {
+        const saved = await legacySnapshot(extremePanelUid, sampleFile).catch(() => { unreadable = true; });
+        if (signal.aborted) return;
+        if (!saved) continue;
+        available = true;
+        const { snapshot } = saved;
+        theme ??= await readTheme();
+        const avatar = findPanelAvatar(snapshot.avatars, name, theme);
+        if (signal.aborted) return;
+        if (!avatar) continue;
+        const model = await makePanelDetailCard(snapshot, avatar, theme, signal, { localOnly: true, sourceLabel: "极限面板" });
+        if (signal.aborted) return;
+        const card = await renderStarRailPanelDetail(model, theme.root, "auto", inlineImageByteLimit).catch(() => undefined);
+        if (signal.aborted) return;
+        return card ? { type: "image" as const, file: card.png } : `星铁极限面板 · ${avatar.name}\n图片暂时无法生成。`;
+      }
+      if (available) return "星铁极限面板样例档没有这个角色。";
+      return unreadable ? "星铁极限面板样例档暂时无法读取。" : "当前没有安装星铁极限面板样例档。";
+    } catch {
+      if (!signal.aborted) return "星铁极限面板样例档暂时无法读取。";
+    }
+  }
 
   async function refreshPanel(account: ProfileRequestContext, verify: (revision?: string) => Promise<void>,
     discardedAt: number, active: AbortSignal) {
@@ -164,6 +195,7 @@ export function createStarRailPanel(
   async function query(qq: string, command: PanelCommand,
     context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & { readonly reply?: (message: string) => unknown }) {
     const { type, profileId, name } = command;
+    if (type === "extreme") return queryExtremePanel(name, context?.inlineImageByteLimit);
     const uploadFile = context?.uploadFile;
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
     if (type === "discard") {

@@ -173,6 +173,8 @@ const practiceOverview = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:面板)?练�
 const practiceAliases = new RegExp(String.raw`^#星铁\s*((?:我的)?(?:物理|火|冰|雷|风|量子|虚数)*(?:角色|练度|[五四54星])+(?:汇总|统计|列表)(?:force|[五四54星])*)${practiceTarget}$`, "u");
 
 export function parsePanelCommand(message: string) {
+  const extreme = /^(?:#星铁|\*)\s*极限\s*([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:面[板版])?$/u.exec(message)?.[1]?.trim();
+  if (extreme) return { type: "extreme" as const, name: extreme, profileId: 1 };
   const practice = practiceOverview.exec(message);
   if (practice) return { type: "practice" as const, name: "", profileId: Number(practice[1] ?? 1), rarity: undefined };
   const alias = practiceAliases.exec(message);

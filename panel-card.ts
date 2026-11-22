@@ -417,7 +417,9 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
 
 export async function makePanelDetailCard(
   snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
-  { equipmentLabel, skillPreview, localOnly }: { equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean } = {},
+  { equipmentLabel, skillPreview, localOnly, sourceLabel }: {
+    equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean; sourceLabel?: string;
+  } = {},
 ) {
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
@@ -506,7 +508,7 @@ export async function makePanelDetailCard(
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
         ...coneDetails(cone, coneMeta) },
-      dataSource: equipmentLabel ?? (source || fieldsSource(snapshot)), updateTime: detailTime(avatar.legacy?.updatedAt ?? snapshot.updatedAt),
+      dataSource: sourceLabel ?? equipmentLabel ?? (source || fieldsSource(snapshot)), updateTime: detailTime(avatar.legacy?.updatedAt ?? snapshot.updatedAt),
     },
     attr, artisDetail: { charWeight: score?.charWeight ?? {}, mark: score?.mark, markClass: score?.markClass,
       classTitle: score?.charCfg.classTitle, allAttr, artis }, artisKeyTitle,
