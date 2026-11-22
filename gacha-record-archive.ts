@@ -9,6 +9,7 @@ const pools = ["11", "12", "21", "22", "2", "1"] as const;
 const maxArchiveBytes = 32 * 1024 * 1024;
 const maxLegacyPoolBytes = 16 * 1024 * 1024;
 const subject = "星铁逐抽档案";
+const accountId = /^[1-9]\d{0,18}$/u;
 
 interface Identity {
   readonly qq: string;
@@ -21,7 +22,7 @@ interface LegacyOptions {
 
 export type StarRailGachaArchiveRead = {
   readonly status: "available";
-  readonly source: "managed" | "legacy" | "backup";
+  readonly source: "managed" | "legacy" | "backup" | "independent";
   readonly archive: StarRailUigfArchive;
 } | {
   readonly status: "unavailable";
@@ -47,7 +48,7 @@ function missing(error: unknown): boolean {
 }
 
 function checkIdentity({ qq, uid }: Identity) {
-  if (typeof qq !== "string" || typeof uid !== "string" || !/^[1-9]\d{0,18}$/u.test(qq) || !/^[1-9]\d{0,18}$/u.test(uid)) {
+  if (typeof qq !== "string" || typeof uid !== "string" || !accountId.test(qq) || !accountId.test(uid)) {
     throw new TypeError("星铁逐抽档案的 QQ 或 UID 无效。");
   }
 }
@@ -68,13 +69,13 @@ async function readStat(path: string): Promise<Stats | undefined> {
   });
 }
 
-async function locateLegacy(directory: string, { qq, uid }: Identity): Promise<string | undefined> {
+async function locateLegacy(directory: string, segments: readonly string[]): Promise<string | undefined> {
   const info = await readStat(directory);
   if (!info) return;
   if (!info.isDirectory()) corrupt("星铁旧逐抽档案的根须为实际目录。");
   const root = await realpath(directory);
   let path = root;
-  for (const segment of [qq, uid]) {
+  for (const segment of segments) {
     path = join(path, segment);
     const info = await readStat(path);
     if (!info) return;
@@ -126,9 +127,9 @@ function mirrorFiveStar(row: Record<string, unknown>) {
     (row.item_type === "角色" || row.item_type === "光锥") && typeof row.name === "string";
 }
 
-async function readLegacy(directory: string, source: "legacy" | "backup", identity: Identity,
+async function readLegacy(directory: string, source: "legacy" | "backup" | "independent", segments: readonly string[], uid: string,
   { legacyTimezone }: LegacyOptions): Promise<StarRailGachaArchiveRead> {
-  const path = await locateLegacy(directory, identity);
+  const path = await locateLegacy(directory, segments);
   if (!path) return { status: "unavailable", reason: "missing" };
   const records: Record<string, unknown>[] = [];
   const fingerprints = new Map<string, Stats | undefined>();
@@ -143,12 +144,13 @@ async function readLegacy(directory: string, source: "legacy" | "backup", identi
     availableBytes -= snapshot.info.size;
     for (const row of snapshot.records) {
       if (!record(row) || !sameIdentifier(row.gacha_type, pool)) corrupt("星铁旧逐抽档案的卡池编号与文件不一致。");
-      if (row.uid !== undefined && !sameIdentifier(row.uid, identity.uid)) corrupt("星铁旧逐抽档案包含其他 UID 的记录。");
+      if (row.uid !== undefined && !sameIdentifier(row.uid, uid)) corrupt("星铁旧逐抽档案包含其他 UID 的记录。");
       // These summaries can share a pool file with real game records.
       if (row.xhh_ph === 1 || row.xhh_src === "mini") {
         hasSummaryRows = true;
         continue;
       }
+      if (source === "independent" && row.uid === undefined) corrupt("星铁独立旧档的逐抽记录缺少 UID，无法确认归属。");
       if (typeof row.lang === "string" && row.lang.trim()) languages.add(row.lang.trim());
       records.push(row);
     }
@@ -163,11 +165,28 @@ async function readLegacy(directory: string, source: "legacy" | "backup", identi
   if (legacyTimezone === undefined) corrupt("无法确认星铁旧逐抽档案的服务器时区，请使用带时区的 UIGF 文件。");
   const lang = languages.size === 1 ? languages.values().next().value : undefined;
   try {
-    const archive = validateStarRailUigfArchive({ uid: identity.uid, timezone: legacyTimezone, lang, records }, identity.uid);
+    const archive = validateStarRailUigfArchive({ uid, timezone: legacyTimezone, lang, records }, uid);
     return { status: "available", source, archive };
   } catch (error) {
     corrupt(error instanceof TypeError ? error.message : "星铁旧逐抽档案的格式无效。");
   }
+}
+
+export async function prepareIndependentStarRailGachaImport(directory: string, uid: string, timezone: number) {
+  if (typeof uid !== "string" || !accountId.test(uid)) throw new TypeError("星铁独立旧档的 UID 无效。");
+  const result = await readLegacy(directory, "independent", [uid], uid, { legacyTimezone: timezone });
+  if (result.status !== "available") {
+    corrupt(result.reason === "mirror"
+      ? "星铁独立旧档只有汇总或占位记录，无法作为逐抽档案导入。"
+      : "星铁独立旧档未找到该 UID 的逐抽记录。");
+  }
+  const { archive } = result;
+  // UIGF v4 uses whole-hour offsets. UTC preserves draw instants for archives with fractional offsets.
+  const normalized = Number.isInteger(archive.timezone) ? archive : convertStarRailUigfTimezone(archive, 0);
+  const document = exportStarRailUigf(normalized, {
+    uid, exportedAt: new Date(), app: { name: "Lotus-Yunzai", version: "independent-legacy-import" },
+  });
+  return { document, count: normalized.records.length };
 }
 
 function decodeManaged(value: unknown, identity: Identity): StarRailUigfArchive {
@@ -206,9 +225,10 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
 
   async function existingLegacy(identity: Identity, options: LegacyOptions): Promise<StarRailGachaArchiveRead> {
     try {
-      const live = await readLegacy(legacyDirectory, "legacy", identity, options);
+      const segments = [identity.qq, identity.uid];
+      const live = await readLegacy(legacyDirectory, "legacy", segments, identity.uid, options);
       if (live.status === "available") return live;
-      const backup = await readLegacy(legacyBackupDirectory, "backup", identity, options);
+      const backup = await readLegacy(legacyBackupDirectory, "backup", segments, identity.uid, options);
       return backup.status === "available" || backup.reason === "mirror" ? backup : live;
     } catch (error) {
       if (error instanceof StarRailGachaArchiveError) throw error;
@@ -230,7 +250,7 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
       const saved = await managed.read(identity.qq, identity.uid);
       if (saved === null) throw new Error("没有找到指定 QQ 和 UID 的新版星铁逐抽档案副本。");
       const modern = convertStarRailUigfTimezone(decodeManaged(saved, identity), legacyTimezone);
-      const local = await readLegacy(legacyDirectory, "legacy", identity, { legacyTimezone });
+      const local = await readLegacy(legacyDirectory, "legacy", [identity.qq, identity.uid], identity.uid, { legacyTimezone });
       if (local.status === "unavailable" && local.reason === "mirror") {
         throw new Error("旧逐抽副本含显示占位记录，无法安全交还。");
       }
