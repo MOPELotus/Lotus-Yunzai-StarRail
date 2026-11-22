@@ -248,7 +248,7 @@ export function createStarRailPanel(
         throw error;
       });
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
-      const observedAt = type === "relics" && account && groupRank?.allows(context) ? Date.now() : undefined;
+      const observedAt = type === "relics" && account && await groupRank?.allows(context) ? Date.now() : undefined;
       const { uid } = role;
       const explicitUid = "uid" in command;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";

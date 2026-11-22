@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createGroupRankRefresh, MAX_PROFILE_ID, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
+import { readGroupPanelRankEnabled } from "../../lib/group-panel-rank-settings.ts";
 import { relicRankCoverageText, relicRankLabels, renderStarRailRelicRank, type RelicRankMetric, type RelicRankRow } from "./group-relic-rank-card.ts";
 import { makePanelDetailCard, readPanelDamageMetadata, readPanelRankAvatar, readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
 import { hasPersonalDamage, readStarRailPersonalDamage } from "./panel-damage.ts";
@@ -62,7 +63,7 @@ function relicRankTargets(message: string) {
   if (term && !(suffix && prefix && rankMetric(suffix) !== rankMetric(prefix))) {
     const name = prefix ? root.slice(prefix.length).trim() : root;
     if (name) targets.push({ name, metric: rankMetric(term), strongest: Boolean(leader) });
-  } else if (!term && list?.[2] !== undefined && list[2] !== "列表") {
+  } else if (!term && list && list[2] !== "列表") {
     targets.push({ name: body, metric: "damage", strongest: false });
   }
   return targets.length ? targets : undefined;
@@ -185,7 +186,7 @@ async function rankDamage(avatar: PanelAvatar, theme: RankTheme) {
 export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: AcquireRoleArchiveLock, signal: AbortSignal, {
   directory = defaultDirectory, groups = Bun.env.LOTUS_STAR_RAIL_PANEL_RANK_GROUPS ?? "", render = renderStarRailRelicRank,
   fetchShowcase = fetchStarRailShowcase, readServer = readShowcaseServer, readRankTheme = readTheme, panelDirectory,
-  renderStrongest = bestPanel, scoreDamage = rankDamage,
+  renderStrongest = bestPanel, scoreDamage = rankDamage, readEnabled = readGroupPanelRankEnabled,
 }: {
   readonly directory?: string;
   readonly groups?: string;
@@ -196,6 +197,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
   readonly panelDirectory?: string;
   readonly renderStrongest?: RenderStrongest;
   readonly scoreDamage?: typeof rankDamage;
+  readonly readEnabled?: typeof readGroupPanelRankEnabled;
 } = {}) {
   const refresh = createGroupRankRefresh();
   const refreshing = new Set<string>();
@@ -204,7 +206,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
   const archive = (scope: Scope) => createRoleJsonArchive(folder(scope), lockFile, {
     subject: "星铁群遗器评分摘要", lockSuffix: "relic-rank", maxBytes: 2 * 1024 * 1024, rejectNull: true,
   });
-  const groupEnabled = (scope: Scope) => enabled.has(String(scope.group));
+  const groupEnabled = (scope: Scope) => readEnabled("sr", scope.group, enabled.has(String(scope.group)));
   const panelStore = createStarRailPanelArchive(lockFile, panelDirectory);
 
   async function stillActive({ qq, profileId, role, observedAt }: BoundProfile) {
@@ -227,16 +229,24 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
   }
 
   return {
-    allows(context: StarRailGroupRankContext | undefined) {
+    async allows(context: StarRailGroupRankContext | undefined) {
       if (!context || !context.listCurrentGroupMembers || context.groupActivitySignal?.aborted || signal.aborted) return false;
       const scope = scopeOf(context);
-      return !!scope && groupEnabled(scope);
+      return !!scope && await groupEnabled(scope) && !context.groupActivitySignal?.aborted && !signal.aborted;
     },
     async observe(context: StarRailGroupRankContext, profileId: number, selectedRole: Role, shown: Summary, verify: () => Promise<void>) {
       const scope = scopeOf(context), role = publicRole(selectedRole), summary = decodeSummary(shown);
-      if (!scope || !role || !summary || !positive(profileId) || profileId > MAX_PROFILE_ID || !groupEnabled(scope) || context.groupActivitySignal?.aborted || signal.aborted) return;
+      if (!scope || !role || !summary || !positive(profileId) || profileId > MAX_PROFILE_ID ||
+          context.groupActivitySignal?.aborted || signal.aborted || !await groupEnabled(scope)) return;
       if (!await groupMembers(scope, context) || !await stillActive({ qq: scope.qq, profileId, role, observedAt: summary.observedAt })) return;
-      await archive(scope).update({ qq: String(scope.group), uid: String(scope.qq) }, verify, (raw) => {
+      await archive(scope).update({ qq: String(scope.group), uid: String(scope.qq) }, async () => {
+        await verify();
+        context.groupActivitySignal?.throwIfAborted();
+        signal.throwIfAborted();
+        if (!await groupEnabled(scope)) throw new Error("本群未启用星铁群榜。");
+        context.groupActivitySignal?.throwIfAborted();
+        signal.throwIfAborted();
+      }, (raw) => {
         const profiles = observations(raw, scope, scope.qq);
         const previous = profiles[String(profileId)];
         const prior = previous && sameRole(previous.role, role) ? previous.summary : {};
@@ -251,14 +261,15 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
       const command = typeof rank === "string" ? await resolveStarRailRelicRank(rank) : rank;
       if (!command || active.aborted) return;
       const { character, metric: requestedMetric, strongest } = command;
-      const damageSupported = requestedMetric !== "damage" || hasPersonalDamage(String(character.id));
-      const metric = damageSupported || strongest ? requestedMetric : "mark";
+      const metric = requestedMetric === "damage" && !hasPersonalDamage(String(character.id)) ? "mark" : requestedMetric;
       const label = relicRankLabels[metric];
       const title = `星铁群${label}排行`;
       const scope = scopeOf(context);
       if (!scope) return `${title}只能在群聊中查询。`;
-      if (!groupEnabled(scope)) return `本群未启用${title}。`;
-      if (!damageSupported && strongest) return `「${character.name}」暂无星铁个人伤害规则，无法计算伤害榜首。`;
+      const disabled = `本群未启用${title}。`;
+      const enabledAtStart = await groupEnabled(scope);
+      if (active.aborted) return;
+      if (!enabledAtStart) return disabled;
       const groupKey = `${scope.adapter}:${scope.bot}:${scope.group}`;
       if (refreshing.has(groupKey)) return "本群星铁遗器排行正在刷新，请稍后再查。";
       refreshing.add(groupKey);
@@ -320,6 +331,10 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         const latest = await groupMembers(scope, context);
         active.throwIfAborted();
         if (!latest) return "暂时无法核对本群成员，请稍后查询。";
+        if (!await groupEnabled(scope)) {
+          active.throwIfAborted();
+          return disabled;
+        }
         const current: typeof results[number][] = [];
         for (const result of results) {
           active.throwIfAborted();
@@ -334,18 +349,24 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           notListed: current.filter(row => row.status === "not-listed").length,
           failed: current.filter(row => row.status === "failed").length,
         };
+        const changed = async (rows: readonly (typeof results)[number][]) => {
+          const confirmed = await groupMembers(scope, context);
+          const live = confirmed && (await Promise.all(rows.map(({ entry }) => remainsRegistered(entry, confirmed)))).every(Boolean);
+          const enabled = await groupEnabled(scope);
+          active.throwIfAborted();
+          if (!enabled) return disabled;
+          if (!live) return "群成员或档案已变化，请重新查询排行。";
+        };
         if (strongest) {
           const lead = scored[0];
           const summary = relicRankCoverageText(coverage);
           if (!lead) return `本群暂无${character.name}的本轮有效${label}数据。\n${summary}`;
-          const unchanged = async () => {
-            const confirmed = await groupMembers(scope, context);
-            return Boolean(confirmed && (await Promise.all(current.map(({ entry }) => remainsRegistered(entry, confirmed)))).every(Boolean)) && !active.aborted;
-          };
-          if (!await unchanged()) return active.aborted ? undefined : "群成员或档案已变化，请重新查询排行。";
+          const beforeRender = await changed(current);
+          if (beforeRender) return beforeRender;
           const { uid, snapshot, avatar } = lead.value;
           const card = await renderStrongest(snapshot, avatar, theme, active, context.inlineImageByteLimit).catch(() => undefined);
-          if (!await unchanged()) return active.aborted ? undefined : "群成员或档案已变化，请重新查询排行。";
+          const afterRender = await changed(current);
+          if (afterRender) return afterRender;
           const heading = `${character.name} · 本轮${label}榜首 · UID ${uid}\n${summary}`;
           return card ? [heading, { type: "image" as const, file: card.png }] : `${heading}\n本轮公开数据已取得，暂时无法生成完整面板。`;
         }
@@ -364,12 +385,8 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         try {
           png = (await render(character, rows, undefined, context.inlineImageByteLimit, coverage, metric))?.png;
         } catch {}
-        const confirmed = await groupMembers(scope, context);
-        active.throwIfAborted();
-        if (!confirmed || !(await Promise.all(ranked.map(({ entry }) => remainsRegistered(entry, confirmed)))).every(Boolean)) {
-          return "群成员或档案已变化，请重新查询排行。";
-        }
-        active.throwIfAborted();
+        const afterRender = await changed(ranked);
+        if (afterRender) return afterRender;
         if (png) return { type: "image" as const, file: png };
         return [`${character.name} · 本群${label}排行`, relicRankCoverageText(coverage), ...rows.map(({ uid, score, grade }, index) =>
           [`${index + 1}. UID ${uid}`, score.toFixed(1), grade].filter(Boolean).join(" · "))].join("\n");

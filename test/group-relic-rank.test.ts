@@ -89,9 +89,10 @@ async function fixture() {
   let selector = "0";
   const setProvider = (value: string) => { selector = value; };
   type Options = NonNullable<Parameters<typeof createStarRailGroupRelicRank>[3]>;
-  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage"> = {}) =>
+  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage" | "readEnabled"> = {}) =>
     createStarRailGroupRelicRank(createProfileStore(accounts), lockFile, new AbortController().signal, {
       directory, panelDirectory, groups: "77, 78", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
+      readEnabled: async (_game, _group, defaultEnabled) => defaultEnabled,
       fetchShowcase: (target, signal) => fetchStarRailShowcase(target, signal, async (url, init) => {
         const uid = url.pathname.split("/").at(-1)!;
         expect(url.origin).toBe("https://api.mihomo.me");
@@ -153,6 +154,7 @@ test("普通星铁角色排行对本轮全名单一致使用伤害，无规则�
   const { root, rank, asked, use } = await fixture();
   try {
     const lists: { metric: string | undefined; scores: [string, number][] }[] = [];
+    const strongest: string[] = [];
     let damageCalls = 0;
     const board = rank(async (_character, rows, _mode, _limit, _coverage, metric) => {
       lists.push({ metric, scores: rows.map(({ uid, score }) => [uid, score]) });
@@ -162,7 +164,7 @@ test("普通星铁角色排行对本轮全名单一致使用伤害，无规则�
         damageCalls++;
         return avatar.relics.length === 2 ? 500 : 200;
       },
-      renderStrongest: async () => { throw new Error("普通排行榜不应走完整榜首面板"); },
+      renderStrongest: async snapshot => { strongest.push(snapshot.uid); return { png: new Uint8Array([1]) }; },
     });
     await board.observe(group77, 1, role(uid42), shown("1001"), verified);
     await board.observe({ ...group77, user_id: 43 }, 1, role(uid43), shown("1001"), verified);
@@ -180,8 +182,45 @@ test("普通星铁角色排行对本轮全名单一致使用伤害，无规则�
     expect(await board.query("*乱破排名", group77)).toContain(`乱破 · 本群遗器评分排行\n本轮公开展板 2/2 已计分\n1. UID ${uid43}`);
     expect(lists[2]?.metric).toBe("mark");
     expect(lists[2]?.scores.every(([, score]) => score > 0 && score <= 420)).toBe(true);
+    expect(strongest).toEqual([]);
     expect(damageCalls).toBe(4);
     expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
+    expect(await board.query("*最强乱破", group77)).toEqual([
+      expect.stringContaining(`本轮遗器评分榜首 · UID ${uid43}`), { type: "image", file: new Uint8Array([1]) },
+    ]);
+    expect(strongest).toEqual([uid43]);
+    expect(lists).toHaveLength(3);
+    expect(damageCalls).toBe(4);
+    expect(asked.sort()).toEqual([uid42, uid43]);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("面板范围实时优先，关闭后停止登记并丢弃在途排行榜", async () => {
+  const { root, rank, asked } = await fixture();
+  const target = { ...group77, group_id: 79 };
+  let enabled = false;
+  try {
+    const board = rank(async () => {
+      enabled = false;
+      return { png: new Uint8Array([1]) };
+    }, {
+      readEnabled: async (game, group, fallback) => {
+        expect(game).toBe("sr");
+        expect(fallback).toBe(group === 77);
+        return enabled && group === 79;
+      },
+    });
+    expect(await board.allows(group77)).toBe(false);
+    expect(await board.allows(target)).toBe(false);
+    await board.observe(target, 1, role(uid42), shown("1302"), verified);
+    expect(await board.query(command, target)).toContain("未启用");
+    expect(asked).toEqual([]);
+    enabled = true;
+    expect(await board.allows(target)).toBe(true);
+    expect(await board.query(command, target)).toContain("暂无已登记");
+    await board.observe(target, 1, role(uid42), shown("1302"), verified);
+    expect(await board.query(command, target)).toContain("未启用");
+    expect(asked).toEqual([uid42]);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
@@ -226,9 +265,9 @@ test("refreshes every eligible registered UID once, including a different old ch
     const delegated = { ...group77, isDelegated: true };
     const privateChat = { ...group77, message_type: "private" };
     const missingRoster = { ...group77, listCurrentGroupMembers: undefined };
-    expect(board.allows(group77)).toBe(true);
+    expect(await board.allows(group77)).toBe(true);
     for (const context of [disabled, delegated, privateChat, missingRoster]) {
-      expect(board.allows(context)).toBe(false);
+      expect(await board.allows(context)).toBe(false);
       await board.observe(context, 1, role(uid42), shown("1302"), verified);
     }
     expect(await board.query(command, privateChat)).toContain("只能在群聊");
