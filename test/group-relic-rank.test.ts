@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createProfileStore } from "@lotus-yunzai/account";
 import { lockFile } from "../../../lib/file-lock.ts";
-import { createStarRailGroupRelicRank, matchStarRailRelicRank, parseStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
+import { createStarRailGroupRelicRank, matchStarRailRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
 import { readPanelRankAvatar, readTheme } from "../panel-card.ts";
 import { createStarRailPanelArchive, discardedStarRailPanel } from "../panel-discard.ts";
 import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
@@ -30,6 +30,30 @@ test("matches relic-score ranking aliases separately from damage and public rank
   for (const unrelated of ["#星铁三月七排行", "#星铁三月七遗器", "#星铁三月七排名统计", "#三月七遗器排名", "#原神三月七遗器排名"]) {
     expect(matchStarRailRelicRank(unrelated)).toBeUndefined();
   }
+});
+
+test("自定义别名用于星铁遗器及榜首，保留内置角色与独立榜单", async () => {
+  let reads = 0;
+  const aliases = async () => {
+    reads++;
+    return new Map([["花骑士", "银枝"], ["银枝", "三月七"]]);
+  };
+  expect(await resolveStarRailRelicRank("*最强银枝面板", aliases)).toMatchObject({ character: { id: 1302 }, strongest: true });
+  expect(await resolveStarRailRelicRank("*花骑士排行", aliases)).toBeUndefined();
+  expect(await resolveStarRailRelicRank("*花骑士排名统计", aliases)).toBeUndefined();
+  expect(await resolveStarRailRelicRank("#原神花骑士遗器排行", aliases)).toBeUndefined();
+  expect(reads).toBe(0);
+  expect(await resolveStarRailRelicRank("*群内最高分花・骑士详情", aliases)).toMatchObject({
+    character: { id: 1302 }, metric: "mark", strongest: true,
+  });
+  expect(await resolveStarRailRelicRank("*花骑士加权有效词条排行", aliases)).toMatchObject({
+    character: { id: 1302 }, metric: "valid", strongest: false,
+  });
+  expect(await resolveStarRailRelicRank("*最强花骑士面板", aliases)).toMatchObject({
+    character: { id: 1302 }, metric: "damage", strongest: true,
+  });
+  expect(await resolveStarRailRelicRank("*双暴花骑士加权有效词条排行", aliases)).toBeUndefined();
+  expect(reads).toBe(3);
 });
 
 const relicList = [

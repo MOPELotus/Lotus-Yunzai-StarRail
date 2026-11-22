@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createGroupRankRefresh, MAX_PROFILE_ID, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
+import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { relicRankCoverageText, relicRankLabels, renderStarRailRelicRank, type RelicRankMetric, type RelicRankRow } from "./group-relic-rank-card.ts";
 import { makePanelDetailCard, readPanelDamageMetadata, readPanelRankAvatar, readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
 import { hasPersonalDamage, readStarRailPersonalDamage } from "./panel-damage.ts";
@@ -45,22 +46,50 @@ function rankMetric(term: string): RelicRankMetric {
   return term.endsWith("词条") ? "valid" : "mark";
 }
 
-export function parseStarRailRelicRank(message: string) {
+type RelicRankTarget = { name: string } & (
+  { metric: "damage"; strongest: true } | { metric: RelicRankMetric; strongest: boolean }
+);
+
+function relicRankTargets(message: string) {
   const list = /^(?:#星铁|\*)\s*(?:群内?)?([^#]{1,36}?)(?:排行|排名|列表)榜?$/u.exec(message);
   const leader = list ? undefined : /^(?:#星铁|\*)\s*(?:群内?)?(最高分|最强|最高|最牛|第一)([^#]{1,36}?)(?:面[板版]|详情|详细)?$/u.exec(message);
   const body = (list?.[1] ?? leader?.[2])?.trim();
   if (!body) return;
-  if (leader) {
-    const character = findStarRailRankCharacter(body);
-    if (character) return { character, metric: leader[1] === "最高分" ? "mark" as const : "damage" as const, strongest: true as const };
-  }
+  const targets: RelicRankTarget[] = [];
+  if (leader) targets.push({ name: body, metric: leader[1] === "最高分" ? "mark" : "damage", strongest: true });
   const suffix = rankSuffix.exec(body)?.[0];
   const root = suffix ? body.slice(0, -suffix.length).trim() : body;
   const prefix = rankPrefix.exec(root)?.[0];
   const term = suffix ?? prefix;
-  if (!term || (suffix && prefix && rankMetric(suffix) !== rankMetric(prefix))) return;
-  const character = findStarRailRankCharacter(prefix ? root.slice(prefix.length).trim() : root);
-  if (character) return { character, metric: rankMetric(term), strongest: Boolean(leader) };
+  if (term && !(suffix && prefix && rankMetric(suffix) !== rankMetric(prefix))) {
+    const name = prefix ? root.slice(prefix.length).trim() : root;
+    if (name) targets.push({ name, metric: rankMetric(term), strongest: Boolean(leader) });
+  }
+  return targets.length ? targets : undefined;
+}
+
+function matchRankTarget(targets: NonNullable<ReturnType<typeof relicRankTargets>>, find = findStarRailRankCharacter) {
+  for (const { name, ...command } of targets) {
+    const character = find(name);
+    if (character) return { character, ...command };
+  }
+}
+
+export function parseStarRailRelicRank(message: string) {
+  const targets = relicRankTargets(message);
+  if (targets) return matchRankTarget(targets);
+}
+
+export async function resolveStarRailRelicRank(message: string, readAliases = () => readGameCharacterAliases("sr")) {
+  const targets = relicRankTargets(message);
+  if (!targets) return;
+  const preset = matchRankTarget(targets);
+  if (preset) return preset;
+  const aliases = await readAliases();
+  return matchRankTarget(targets, name => {
+    const canonical = aliases.get(characterAliasKey(name));
+    if (canonical) return findStarRailRankCharacter(canonical);
+  });
 }
 
 export function matchStarRailRelicRank(message: string) {
@@ -216,9 +245,10 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         return { document: { version: 1, ...scope, profiles }, result: undefined };
       });
     },
-    async query(message: string, context: StarRailGroupRankContext) {
-      const command = parseStarRailRelicRank(message);
+    async query(rank: string | Awaited<ReturnType<typeof resolveStarRailRelicRank>>, context: StarRailGroupRankContext) {
       const active = context.groupActivitySignal ? AbortSignal.any([signal, context.groupActivitySignal]) : signal;
+      if (active.aborted) return;
+      const command = typeof rank === "string" ? await resolveStarRailRelicRank(rank) : rank;
       if (!command || active.aborted) return;
       const { character, metric, strongest } = command;
       const label = metric === "damage" ? "伤害" : relicRankLabels[metric];

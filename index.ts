@@ -39,7 +39,7 @@ import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
 import { createStarRailRosterQuery } from "./personal-roster-command.ts";
 import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
-import { createStarRailGroupRelicRank, parseStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
+import { createStarRailGroupRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
 
@@ -125,6 +125,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
   const client = createProfileHoyoClient(profiles);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
+  const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const roster = createStarRailRosterQuery(profiles, client, signal);
   const gridFight = createStarRailGridFightQuery(profiles, client, signal);
@@ -241,7 +242,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const result = await updateGacha(qq, profileId);
       return result && { uid: result.log.uid };
     },
-    fallbackFeatures(context: StarRailGachaFileContext) {
+    async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
       if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
       if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
@@ -250,10 +251,16 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
-      if (parseStarRailRelicRank(message) || parsePanelCommand(message)?.type === "discard") return ["[starrail] 角色面板"];
-      if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
-      return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
-        ? ["[gacha] 抽卡记录"] : [];
+      const panelCommand = parsePanelCommand(message);
+      if (parseStarRailRelicRank(message) || panelCommand?.type === "discard") return ["[starrail] 角色面板"];
+      if (parseChallengeQuery(message) || parseStarRailPersonalRoster(message) || (panelCommand && panelCommand.type !== "detail")) return [];
+      if (!panelCommand && (matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message))) return ["[gacha] 抽卡记录"];
+      const customRank = await resolveStarRailRelicRank(message);
+      if (customRank) {
+        groupRankMatches.set(context, customRank);
+        return ["[starrail] 角色面板"];
+      }
+      return [];
     },
     async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & Pick<MessageEvent, "forward" | "privateCredentialSignal"> & {
       readonly at?: string | number;
@@ -286,7 +293,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       }
       const rosterCommand = parseStarRailPersonalRoster(context.normalizedMessage);
       if (rosterCommand) return roster(context, rosterCommand);
-      const relicRank = await groupRank.query(context.normalizedMessage, context);
+      const resolvedRank = groupRankMatches.get(context) ?? parseStarRailRelicRank(context.normalizedMessage);
+      const relicRank = await groupRank.query(resolvedRank, context);
       if (relicRank !== undefined) return relicRank;
       const panelCommand = parsePanelCommand(context.normalizedMessage);
       if (panelCommand) {
