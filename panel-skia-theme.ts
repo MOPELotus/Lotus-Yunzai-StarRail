@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { nativeImageRasterScale } from "@lotus-yunzai/skia";
 import { Canvas, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 
@@ -76,9 +77,10 @@ export async function themeArt(theme: string, relative: string) {
 }
 export function relicPortrait(ctx: Context, icon: Image | undefined, x: number, y: number, size: number, density: number) {
   if (!icon) return;
-  const mask = new Canvas(size * density, size * density);
+  const pixelScale = nativeImageRasterScale() === 1 ? ctx.getTransform().a : density;
+  const mask = new Canvas(size * pixelScale, size * pixelScale);
   const layer = mask.getContext("2d");
-  layer.scale(density, density);
+  layer.scale(pixelScale, pixelScale);
   picture(layer, icon, 0, 0, size, size);
   layer.globalCompositeOperation = "destination-in";
   const fade = layer.createLinearGradient(0, size, size, 0);

@@ -1,5 +1,6 @@
 import { createReadStream, type ReadStream } from "node:fs";
 import { join } from "node:path";
+import { nativeImageRasterScale } from "@lotus-yunzai/skia";
 import { Canvas, FontLibrary, loadImage, type CanvasGradient, type Image } from "skia-canvas";
 import { loadStarRailChallengePortraits, type ChallengePortraitOptions } from "./challenge-portraits.ts";
 import { starRailChallengeThemeDirectory } from "./challenge-theme.ts";
@@ -179,7 +180,8 @@ export async function renderStarRailAbyss(data: ChallengeData, signal: AbortSign
     return { section, titleLines, headerHeight, nodes, height: headerHeight + (nodes.length ? nodes.reduce((sum, item) => sum + item.height + 14, 0) : 130) }
   })
   const height = layouts.reduce((sum, item) => sum + item.height, 0) + 86
-  const configuredScale = Number(Bun.env.LOTUS_RENDER_SCALE ?? 4)
+  const presetScale = nativeImageRasterScale()
+  const configuredScale = presetScale === 1 ? 1 : Number(Bun.env.LOTUS_RENDER_SCALE ?? presetScale)
   let scale = Number.isFinite(configuredScale) ? Math.min(4, Math.max(1, configuredScale)) : 4
   // NapCat rejected a 3040×30680 fourfold three-period history card.
   if (scale === 4 && Math.round(height * scale) >= 30_680 && await checkNapCat?.()) scale = 2
