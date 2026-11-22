@@ -162,6 +162,7 @@ const panelTarget = String.raw`(?:\s*([1-9]\d{8,9})(?:\s+档案\s*([1-9]\d{0,2})
 const showcasePanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:展板|备用)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "u");
 const traceRefresh = /^(?:#星铁|\*)\s*(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:天赋|技能|行迹)(?:\s*(?:档案\s*)?(\d{1,3}))?$/u;
 const reloadPanel = new RegExp(String.raw`^(?:#星铁|\*)\s*(?:加载|重新加载|重载)面板${panelTarget}$`, "u");
+const discardPanel = new RegExp(String.raw`^(?:#星铁|\*)\s*删除(?:全部面板|面板(?:数据)?)${panelTarget}$`, "u");
 const refreshPanel = new RegExp(
   String.raw`^(?:(?:#星铁|\*)\s*(?:(?:米游社|mys)\s*)?|#?(?:米游社|mys)\s*星铁\s*)` +
     `(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)${panelTarget}$`, "iu",
@@ -182,6 +183,8 @@ export function parsePanelCommand(message: string) {
   }
   const traces = traceRefresh.exec(message);
   if (traces) return { type: "refresh-traces" as const, name: "", profileId: Number(traces[1] ?? 1) };
+  const discard = discardPanel.exec(message);
+  if (discard) return { type: "discard" as const, name: "", profileId: Number(discard[2] ?? discard[3] ?? 1), ...(discard[1] && { uid: discard[1] }) };
   const reload = reloadPanel.exec(message);
   const showcase = reload ? undefined : showcasePanel.exec(message);
   const refresh = reload || showcase ? undefined : refreshPanel.exec(message);

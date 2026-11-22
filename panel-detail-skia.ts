@@ -1,13 +1,12 @@
 // Native drawing of the Star Rail profile-detail layout. Geometry and artwork follow
 // the fixed MIT Miao reference in panel-theme/character/profile-detail.{html,css}.
 import { Canvas, type CanvasRenderingContext2D as Context } from "skia-canvas";
-import { renderPng } from "@lotus-yunzai/skia";
 import { fill, image, picture, relicPortrait, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import type { makePanelDetailCard } from "./panel-card.ts";
+import { renderStarRailCard } from "./render-card.ts";
 
 type Model = Awaited<ReturnType<typeof makePanelDetailCard>>;
 const width = 600;
-const density = 4;
 const white = "#fff", gold = "#ffe699", tan = "#d3bc8e";
 const dark = "rgba(0,0,0,.4)", darkOdd = "rgba(50,50,50,.4)";
 const elementNames: Readonly<Record<string, string>> = { 风: "anemo", 雷: "electro", 冰: "cryo", 火: "pyro", 虚数: "geo", 量子: "quantum", 物理: "sr" };
@@ -56,7 +55,7 @@ function wrapDescription(ctx: Context, description: NonNullable<Model["data"]["w
   return lines;
 }
 
-export async function renderStarRailPanelDetail(model: Model, theme: string, mode: "auto" | "gpu" = "auto") {
+export async function renderStarRailPanelDetail(model: Model, theme: string, mode: "auto" | "gpu" = "auto", inlineImageByteLimit?: number) {
   const art = await loadArt(model, theme);
   const font = typography(theme);
   const measure = new Canvas(1, 1).getContext("2d");
@@ -72,8 +71,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
   const damageHeight = damageRows.length ? 115 + 40 * damageRows.length : 0;
   const height = Math.ceil(damageY + damageHeight + 37);
 
-  return renderPng(width * density, height * density, ctx => {
-    ctx.scale(density, density);
+  return renderStarRailCard(width, height, ctx => {
     const text = styles(ctx, font);
     function box(x: number, y: number, w: number, h: number, tall = false) {
       ctx.save();
@@ -272,7 +270,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       ctx.fillStyle = heading;
       ctx.fillRect(x, y, 185, 60);
       ctx.restore();
-      relicPortrait(ctx, art.get(part.img), x + 95, y - 12, 90, density);
+      relicPortrait(ctx, art.get(part.img), x + 95, y - 12, 90, ctx.getTransform().a);
       ctx.save();
       rounded(ctx, x, y, 185, 190, 10);
       ctx.clip();
@@ -312,5 +310,5 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       closeBox(10, damageY, 575, damageHeight);
     }
     text(model.cardBrand, width / 2, height - 18, 14, white, "center");
-  }, mode, { allowHalfScale: true });
+  }, { mode, inlineImageByteLimit });
 }

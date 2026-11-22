@@ -87,8 +87,8 @@ export function readStarRailTraceArchive(owner: StarRailTraceOwner, raw: unknown
   }));
 }
 
-export function applyStarRailTraces(snapshot: PanelSnapshot, records: ConfirmedTraces): PanelSnapshot {
-  const updatedAt = snapshot.updatedAt ? Date.parse(snapshot.updatedAt) : 0;
+export function applyStarRailTraces(snapshot: PanelSnapshot, records: ConfirmedTraces, discardedAt = 0): PanelSnapshot {
+  const updatedAt = Math.max(snapshot.updatedAt ? Date.parse(snapshot.updatedAt) : 0, discardedAt);
   return { ...snapshot, avatars: snapshot.avatars.map(avatar => {
     const entry = records[avatar.id];
     if (!entry || entry.rank !== avatar.rank || entry.at <= updatedAt) return avatar;

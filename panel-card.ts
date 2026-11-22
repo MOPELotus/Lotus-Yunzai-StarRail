@@ -1,6 +1,7 @@
 import { showcaseProviderNames } from "./panel-showcase.ts";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
+import { readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { calculateLegacyPanelAttributeRows, calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
@@ -46,10 +47,11 @@ async function readJson(file: string): Promise<Json> {
 export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR?.trim() || starRailGachaThemeDirectory()) {
   const root = resolve(directory);
   const lists = join(root, "meta-sr");
-  const [characters, weapons, relics, relicValues, defaultStyle] = await Promise.all([
+  const [characters, weapons, relics, relicValues, defaultStyle, customAliases] = await Promise.all([
     readJson(join(lists, "character", "data.json")), readJson(join(lists, "weapon", "data.json")),
     readJson(join(lists, "artifact", "data.json")), readJson(join(lists, "artifact", "meta.json")),
     Bun.file(join(root, "common", "common.css")).exists(),
+    readGameCharacterAliases("sr"),
   ]);
   const relicById = new Map<string, { name: string; abbr?: string; asset: readonly [string, string, string] }>();
   const relicSets = new Map<string, { outer: boolean; pieces: Map<string, { id: string; name: string }> }>();
@@ -73,7 +75,7 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     }
     if (pieces.size) relicSets.set(row.name, { outer: Object.hasOwn(indices, "1"), pieces });
   }
-  return { root, defaultStyle, characters, weapons, relicById, relicSets, relicValues };
+  return { root, defaultStyle, characters, weapons, relicById, relicSets, relicValues, customAliases };
 }
 
 function lookup(avatar: PanelAvatar, theme: Metadata) {
@@ -96,6 +98,12 @@ export function findPanelAvatar(avatars: readonly PanelAvatar[], name: string, t
   const request = normalizeName(name);
   const exact = avatars.find(avatar => request === normalizeName(avatar.name) || request === normalizeName(lookup(avatar, theme).name) || name === avatar.id);
   if (exact) return exact;
+  const canonical = theme.customAliases?.get(request);
+  if (canonical) {
+    const key = normalizeName(canonical);
+    const custom = avatars.filter(avatar => key === normalizeName(avatar.name) || key === normalizeName(lookup(avatar, theme).name));
+    if (custom.length === 1) return custom[0];
+  }
   const near = avatars.filter(avatar => {
     const tpl = lookup(avatar, theme);
     const terms = [tpl.abbr, ...(aliases[tpl.name] ?? aliases[avatar.name] ?? "").split(",")].map(normalizeName);

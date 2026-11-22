@@ -5,6 +5,9 @@ import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { readTheme, type readPanelRankAvatar } from "./panel-card.ts";
 import { object, text } from "./panel-model.ts";
 
+export const relicRankLabels = { mark: "遗器评分", crit: "双爆副词条", valid: "加权有效词条" } as const;
+export type RelicRankMetric = keyof typeof relicRankLabels;
+
 export interface RelicRankRow {
   readonly uid: string;
   readonly characterId: string;
@@ -38,7 +41,7 @@ const white = "#fff";
 const lines = [
   ["综合练度排名", "以计入暴击率的期望伤害比较。当前卡的伤害栏沿用角色的个人计算规则。"],
   ["遗器评分排名", "按角色遗器规则评分，线性评分无法反映词条平衡，仅供参考。"],
-  ["双暴排名", "按遗器的双暴词条计算，包含头部词条。"],
+  ["双暴排名", "按遗器的双暴词条计算，包含暴击主词条。"],
   ["加权有效词条排名", "按角色的词条权重计算遗器有效词条。"],
   ["排名范围", "本群主动登记并仍绑定的 UID，使用本轮读到的公开展板。"],
 ] as const;
@@ -84,7 +87,7 @@ function divider(ctx: Context, x: number, y: number) {
 
 export async function renderStarRailRelicRank(
   character: Character, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
-  coverage?: RelicRankCoverage,
+  coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark",
 ) {
   if (!rows.length || rows.length > 15) throw new RangeError("星铁遗器榜须为 1 至 15 行。");
   const theme = await readTheme();
@@ -157,7 +160,7 @@ export async function renderStarRailRelicRank(
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
     const name = character.name.replace(/^(?:穹|星)·(毁灭|存护|同谐|记忆|欢愉)$/u, "开拓者·$1");
-    write(`*${name}遗器评分排行`, 20, 63, 36, white, "left", false, true, width - 40);
+    write(`*${name}${relicRankLabels[metric]}排行`, 20, 63, 36, white, "left", false, true, width - 40);
     ctx.restore();
     box(97, 165 + extra, () => {
       fill(ctx, "#0006", 10, 97, panelWidth, 40);
@@ -182,12 +185,12 @@ export async function renderStarRailRelicRank(
       const { face, weapon, talents, sets } = rowImages[index]!;
       const lightCone = known?.lightCone;
       box(y, 60, () => {
-        if (index === 0 && first) badgeArt(ctx, first, "mark", 15, y + 18, 48, 24);
+        if (index === 0 && first && metric === "mark") badgeArt(ctx, first, "mark", 15, y + 18, 48, 24);
         else {
           badgeArt(ctx, badge, "mark", 27, y + 18, 24, 24);
           write(index + 1, 39, y + 30, 12, white, "center");
         }
-        framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + 5, layout.face, 50, 25, face, true);
+        framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, face, true);
         if (known?.rank !== undefined) pill(known.rank, soulColors[known.rank] ?? "#666", layout.nameX, y + 13, 16);
         write(known?.name || character.name, layout.nameX + (known?.rank === undefined ? 0 : 18), y + 21, 18, gold,
           "left", true, false, layout.talentX - layout.nameX - 19);

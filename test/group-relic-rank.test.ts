@@ -4,8 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createProfileStore } from "@lotus-yunzai/account";
 import { lockFile } from "../../../lib/file-lock.ts";
-import { createStarRailGroupRelicRank, matchStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
+import { createStarRailGroupRelicRank, matchStarRailRelicRank, parseStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
 import { readPanelRankAvatar, readTheme } from "../panel-card.ts";
+import { createStarRailPanelArchive, discardedStarRailPanel } from "../panel-discard.ts";
 import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
 
 const command = "#星铁银枝遗器评分排行";
@@ -19,7 +20,14 @@ const shown = (characterId: string, score = 399.9, observedAt = 111) => ({ chara
 test("matches relic-score ranking aliases separately from damage and public ranking commands", () => {
   expect(matchStarRailRelicRank(command)?.id).toBe(1302);
   expect(matchStarRailRelicRank("#星铁群内三月七评分排名榜")?.id).toBe(1001);
-  for (const unrelated of ["#星铁三月七排行", "#星铁三月七遗器", "#星铁三月七排名统计", "#星铁三月七双暴排行", "#三月七遗器排名", "#原神三月七遗器排名"]) {
+  expect(parseStarRailRelicRank("#星铁三月七双暴排行")).toMatchObject({ character: { id: 1001 }, metric: "crit" });
+  expect(parseStarRailRelicRank("*三月七加权有效词条排行")).toMatchObject({ character: { id: 1001 }, metric: "valid" });
+  expect(parseStarRailRelicRank("*群内遗器双爆副词条三月七排行榜")).toMatchObject({ character: { id: 1001 }, metric: "crit" });
+  expect(parseStarRailRelicRank("*最强银枝面板")).toMatchObject({ character: { id: 1302 }, metric: "damage", strongest: true });
+  expect(parseStarRailRelicRank("#星铁群内最高分银枝详情")).toMatchObject({ character: { id: 1302 }, metric: "mark", strongest: true });
+  expect(parseStarRailRelicRank("*最强银枝双暴副词条")).toMatchObject({ character: { id: 1302 }, metric: "crit", strongest: true });
+  expect(parseStarRailRelicRank("*极限银枝")).toBeUndefined();
+  for (const unrelated of ["#星铁三月七排行", "#星铁三月七遗器", "#星铁三月七排名统计", "#三月七遗器排名", "#原神三月七遗器排名"]) {
     expect(matchStarRailRelicRank(unrelated)).toBeUndefined();
   }
 });
@@ -46,15 +54,16 @@ async function fixture() {
   }
   await Promise.all([account(42, uid42), account(42, uid42alt, 2), account(43, uid43), account(44, uid44), account(45, uid45)]);
   const directory = join(root, "rank");
+  const panelDirectory = join(root, "panels");
   const asked: string[] = [];
   let response = (uid: string, _signal: AbortSignal): Response | Promise<Response> => visible(uid, avatar(2));
   const use = (next: typeof response) => { response = next; };
   let selector = "0";
   const setProvider = (value: string) => { selector = value; };
   type Options = NonNullable<Parameters<typeof createStarRailGroupRelicRank>[3]>;
-  const rank = (render: Options["render"] = async () => undefined) =>
+  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage"> = {}) =>
     createStarRailGroupRelicRank(createProfileStore(accounts), lockFile, new AbortController().signal, {
-      directory, groups: "77, 78", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
+      directory, panelDirectory, groups: "77, 78", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
       fetchShowcase: (target, signal) => fetchStarRailShowcase(target, signal, async (url, init) => {
         const uid = url.pathname.split("/").at(-1)!;
         expect(url.origin).toBe("https://api.mihomo.me");
@@ -64,9 +73,84 @@ async function fixture() {
         asked.push(uid);
         return response(uid, init.signal as AbortSignal);
       }),
+      ...extra,
     });
-  return { root, directory, account, rank, asked, use, setProvider };
+  return { root, directory, account, rank, asked, use, setProvider, panelStore: createStarRailPanelArchive(lockFile, panelDirectory) };
 }
+
+test("星铁最强实时重刷所有登记，且只用当轮公开展板渲染榜首一个面板", async () => {
+  const { root, rank, panelStore, asked, use } = await fixture();
+  const draw: string[] = [];
+  const png = new Uint8Array([1]);
+  try {
+    let discardLeader = false;
+    const board = rank(async () => { throw new Error("榜首查询不应渲染排行列表"); }, {
+      scoreDamage: async avatar => avatar.relics.length * 100,
+      renderStrongest: async (snapshot, selected) => {
+        expect(snapshot.source).toBe("mihomo");
+        expect(snapshot.avatars).toContain(selected);
+        expect(selected.id).toBe("1302");
+        draw.push(snapshot.uid);
+        if (discardLeader) {
+          await panelStore.update({ qq: "42", uid: uid42 }, verified, () => ({ document: discardedStarRailPanel(uid42, 200), result: undefined }));
+        }
+        return { png };
+      },
+    });
+    await board.observe(group77, 1, role(uid42), shown("1001"), verified);
+    await board.observe({ ...group77, user_id: 43 }, 1, role(uid43), shown("1001"), verified);
+    for (const context of [{ ...group77, message_type: "private" }, { ...group77, isDelegated: true }, { ...group77, group_id: 79 }]) {
+      expect(await board.query("*最强银枝", context)).toMatch(/只能在群聊|未启用/u);
+    }
+    expect(asked).toEqual([]);
+    use(uid => visible(uid, avatar(uid === uid43 ? 3 : 2)));
+    expect(await board.query("*最强银枝面板", group77)).toEqual([
+      expect.stringContaining(`本轮伤害榜首 · UID ${uid43}`), { type: "image", file: png },
+    ]);
+    expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
+    use(uid => visible(uid, avatar(uid === uid42 ? 3 : 2)));
+    expect(await board.query("#星铁群内第一银枝详情", group77)).toEqual([
+      expect.stringContaining(`本轮伤害榜首 · UID ${uid42}`), { type: "image", file: png },
+    ]);
+    expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
+    expect(draw).toEqual([uid43, uid42]);
+    discardLeader = true;
+    expect(await board.query("#星铁最高分银枝", group77)).toContain("群成员或档案已变化");
+    expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
+    expect(draw).toEqual([uid43, uid42, uid42]);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("双暴与有效词条现刷并独立计分，删除边界只注销此前登记", async () => {
+  const { root, rank, panelStore, asked, use } = await fixture();
+  try {
+    const scores: Record<string, number> = {};
+    const board = rank(async (_character, rows, _mode, _limit, _coverage, metric) => {
+      expect(rows).toHaveLength(1);
+      expect(metric).toBeDefined();
+      scores[metric!] = rows[0]!.score;
+      return undefined;
+    });
+    const crit = "*银枝双爆副词条排行";
+    const valid = "#星铁银枝有效词条排行";
+    await board.observe(group77, 1, role(uid42), shown("1001", 399.9, 111), verified);
+    use(uid => visible(uid, avatar(3)));
+    expect(await board.query(crit, group77)).toContain(uid42);
+    expect(await board.query(valid, group77)).toContain(uid42);
+    expect(asked.splice(0)).toEqual([uid42, uid42]);
+    expect(scores.crit).toBeGreaterThan(50);
+    expect(scores.valid).toBeGreaterThan(0);
+    expect(scores.valid).toBeLessThan(scores.crit!);
+
+    await panelStore.update({ qq: "42", uid: uid42 }, verified, () => ({ document: discardedStarRailPanel(uid42, 200), result: undefined }));
+    await board.observe(group77, 1, role(uid42), shown("1302", 399.9, 199), verified);
+    expect(await board.query(crit, group77)).toContain("暂无已登记");
+    expect(asked).toEqual([]);
+    await board.observe(group77, 1, role(uid42), shown("1302", 399.9, 201), verified);
+    expect(await board.query(crit, group77)).toContain(uid42);
+    expect(asked).toEqual([uid42]);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 test("refreshes every eligible registered UID once, including a different old character, and orders only new public scores", async () => {
   const { root, directory, account, rank, asked, use } = await fixture();

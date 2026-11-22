@@ -206,3 +206,17 @@ export function scoreStarRailRelics(avatar: PanelAvatar, options: {
       ignoreMain: ignored, main: shownRoll(roll.main, displayMain), attrs: sub };
   }
 }
+
+export function starRailRelicAffixScores(rating: NonNullable<ReturnType<typeof scoreStarRailRelics>>) {
+  // Same rank metrics as Miao's getCritMark/getValidMark, using Star Rail's own affix values and character weights.
+  let crit = 0, valid = 0;
+  for (const part of Object.values(rating.artis)) {
+    if (part.main.key === "cpct" || part.main.key === "cdmg") crit += 9.41;
+    for (const attr of part.attrs) {
+      const points = attr._mark / 85;
+      valid += points;
+      if (attr.key === "cpct" || attr.key === "cdmg") crit += points;
+    }
+  }
+  return { crit: crit * 6.6044, valid };
+}

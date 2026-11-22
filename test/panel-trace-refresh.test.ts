@@ -49,6 +49,7 @@ test("确认完整四项后仅叠加本人同星魂角色等级，装备、树�
   expect(snapshot.avatars[0]?.skills[0]?.level).toBe(4);
   const newer = normalizePanel(uid, [base], new Date(start + 1_000));
   expect(applyStarRailTraces(newer, incoming)).toEqual(newer);
+  expect(applyStarRailTraces(snapshot, incoming, start)).toEqual(snapshot);
   for (const retry of [[{ ...update, rank: 3 }], [{ ...update, skills: update.skills.slice(0, 3) }],
     [update, update], [{ ...update, skills: [...update.skills, { remake: "普攻", level: 7 }] }]]) {
     expect(confirmedStarRailTraces(snapshot, retry, start)).toEqual({});

@@ -1,5 +1,6 @@
 import { gachaImageReply } from "../../lib/gacha-image-reply.ts";
 import type { MessageEvent } from "../../lib/messages.ts";
+import { createGameCharacterAliasCommands, matchGameCharacterAliasCommand } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath } from "node:url";
 import { createProfileStore, MAX_PROFILE_ID, ProfileError } from "@lotus-yunzai/account";
 import { createGachaUpdater } from "@lotus-yunzai/gacha/update";
@@ -36,7 +37,7 @@ import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
 import { createStarRailRosterQuery } from "./personal-roster-command.ts";
 import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
-import { createStarRailGroupRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
+import { createStarRailGroupRelicRank, parseStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats } from "./rank-statistics.ts";
 import { createStarRailSimulation } from "./simulation/commands.ts";
 
@@ -118,6 +119,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   runtimeVersion?: { readonly version?: string; readonly revision?: string };
 }) {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
+  const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
   const client = createProfileHoyoClient(profiles);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
@@ -230,17 +232,20 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
 
   return {
     commands: {},
+    panelRebuild: panel.rebuild,
     async gachaUpdate(qq: string, profileId: number) {
       const result = await updateGacha(qq, profileId);
       return result && { uid: result.log.uid };
     },
     fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
+      if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
       if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
+      if (parseStarRailRelicRank(message) || parsePanelCommand(message)?.type === "discard") return ["[starrail] 角色面板"];
       if (parseChallengeQuery(message) || parsePanelCommand(message)) return [];
       return matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message)
         ? ["[gacha] 抽卡记录"] : [];
@@ -251,6 +256,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly adapter?: "milky";
       readonly inlineImageByteLimit?: number;
     }) {
+      const aliases = matchGameCharacterAliasCommand(context.normalizedMessage);
+      if (aliases?.game === "sr") return characterAliases(aliases, context);
       const month = starRailMonthlyCommand.exec(context.normalizedMessage);
       if (month) return monthly(context, Number(month[1] ?? 1));
       const historyPage = matchStarRailLedger(context.normalizedMessage);
@@ -272,6 +279,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       }
       const rosterCommand = parseStarRailPersonalRoster(context.normalizedMessage);
       if (rosterCommand) return roster(context, rosterCommand);
+      const relicRank = await groupRank.query(context.normalizedMessage, context);
+      if (relicRank !== undefined) return relicRank;
       const panelCommand = parsePanelCommand(context.normalizedMessage);
       if (panelCommand) {
         const userId = context.user_id;
@@ -279,10 +288,6 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
           return "请从登录档案对应的 QQ 会话使用星铁面板。";
         }
         return panel(String(userId), panelCommand, context);
-      }
-      const relicRank = await groupRank.query(context.normalizedMessage, context);
-      if (relicRank !== undefined) {
-        return relicRank;
       }
       const poolInfo = await queryStarRailPoolInfo(context.normalizedMessage, signal);
       if (poolInfo !== undefined) return poolInfo;

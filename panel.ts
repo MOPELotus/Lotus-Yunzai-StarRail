@@ -2,10 +2,11 @@ import { constants } from "node:fs";
 import { open } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
+import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequestContext } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { MessageEvent } from "../../lib/messages.ts";
+import type { PanelRebuilder } from "../../lib/panel-rebuild.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelPracticeCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
@@ -15,6 +16,7 @@ import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { panelExportFile } from "./panel-file.ts";
+import { createStarRailPanelArchive, discardedStarRailPanel, panelDiscardedAt, retainPanelDiscardBoundary } from "./panel-discard.ts";
 import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner, readStarRailTraceArchive,
   starRailTraceOwner, type StarRailTraceOwner } from "./panel-trace-refresh.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
@@ -28,7 +30,6 @@ import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
-const targetDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
 const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
 const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
@@ -70,7 +71,7 @@ function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty
   const source = stored?.source;
   const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe";
   if (stored?.version !== 1 || stored.uid !== uid || !allowedSource || typeof stored.updatedAt !== "string" ||
-      !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || (!allowEmpty && !stored.avatars.length) ||
+      !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || (!allowEmpty && !stored.avatars.length && !panelDiscardedAt(raw)) ||
       stored.avatars.length > 256 || stored.avatars.some(row => !object(row) || !readId(row.id) || typeof row.name !== "string" ||
         !Array.isArray(row.skills) || !Array.isArray(row.traces) || !Array.isArray(row.stars) || !Array.isArray(row.stats) || !Array.isArray(row.relics))) {
     throw new Error("星铁面板档案无效。");
@@ -78,32 +79,126 @@ function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty
   return stored as unknown as PanelSnapshot;
 }
 
-export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock) {
-  const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
+export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock, archiveDirectory?: string) {
+  const store = createStarRailPanelArchive(lock, archiveDirectory);
   const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   return async (qq: string, uid: string, owner?: StarRailTraceOwner) => {
-    const managed = managedSnapshot(uid, await store.read(qq, uid), false, true);
-    const snapshot = managed?.avatars.length ? managed : (await legacySnapshot(uid))?.snapshot;
-    if (!snapshot || !owner || owner.qq !== qq || owner.uid !== uid) return snapshot;
+    const saved = await store.read(qq, uid);
+    const managed = managedSnapshot(uid, saved, false, true);
+    const discardedAt = panelDiscardedAt(saved);
+    const snapshot = managed?.avatars.length ? managed : discardedAt ? undefined : (await legacySnapshot(uid))?.snapshot;
+    if (!snapshot) return;
+    if (!owner || owner.qq !== qq || owner.uid !== uid) {
+      if (panelDiscardedAt(await store.read(qq, uid)) === discardedAt) return snapshot;
+      return;
+    }
     const records = await traces.read(qq, uid).then(raw => readStarRailTraceArchive(owner, raw)).catch(() => undefined);
-    return records ? applyStarRailTraces(snapshot, records) : snapshot;
+    if (panelDiscardedAt(await store.read(qq, uid)) !== discardedAt) return;
+    return records ? applyStarRailTraces(snapshot, records, discardedAt) : snapshot;
   };
 }
 
 export function createStarRailPanel(
   profiles: ReturnType<typeof createProfileStore>, client: ReturnType<typeof createProfileHoyoClient>,
   lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,
+  archiveDirectory?: string,
 ) {
-  const store = createRoleJsonArchive(targetDirectory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes, rejectNull: true });
+  const store = createStarRailPanelArchive(lock, archiveDirectory);
   const showcases = createRoleJsonArchive(showcaseDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
   const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   const refreshing = new Set<string>();
 
-  return async function query(qq: string, command: PanelCommand,
+  async function refreshPanel(account: ProfileRequestContext, verify: (revision?: string) => Promise<void>,
+    discardedAt: number, active: AbortSignal) {
+    const { qq, role: { uid } } = account;
+    const key = `${qq}:${uid}`;
+    if (refreshing.has(key)) return { status: "busy" } as const;
+    refreshing.add(key);
+    try {
+      await verify();
+      const startedAt = new Date(Math.max(Date.now(), discardedAt + 1));
+      const result = await client.fetchStarRailPanel(account, { signal: active });
+      await verify(result.revision);
+      const next = normalizePanel(uid, result.avatars, startedAt);
+      if (!next.avatars.length) return { status: "empty" } as const;
+      let updated = false;
+      const snapshot = await store.update({ qq, uid }, verify, current => {
+        const previous = managedSnapshot(uid, current);
+        if (previous?.updatedAt && next.updatedAt && previous.updatedAt > next.updatedAt) return { result: previous };
+        updated = true;
+        return { document: retainPanelDiscardBoundary(next, discardedAt), result: next };
+      });
+      return { status: "ready", snapshot, updated } as const;
+    } finally {
+      refreshing.delete(key);
+    }
+  }
+
+  const rebuild: PanelRebuilder = async (qq, profileId, uid, requesterSignal, verifyAuthority) => {
+    const active = AbortSignal.any([signal, requesterSignal]);
+    verifyAuthority();
+    active.throwIfAborted();
+    const selected = await profiles.savedRole(qq, profileId, "sr");
+    const account = await profiles.requestContext(qq, profileId, "sr");
+    const owner = selected.uid === uid && starRailTraceOwner(account, selected);
+    if (!owner) throw new ProfileError("changed", "星铁面板档案已变更。");
+    const discardedAt = panelDiscardedAt(await store.read(qq, uid));
+    let revision = account.revision;
+    const result = await refreshPanel(account, async (updatedRevision) => {
+      if (updatedRevision !== undefined) revision = updatedRevision;
+      verifyAuthority();
+      active.throwIfAborted();
+      const latest = await profiles.requestContext(qq, profileId, "sr");
+      const selection = await profiles.savedRole(qq, profileId, "sr");
+      if (latest.revision !== revision || !matchesStarRailTraceOwner(owner, starRailTraceOwner(latest, selection)) ||
+          panelDiscardedAt(await store.read(qq, uid)) !== discardedAt) {
+        throw new ProfileError("changed", "星铁面板档案已变更。");
+      }
+      active.throwIfAborted();
+      verifyAuthority();
+    }, discardedAt, active);
+    if (result.status === "empty") throw new Error("米游社未返回星铁角色数据。");
+    return result.status === "ready" && result.updated;
+  };
+
+  async function query(qq: string, command: PanelCommand,
     context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & { readonly reply?: (message: string) => unknown }) {
     const { type, profileId, name } = command;
     const uploadFile = context?.uploadFile;
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+    if (type === "discard") {
+      if (context?.isDelegated || context?.user_id?.toString() !== qq ||
+          (context.message_type !== "private" && context.message_type !== "group")) return "请在本人 QQ 会话删除星铁面板。";
+      const target = "uid" in command ? command.uid : undefined;
+      try {
+        const source = await profiles.requestContext(qq, profileId, "sr", target);
+        const owner = starRailTraceOwner(source, source.role);
+        if (!owner) return "档案的登录凭据与账号不一致，请重新登录。";
+        const { uid } = owner;
+        if (!target) {
+          const suffix = profileId === 1 ? "" : ` 档案${profileId}`;
+          return `你确认要删除面板数据吗？请回复 *删除面板${uid}${suffix} 以删除面板数据。`;
+        }
+        if (target !== uid) return "仅允许删除当前登录档案已同步的星铁 UID。";
+        await store.update({ qq, uid }, async () => {
+          signal.throwIfAborted();
+          const latest = await profiles.requestContext(qq, profileId, "sr", uid).catch(() => undefined);
+          if (latest?.revision !== source.revision || !latest || !matchesStarRailTraceOwner(owner, starRailTraceOwner(latest, latest.role))) {
+            throw new ProfileError("changed", "星铁面板档案已变更。");
+          }
+          signal.throwIfAborted();
+        }, current => ({ document: discardedStarRailPanel(uid, Math.max(Date.now(), panelDiscardedAt(current) + 1)), result: undefined }));
+        return `已删除 UID ${uid} 的星铁面板，旧面板和遗器排行登记已失效。`;
+      } catch (error) {
+        if (signal.aborted) return;
+        if (error instanceof ProfileError) {
+          if (error.code === "missing" || error.code === "login-required") return `请先登录 profile ${profileId}。`;
+          if (error.code === "role-missing") return "仅允许删除当前登录档案已同步的星铁 UID。";
+          if (error.code === "changed") return "星铁面板档案已变更，请重新确认。";
+        }
+        return "星铁面板暂时无法删除，请稍后重试。";
+      }
+    }
     if (type === "refresh-traces" && context?.isDelegated) return "请在本人 QQ 会话刷新星铁角色行迹。";
     if ((type === "reload" || type === "showcase") && context?.isDelegated) return "请在本人 QQ 会话重新加载或查询星铁公开展板。";
     if (type === "export") {
@@ -126,51 +221,45 @@ export function createStarRailPanel(
       const explicitUid = "uid" in command;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
       const key = `${qq}:${uid}`;
+      const initialPanel = await store.read(qq, uid);
+      const discardedAt = panelDiscardedAt(initialPanel);
       let revision = account?.revision;
       let traceOwner: StarRailTraceOwner | undefined;
       let snapshot: PanelSnapshot | undefined;
       let legacy: Record<string, unknown> | undefined;
       let updated = false;
       let publicLookup = false;
-      async function verify() {
+      async function verify(updatedRevision?: string) {
+        if (updatedRevision !== undefined) revision = updatedRevision;
         signal.throwIfAborted();
         const selectedRole = traceOwner ? await profiles.savedRole(qq, profileId, "sr").catch(() => undefined) : undefined;
         const latestAccount = account ? await profiles.requestContext(qq, profileId, "sr").catch(() => undefined) : undefined;
         const latestRole = account ? latestAccount?.role : await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
         if (!latestRole || latestAccount?.revision !== revision || latestRole.uid !== uid || latestRole.region !== role.region ||
             latestRole.gameBiz !== role.gameBiz || (traceOwner && (!latestAccount || !selectedRole ||
-              !matchesStarRailTraceOwner(traceOwner, starRailTraceOwner(latestAccount, selectedRole))))) {
+              !matchesStarRailTraceOwner(traceOwner, starRailTraceOwner(latestAccount, selectedRole)))) ||
+            panelDiscardedAt(await store.read(qq, uid)) !== discardedAt) {
           throw new ProfileError("changed", "星铁面板档案已变更，请重新查询。");
         }
       }
 
       if (type === "update" && account) {
-        if (refreshing.has(key)) return "此星铁角色面板正在更新，请稍后查询。";
-        refreshing.add(key);
-        try {
-          const startedAt = new Date();
-          const result = await client.fetchStarRailPanel(account, { signal });
-          revision = result.revision;
-          await verify();
-          if (!result.avatars.length) return "米游社未返回星铁角色数据，原面板已保留。";
-          const next = normalizePanel(uid, result.avatars, startedAt);
-          snapshot = await store.update({ qq, uid }, verify, current => {
-            const previous = managedSnapshot(uid, current);
-            if (previous?.updatedAt && next.updatedAt && previous.updatedAt > next.updatedAt) return { result: previous };
-            updated = true;
-            return { document: next, result: next };
-          });
-        } finally {
-          refreshing.delete(key);
-        }
+        const result = await refreshPanel(account, verify, discardedAt, signal);
+        if (result.status === "busy") return "此星铁角色面板正在更新，请稍后查询。";
+        if (result.status === "empty") return "米游社未返回星铁角色数据，原面板已保留。";
+        snapshot = result.snapshot;
+        updated = result.updated;
       } else if (type !== "showcase") {
-        snapshot = managedSnapshot(uid, await store.read(qq, uid), false, type === "practice");
-        if (!snapshot || (type === "practice" && !snapshot.avatars.length)) {
+        snapshot = managedSnapshot(uid, initialPanel, false, type === "practice");
+        if (!discardedAt && (!snapshot || (type === "practice" && !snapshot.avatars.length))) {
           const old = await legacySnapshot(uid);
           snapshot = old?.snapshot;
           if (old?.snapshot.avatars.length) legacy = old.data;
         }
-        if (type !== "refresh-traces" && !snapshot?.avatars.length) snapshot = managedSnapshot(uid, await showcases.read(qq, uid), true, type === "practice") ?? snapshot;
+        if (type !== "refresh-traces" && !snapshot?.avatars.length) {
+          const saved = managedSnapshot(uid, await showcases.read(qq, uid), true, type === "practice");
+          if (saved?.updatedAt && Date.parse(saved.updatedAt) > discardedAt) snapshot = saved;
+        }
       }
 
       if (type === "refresh-traces" && account) {
@@ -186,7 +275,7 @@ export function createStarRailPanel(
         refreshing.add(key);
         try {
           await verify();
-          const started = Date.now();
+          const started = Math.max(Date.now(), discardedAt + 1);
           const result = await client.fetchStarRailPanel(account, { signal });
           revision = result.revision;
           await verify();
@@ -195,7 +284,8 @@ export function createStarRailPanel(
           if (!entries.length) return "米游社未返回可核对的角色技能等级，已保留原行迹。";
           const avatarIds = new Set(snapshot.avatars.map(avatar => avatar.id));
           const count = await traces.update({ qq, uid }, verify, current => {
-            const records = Object.fromEntries(Object.entries(readStarRailTraceArchive(owner, current)).filter(([id]) => avatarIds.has(id)));
+            const records = Object.fromEntries(Object.entries(readStarRailTraceArchive(owner, current))
+              .filter(([id, entry]) => avatarIds.has(id) && entry.at > discardedAt));
             let saved = 0;
             for (const [id, entry] of entries) {
               if ((records[id]?.at ?? 0) >= entry.at) continue;
@@ -212,7 +302,7 @@ export function createStarRailPanel(
         }
       }
 
-      if (type === "showcase" || (type === "reload" && !snapshot?.avatars.length && context?.reply)) {
+      if (type === "showcase" || (type === "reload" && !discardedAt && !snapshot?.avatars.length && context?.reply)) {
         publicLookup = true;
         const bound = await profiles.savedRole(qq, profileId, "sr");
         if (bound.uid !== uid || bound.region !== role.region || bound.gameBiz !== role.gameBiz) {
@@ -224,8 +314,8 @@ export function createStarRailPanel(
         refreshing.add(refreshKey);
         try {
           const cached = managedSnapshot(uid, await showcases.read(qq, uid), true);
-          const started = new Date();
-          if (cached?.source === target.provider && cached.updatedAt &&
+          const started = new Date(Math.max(Date.now(), discardedAt + 1));
+          if (cached?.source === target.provider && cached.updatedAt && Date.parse(cached.updatedAt) > discardedAt &&
               Date.parse(cached.updatedAt) + (whole(cached.showcaseTtl, 86_400) ?? 60) * 1000 > started.getTime()) {
             snapshot = cached;
           } else {
@@ -268,7 +358,7 @@ export function createStarRailPanel(
           if (records && Object.keys(records).length) {
             traceOwner = owner;
             await verify();
-            snapshot = applyStarRailTraces(snapshot, records);
+            snapshot = applyStarRailTraces(snapshot, records, discardedAt);
           }
         }
       }
@@ -468,7 +558,7 @@ export function createStarRailPanel(
       const images = [];
       for (const model of models) {
         await verify();
-        const native = "damageRows" in model ? renderStarRailPanelDetail(model, theme.root)
+        const native = "damageRows" in model ? renderStarRailPanelDetail(model, theme.root, "auto", context?.inlineImageByteLimit)
           : "chars" in model ? renderStarRailPanelList(model, theme.root)
             : renderStarRailRelicMark(model, theme.root);
         const result = await native.then(card => [card.png]).catch(() => false as const);
@@ -518,5 +608,6 @@ export function createStarRailPanel(
       if (type === "refresh-traces") return "星铁角色行迹暂时无法刷新，已保留原行迹。";
       return "星铁面板暂时无法读取或更新，请稍后重试。";
     }
-  };
+  }
+  return Object.assign(query, { rebuild });
 }
