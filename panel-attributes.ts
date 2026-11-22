@@ -184,8 +184,12 @@ export function calculateManagedElation(avatar: PanelAvatar, { character, cone, 
   return joy;
 }
 
-export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number) {
-  if (!avatar.legacy?.dataComplete || !["mysPanelHSR", "homo", "EnkaHSR", "avocado.wiki"].includes(avatar.legacy.source)) return;
+export function calculateLegacyPanelAttributeRows(avatar: PanelAvatar, metadata: PanelAttributeMetadata, promotion?: number,
+  allowCustomizedSample = false) {
+  const legacy = avatar.legacy;
+  if (!legacy?.dataComplete) return;
+  const isKnownSource = ["mysPanelHSR", "homo", "EnkaHSR", "avocado.wiki"].includes(legacy.source);
+  if (!isKnownSource && !(allowCustomizedSample && legacy.source === "customize")) return;
   return calculatePanelAttributeRows(avatar, metadata, readLegacyRelicAttributes, promotion);
 }
 

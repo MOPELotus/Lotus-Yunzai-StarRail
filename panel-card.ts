@@ -417,8 +417,8 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
 
 export async function makePanelDetailCard(
   snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
-  { equipmentLabel, skillPreview, localOnly, sourceLabel }: {
-    equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean; sourceLabel?: string;
+  { equipmentLabel, skillPreview, localOnly, sourceLabel, allowCustomizedSample }: {
+    equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean; sourceLabel?: string; allowCustomizedSample?: boolean;
   } = {},
 ) {
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
@@ -455,7 +455,7 @@ export async function makePanelDetailCard(
     imgs[`cons${i}`] = (oldKey && imgs[oldKey]) || await localArt(theme, ["character", name, "imgs", `cons-${i}.webp`])
       || await remoteArt(avatar.stars[i - 1]?.image, artSignal);
   }
-  const { score } = await scorePanelAvatarRelics(avatar, theme, character);
+  const { score } = await scorePanelAvatarRelics(avatar, theme, character, allowCustomizedSample);
   const completeSkills = Object.entries({ a: 6, e: 10, q: 10, t: 10 }).every(([key, level]) =>
     (talent[key]?.original ?? (!avatar.rank ? talent[key]?.level : undefined)) === level);
   const traceIds = new Set(avatar.traces.filter(trace => trace.active).map(trace => trace.id.slice(-3)));
@@ -482,7 +482,7 @@ export async function makePanelDetailCard(
     ? await readJson(join(theme.root, "meta-sr", "weapon", weaponType, weaponFolder, "data.json")) : {};
   const metadata = { character, cone: coneMeta, conePath: weaponType, relicMetadata: theme.relicValues,
     setForId: (id: string) => theme.relicById.get(id)?.asset[1] };
-  const derived = avatar.stats.length ? undefined : calculateLegacyPanelAttributeRows(avatar, metadata);
+  const derived = avatar.stats.length ? undefined : calculateLegacyPanelAttributeRows(avatar, metadata, undefined, allowCustomizedSample);
   const attr = showcase(avatar.stats, element);
   for (const { key, base, value, ratio } of derived ?? []) {
     const slot = key === damageAttribute[element] ? "dmg" : key;
@@ -515,7 +515,7 @@ export async function makePanelDetailCard(
   });
 }
 
-export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata, characterData?: Json) {
+export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata, characterData?: Json, allowCustomizedSample = false) {
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = characterData ?? await readPanelCharacter(name, theme);
   const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
@@ -528,7 +528,7 @@ export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadat
       ? await readJson(join(theme.root, "meta-sr", "weapon", conePath, coneName, "data.json")) : {};
     speed = calculateLegacyPanelAttributes(avatar, {
       character, cone, conePath, relicMetadata: theme.relicValues, setForId: id => theme.relicById.get(id)?.asset[1],
-    })?.find(stat => stat.key === "speed")?.value;
+    }, undefined, allowCustomizedSample)?.find(stat => stat.key === "speed")?.value;
   }
   const score = scoreStarRailRelics(avatar, {
     name, abbr, element, speed: speed === undefined ? undefined : Number.parseFloat(speed),

@@ -58,6 +58,16 @@ test("does not invent pre/post ascension or lose an unknown cached relic silentl
   expect(calculateLegacyPanelAttributes({ ...avatar, legacy: undefined }, options)).toBeUndefined();
 });
 
+test("allows complete customized values only in a selected bundled preset", () => {
+  const avatar = readLegacyPanel(uid, data).avatars[0]!;
+  const customized = { ...avatar, legacy: { ...avatar.legacy!, source: "customize" } };
+  expect(calculateLegacyPanelAttributeRows(customized, options)).toBeUndefined();
+  expect(calculateLegacyPanelAttributeRows(customized, options, undefined, true))
+    .toEqual(calculateLegacyPanelAttributeRows(avatar, options));
+  expect(calculateLegacyPanelAttributeRows({ ...customized, legacy: { ...customized.legacy, dataComplete: false } },
+    options, undefined, true)).toBeUndefined();
+});
+
 test("reads the indexed promotion array used by the enhanced Firefly source", () => {
   const { attr } = character;
   const enhanced = { ...character, attr: [...Array<null>(6).fill(null), attr[6]] };

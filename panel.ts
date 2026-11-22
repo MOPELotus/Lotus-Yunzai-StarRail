@@ -126,7 +126,9 @@ export function createStarRailPanel(
         const avatar = findPanelAvatar(snapshot.avatars, name, theme);
         if (signal.aborted) return;
         if (!avatar) continue;
-        const model = await makePanelDetailCard(snapshot, avatar, theme, signal, { localOnly: true, sourceLabel: "极限面板" });
+        const model = await makePanelDetailCard(snapshot, avatar, theme, signal, {
+          localOnly: true, sourceLabel: "极限面板", allowCustomizedSample: sampleFile !== undefined,
+        });
         if (signal.aborted) return;
         const card = await renderStarRailPanelDetail(model, theme.root, "auto", inlineImageByteLimit).catch(() => undefined);
         if (signal.aborted) return;
