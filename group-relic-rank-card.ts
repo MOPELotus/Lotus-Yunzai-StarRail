@@ -92,8 +92,10 @@ function divider(ctx: Context, x: number, y: number) {
 export async function renderStarRailRelicRank(
   character: Character | undefined, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
   coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark", aggregate?: { readonly title: string; readonly summary: string },
+  publicRanking?: { readonly filters: string; readonly count: number },
 ) {
-  if (!rows.length || rows.length > maxGroupPanelRankLimit) throw new RangeError(`星铁遗器榜须为 1 至 ${maxGroupPanelRankLimit} 行。`);
+  const maximum = publicRanking ? 50 : maxGroupPanelRankLimit;
+  if (!rows.length || rows.length > maximum) throw new RangeError(`星铁遗器榜须为 1 至 ${maximum} 行。`);
   const theme = await readTheme();
   const meta = character && object(theme.characters[String(character.id)]);
   const path = aggregate
@@ -167,18 +169,24 @@ export async function renderStarRailRelicRank(
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
     const name = character?.name.replace(/^(?:穹|星)·(毁灭|存护|同谐|记忆|欢愉)$/u, "开拓者·$1");
-    write(aggregate?.title ?? `*${name}${relicRankLabels[metric]}排行`, 20, 63, 36, white, "left", false, true, width - 40);
+    write(aggregate?.title ?? `*${publicRanking ? "自定义" : ""}${name}${relicRankLabels[metric]}排行`, 20, 63, 36, white, "left", false, true, width - 40);
     ctx.restore();
     box(97, 165 + extra, () => {
       fill(ctx, "#0006", 10, 97, panelWidth, 40);
       fill(ctx, "#ffffff46", 10, 137, panelWidth, 1);
-      write("群排名说明", 30, 119, 16, gold);
+      write(publicRanking ? "全服自定义排行说明" : "群排名说明", 30, 119, 16, gold);
       fill(ctx, "#0006", 10, 138, panelWidth, 124 + extra);
-      for (const [index, [title, body]] of lines.entries()) {
+      const notes = publicRanking ? [
+        ["排序", (metric === "damage" ? "伤害均值" : "遗器评分") + "降序"],
+        ["筛选", publicRanking.filters], ["数量", `最多 ${publicRanking.count} 名，本次 ${rows.length} 名`],
+        ["面板", "引用本消息发送 *排行面板1 查看前 20 名中的指定一名。"],
+        ["范围", "排名服务的公开展板。"],
+      ] : lines;
+      for (const [index, [title, body]] of notes.entries()) {
         const y = 161 + index * 19;
         write("•", 36, y, 13);
-        if (index < 4) badgeArt(ctx, badge, index === 0 ? "damage" : "mark", 54, y - 8, 16, 16);
-        const x = index < 4 ? 73 : 54;
+        if (!publicRanking && index < 4) badgeArt(ctx, badge, index === 0 ? "damage" : "mark", 54, y - 8, 16, 16);
+        const x = !publicRanking && index < 4 ? 73 : 54;
         write(title + "：", x, y, 13, gold, "left", true);
         const next = x + ctx.measureText(title + "：").width + 3;
         write(body, next, y, 13, white, "left", false, false, width - next - 38);
@@ -193,7 +201,7 @@ export async function renderStarRailRelicRank(
       const lightCone = known?.lightCone;
       const rowMetric = row.metric ?? metric;
       const badgeVariant = rowMetric === "damage" ? "damage" : "mark";
-      const relicMark = rowMetric === "damage" ? row.relicMark : row;
+      const relicMark = rowMetric === "damage" || publicRanking ? row.relicMark : row;
       box(y, 60, () => {
         if (aggregate) {
           framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 18, y + 9, 42, 42, 21, face, true);
@@ -248,7 +256,7 @@ export async function renderStarRailRelicRank(
           layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
         divider(ctx, layout.dmgX - 15, y + 10);
         cell(known?.damage?.title || "期望伤害", layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
-        const damageValue = known?.damage?.value ?? (rowMetric === "damage" ? row.score.toFixed(1) : "—");
+        const damageValue = known?.damage?.value ?? (rowMetric === "damage" && !publicRanking ? row.score.toFixed(1) : "—");
         cell(groupPanelNumber(damageValue, theme.commaGroup), layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
         divider(ctx, layout.secondX - 15, y + 10);
       });

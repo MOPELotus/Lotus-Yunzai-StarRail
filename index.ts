@@ -1,3 +1,5 @@
+import { matchArkRankCommand } from "../../lib/ark-custom-rank-command.ts";
+import { createStarRailCustomRank } from "./custom-rank.ts";
 import { matchPublicDamageRank } from "../../lib/rank-statistics.ts";
 import { gachaImageReply } from "../../lib/gacha-image-reply.ts";
 import type { MessageEvent } from "../../lib/messages.ts";
@@ -128,6 +130,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
 }) {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
   const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
+  const publicRank = createStarRailCustomRank(signal);
   const client = createProfileHoyoClient(profiles);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
@@ -250,6 +253,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     },
     async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
+      const customRankCommand = matchArkRankCommand(message);
+      if (customRankCommand && (!customRankCommand.game || customRankCommand.game === "sr")) return ["[starrail] 角色面板"];
       if (matchStarRailShowcaseSettings(message)) return ["[starrail] 角色面板"];
       if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
       if (matchesWarpCommand(message)) return ["[starrail] 模拟跃迁"];
@@ -283,6 +288,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly canManagePackages?: true;
       readonly isDelegated?: boolean;
     }) {
+      const customRankCommand = matchArkRankCommand(context.normalizedMessage);
+      if (customRankCommand) return publicRank(customRankCommand, context);
       const sources = matchStarRailShowcaseSettings(context.normalizedMessage);
       if (sources) return runStarRailShowcaseSettings(sources, context, signal);
       const original = starRailOriginalCommand(context.normalizedMessage);

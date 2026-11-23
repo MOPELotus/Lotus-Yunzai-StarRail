@@ -582,7 +582,7 @@ export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadat
 }
 
 /** Projects only the current public avatar into the fixed Miao rank-profile-list columns. */
-export async function readPanelRankAvatar(avatar: PanelAvatar, theme: Metadata) {
+export async function readPanelRankAvatar(avatar: PanelAvatar, theme: Metadata, publicSets?: Readonly<Record<string, number>>) {
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = await readPanelCharacter(name, theme);
   const element = avatar.element || text(character.elem ?? meta?.elem);
@@ -613,8 +613,8 @@ export async function readPanelRankAvatar(avatar: PanelAvatar, theme: Metadata) 
       || await localArt(theme, ["weapon", coneType, coneName, "icon-s.webp"]),
   };
 
-  const counts = new Map<string, number>();
-  for (const relic of [...avatar.relics].sort((left, right) => left.slot - right.slot)) {
+  const counts = new Map(Object.entries(publicSets ?? {}));
+  for (const relic of (publicSets ? [] : [...avatar.relics]).sort((left, right) => left.slot - right.slot)) {
     const set = theme.relicById.get(relic.id)?.asset[1];
     if (set) counts.set(set, (counts.get(set) ?? 0) + 1);
   }
