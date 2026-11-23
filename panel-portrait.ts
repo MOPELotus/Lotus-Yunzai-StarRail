@@ -3,7 +3,7 @@ import { constants } from "node:fs";
 import { open, readdir, realpath } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { loadImage } from "skia-canvas";
-import { localPanelGalleryRoot, retainedPanelGalleryDirectory } from "../../lib/panel-gallery-paths.ts";
+import { localPanelGalleryRoot, readSyncedPanelGalleryRoot, retainedPanelGalleryDirectory } from "../../lib/panel-gallery-paths.ts";
 import characterNames from "./challenge-character-names.json";
 
 const names: Readonly<Record<string, string>> = characterNames;
@@ -53,7 +53,10 @@ export async function readStarRailPanelPortrait(theme: string, id: string, theme
     }
     if (!configured) {
       if (root && special) bases.push(join(root, "profile", "super-character"));
-      const retained = await retainedPanelGalleryDirectory("sr", installation);
+      const [synced, retained] = await Promise.all([
+        readSyncedPanelGalleryRoot(installation), retainedPanelGalleryDirectory("sr", installation),
+      ]);
+      if (synced) bases.push(join(synced, "sr-character"));
       if (retained) bases.push(retained);
       if (root) bases.push(join(root, "profile", "normal-character"));
     }
