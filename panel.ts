@@ -1,6 +1,3 @@
-import { constants } from "node:fs";
-import { open } from "node:fs/promises";
-import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequestContext } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
@@ -17,6 +14,7 @@ import { changePanelCoreSkills } from "./panel-skill-preview.ts";
 import { changePanelNamedCone } from "./panel-cone-preview.ts";
 import { changePanelSuperimposition, replacePanelEquipment } from "./panel-equipment.ts";
 import { panelExportFile } from "./panel-file.ts";
+import { legacySnapshot } from "./panel-legacy.ts";
 import { createStarRailPanelArchive, discardedStarRailPanel, panelDiscardedAt, retainPanelDiscardBoundary } from "./panel-discard.ts";
 import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner, readStarRailTraceArchive,
   starRailTraceOwner, type StarRailTraceOwner } from "./panel-trace-refresh.ts";
@@ -30,44 +28,14 @@ import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import { groupPanelNumber } from "../../lib/group-panel-rank-settings.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
-import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
+import { id as readId, normalizePanel, object, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
-const legacyDirectory = fileURLToPath(new URL("../../data/PlayerData/sr/", import.meta.url));
+export { legacySnapshot } from "./panel-legacy.ts";
 const extremePanelUid = "100000000";
 const bundledExtremePanel = fileURLToPath(new URL("../../resources/extreme-panels/sr.json", import.meta.url));
 const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
 const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
 const maxBytes = 8 * 1024 * 1024;
-
-export async function legacySnapshot(uid: string, sampleFile?: string) {
-  if (!/^[1-9]\d{8,9}$/u.test(uid)) throw new Error("旧面板档案 UID 无效。");
-  const root = resolve(Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR?.trim() || legacyDirectory);
-  let handle;
-  try {
-    handle = await open(sampleFile ?? join(root, `${uid}.json`), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
-    throw error;
-  }
-  try {
-    const info = await handle.stat();
-    if (!info.isFile() || info.size > maxBytes) throw new Error("旧星铁面板档案无效。");
-    const bytes = Buffer.alloc(info.size);
-    for (let pos = 0; pos < bytes.length;) {
-      const { bytesRead } = await handle.read(bytes, pos, bytes.length - pos, pos);
-      if (!bytesRead) throw new Error("旧星铁面板档案已变更。");
-      pos += bytesRead;
-    }
-    const current = await handle.stat();
-    if (current.size !== info.size || current.mtimeMs !== info.mtimeMs || current.ctimeMs !== info.ctimeMs) {
-      throw new Error("旧星铁面板档案已变更。");
-    }
-    const data: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-    return { snapshot: readLegacyPanel(uid, data), data: object(data)! };
-  } finally {
-    await handle.close();
-  }
-}
 
 export function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty = false) {
   if (raw === null) return;
