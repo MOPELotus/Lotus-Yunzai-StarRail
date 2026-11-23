@@ -12,10 +12,14 @@ import { createGameCharacterAliasCommands, matchGameCharacterAliasCommand } from
 import { fileURLToPath } from "node:url";
 import { gameCommandProfileId, createProfileStore, MAX_PROFILE_ID, ProfileError } from "@lotus-yunzai/account";
 import { createGachaUpdater } from "@lotus-yunzai/gacha/update";
+import { gachaPortraitCharacter, readGachaPlayerArt } from "@lotus-yunzai/gacha/player-art";
+import { createStarRailPanelArchive, panelDiscardedAt } from "./panel-discard.ts";
+import { readLegacyPlayerPortrait } from "../../lib/own-role-legacy-artwork.ts";
+import { object } from "./panel-model.ts";
 import { createProfileHoyoClient, HoyoRequestError } from "@lotus-yunzai/hoyo-client";
 import { buildStarRailGachaDetail, type StarRailGachaDetailPool } from "./gacha-detail.ts";
 import { renderStarRailGachaDetail } from "./gacha-detail-card.ts";
-import { readStarRailGachaItems, readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
+import { readStarRailGachaCatalog, readStarRailGachaItems, readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { createStarRailGachaFiles, matchesStarRailGachaFiles, normalizeStarRailGachaCommand, starRailLegacyArchiveTimezone, type StarRailGachaFileContext } from "./gacha-files.ts";
 import { queryStarRailPoolInfo } from "./gacha-pool-info.ts";
 import { createStarRailGachaRecordArchive, StarRailGachaArchiveError } from "./gacha-record-archive.ts";
@@ -160,6 +164,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
+  const panelArchive = createStarRailPanelArchive(lockFile);
   const transferPanel = createStarRailPanelTransfer(profiles, lockFile, signal);
   const roster = createStarRailRosterQuery(profiles, client, signal);
   const personalRecord = createStarRailPersonalRecordQuery(profiles, client, signal);
@@ -216,13 +221,24 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       }
       const themeDirectory = starRailGachaThemeDirectory();
       const rawArchive = raw?.status === "available" ? raw.archive : undefined;
-      const [resolveItem, schedule, draws] = await Promise.all([
-        rawArchive ? undefined : readStarRailGachaItems(themeDirectory),
-        rawArchive || !("special" in view) ? readStarRailGachaSchedule(themeDirectory) : [],
-        rawArchive && readStarRailRecordItems(themeDirectory).then((resolver) => starRailRecordDraws(rawArchive, resolver)),
+      const [catalog, panelData] = await Promise.all([
+        readStarRailGachaCatalog(themeDirectory),
+        panelArchive.read(qq, uid).catch(() => undefined),
       ]);
-      const shared = { uid, face: { name: nickname || "开拓者" }, now: new Date() };
-      const options = { ...shared, history: snapshot, resolveItem, face: { name: nickname || "旅行者" } };
+      const saved = object(panelData);
+      const chosen = String(saved?.uid) === uid ? saved?.rosterFace ?? saved?.face : undefined;
+      const character = gachaPortraitCharacter(catalog.characters.values(), chosen) ??
+        (panelData !== undefined && !panelDiscardedAt(panelData)
+          ? gachaPortraitCharacter(catalog.characters.values(), (await readLegacyPlayerPortrait("sr", uid, signal).catch(() => undefined))?.face)
+          : undefined);
+      const [{ face, avatar }, resolveItem, schedule, draws] = await Promise.all([
+        readGachaPlayerArt(themeDirectory, "sr", nickname || "开拓者", character, role.avatar, signal),
+        rawArchive ? undefined : readStarRailGachaItems(themeDirectory, catalog),
+        rawArchive || !("special" in view) ? readStarRailGachaSchedule(themeDirectory) : [],
+        rawArchive && readStarRailRecordItems(themeDirectory, catalog).then((resolver) => starRailRecordDraws(rawArchive, resolver)),
+      ]);
+      const shared = { uid, face, now: new Date() };
+      const options = { ...shared, history: snapshot, resolveItem, face: nickname ? face : { ...face, name: "旅行者" } };
       const resolvePool = resolveStarRailDetailPool(schedule);
       const resolveRecordPool = draws && resolveStarRailRecordPool(schedule);
       const display = !("special" in view) ? await readGachaDisplaySettings(new URL("../../", import.meta.url)) : undefined;
@@ -266,7 +282,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
           render(page, scale) {
             const result = page === 1 ? first : buildPage(page);
             if (!result) throw new Error("星铁抽卡记录缺少分页。");
-            const options = { themeDirectory, scale };
+            const options = { themeDirectory, scale, avatar };
             return result.kind === "record-special" ? renderStarRailRecordSpecial(result.model, options)
               : result.kind === "special" ? renderStarRailGachaSpecial(result.model, options)
               : result.kind === "detail" ? renderStarRailGachaDetail(result.model, options)
