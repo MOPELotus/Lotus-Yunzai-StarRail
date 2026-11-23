@@ -140,6 +140,7 @@ export function createStarRailSimulation({
       const manual = draw && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
       const source = draw && await poolSource(draw.kind, draw.slot, time).catch(error => {
         if (!manual) throw error;
+        return undefined;
       });
       const pool = draw && customWarpPool(draw.kind, draw.slot, source, rules);
       if (draw && !pool) return "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
