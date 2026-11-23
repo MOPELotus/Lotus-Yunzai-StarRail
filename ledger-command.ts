@@ -3,21 +3,21 @@ import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yu
 import { HoyoRequestError, type createProfileHoyoClient, type StarRailLedgerKind, type StarRailLedgerRow } from "@lotus-yunzai/hoyo-client";
 import { renderStarRailLedgerCard } from "./account-report-renderer.ts";
 
-const pattern = /^(?:#星铁|\*|＊|[#*]?sr)\s*(星琼|古老梦华|体力|遗器|充值)记录(?:\s*(\d{1,6}))?(?:\s*档案\s*(\d{1,3}))?$/u;
+const pattern = /^(?:#星铁|\*|＊|[#*]?sr)\s*(?:(星琼|古老梦华|体力|遗器|充值)记录|(光锥|武器)资产(?:流水|记录))(?:\s*(\d{1,6}))?(?:\s*档案\s*(\d{1,3}))?$/u;
 const names = {
   星琼: "stellar", 古老梦华: "dreams", 体力: "power", 遗器: "relic", 充值: "dreams",
 } as const satisfies Record<string, StarRailLedgerKind>;
 const titles = {
   stellar: ["星琼", "Stellar"], dreams: ["古老梦华", "Dreams"], power: ["体力", "Power"], relic: ["遗器", "Relic"],
+  cone: ["光锥", "Cone"],
 } as const;
 const theme = new URL("./monthly-theme/charge/", import.meta.url);
 
 export function matchStarRailLedger(message: string) {
   const match = pattern.exec(message);
   if (!match) return;
-  return {
-    kind: names[match[1] as keyof typeof names], page: Number(match[2] ?? 1), profileId: Number(match[3] ?? 1),
-  };
+  const kind: StarRailLedgerKind = match[2] ? "cone" : names[match[1] as keyof typeof names];
+  return { kind, page: Number(match[3] ?? 1), profileId: Number(match[4] ?? 1) };
 }
 
 export function makeStarRailLedgerCard(uid: string, kind: StarRailLedgerKind, page: number, rows: readonly StarRailLedgerRow[]) {

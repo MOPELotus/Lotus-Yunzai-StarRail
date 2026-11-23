@@ -1,13 +1,18 @@
 import { expect, test } from "bun:test";
 import { makeStarRailLedgerCard, matchStarRailLedger } from "../ledger-command.ts";
 
-test("游戏流水保留旧页号和别名，档号独立，光锥与武器仍走跃迁", () => {
+test("游戏流水保留旧页号和别名，光锥资产入口与跃迁分流", () => {
   expect(matchStarRailLedger("*充值记录6")).toEqual({ kind: "dreams", page: 6, profileId: 1 });
   expect(matchStarRailLedger("#星铁古老梦华记录2 档案3")).toEqual({ kind: "dreams", page: 2, profileId: 3 });
   expect(matchStarRailLedger("#sr星琼记录 档案2")).toEqual({ kind: "stellar", page: 1, profileId: 2 });
   expect(matchStarRailLedger("＊体力记录")).toEqual({ kind: "power", page: 1, profileId: 1 });
   expect(matchStarRailLedger("#星铁遗器记录")).toEqual({ kind: "relic", page: 1, profileId: 1 });
-  for (const msg of ["*光锥记录", "*武器记录", "*遗器列表", "*月收入", "#原神充值记录", "#绝区零充值记录"]) {
+  expect(matchStarRailLedger("*光锥资产流水2 档案3")).toEqual({ kind: "cone", page: 2, profileId: 3 });
+  expect(matchStarRailLedger("#星铁武器资产记录")).toEqual({ kind: "cone", page: 1, profileId: 1 });
+  for (const msg of [
+    "*光锥记录", "*光锥记录2", "*武器记录", "*武器记录2", "*十连光锥",
+    "*遗器列表", "*月收入", "#原神充值记录", "#绝区零充值记录",
+  ]) {
     expect(matchStarRailLedger(msg)).toBeUndefined();
   }
 });
