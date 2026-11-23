@@ -23,6 +23,10 @@ export class ShowcaseError extends Error {
   }
 }
 
+export function showcaseServerCode(code: string): ShowcaseProvider | undefined {
+  return Object.hasOwn(serverCodes, code) ? serverCodes[code] : undefined;
+}
+
 export function showcaseTarget(role: Role, config = "0") {
   const uid = role.uid;
   const prefix = /^(?:18|[1-9])\d{8}$/u.test(uid) ? uid.slice(0, -8) : "";
@@ -33,7 +37,7 @@ export function showcaseTarget(role: Role, config = "0") {
     throw new ShowcaseError("所选星铁档案的 UID 与区服不一致，无法查询公开展板。");
   }
   const choice = /^[0-4]{1,3}$/u.test(config) ? config[regionIndex] ?? config[0]! : "";
-  const provider = serverCodes[choice];
+  const provider = showcaseServerCode(choice);
   if (choice === "1") throw new ShowcaseError("旧私有 Token 服务不能用于公开展板，请选择公开展板来源。");
   if (!provider) throw new ShowcaseError("当前区服未配置可用的公开星铁展板来源。");
   return { uid, region, provider };

@@ -36,6 +36,7 @@ import { createStarRailLedgerQuery, matchStarRailLedger } from "./ledger-command
 import { createStarRailOnlineQuery, starRailOnlineCommand } from "./online-command.ts";
 import { createStarRailPanel, createStarRailPersonalPanelReader } from "./panel.ts";
 import { starRailOriginalCommand } from "./panel-original.ts";
+import { matchStarRailShowcaseSettings, runStarRailShowcaseSettings } from "./panel-showcase-command.ts";
 import { createStarRailTeamDamageQuery } from "./team-damage-command.ts";
 import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
@@ -249,6 +250,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     },
     async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
+      if (matchStarRailShowcaseSettings(message)) return ["[starrail] 角色面板"];
       if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
       if (matchesWarpCommand(message)) return ["[starrail] 模拟跃迁"];
       if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
@@ -278,7 +280,11 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly inlineImageByteLimit?: number;
       readonly isBotMaster?: (userId: number) => boolean;
       readonly groupOriginalSignal?: AbortSignal;
+      readonly canManagePackages?: true;
+      readonly isDelegated?: boolean;
     }) {
+      const sources = matchStarRailShowcaseSettings(context.normalizedMessage);
+      if (sources) return runStarRailShowcaseSettings(sources, context, signal);
       const original = starRailOriginalCommand(context.normalizedMessage);
       if (original) return await panel.original(context) ?? (original === "explicit" ? "请引用当前会话中本人查询的星铁角色面板。" : undefined);
       const linked = await gachaLink(context);
