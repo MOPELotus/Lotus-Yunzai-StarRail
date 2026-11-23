@@ -26,6 +26,7 @@ import { renderStarRailPanelPractice } from "./panel-practice-skia.ts";
 import { renderStarRailPanelList } from "./panel-list-skia.ts";
 import { renderStarRailRelicList, renderStarRailRelicMark } from "./panel-relic-skia.ts";
 import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
+import { starRailUsesBuiltInPortrait } from "./panel-original-config.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import { groupPanelNumber } from "../../lib/group-panel-rank-settings.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
@@ -85,7 +86,7 @@ export function createStarRailPanel(
   } });
   const refreshing = new Set<string>();
 
-  async function queryExtremePanel(name: string, inlineImageByteLimit?: number) {
+  async function queryExtremePanel(name: string, inlineImageByteLimit?: number, builtInPortraitOnly = false) {
     if (signal.aborted) return;
     try {
       let theme: Awaited<ReturnType<typeof readTheme>> | undefined;
@@ -102,7 +103,7 @@ export function createStarRailPanel(
         if (signal.aborted) return;
         if (!avatar) continue;
         const model = await makePanelDetailCard(snapshot, avatar, theme, signal, {
-          localOnly: true, sourceLabel: "极限面板", allowCustomizedSample: sampleFile !== undefined,
+          localOnly: true, sourceLabel: "极限面板", allowCustomizedSample: sampleFile !== undefined, builtInPortraitOnly,
         });
         if (signal.aborted) return;
         const card = await renderStarRailPanelDetail(model, theme.root, "auto", inlineImageByteLimit).catch(() => undefined);
@@ -179,7 +180,7 @@ export function createStarRailPanel(
       readonly reply?: (message: string) => unknown;
     }) {
     const { type, profileId, name } = command;
-    if (type === "extreme") return queryExtremePanel(name, context?.inlineImageByteLimit);
+    if (type === "extreme") return queryExtremePanel(name, context?.inlineImageByteLimit, await starRailUsesBuiltInPortrait(context));
     const uploadFile = context?.uploadFile;
     if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
     if (type === "discard") {
@@ -594,6 +595,7 @@ export function createStarRailPanel(
         }
       }
 
+      const builtInPortraitOnly = selected ? await starRailUsesBuiltInPortrait(context) : false;
       if (type === "damage" && selected) {
         const metadata = equipmentMetadata ?? await readPanelDamageMetadata(selected, theme);
         const scenario = "scenario" in command ? command.scenario : undefined;
@@ -606,7 +608,7 @@ export function createStarRailPanel(
         }
         if (!result.damage) return `${selected.name}伤害计算暂不可用。${result.reason}。`;
         const damage = equipmentLabel ? { ...result.damage, buffs: [equipmentLabel, ...result.damage.buffs] } : result.damage;
-        const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id, context?.inlineImageByteLimit, theme.commaGroup)
+        const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id, context?.inlineImageByteLimit, theme.commaGroup, builtInPortraitOnly)
           .catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
@@ -621,13 +623,13 @@ export function createStarRailPanel(
       let relicScore: { readonly mark?: string; readonly markClass?: string; readonly incomplete?: number } | undefined;
       if (selected) {
         if (type === "relics") {
-          const relics = await makePanelRelicCard(snapshot, selected, theme, signal);
+          const relics = await makePanelRelicCard(snapshot, selected, theme, signal, builtInPortraitOnly);
           await verify();
           if (!relics) return `「${selected.name}」暂无可评分的遗器，可用 *更新面板${profileId === 1 ? "" : profileId} 补齐面板。`;
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
-          const detail = await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid });
+          const detail = await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid, builtInPortraitOnly });
           models = [detail];
           relicScore = detail.artisDetail;
         }

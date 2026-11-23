@@ -26,7 +26,7 @@ function conditionLines(buff: string) {
 }
 
 export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string, avatarId: string, inlineImageByteLimit?: number,
-  commaGroup?: number) {
+  commaGroup?: number, builtInPortraitOnly = false) {
   const root = await realpath(theme);
   async function asset(parts: string[]) {
     try {
@@ -46,7 +46,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   }
   const [bg, appearance, texture, titleFont, bodyFont] = await Promise.all([
     picture(["common", "bg", `bg-${elementBackground[damage.element] ?? "sr"}.webp`]),
-    readStarRailPanelPortrait(root, avatarId, damage.name),
+    readStarRailPanelPortrait(root, avatarId, damage.name, false, undefined, builtInPortraitOnly),
     picture(["common", "cont", "card-bg.png"]),
     font("StarRailDamageTitle", "NZBZ.ttf"), font("StarRailDamageBody", "HYWH-65W.ttf"),
   ]);

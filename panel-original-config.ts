@@ -33,3 +33,48 @@ export async function readStarRailOriginalSettings(root: URL) {
       validStarRailOriginalRecallSeconds(legacySeconds) ? legacySeconds : 30,
   };
 }
+
+const installation = new URL("../../", import.meta.url);
+const maxGroups = 1000;
+
+function normalizeGroupIds(values: readonly unknown[]) {
+  if (values.length > maxGroups) return;
+  const groups = new Set<string>();
+  for (const value of values) {
+    if (typeof value !== "number" && typeof value !== "string") return;
+    const id = String(value).trim();
+    if (!/^[1-9]\d{0,15}$/u.test(id) || !Number.isSafeInteger(Number(id))) return;
+    groups.add(id);
+  }
+  return [...groups];
+}
+
+export function parseStarRailPortraitGroups(value: unknown) {
+  if (typeof value !== "string" || value.length > maxGroups * 18) return;
+  return normalizeGroupIds(value.trim().split(/[\s,，、]+/u).filter(Boolean));
+}
+
+export async function readStarRailBuiltInPortraitGroups(root = installation) {
+  const config = await readOptionalLocalConfig(root, "global");
+  const section = config?.starrail;
+  const selected = section && typeof section === "object" && !Array.isArray(section)
+    ? (section as Record<string, unknown>).built_in_portrait_groups : undefined;
+  if (Array.isArray(selected)) {
+    const groups = normalizeGroupIds(selected);
+    if (groups) return groups;
+  }
+  for (const path of legacySettings) {
+    try {
+      const legacy = await readOptionalConfigFile(root, path);
+      if (!legacy) continue;
+      return Array.isArray(legacy.no_profile) ? normalizeGroupIds(legacy.no_profile) ?? [] : [];
+    } catch { break; }
+  }
+  return [];
+}
+
+export async function starRailUsesBuiltInPortrait(context?: { readonly message_type?: string; readonly group_id?: number },
+  root = installation) {
+  return context?.message_type === "group" && Number.isSafeInteger(context.group_id) &&
+    (await readStarRailBuiltInPortraitGroups(root).catch((): string[] => [])).includes(String(context.group_id));
+}

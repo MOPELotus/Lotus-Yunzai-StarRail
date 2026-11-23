@@ -59,6 +59,11 @@ test("star rail uses decodable same-form gallery art before the matching origina
     await write("configured/sr-character/希儿/broken.webp", Buffer.from("invalid"));
     await symlink(filtered, join(root, "configured/sr-character/希儿/escape.png"));
     expect((await readStarRailPanelPortrait(root, "1102", "希儿"))?.file).toBe(configured);
+    const forced = await readStarRailPanelPortrait(root, "1102", "希儿", true, root, true);
+    expect(forced?.file).toBe(original);
+    expect(forced?.original).toMatchObject({ root: "theme", path: ["meta-sr", "character", "希儿", "imgs", "splash.webp"] });
+    expect(await readStarRailLocalPanelPhoto(root, forced!.original!, root)).toEqual(png);
+    expect((await readStarRailPanelPortrait(root, "2102", "希儿", true, root, true))?.file).toBe(upgraded);
     expect((await readStarRailPanelPortrait(root, "1511", "星神★阿哈"))?.file).toBe(renamed);
     await rm(configured);
     expect((await readStarRailPanelPortrait(root, "1102", "希儿", false, root))?.file).toBe(original);

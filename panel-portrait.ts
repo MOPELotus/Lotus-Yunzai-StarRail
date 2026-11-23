@@ -102,12 +102,12 @@ async function galleryFiles(base: string, name: string) {
 }
 
 /** Uses the exact roster ID for gallery art and preserves the theme's original illustration. */
-export async function readStarRailPanelPortrait(theme: string, id: string, themeName: string, special = false, installation?: string) {
+export async function readStarRailPanelPortrait(theme: string, id: string, themeName: string, special = false, installation?: string, builtInOnly = false) {
   const root = await realpath(theme).catch(() => undefined);
   const configured = Bun.env.LOTUS_CHARACTER_GALLERY_DIR?.trim();
-  const gallery = await realpath(configured || localPanelGalleryRoot(installation)).catch(() => undefined);
+  const gallery = !builtInOnly ? await realpath(configured || localPanelGalleryRoot(installation)).catch(() => undefined) : undefined;
   const name = Object.hasOwn(names, id) ? names[id] : undefined;
-  if (name) {
+  if (name && !builtInOnly) {
     const bases: { readonly path: string; readonly location: Location }[] = [];
     const add = (location: Location, child?: string) => bases.push({ path: child ? join(location.base, child) : location.base, location });
     if (gallery) {
@@ -139,7 +139,7 @@ export async function readStarRailPanelPortrait(theme: string, id: string, theme
   if (root && originalName && originalName !== "." && originalName !== ".." && !/[\/\\\p{Cc}]/u.test(originalName)) {
     const original = join(root, "meta-sr", "character", originalName, "imgs");
     const location: Location = { root: "theme", base: root };
-    if (special) {
+    if (special && !builtInOnly) {
       const selected = await portrait(join(original, "splash0.webp"), location);
       if (selected) return selected;
     }

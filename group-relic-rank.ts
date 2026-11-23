@@ -6,6 +6,7 @@ import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunza
 import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { groupPanelNumber, readGroupPanelRankEnabled, readGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
 import { relicRankCoverageText, relicRankLabels, renderStarRailRelicRank, type RelicRankMetric, type RelicRankRow } from "./group-relic-rank-card.ts";
+import { starRailUsesBuiltInPortrait } from "./panel-original-config.ts";
 import { makePanelDetailCard, readPanelDamageMetadata, readPanelRankAvatar, readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
 import { hasPersonalDamage, readStarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
@@ -203,11 +204,12 @@ function rankCharacterId(id: string) {
 type RankProfiles = Pick<ReturnType<typeof createProfileStore>, "describe">;
 type RenderRank = (...args: Parameters<typeof renderStarRailRelicRank>) => Promise<{ readonly png: Uint8Array } | undefined>;
 type RankTheme = Awaited<ReturnType<typeof readTheme>>;
-type RenderStrongest = (snapshot: PanelSnapshot, avatar: PanelAvatar, theme: RankTheme, signal: AbortSignal, inlineImageByteLimit?: number) =>
+type RenderStrongest = (snapshot: PanelSnapshot, avatar: PanelAvatar, theme: RankTheme, signal: AbortSignal, inlineImageByteLimit?: number, builtInPortraitOnly?: boolean) =>
   Promise<{ readonly png: Uint8Array } | undefined>;
 
-async function bestPanel(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: RankTheme, signal: AbortSignal, inlineImageByteLimit?: number) {
-  const model = await makePanelDetailCard(snapshot, avatar, theme, signal, { localOnly: true });
+async function bestPanel(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: RankTheme, signal: AbortSignal, inlineImageByteLimit?: number,
+  builtInPortraitOnly = false) {
+  const model = await makePanelDetailCard(snapshot, avatar, theme, signal, { localOnly: true, builtInPortraitOnly });
   signal.throwIfAborted();
   return renderStarRailPanelDetail(model, theme.root, "auto", inlineImageByteLimit);
 }
@@ -501,7 +503,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const beforeRender = await changed(current.map(row => row.entry));
           if (beforeRender) return beforeRender;
           const { uid, snapshot, avatar } = lead.value;
-          const card = await renderStrongest(snapshot, avatar, theme, active, context.inlineImageByteLimit).catch(() => undefined);
+          const card = await renderStrongest(snapshot, avatar, theme, active, context.inlineImageByteLimit, await starRailUsesBuiltInPortrait(context)).catch(() => undefined);
           const afterRender = await changed(current.map(row => row.entry));
           if (afterRender) return afterRender;
           const heading = `${character.name} · 本轮${label}榜首 · UID ${uid}\n${summary}`;

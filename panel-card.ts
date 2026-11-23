@@ -194,8 +194,8 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
   }
 }
 
-async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string, signal: AbortSignal, special = false) {
-  const selected = await readStarRailPanelPortrait(theme.root, avatar.id, name, special);
+async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string, signal: AbortSignal, special = false, builtInOnly = false) {
+  const selected = await readStarRailPanelPortrait(theme.root, avatar.id, name, special, undefined, builtInOnly);
   if (selected) {
     const src = dataImage(selected.bytes);
     return { src: src || cssFile(selected.file), original: src ? selected.original : undefined };
@@ -459,8 +459,9 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
 
 export async function makePanelDetailCard(
   snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
-  { equipmentLabel, skillPreview, localOnly, sourceLabel, allowCustomizedSample }: {
+  { equipmentLabel, skillPreview, localOnly, sourceLabel, allowCustomizedSample, builtInPortraitOnly }: {
     equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean; sourceLabel?: string; allowCustomizedSample?: boolean;
+    builtInPortraitOnly?: boolean;
   } = {},
 ) {
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
@@ -503,7 +504,7 @@ export async function makePanelDetailCard(
   const traceIds = new Set(avatar.traces.filter(trace => trace.active).map(trace => trace.id.slice(-3)));
   const special = avatar.rank === 6 || score?.markClass === "ACE" || score?.markClass === "MAX" ||
     (completeSkills && ["101", "102", "103", "201", "202", "203", "204", "205", "206", "207", "208", "209", "210"].every(id => traceIds.has(id)));
-  const { src, original } = await panelPortrait(theme, avatar, name, artSignal, special);
+  const { src, original } = await panelPortrait(theme, avatar, name, artSignal, special, builtInPortraitOnly);
   imgs.splash = src;
   const treeData = await makeTraceTree(avatar, name, character, theme, artSignal);
   const artis = [];
@@ -656,11 +657,12 @@ async function panelRelicArtwork(part: PanelAvatar["relics"][number], theme: Met
   return { name: part.name || local?.name || `遗器 ${part.slot}`, img };
 }
 
-export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal) {
+export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
+  builtInPortraitOnly = false) {
   const { name, element, score } = await scorePanelAvatarRelics(avatar, theme);
   if (!score) return;
   const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
-  const { src: splash } = await panelPortrait(theme, avatar, name, artSignal);
+  const { src: splash } = await panelPortrait(theme, avatar, name, artSignal, false, builtInPortraitOnly);
   const parts = await Promise.all(avatar.relics.flatMap(part => {
     const scored = score.artis[part.slot];
     if (!scored) return [];
