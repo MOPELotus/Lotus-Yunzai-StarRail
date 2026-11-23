@@ -95,10 +95,64 @@ async function loadTheme(directory: string, pulls: readonly WarpPull[]) {
         elementName[element] ? picture(warp, `img/icon/damage/${elementName[element]}.png`)
           .then(image => image ?? picture(root, `meta-sr/public/icons/${elementIcon[element]}.webp`)) : undefined,
       ]);
-      return { portrait, pathArt, elementArt, pathName };
+      const allegiance = typeof metadata?.allegiance === "string" ? metadata.allegiance : undefined;
+      return { portrait, pathArt, elementArt, pathName, allegiance, element };
     })),
   ]);
   return { layers, backdrop, titleIcon, star, artwork, font: fonts ? `${fonts}, ${fallbackFont}` : fallbackFont };
+}
+
+export async function renderWarpReincarnation({ name, nickname, qq, path, allegiance, inlineImageByteLimit, mode }: StarRailCardOptions & {
+  readonly name: string; readonly nickname: string; readonly qq: string; readonly path?: string; readonly allegiance?: string;
+}) {
+  const themeDirectory = starRailGachaThemeDirectory();
+  const theme = await loadTheme(themeDirectory, [{ name, kind: "角色", rarity: 5, order: 1, featured: false }]);
+  const art = theme.artwork[0];
+  const warp = await realpath(Bun.env.LOTUS_STAR_RAIL_WARP_THEME_DIR?.trim() || resolve(themeDirectory, "simulation")).catch(() => undefined);
+  const otherPortrait = path && await asset(warp, `img/icon/other/${name}.png`).then(file => file ? loadImage(file).catch(() => undefined) : undefined);
+  const backdrop = await asset(warp, "img/bg/bg1.png").then(file => file ? loadImage(file).catch(() => undefined) : undefined);
+  const faction = allegiance ?? art?.allegiance;
+  const factionKey = faction?.startsWith("仙舟") && faction !== "仙舟「罗浮」" ? "仙舟联盟" : faction;
+  const emblem = factionKey && await asset(warp, `img/icon/allegiance/${factionKey}.png`).then(file => file ? loadImage(file).catch(() => undefined) : undefined);
+  const fields = [
+    ["命途", path ?? art?.pathName],
+    ["阵营", faction],
+    ["身份", path ? "星神" : "星穹铁道角色"],
+  ] as const;
+  const elementColor: Readonly<Record<string, string>> = {
+    虚数: "#8b6800", 量子: "#444bb5", 风: "#116545", 冰: "#1c6095", 雷: "#872c9c", 火: "#a92325", 物理: "#545454",
+  };
+  const color = elementColor[art?.element ?? ""] ?? "#872c9c";
+  const width = 1630, height = 777;
+  return renderStarRailCard(width, height, ctx => {
+    ctx.fillStyle = "#121025";
+    ctx.fillRect(0, 0, width, height);
+    if (backdrop ?? theme.backdrop) imageBox(ctx, (backdrop ?? theme.backdrop)!, 0, 0, width, height, true);
+    const portrait = art?.portrait ?? otherPortrait;
+    if (portrait) imageBox(ctx, portrait, 490, 0, 1140, 777);
+    const ribbon = ctx.createLinearGradient(88, 0, 738, 0);
+    for (const [point, opacity] of [[0, "#fff5"], [0.24, "#fffffff4"], [0.76, "#fffffff4"], [1, "#fff5"]] as const) ribbon.addColorStop(point, opacity);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(174, 100, 64, 0, 2 * Math.PI);
+    ctx.fill();
+    label(ctx, [...nickname][0] ?? "星", 174, 119, theme.font, 52, 86, "center");
+    label(ctx, nickname, 276, 90, theme.font, 58, 445);
+    label(ctx, qq, 276, 144, theme.font, 40, 445, "left", "#e9d9ff");
+    ctx.fillStyle = ribbon;
+    ctx.fillRect(88, 200, 650, 173);
+    label(ctx, "恭喜你转生成了", 413, 261, theme.font, 54, 570, "center", color);
+    label(ctx, name, 413, 350, theme.font, 90, 570, "center", color);
+    if (emblem) imageBox(ctx, emblem, 20, 372, 160, 205);
+    for (const [index, [field, value]] of fields.entries()) {
+      if (!value) continue;
+      const top = 420 + index * 80;
+      ctx.fillStyle = ribbon;
+      ctx.fillRect(88, top, 650, 53);
+      label(ctx, `${field}：${value}`, 413, top + 40, theme.font, 36, 540, "center", color);
+    }
+    label(ctx, "Lotus-Yunzai · StarRail", 20, 756, theme.font, 22, 550);
+  }, { inlineImageByteLimit, mode });
 }
 
 type Theme = Awaited<ReturnType<typeof loadTheme>>;

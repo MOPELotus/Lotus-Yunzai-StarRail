@@ -1,4 +1,5 @@
 import type { WarpItem, WarpPool } from "./pools.ts";
+import { defaultWarpRates, type WarpRates } from "./settings.ts";
 
 export interface WarpPity {
   fiveMisses: number;
@@ -18,9 +19,9 @@ export function emptyPity(): WarpPity {
 }
 
 /** The ramp is a simulation approximation. The base rates and hard limits follow the Warp details. */
-function fiveChance(cone: boolean, number: number) {
-  if (cone) return number >= 80 ? 1 : 0.008 + Math.max(0, number - 65) * 0.07;
-  return number >= 90 ? 1 : 0.006 + Math.max(0, number - 73) * 0.06;
+function fiveChance(cone: boolean, number: number, base: number) {
+  if (cone) return number >= 80 ? 1 : base + Math.max(0, number - 65) * 0.07;
+  return number >= 90 ? 1 : base + Math.max(0, number - 73) * 0.06;
 }
 
 function choose(items: readonly WarpItem[], random: () => number) {
@@ -33,24 +34,28 @@ function chooseByKind(items: readonly WarpItem[], random: () => number) {
   return choose(matched.length ? matched : items, random);
 }
 
-export function simulateWarps(pool: WarpPool, state: WarpPity, count: number, random = Math.random): WarpPull[] {
+export function simulateWarps(pool: WarpPool, state: WarpPity, count: number, random = Math.random,
+  rates: WarpRates = defaultWarpRates, week?: { five: number }, weeklyBonus = false): WarpPull[] {
   const cone = pool.kind === "cone";
   const featuredRate = cone ? 0.75 : 0.5;
+  const featuredFive = rates.featuredFive === null ? featuredRate : rates.featuredFive / 100;
+  const baseFive = (cone ? rates.coneFive : rates.characterFive) / 10_000;
+  const fourChance = (cone ? rates.coneFour : rates.characterFour) / 10_000;
   return Array.from({ length: count }, (_, index): WarpPull => {
     const order = index + 1;
     const pity = state.fiveMisses + 1;
     const roll = random();
-    const five = fiveChance(cone, pity);
+    const five = fiveChance(cone, pity, weeklyBonus && week?.five === 1 ? 2 * baseFive : baseFive);
     if (roll < five) {
+      if (week) week.five = Math.min(Number.MAX_SAFE_INTEGER, week.five + 1);
       state.fiveMisses = 0;
       state.fourOrBetterMisses = 0;
-      const featured = pool.featuredFive && (state.nextFiveFeatured || random() < featuredRate);
+      const featured = pool.featuredFive && (state.nextFiveFeatured || random() < featuredFive);
       state.nextFiveFeatured = !!pool.featuredFive && !featured;
       const item = featured ? pool.featuredFive! : chooseByKind(pool.otherFive, random);
       return { ...item, order, pity, featured: !!featured };
     }
     state.fiveMisses++;
-    const fourChance = cone ? 0.066 : 0.051;
     if (state.fourOrBetterMisses >= 9 || roll < five + fourChance) {
       state.fourOrBetterMisses = 0;
       const available = pool.featuredFour.length > 0;

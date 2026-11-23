@@ -1,11 +1,12 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { lockFile } from "../../../lib/file-lock.ts";
 import { createStarRailSimulation, parseWarpCommand } from "../simulation/commands.ts";
 import { emptyPity, simulateWarps } from "../simulation/draw.ts";
 import { createWarpPoolSource } from "../simulation/pools.ts";
+import { createWarpSettingsStore, defaultWarpRates } from "../simulation/settings.ts";
 import { createWarpArchive, warpDay } from "../simulation/store.ts";
 
 const active = Date.parse("2026-11-20T09:00:00+08:00");
@@ -14,6 +15,9 @@ function rolls(...values: number[]) {
   return () => values.shift() ?? 0.99;
 }
 
+function output(result: Awaited<ReturnType<ReturnType<typeof createStarRailSimulation>>>) {
+  return typeof result === "object" && !Array.isArray(result) && result !== null && "type" in result && result.type === "recallable" ? result.message : result;
+}
 test("simulation takes old size and pool aliases while leaving real history, update and other games to their handlers", () => {
   for (const [message, expected] of [
     ["#星铁单抽", { kind: "character", count: 1, slot: 1 }],
@@ -46,6 +50,15 @@ test("resolves distinct current official banners and expires reruns independentl
     expect((await override("character", 1, active))?.featuredFive?.name).toBe("银枝");
     await writeFile(path, JSON.stringify([banner, banner]));
     await expect(override("character", 1, active)).rejects.toThrow("活动时间重叠");
+    await mkdir(join(directory, "meta-sr", "info"), { recursive: true });
+    await writeFile(join(directory, "meta-sr", "info", "index.js"), `export const poolDetailSr = [{ "version": "4.8", "half": "上",
+      "from": "2026-12-23 11:00:00", "to": "2027-01-12 11:59:59", "char5": ["银枝"], "weapon5": ["片刻，留在眼底"],
+      "char4": ["艾丝妲"], "weapon4": ["论剑"] }]`);
+    const automatic = createWarpPoolSource("", () => directory);
+    expect(await automatic("character", 1, Date.parse("2026-12-23T10:59:59+08:00"))).toBeUndefined();
+    expect((await automatic("character", 1, Date.parse("2026-12-23T11:00:00+08:00")))?.featuredFive?.name).toBe("银枝");
+    expect((await automatic("cone", 1, Date.parse("2026-12-23T11:00:00+08:00")))?.featuredFive?.name).toBe("片刻，留在眼底");
+    expect(await automatic("cone", 2, Date.parse("2026-12-23T11:00:00+08:00"))).toBeUndefined();
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -76,8 +89,8 @@ test("concurrent replies debit one wallet, leave each conversation isolated, and
     const group = { user_id: 42, group_id: 77 };
     const privateMessage = { user_id: 42 };
     const [left, right] = await Promise.all([make()("#星铁十连常驻", group), make()("#星铁十连常驻", group)]);
-    expect([left, right].filter((value) => typeof value === "string" && value.includes("通票不足"))).toHaveLength(1);
-    expect([left, right].filter((value) => typeof value === "string" && value.includes("10. 4★"))).toHaveLength(1);
+    expect([left, right].map(output).filter((value) => typeof value === "string" && value.includes("通票不足"))).toHaveLength(1);
+    expect([left, right].map(output).filter((value) => typeof value === "string" && value.includes("10. 4★"))).toHaveLength(1);
     const simulation = make();
     expect(await simulation("#星铁我的星轨票", privateMessage)).toContain("100 张星轨专票和 0 张");
     await simulation("#星铁单抽", group);
@@ -112,13 +125,117 @@ test("restored simulation wallet and conversation expire at their saved absolute
     expect(await make()("#星铁我的星轨票", { user_id: 42 })).toContain("12 张星轨专票和 3 张");
     now += 1000;
     expect(await make()("#星铁我的星轨票", { user_id: 42 })).toContain("100 张星轨专票和 10 张");
-    expect(await make()("#星铁单抽", { user_id: 42, group_id: 77 })).toContain("5★ 星神★阿哈 UP（第 90 抽）");
+    expect(output(await make()("#星铁单抽", { user_id: 42, group_id: 77 }))).toContain("5★ 星神★阿哈 UP（第 90 抽）");
     now += 1000;
-    expect(await make()("#星铁单抽", { user_id: 42 })).toContain("3★");
+    expect(output(await make()("#星铁单抽", { user_id: 42 }))).toContain("3★");
     const result = JSON.parse(await readFile(join(directory, "42", "1.json"), "utf8"));
     expect(result.conversations["77"].expiresAt).toBeUndefined();
     expect(result.conversations["77"].pity.character.fiveMisses).toBe(0);
     expect(result.conversations.private.pity.character.fiveMisses).toBe(1);
     expect(result.legacy).toEqual({ balance: true, conversations: ["77", "private"] });
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("owner settings apply per-group new issuance, keep a shared wallet, and hold writes when disabled", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-settings-fixture-"));
+  try {
+    let time = active;
+    const make = () => createStarRailSimulation({ directory, lockFile, signal: new AbortController().signal, now: () => time,
+      poolSource: createWarpPoolSource(""), random: () => 0.99, render: async () => { throw new Error("fixture"); } });
+    const run = make(), user = { user_id: 42, group_id: 77 }, owner = { user_id: 60, group_id: 77, isMaster: true };
+    const accountPath = join(directory, "42", "1.json");
+
+    expect(await run("#星铁抽卡设置自定义关闭", user)).toContain("只有主人");
+    expect(await run("#设置星铁抽卡专属票30", owner)).toContain("专票 30 张");
+    expect(await run("#星铁设置星铁抽卡普通票20", owner)).toContain("通票 20 张");
+    expect(await run("#设置星铁抽卡撤回时间0", owner)).toContain("撤回 0 秒");
+    expect(await make()("#星铁领取专票", user)).toContain("30 张星轨专票和 20 张");
+    expect(await run("#设置星铁抽卡专属票50", owner)).toContain("专票 50 张");
+    expect(await run("#星铁我的星轨票", { ...user, group_id: 99 })).toContain("30 张星轨专票和 20 张");
+    expect(await run("#星铁抽卡设置百连关闭", owner)).toContain("多连 关闭");
+    const bytes = await readFile(accountPath, "utf8");
+    expect(await run("#星铁二十连", user)).toContain("未开启多连");
+    expect(await run("#星铁抽卡设置自定义关闭", owner)).toContain("模拟 关闭");
+    expect(await run("#星铁单抽", user)).toContain("功能已关闭");
+    expect(await run("#星铁十连", user)).toContain("功能已关闭");
+    expect(await run("#星铁查询星轨票", { ...user, user_id: 43 })).toContain("功能已关闭");
+    expect(await run("#星铁抽卡记录", user)).toBeUndefined();
+    expect(await readFile(accountPath, "utf8")).toBe(bytes);
+    expect(await Bun.file(join(directory, "43", "1.json")).exists()).toBeFalse();
+    expect(await run("#星铁抽卡设置自定义开启", owner)).toContain("模拟 开启");
+    expect(await run("#星铁抽卡设置百连开启", owner)).toContain("多连 开启");
+    expect(await make()("#星铁单抽", user)).toContain("模拟 1 抽");
+    expect(await run("#星铁我的星轨票", { user_id: 42 })).toContain("29 张星轨专票和 20 张");
+    time += 86_400_000;
+    expect(await make()("#星铁我的星轨票", user)).toContain("50 张星轨专票和 20 张");
+    expect(await run("#星铁我的星轨票", { user_id: 44 })).toContain("100 张星轨专票和 10 张");
+    expect(await run("#星铁抽卡设置总开关关闭", { ...owner, isDelegated: true })).toContain("只有主人");
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("custom pools, editable base rates, reset and optional weekly boost remain distinct from official source", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-rules-fixture-"));
+  try {
+    let chance = () => 0.01;
+    const run = createStarRailSimulation({ directory, lockFile, signal: new AbortController().signal, now: () => active,
+      poolSource: createWarpPoolSource(""), random: () => chance(), render: async () => { throw new Error("fixture"); } });
+    const owner = { user_id: 60, isMaster: true }, user = { user_id: 42 };
+    expect(await run("#星铁抽卡设置五星角色银枝，希儿", owner)).toContain("卡池 手工设置");
+    expect(await run("#星铁抽卡设置四星角色三月七", owner)).toContain("四星角色 三月七");
+    expect(await run('#星铁抽卡设置五星光锥["片刻，留在眼底","论剑的佳话"]', owner)).toContain("五星光锥 片刻，留在眼底、论剑的佳话");
+    expect(await run("#星铁抽卡设置五星角色概率10000", owner)).toContain("五星 10000/10000");
+    expect(await run("#星铁抽卡设置小保底概率100", owner)).toContain("小保底 100%");
+    expect(output(await run("#星铁单抽2", user))).toContain("5★ 希儿 UP");
+    expect(await run("#星铁抽卡设置五星光锥概率10000", owner)).toContain("光锥池五星 10000/10000");
+    expect(output(await run("#星铁光锥单抽", user))).toContain("5★ 片刻，留在眼底 UP");
+    expect(await run("#星铁抽卡设置概率复位", owner)).toContain("角色池五星 60/10000");
+    expect((await createWarpSettingsStore(lockFile, directory).read()).rates).toEqual(defaultWarpRates);
+    expect(await run("#星铁抽卡设置卡池同步开启", owner)).toContain("自动同步");
+    expect(output(await run("#星铁单抽", user))).toContain("星神★阿哈");
+    chance = rolls(0);
+    expect(output(await run("#星铁单抽", { user_id: 45 }))).toContain("5★");
+    chance = rolls(0.01);
+    expect(output(await run("#星铁单抽", { user_id: 45 }))).toContain("5★");
+    expect(await run("#星铁抽卡设置每周双黄关闭", owner)).toContain("每周双黄 关闭");
+    chance = rolls(0);
+    expect(output(await run("#星铁单抽", { user_id: 46 }))).toContain("5★");
+    chance = rolls(0.01);
+    expect(output(await run("#星铁单抽", { user_id: 46 }))).toContain("4★");
+    expect(await run("#星铁抽卡设置随机卡池", owner)).toContain("手工设置");
+    const { poolNames } = await createWarpSettingsStore(lockFile, directory).read();
+    expect(poolNames.characterFive).toHaveLength(2);
+    expect(poolNames.coneFour).toHaveLength(5);
+    expect(await run("#星铁抽卡设置四星光锥概率非法", owner)).toContain("请输入");
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("recall is held for high-rarity batches, budget failures keep metrics, and reincarnation cooldown survives restart", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-lifecycle-fixture-"));
+  try {
+    let time = active;
+    let chance = () => 0.99;
+    const signal = new AbortController().signal;
+    const make = () => createStarRailSimulation({ directory, lockFile, signal, now: () => time, poolSource: createWarpPoolSource(""),
+      random: () => chance(), render: async () => { throw new Error("fixture"); },
+      renderReincarnation: async () => { throw new Error("fixture"); } });
+    const run = make(), owner = { user_id: 60, group_id: 77, isMaster: true }, user = { user_id: 42, group_id: 77 };
+    await run("#星铁设置抽卡撤回时间12", owner);
+    expect(await run("#星铁单抽", user)).toMatchObject({ type: "recallable", seconds: 12 });
+    expect(await run("#星铁十连", user)).toMatchObject({ type: "recallable", seconds: 12 });
+    expect(await run("#星铁四十连", user)).toMatchObject({ type: "forward", recallSeconds: 12 });
+    chance = () => 0;
+    expect(await run("#星铁十连", user)).toEqual(expect.stringContaining("10 个五星"));
+    expect(await run("#星铁二十连", user)).toMatchObject({ type: "forward", nodes: expect.arrayContaining([expect.stringContaining("20 个五星")]) });
+    expect(await run("#星铁四十连", user)).toMatchObject({ type: "recallable", seconds: 12,
+      message: expect.stringContaining("今日模拟五星 30 个 · 本周 30 个五星") });
+    expect(await run("#星铁转生", user)).toContain("阿基维利 · 开拓");
+    expect(await make()("#星铁转生", { user_id: 42 })).toContain("等待 120 分钟");
+    expect(await run("#星铁抽卡设置转生间隔1", owner)).toContain("转生间隔 1 分钟");
+    expect(await run("#星铁转生", owner)).toContain("阿基维利");
+    expect(await run("#星铁转生", owner)).toContain("阿基维利");
+    time += 120 * 60_000;
+    chance = () => 0.99;
+    expect(await run("#星铁转生", user)).not.toContain("等待");
+    expect(await make()("#星铁转生", user)).toContain("等待 1 分钟");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

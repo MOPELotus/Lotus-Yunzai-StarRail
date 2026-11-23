@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { WarpPity } from "./draw.ts";
-import { createWarpArchive, integer, readWarpAccount, warpDay, warpDayMs, warpDayStart, warpRetentionDays,
+import { createWarpArchive, integer, readWarpAccount, warpDay, warpDayMs, warpDayStart, warpRetentionDays, warpWeek,
   type WarpBalance, type WarpConversation } from "./store.ts";
 
 const prefix = "Yz:flower-plugin:";
@@ -98,15 +98,32 @@ function pityFrom(value: unknown, hardLimit: number, hasFeatured: boolean): Warp
 type LegacyConversation = WarpConversation & { expiresAt: number };
 type LegacyBalance = WarpBalance & { expiresAt: number };
 
-function conversationFrom({ data, expiresAt }: LegacySource): LegacyConversation {
+function conversationFrom({ data, expiresAt }: LegacySource, now: number): LegacyConversation {
   const weapon = record(data.weapon);
   if (weapon && ("type" in weapon || "lifeNum" in weapon || "bingWeapon" in weapon)) {
     throw new TypeError("旧模拟键含原神定轨字段，不能导入星铁。");
   }
-  return {
+  const conversation: LegacyConversation = {
     lastDay: warpDay(expiresAt - legacyRetention), expiresAt,
     pity: { character: pityFrom(data.role, 90, true), cone: pityFrom(weapon, 80, true), standard: pityFrom(data.permanent, 90, false) },
   };
+  const today = record(data.today), week = record(data.week);
+  const day = warpDay(now);
+  if (integer(today?.expire, Math.floor(Number.MAX_SAFE_INTEGER / 1_000)) &&
+      today.expire * 1_000 >= warpDayStart(day + 1) - 1_000 && today.expire * 1_000 <= warpDayStart(day + 1) &&
+      integer(today.num) && integer(today.weaponNum) && Array.isArray(today.star)) {
+    const stars = today.star.flatMap(entry => {
+      const row = record(entry);
+      return typeof row?.name === "string" && row.name.length <= 120 && integer(row.num, 90)
+        ? [{ name: row.name, pity: row.num }] : [];
+    });
+    conversation.today = { day, standardAndCharacter: today.num, cone: today.weaponNum, five: stars.length, samples: stars.slice(0, 7) };
+  }
+  if (integer(week?.expire, Math.floor(Number.MAX_SAFE_INTEGER / 1_000)) && now < week.expire * 1_000 &&
+      week.expire * 1_000 < now + 8 * warpDayMs && integer(week.num)) {
+    conversation.week = { id: warpWeek(now), five: week.num };
+  }
+  return conversation;
 }
 
 export async function importLegacyWarps(options: ImportOptions, lockFile: AcquireRoleArchiveLock) {
@@ -142,7 +159,7 @@ export async function importLegacyWarps(options: ImportOptions, lockFile: Acquir
         else {
           const entry = await readKey(source, `${prefix}gacha:${key}:${qq}`, now, legacyRetention);
           if (typeof entry === "string") totals[entry]++;
-          else candidates.set(key, conversationFrom(entry));
+          else candidates.set(key, conversationFrom(entry, now()));
         }
       }
       if (!wallet && !candidates.size) continue;

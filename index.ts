@@ -41,7 +41,7 @@ import { createStarRailRosterQuery } from "./personal-roster-command.ts";
 import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
 import { createStarRailGroupRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats, resolveStarRailCharacter } from "./rank-statistics.ts";
-import { createStarRailSimulation } from "./simulation/commands.ts";
+import { createStarRailSimulation, matchesWarpCommand } from "./simulation/commands.ts";
 import { createStarRailRogueQuery } from "./rogue-command.ts";
 import { parseStarRailRogue } from "./rogue-model.ts";
 
@@ -248,6 +248,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
       if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
+      if (matchesWarpCommand(message)) return ["[starrail] 模拟跃迁"];
       if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
       if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
@@ -271,9 +272,11 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
       readonly adapter?: "milky";
       readonly inlineImageByteLimit?: number;
+      readonly isBotMaster?: (userId: number) => boolean;
     }) {
       const linked = await gachaLink(context);
       if (linked !== undefined) return linked;
+      if (matchesWarpCommand(context.normalizedMessage)) return simulate(context.normalizedMessage, context);
       const aliases = matchGameCharacterAliasCommand(context.normalizedMessage);
       if (aliases?.game === "sr") return characterAliases(aliases, context);
       const month = starRailMonthlyCommand.exec(context.normalizedMessage);
@@ -314,8 +317,6 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (poolInfo !== undefined) return poolInfo;
       const rankStats = await queryStarRailRankStats(context.normalizedMessage, signal);
       if (rankStats !== undefined) return rankStats;
-      const simulated = await simulate(context.normalizedMessage, context);
-      if (simulated !== undefined) return simulated;
       const fileReply = await gachaFiles(context);
       if (fileReply !== undefined) return fileReply;
       if (helpCommand.test(context.normalizedMessage)) return help;

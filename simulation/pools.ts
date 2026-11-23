@@ -1,4 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
+import { readStarRailGachaSchedule } from "../gacha-schedule.ts";
+import { starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
+import { validWarpPoolName, type WarpSettings } from "./settings.ts";
 
 export type WarpKind = "character" | "cone" | "standard";
 export interface WarpItem {
@@ -58,12 +61,8 @@ const builtIn: readonly Banner[] = [
   { ...phaseOneFour, slot: 4, start, end: rerunEnd, character: "爻光", cone: "当她决定看见" },
 ];
 
-function label(value: unknown): value is string {
-  return typeof value === "string" && value.trim() === value && [...value].length >= 1 && [...value].length <= 60 && !/[\u0000-\u001f\u007f]/u.test(value);
-}
-
 function list(value: unknown): value is string[] {
-  return Array.isArray(value) && value.length > 0 && value.length <= 20 && value.every(label) && new Set(value).size === value.length;
+  return Array.isArray(value) && value.length > 0 && value.length <= 20 && value.every(validWarpPoolName) && new Set(value).size === value.length;
 }
 
 function date(value: unknown): value is string {
@@ -73,11 +72,38 @@ function date(value: unknown): value is string {
 function isBanner(value: unknown): value is Banner {
   if (!value || typeof value !== "object") return false;
   const row = value as Partial<Banner>;
-  return label(row.character) && label(row.cone) && date(row.start) && date(row.end) && Date.parse(row.start) < Date.parse(row.end) &&
+  return validWarpPoolName(row.character) && validWarpPoolName(row.cone) && date(row.start) && date(row.end) && Date.parse(row.start) < Date.parse(row.end) &&
     typeof row.slot === "number" && Number.isInteger(row.slot) && row.slot >= 1 && row.slot <= 4 && list(row.characters4) && list(row.cones4);
 }
 
-export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS?.trim()) {
+export function customWarpPool(kind: WarpKind, slot: number, pool: WarpPool | undefined, settings: WarpSettings): WarpPool | undefined {
+  if (kind === "standard" || settings.automaticPools) return pool;
+  const isCone = kind === "cone";
+  const build = isCone ? cones : characters;
+  const fiveNames = settings.poolNames[isCone ? "coneFive" : "characterFive"];
+  const fourNames = settings.poolNames[isCone ? "coneFour" : "characterFour"];
+  const fiveName = fiveNames ? fiveNames[slot - 1] : pool?.featuredFive?.name;
+  if (!fiveName) return;
+  const featuredFive = build(5, [fiveName])[0]!;
+  const featuredFour = fourNames ? build(4, fourNames) : pool?.featuredFour ?? [];
+  return { kind, title: `${featuredFive.kind}自定义活动跃迁 · ${fiveName}`, featuredFive, featuredFour, three,
+    otherFive: (isCone ? standardCones : standardCharacters).filter(item => item.name !== fiveName),
+    otherFour: standard.otherFour.filter(item => !featuredFour.some(featured => featured.kind === item.kind && featured.name === item.name)),
+  };
+}
+
+export const warpRandomCandidates = {
+  characterFive: standardCharacters.map(item => item.name),
+  characterFour: fourCharacters.map(item => item.name),
+  coneFive: standardCones.map(item => item.name),
+  coneFour: fourCones.map(item => item.name),
+};
+
+const stamp = (text: string) => `${text.replace(" ", "T")}+08:00`;
+const knownUntil = Math.max(...builtIn.map(item => Date.parse(item.end)));
+const knownFrom = Math.min(...builtIn.map(item => Date.parse(item.start)));
+
+export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS?.trim(), theme = starRailGachaThemeDirectory) {
   return async (kind: WarpKind, slot: number, time: number): Promise<WarpPool | undefined> => {
     if (kind === "standard") return standard;
     let banners = builtIn;
@@ -87,6 +113,13 @@ export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS
       const body: unknown = JSON.parse(await readFile(file, "utf8"));
       if (!Array.isArray(body) || body.length > 128 || !body.every(isBanner)) throw new TypeError("跃迁活动卡池配置无效。");
       banners = body;
+    } else if (time < knownFrom || time >= knownUntil) {
+      const periods = await readStarRailGachaSchedule(theme());
+      banners = periods.flatMap(row => row.char5.slice(0, 4).flatMap((character, index) => {
+        const candidate = { character, cone: row.weapon5[index], characters4: row.char4, cones4: row.weapon4, slot: index + 1,
+          start: stamp(row.from), end: stamp(row.to) };
+        return isBanner(candidate) ? [candidate] : [];
+      }));
     }
     const active = banners.filter((row) => row.slot === slot && Date.parse(row.start) <= time && time < Date.parse(row.end));
     if (active.length > 1) throw new TypeError("同一跃迁卡池编号的活动时间重叠。");
