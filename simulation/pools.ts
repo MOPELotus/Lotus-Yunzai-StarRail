@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { readStarRailGachaSchedule } from "../gacha-schedule.ts";
 import { readStarRailGachaCatalog, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
 import { validWarpPoolName, type WarpSettings } from "./settings.ts";
+import type { LegacyPersonalPhase } from "./personal-pools.ts";
 
 export type CollaborationWarpKind = "collaboration-character" | "collaboration-cone";
 export type WarpKind = "character" | "cone" | "standard" | CollaborationWarpKind;
@@ -109,6 +110,23 @@ export function customWarpPool(kind: WarpKind, slot: number, pool: WarpPool | un
   const featuredFour = fourNames ? build(4, fourNames) : pool?.featuredFour ?? [];
   return { kind, title: `${featuredFive.kind}自定义活动跃迁 · ${fiveName}`, featuredFive, featuredFour, three,
     otherFive: (isCone ? standardCones : standardCharacters).filter(item => item.name !== fiveName),
+    otherFour: standard.otherFour.filter(item => !featuredFour.some(featured => featured.kind === item.kind && featured.name === item.name)),
+  };
+}
+
+export function personalWarpPool(kind: WarpKind, slot: number, phase: LegacyPersonalPhase | undefined): WarpPool | undefined {
+  if (!phase || (kind !== "cone" && kind !== "character") || slot > 2) return;
+  const isCone = kind === "cone";
+  const build = isCone ? cones : characters;
+  const names = isCone ? phase.weapon5 : slot === 2 && phase.up5_2.length ? phase.up5_2 : phase.up5;
+  if (!names.length) return;
+  const featuredFivePool = build(5, names);
+  const featuredFive = featuredFivePool[0]!;
+  const featuredFour = build(4, isCone ? phase.weapon4 : phase.up4);
+  const otherFive = (isCone ? standardCones : standardCharacters).filter(item => !names.includes(item.name));
+  if (!otherFive.length) return;
+  return {
+    kind, title: `${featuredFive.kind}个人活动跃迁 · ${featuredFive.name}`, featuredFive, featuredFivePool, featuredFour, otherFive, three,
     otherFour: standard.otherFour.filter(item => !featuredFour.some(featured => featured.kind === item.kind && featured.name === item.name)),
   };
 }

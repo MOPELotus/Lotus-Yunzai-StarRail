@@ -5,7 +5,8 @@ import type { ReplyOptions } from "../../../lib/messages.ts";
 import { parseWarpAdministration, runWarpAdministration } from "./admin.ts";
 import characterNames from "../challenge-character-names.json";
 import { emptyPity, simulateWarps, type WarpPull } from "./draw.ts";
-import { createWarpPoolSource, customWarpPool, isCollaborationWarp, type WarpKind } from "./pools.ts";
+import { createWarpPoolSource, customWarpPool, isCollaborationWarp, personalWarpPool, type WarpKind } from "./pools.ts";
+import { createPersonalWarpPoolReader } from "./personal-pools.ts";
 import { renderWarpCard, renderWarpReincarnation } from "./card.ts";
 import { createWarpSettingsStore, readWarpAllowance, type WarpAllowance } from "./settings.ts";
 import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek, type WarpConversation } from "./store.ts";
@@ -84,6 +85,7 @@ export function createStarRailSimulation({
 }) {
   const archive = createWarpArchive(directory, lockFile);
   const settings = createWarpSettingsStore(lockFile, directory);
+  const readPersonalPool = createPersonalWarpPoolReader(directory, lockFile);
 
   return async (message: string, context: WarpContext): Promise<CommandReply | undefined> => {
     if (signal.aborted) return;
@@ -98,6 +100,7 @@ export function createStarRailSimulation({
     const administration = parseWarpAdministration(message);
     const relife = reincarnation.test(message);
     if (!draw && !administration && !relife && !ticketCommand.test(message)) return;
+    if (draw && context.isDelegated) return "请在自己的会话使用星铁模拟跃迁。";
     if (!integer(context.user_id) || context.user_id === 0) return "请在 QQ 会话使用星铁模拟跃迁。";
     const user = context.user_id;
     const qq = String(user);
@@ -149,11 +152,13 @@ export function createStarRailSimulation({
       const customNames = draw?.kind === "cone" ? rules.poolNames.coneFive : rules.poolNames.characterFive;
       const collaboration = draw && isCollaborationWarp(draw.kind) ? draw.kind : undefined;
       const manual = draw && !collaboration && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
-      const source = draw && await poolSource(draw.kind, draw.slot, time).catch(error => {
+      const personal = draw && (draw.kind === "character" || draw.kind === "cone") && draw.slot <= 2
+        ? personalWarpPool(draw.kind, draw.slot, await readPersonalPool(qq, time)) : undefined;
+      const source = draw && !personal ? await poolSource(draw.kind, draw.slot, time).catch(error => {
         if (!manual) throw error;
         return undefined;
-      });
-      const pool = draw && customWarpPool(draw.kind, draw.slot, source, rules);
+      }) : undefined;
+      const pool = personal ?? (draw && customWarpPool(draw.kind, draw.slot, source, rules));
       if (draw && !pool) return collaboration ? "暂未找到已收录的 Fate[UBW] 联动模拟卡池。" : "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
       const result = await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
         const account = readWarpAccount(raw);
