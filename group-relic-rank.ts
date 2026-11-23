@@ -314,7 +314,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           }
         }
         active.throwIfAborted();
-        if (!registered.size) return `本群暂无已登记的星铁 UID。可在本群发送 *${character.name}遗器 登记当前档案。`;
+        if (!registered.size) return `本群暂无已登记的星铁 UID。可在本群查看本人的角色面板或遗器以登记当前档案。`;
         const [provider, theme] = await Promise.all([readServer(), readRankTheme()]);
         const targetId = rankCharacterId(String(character.id));
         const results = await refresh([...registered.values()], async (entry, requestSignal) => {

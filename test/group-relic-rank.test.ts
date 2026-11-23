@@ -3,10 +3,13 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createProfileStore } from "@lotus-yunzai/account";
+import { createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { lockFile } from "../../../lib/file-lock.ts";
 import { createStarRailGroupRelicRank, matchStarRailRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
 import { readPanelRankAvatar, readTheme } from "../panel-card.ts";
 import { createStarRailPanelArchive, discardedStarRailPanel } from "../panel-discard.ts";
+import { parsePanelCommand } from "../panel-model.ts";
+import { createStarRailPanel } from "../panel.ts";
 import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
 
 const command = "#星铁银枝遗器评分排行";
@@ -126,6 +129,34 @@ async function fixture() {
     });
   return { root, directory, account, rank, asked, use, setProvider, panelStore: createStarRailPanelArchive(lockFile, panelDirectory) };
 }
+
+test("群内查看本人星铁角色面板会登记当场刷新所需的 UID", async () => {
+  const { root, rank, panelStore, asked } = await fixture();
+  const previousTheme = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR;
+  const signal = new AbortController().signal;
+  try {
+    Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR = join(root, "theme");
+    const profiles = createProfileStore(join(root, "profiles"));
+    const board = rank();
+    const panel = createStarRailPanel(profiles, createProfileHoyoClient(profiles), lockFile, signal, board, join(root, "panels"));
+    const snapshot = await fetchStarRailShowcase(showcaseTarget(role(uid42), "0"), signal,
+      async () => visible(uid42, avatar(3)));
+    await panelStore.update({ qq: "42", uid: uid42 }, verified,
+      () => ({ document: { ...snapshot, source: "miyoushe" }, result: undefined }));
+    expect(await board.query(command, group77)).toContain("查看本人的角色面板或遗器");
+    const detail = parsePanelCommand("*银枝面板")!;
+    expect(await panel("42", detail, { ...group77, isDelegated: true })).toMatchObject({ type: "image" });
+    expect(await board.query(command, group77)).toContain("暂无已登记");
+    expect(asked).toEqual([]);
+    expect(await panel("42", detail, group77)).toMatchObject({ type: "image" });
+    expect(await board.query(command, group77)).toContain("本轮公开展板 1/1 已计分");
+    expect(asked).toEqual([uid42]);
+  } finally {
+    if (previousTheme === undefined) delete Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR;
+    else Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR = previousTheme;
+    await rm(root, { recursive: true, force: true });
+  }
+}, 30_000);
 
 test("星铁最强实时重刷所有登记，且只用当轮公开展板渲染榜首一个面板", async () => {
   const { root, rank, panelStore, asked, use } = await fixture();

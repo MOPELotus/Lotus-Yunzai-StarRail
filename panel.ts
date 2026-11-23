@@ -251,10 +251,11 @@ export function createStarRailPanel(
         throw error;
       });
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
-      const observedAt = type === "relics" && account && await groupRank?.allows(context) ? Date.now() : undefined;
       const { uid } = role;
       const explicitUid = "uid" in command;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
+      const groupPanel = type === "relics" || (type === "detail" && !explicitUid && !("equipment" in command));
+      const observedAt = groupPanel && account && await groupRank?.allows(context) ? Date.now() : undefined;
       const key = `${qq}:${uid}`;
       const initialPanel = await store.read(qq, uid);
       const discardedAt = panelDiscardedAt(initialPanel);
@@ -578,7 +579,7 @@ export function createStarRailPanel(
         })].filter(Boolean).join("\n");
       }
       let models;
-      let relicScore: { readonly mark: string; readonly markClass: string; readonly incomplete: number } | undefined;
+      let relicScore: { readonly mark?: string; readonly markClass?: string; readonly incomplete?: number } | undefined;
       if (selected) {
         if (type === "relics") {
           const relics = await makePanelRelicCard(snapshot, selected, theme, signal);
@@ -587,7 +588,9 @@ export function createStarRailPanel(
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
-          models = [await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid })];
+          const detail = await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid });
+          models = [detail];
+          relicScore = detail.artisDetail;
         }
       } else {
         models = await makePanelListCards(snapshot, theme, profileId, signal, updated, type === "reload" || publicLookup);
@@ -603,7 +606,7 @@ export function createStarRailPanel(
           await verify();
           if (type === "update") return `UID ${uid} 星铁面板已更新，共 ${snapshot.avatars.length} 位角色。图片暂时无法生成。`;
           if (selected) {
-            if (relicScore) return `UID ${uid} · ${selected.name} · 遗器总分 ${relicScore.mark} · ${relicScore.markClass}`;
+            if (type === "relics" && relicScore) return `UID ${uid} · ${selected.name} · 遗器总分 ${relicScore.mark} · ${relicScore.markClass}`;
             const visible = [selected.name, selected.level && `Lv.${selected.level}`, selected.rank !== undefined && `${selected.rank}魂`,
               selected.cone?.name, ...selected.relics.map(relic => relic.name)].filter(Boolean).join(" · ");
             return [`UID ${uid}`, equipmentLabel, visible].filter(Boolean).join("\n");
@@ -616,7 +619,8 @@ export function createStarRailPanel(
       }
       await verify();
       if (images.length === 1) {
-        if (observedAt !== undefined && groupRank && context && context.user_id?.toString() === qq && selected && relicScore?.incomplete === 0) {
+        if (observedAt !== undefined && groupRank && context && context.user_id?.toString() === qq && selected &&
+            relicScore?.incomplete === 0 && relicScore.mark && relicScore.markClass) {
           await groupRank.observe(context, profileId, role, {
             characterId: selected.id, score: Number(relicScore.mark), grade: relicScore.markClass, observedAt,
           }, verify).catch(() => undefined);

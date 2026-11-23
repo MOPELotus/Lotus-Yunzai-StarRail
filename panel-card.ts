@@ -514,7 +514,7 @@ export async function makePanelDetailCard(
     },
     attr: Object.fromEntries(Object.entries(attr).map(([key, value]) => [key, groupPanelNumber(value, theme.commaGroup)])),
     artisDetail: { charWeight: score?.charWeight ?? {}, mark: score?.mark, markClass: score?.markClass,
-      classTitle: score?.charCfg.classTitle, allAttr, artis }, artisKeyTitle,
+      classTitle: score?.charCfg.classTitle, incomplete: score?.incomplete, allAttr, artis }, artisKeyTitle,
   });
 }
 
