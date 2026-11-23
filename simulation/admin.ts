@@ -104,7 +104,7 @@ export async function runWarpAdministration(request: NonNullable<ReturnType<type
   }
   const saved = field ? await settings.update(current => {
     const key: keyof WarpAllowance = allowanceFields[field as keyof typeof allowanceFields];
-    const amount = key === "recallSeconds" ? number(value, 0, 120) : number(value, 1, 10_000);
+    const amount = key === "recallSeconds" ? number(value, 0, 120) : number(value, 0, 10_000);
     if (group) current.groups[group] = { ...current.groups[group], [key]: amount };
     else current.allowance[key] = amount;
     return current;

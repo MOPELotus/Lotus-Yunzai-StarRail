@@ -319,7 +319,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly isDelegated?: boolean;
       readonly panelTransfer?: PanelTransferAccess;
       readonly offerLegacyPanelRecovery?: LegacyPanelRecoveryOffer;
-      readonly reply?: (message: string, quote?: boolean) => unknown;
+      readonly reply?: (message: string | { readonly type: "image"; readonly file: Uint8Array }, quote?: boolean,
+        options?: Parameters<MessageEvent["reply"]>[2]) => unknown;
     }) {
       const transfer = matchPanelTransferCommand(context.normalizedMessage);
       if (transfer?.game === "sr") return transferPanel(transfer, context);

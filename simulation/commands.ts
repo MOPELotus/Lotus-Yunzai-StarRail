@@ -1,11 +1,13 @@
+import { setTimeout as pause } from "node:timers/promises";
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { CommandReply } from "../../../lib/commands.ts";
+import type { ReplyOptions } from "../../../lib/messages.ts";
 import { parseWarpAdministration, runWarpAdministration } from "./admin.ts";
 import characterNames from "../challenge-character-names.json";
 import { emptyPity, simulateWarps, type WarpPull } from "./draw.ts";
 import { createWarpPoolSource, customWarpPool, isCollaborationWarp, type WarpKind } from "./pools.ts";
 import { renderWarpCard, renderWarpReincarnation } from "./card.ts";
-import { createWarpSettingsStore, readWarpAllowance } from "./settings.ts";
+import { createWarpSettingsStore, readWarpAllowance, type WarpAllowance } from "./settings.ts";
 import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek, type WarpConversation } from "./store.ts";
 
 const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星轨通|星轨|专属|普通|专|通)?票?$/u;
@@ -38,6 +40,7 @@ export function matchesWarpCommand(message: string) {
 interface WarpContext {
   readonly adapter?: "milky";
   readonly forward?: unknown;
+  readonly reply?: (message: Reply, quote?: boolean, options?: ReplyOptions) => unknown;
   readonly user_id?: number;
   readonly group_id?: number;
   readonly isMaster?: boolean;
@@ -48,7 +51,8 @@ interface WarpContext {
 }
 
 type Reply = string | { readonly type: "image"; readonly file: Uint8Array };
-type WarpResult = { readonly text: string; readonly recall?: true } | { readonly pulls: readonly WarpPull[]; readonly pity: number };
+type WarpResult = ({ readonly text: string; readonly summary?: string } |
+  { readonly pulls: readonly WarpPull[]; readonly pity: number }) & { readonly issued?: WarpAllowance };
 const characters = [...new Set(Object.values(characterNames))];
 const aeons = [
   ["阿基维利", "开拓"], ["纳努克", "毁灭"], ["岚", "巡猎"], ["博识尊", "智识"], ["希佩", "同谐"], ["IX", "虚无"],
@@ -157,7 +161,8 @@ export function createStarRailSimulation({
         if (issued) account.balance = { day, special: allowance.special, regular: allowance.regular };
         const balance = account.balance;
         if (!draw || !pool) {
-          const result = { text: `今日你还有 ${balance.special} 张星轨专票和 ${balance.regular} 张星轨通票。` };
+          const result = { text: `今日你还有 ${balance.special} 张星轨专票和 ${balance.regular} 张星轨通票。`,
+            issued: issued ? allowance : undefined };
           return issued ? { document: account, result } : { result };
         }
         const ticket = pool.kind === "standard" ? "regular" : "special";
@@ -170,8 +175,11 @@ export function createStarRailSimulation({
           const total = collaboration ? collaborationToday?.draws : pool.kind === "cone" ? today?.cone : today?.standardAndCharacter;
           const recent = summary?.five ? `今日模拟五星 ${summary.five >= 8 ? `${summary.five} 个` : summary.samples.map(item => `${item.name}（${item.pity} 抽）`).join("、")}`
             : `今日已累计 ${total ?? 0} 抽无五星`;
-          const result = { text: `你的${ticket === "regular" ? "通票" : "专票"}不足。需要 ${draw.count} 张，你还有 ${balance[ticket]} 张。\n${recent}${week >= 2 ? ` · 本周 ${week} 个五星` : ""}`,
-            recall: true as const };
+          const result = {
+            text: `你的${ticket === "regular" ? "通票" : "专票"}不足。需要 ${draw.count} 张，你还有 ${balance[ticket]} 张。`,
+            summary: draw.count > 1 ? `${recent}${week >= 2 ? ` · 本周 ${week} 个五星` : ""}` : undefined,
+            issued: issued ? allowance : undefined,
+          };
           return issued ? { document: account, result } : { result };
         }
         balance[ticket] = isOwner() ? Math.min(Number.MAX_SAFE_INTEGER, balance[ticket] + draw.count) : balance[ticket] - draw.count;
@@ -206,9 +214,20 @@ export function createStarRailSimulation({
           summary.five = Math.min(Number.MAX_SAFE_INTEGER, summary.five + 1);
           if (summary.samples.length < 7) summary.samples.push({ name: pull.name, pity: pull.pity! });
         }
-        return { document: account, result: { pulls, pity: pity.fiveMisses } };
+        return { document: account, result: { pulls, pity: pity.fiveMisses, issued: issued ? allowance : undefined } };
       });
-      if ("text" in result) return recallResult(result.text, result.recall ? allowance.recallSeconds : 0);
+      if (signal.aborted) return;
+      if (result.issued && context.reply) {
+        await context.reply(`今日成功领取 ${result.issued.special} 张专票和 ${result.issued.regular} 张通票。`);
+        if (signal.aborted) return;
+      }
+      if ("text" in result) {
+        if (!result.summary) return result.text;
+        if (!context.reply) return recallResult(`${result.text}\n${result.summary}`, allowance.recallSeconds);
+        await context.reply(result.text);
+        if (signal.aborted) return;
+        return recallResult(result.summary, allowance.recallSeconds);
+      }
       if (!pool || signal.aborted) return;
       const five = result.pulls.filter(item => item.rarity === 5).length;
       const four = result.pulls.filter(item => item.rarity === 4).length;
@@ -216,12 +235,14 @@ export function createStarRailSimulation({
       const shouldRetain = count === 10 ? five >= 1 || four >= 4 : count > 10 && (five >= 2 || four >= 25);
       const recallSeconds = shouldRetain ? 0 : allowance.recallSeconds;
       const intro = `${pool.title} · 模拟 ${count} 抽 · ${five} 个五星 · ${four} 个四星 · 当前垫 ${result.pity} 抽`;
+      const sourceName = context.sender?.nickname;
+      const nickname = typeof sourceName === "string" ? [...sourceName.replace(/\p{Cc}/gu, "").trim()].slice(0, 32).join("") : "";
       const nodes: Reply[] = [intro];
       for (let start = 0; start < result.pulls.length; start += 10) {
         if (signal.aborted) return;
         const pulls = result.pulls.slice(start, start + 10);
         try {
-          const image = await render({ title: pool.title, pity: result.pity, pulls, page: start / 10 + 1,
+          const image = await render({ title: pool.title, nickname: nickname || "开拓者", pity: result.pity, pulls, page: start / 10 + 1,
             pages: Math.ceil(result.pulls.length / 10), inlineImageByteLimit: context.inlineImageByteLimit });
           nodes.push({ type: "image", file: image.png });
         } catch {
@@ -230,6 +251,16 @@ export function createStarRailSimulation({
       }
       if (signal.aborted) return;
       if (nodes.length === 2) return recallResult(typeof nodes[1] === "string" ? `${intro}\n${nodes[1]}` : nodes[1]!, recallSeconds);
+      if (context.reply && (!group || nodes.length <= 4)) {
+        const options = recallSeconds ? { recallMsg: recallSeconds, recallOriginal: false } as const : undefined;
+        for (const [index, node] of nodes.slice(1).entries()) {
+          if (index > 0) await pause(500, undefined, { signal });
+          if (signal.aborted) return;
+          if (options) await context.reply(node, false, options);
+          else await context.reply(node);
+        }
+        return [];
+      }
       const recall = recallSeconds ? { recallSeconds } : {};
       if (typeof context.forward === "function" && context.adapter !== "milky") {
         // Reverse WebSocket RPC carries each image as base64. The gateway accepted 96 MiB in the transport probe.

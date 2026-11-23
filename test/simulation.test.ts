@@ -339,3 +339,47 @@ test("collaboration reads v1 three-pool saves and keeps own group, daily summary
     expect(value.conversations.private).toMatchObject({ pity: { "collaboration-character": { fiveMisses: 10 } } });
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test("zero quota, retained ticket shortage, and direct reply order match the configured conversation", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-delivery-"));
+  const signal = new AbortController().signal;
+  try {
+    let roll = 0.999;
+    const run = createStarRailSimulation({ directory, lockFile, signal, now: () => active,
+      poolSource: createWarpPoolSource(""), random: () => roll, render: async () => { throw new Error("fixture"); } });
+    const sent: unknown[][] = [];
+    const owner = { user_id: 60, group_id: 77, isMaster: true };
+    const context = { user_id: 62, group_id: 77, reply: (...args: unknown[]) => { sent.push(args); return true; } };
+    expect(await run("#设置星铁抽卡专属票0", owner)).toContain("专票 0 张");
+    expect(await run("#设置星铁抽卡撤回时间7", owner)).toContain("撤回 7 秒");
+    expect(await run("#星铁单抽", context)).toContain("专票不足。需要 1 张，你还有 0 张");
+    expect(sent).toEqual([["今日成功领取 0 张专票和 10 张通票。"]]);
+    expect(await run("#星铁十连", context)).toMatchObject({ type: "recallable", seconds: 7,
+      message: expect.stringContaining("今日已累计 0 抽无五星") });
+    expect(sent.at(-1)).toEqual(["你的专票不足。需要 10 张，你还有 0 张。"]);
+    expect(await run("#设置星铁抽卡撤回时间0", owner)).toContain("撤回 0 秒");
+    expect(await run("#星铁十连", context)).toContain("今日已累计 0 抽无五星");
+
+    await run("#设置星铁抽卡专属票100", owner);
+    await run("#设置星铁抽卡撤回时间7", owner);
+    roll = 0;
+    expect(await run("#星铁单抽", { ...context, user_id: 66 })).toMatchObject({
+      type: "recallable", seconds: 7, message: expect.stringContaining("5★"),
+    });
+    roll = 0.999;
+    sent.splice(0);
+    expect(await run("#星铁二十连", { ...context, user_id: 63 })).toEqual([]);
+    expect(sent).toHaveLength(3);
+    expect(sent.slice(1).map(args => args.slice(1))).toEqual([
+      [false, { recallMsg: 7, recallOriginal: false }], [false, { recallMsg: 7, recallOriginal: false }],
+    ]);
+    expect(await run("#星铁四十连", { ...context, user_id: 64 })).toMatchObject({
+      type: "forward", recallSeconds: 7, nodes: expect.any(Array),
+    });
+    sent.splice(0);
+    expect(await run("#星铁四十连", { ...context, group_id: undefined, user_id: 65 })).toEqual([]);
+    expect(sent).toHaveLength(5);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 10_000);

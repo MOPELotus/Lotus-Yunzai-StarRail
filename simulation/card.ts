@@ -25,6 +25,7 @@ const paths = new Set(["开拓", "毁灭", "巡猎", "智识", "同谐", "虚无
 
 interface WarpCard extends StarRailCardOptions {
   readonly title: string;
+  readonly nickname?: string;
   readonly pity: number;
   readonly pulls: readonly WarpPull[];
   readonly page: number;
@@ -255,7 +256,9 @@ function drawResult(ctx: Context, pull: WarpPull, art: Art, theme: Theme, x: num
   ctx.restore();
 }
 
-export async function renderWarpCard({ title, pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode, inlineImageByteLimit }: WarpCard) {
+export async function renderWarpCard({
+  title, nickname = "开拓者", pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode, inlineImageByteLimit,
+}: WarpCard) {
   if (pulls.length < 1 || pulls.length > 10) throw new RangeError("每张跃迁卡需有 1–10 抽。");
   const theme = await loadTheme(themeDirectory, pulls);
   return renderStarRailCard(width, height, ctx => {
@@ -289,7 +292,15 @@ export async function renderWarpCard({ title, pity, pulls, page, pages, themeDir
       }
     }
     if (theme.titleIcon) imageBox(ctx, theme.titleIcon, 110, 42, 55, 55);
-    label(ctx, "跃迁记录", theme.titleIcon ? 185 : 110, 82, theme.font, 44, 240);
+    const titleX = theme.titleIcon ? 185 : 110;
+    label(ctx, "跃迁记录", titleX, 82, theme.font, 44, 240);
+    const nameX = titleX + ctx.measureText("跃迁记录").width + 37;
+    const nameWidth = Math.min(ctx.measureText(nickname).width, 480);
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.roundRect(nameX, 40, nameWidth + 30, 57, 20);
+    ctx.fill();
+    label(ctx, nickname, nameX + 15, 82, theme.font, 44, nameWidth, "left", "#0b0c11");
     ctx.font = `46px ${theme.font}`;
     const poolWidth = Math.min(820, ctx.measureText(title).width + 36);
     const count = `当前垫 ${pity} 抽`;

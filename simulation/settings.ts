@@ -43,15 +43,14 @@ export function validWarpPoolName(value: unknown): value is string {
     [...value].length <= 60 && !/[\u0000-\u001f\u007f]/u.test(value);
 }
 
-const allowanceFields = { special: [1, 10_000], regular: [1, 10_000], recallSeconds: [0, 120] } as const;
+const allowanceLimits = { special: 10_000, regular: 10_000, recallSeconds: 120 } as const;
 function allowance(raw: unknown, complete: boolean) {
   const input = record(raw), parsed: Partial<WarpAllowance> = {};
-  for (const key of Object.keys(input)) if (!Object.hasOwn(allowanceFields, key)) invalid();
-  for (const key of Object.keys(allowanceFields) as (keyof WarpAllowance)[]) {
+  for (const key of Object.keys(input)) if (!Object.hasOwn(allowanceLimits, key)) invalid();
+  for (const key of Object.keys(allowanceLimits) as (keyof WarpAllowance)[]) {
     if (!complete && !Object.hasOwn(input, key)) continue;
-    const [min, max] = allowanceFields[key];
     const value = input[key];
-    if (!integer(value, max) || value < min) invalid();
+    if (!integer(value, allowanceLimits[key])) invalid();
     parsed[key] = value;
   }
   return parsed;
