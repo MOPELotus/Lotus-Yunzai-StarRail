@@ -2,6 +2,7 @@ import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { renderStarRailCard } from "./render-card.ts";
 import { Canvas, loadImage } from "skia-canvas";
+import { groupPanelNumber } from "../../lib/group-panel-rank-settings.ts";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
 import { readStarRailPanelPortrait } from "./panel-portrait.ts";
@@ -24,7 +25,8 @@ function conditionLines(buff: string) {
   return lines;
 }
 
-export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string, avatarId: string, inlineImageByteLimit?: number) {
+export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamage, theme: string, avatarId: string, inlineImageByteLimit?: number,
+  commaGroup?: number) {
   const root = await realpath(theme);
   async function asset(parts: string[]) {
     try {
@@ -53,13 +55,15 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const heading = titleFont ? `${titleFont}, ${fallback}` : fallback;
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;
   const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
+  const formatNumber = (value: number) => groupPanelNumber(number.format(value), commaGroup);
   const labels = damage.rows.map((row, index) => `${index + 1}. ${row.title}`);
   const rowMetrics = (["damage", "shield", "heal", "support"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
   const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
   const baseline = damage.rows[damage.selected]!;
   function formatSwapValue({ average, critical, display, percentage }: Pick<typeof baseline, "average" | "critical" | "display" | "percentage">) {
     if (average === undefined) return "—";
-    return percentage ?? display ?? (number.format(average) + (critical === undefined ? "" : ` / ${number.format(critical)}`));
+    if (percentage !== undefined || display !== undefined) return groupPanelNumber(percentage ?? display!, commaGroup);
+    return formatNumber(average) + (critical === undefined ? "" : ` / ${formatNumber(critical)}`);
   }
   const measure = new Canvas(1, 1).getContext("2d");
   measure.font = `13px ${body}`;
@@ -146,9 +150,9 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
       const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(labels[index]!, 42, y, 18, color);
       if (row.note === undefined) {
-        text(row.critical === undefined ? "—" : number.format(row.critical), critX, y, 18, color, "right");
+        text(row.critical === undefined ? "—" : formatNumber(row.critical), critX, y, 18, color, "right");
       }
-      const value = row.note ?? row.percentage ?? row.display ?? (row.average === undefined ? "—" : number.format(row.average));
+      const value = row.note ?? groupPanelNumber(row.percentage ?? row.display ?? (row.average === undefined ? "—" : number.format(row.average)), commaGroup);
       text(value, valueX, y, 18, color, "right");
     }
 
@@ -166,7 +170,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
           const x = matrixX(index);
           const value = swap ?? baseline;
           const delta = (value.average ?? baselineAverage) - baselineAverage;
-          const deltaLabel = baseline.percentage === undefined ? number.format(delta) : delta.toFixed(1);
+          const deltaLabel = baseline.percentage === undefined ? formatNumber(delta) : groupPanelNumber(delta.toFixed(1), commaGroup);
           const color = delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8";
           text(swap ? `${delta > 0 ? "+" : ""}${deltaLabel}` : "—", x, y, 17, color, "center");
           text(formatSwapValue(value), x, y + 19, 13, "#e1d9e8", "center");

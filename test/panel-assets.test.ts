@@ -24,6 +24,15 @@ test("light-cone panel artwork follows the catalog id while keeping the source d
     expect(model.element).toBe("量子");
     expect(model.data.weapon?.name).toBe(displayName);
     expect(fileURLToPath(model.data.weapon!.splash)).toBe(asset);
+    const avatar = { ...sample.avatars[0]!, stats: [{ key: "hp", value: "12345.60", base: "1000.00" },
+      { key: "cpct", value: "100.00%" }] };
+    const theme = await readTheme(root);
+    const [baseline, grouped] = await Promise.all([
+      makePanelDetailCard(sample, avatar, { ...theme, commaGroup: undefined }, new AbortController().signal),
+      makePanelDetailCard(sample, avatar, { ...theme, commaGroup: 4 }, new AbortController().signal),
+    ]);
+    expect(baseline.attr).toMatchObject({ hp: "12345.60", hpBase: "1000.00", cpct: "100.00%" });
+    expect(grouped.attr).toMatchObject({ hp: "1,2345.60", hpBase: "1000.00", cpct: "100.00%" });
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

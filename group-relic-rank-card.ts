@@ -1,6 +1,6 @@
 // Layout follows the MIT Miao rank-profile-list HTML/CSS at 28607618.
 import type { CanvasRenderingContext2D as Context, Image } from "skia-canvas";
-import { maxGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
+import { groupPanelNumber, maxGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { readTheme, type readPanelRankAvatar } from "./panel-card.ts";
@@ -235,11 +235,12 @@ export async function renderStarRailRelicRank(
         cell(known?.sets.map(set => set.name).join("+") || "—", layout.setX + 45, y + 22, 12, gold,
           layout.dmgX - layout.setX - 61);
         if (relicMark) pill(relicMark.grade, gradeColors[relicMark.grade] ?? "#aaa", layout.setX + 44, y + 34, 25);
-        cell(relicMark?.score.toFixed(1) ?? "—", layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
+        cell(groupPanelNumber(relicMark?.score.toFixed(1) ?? "—", theme.commaGroup),
+          layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
         divider(ctx, layout.dmgX - 15, y + 10);
         cell(known?.damage?.title || "期望伤害", layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
         const damageValue = known?.damage?.value ?? (metric === "damage" ? row.score.toFixed(1) : "—");
-        cell(damageValue, layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
+        cell(groupPanelNumber(damageValue, theme.commaGroup), layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
         divider(ctx, layout.secondX - 15, y + 10);
       });
     });

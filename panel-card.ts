@@ -1,7 +1,7 @@
 import { showcaseProviderNames } from "./panel-showcase.ts";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
-import { readArtifactListLimit } from "../../lib/group-panel-rank-settings.ts";
+import { groupPanelNumber, readArtifactListLimit, readPanelCommaGroup } from "../../lib/group-panel-rank-settings.ts";
 import { readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
@@ -48,11 +48,12 @@ async function readJson(file: string): Promise<Json> {
 export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR?.trim() || starRailGachaThemeDirectory()) {
   const root = resolve(directory);
   const lists = join(root, "meta-sr");
-  const [characters, weapons, relics, relicValues, defaultStyle, customAliases] = await Promise.all([
+  const [characters, weapons, relics, relicValues, defaultStyle, customAliases, commaGroup] = await Promise.all([
     readJson(join(lists, "character", "data.json")), readJson(join(lists, "weapon", "data.json")),
     readJson(join(lists, "artifact", "data.json")), readJson(join(lists, "artifact", "meta.json")),
     Bun.file(join(root, "common", "common.css")).exists(),
     readGameCharacterAliases("sr"),
+    readPanelCommaGroup(),
   ]);
   const relicById = new Map<string, { name: string; abbr?: string; asset: readonly [string, string, string] }>();
   const relicSets = new Map<string, { outer: boolean; pieces: Map<string, { id: string; name: string }> }>();
@@ -76,7 +77,7 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     }
     if (pieces.size) relicSets.set(row.name, { outer: Object.hasOwn(indices, "1"), pieces });
   }
-  return { root, defaultStyle, characters, weapons, relicById, relicSets, relicValues, customAliases };
+  return { root, defaultStyle, characters, weapons, relicById, relicSets, relicValues, customAliases, ...(commaGroup === undefined ? {} : { commaGroup }) };
 }
 
 function lookup(avatar: PanelAvatar, theme: Metadata) {
@@ -321,12 +322,12 @@ function fieldsSource(snapshot: PanelSnapshot) {
   return `公开展板 · ${showcaseProviderNames[snapshot.source]}`;
 }
 
-function coneDetails(cone: PanelAvatar["cone"], metadata: Json) {
+function coneDetails(cone: PanelAvatar["cone"], metadata: Json, commaGroup?: number) {
   const attributes = leveledAttributes(metadata, cone?.level, cone?.promote, true) ?? {};
   const attrs: Record<string, string> = {};
   for (const key of ["hp", "atk", "def"]) {
     const value = attributes[key];
-    attrs[key] = value === undefined ? "—" : panelNumber(value, 1);
+    attrs[key] = value === undefined ? "—" : groupPanelNumber(panelNumber(value, 1), commaGroup);
   }
   const skill = object(metadata.skill);
   const tables = object(skill?.tables);
@@ -335,7 +336,7 @@ function coneDetails(cone: PanelAvatar["cone"], metadata: Json) {
     const values = tables?.[key];
     const value = rank && Array.isArray(values) ? values[rank - 1] : undefined;
     if (typeof value !== "number" || !Number.isFinite(value)) return "—";
-    return percent ? value.toFixed(format === "f2" ? 2 : 1) + "%" : panelNumber(value);
+    return groupPanelNumber(percent ? value.toFixed(format === "f2" ? 2 : 1) + "%" : panelNumber(value), commaGroup);
   });
   const descriptionParts = [];
   let highlight = false;
@@ -496,8 +497,8 @@ export async function makePanelDetailCard(
   }
   const damage = equipmentLabel ? undefined : readStarRailPersonalDamage(avatar, metadata, undefined, derived, skillPreview).damage;
   const damageRows = damage?.rows.map(row => ({
-    title: row.title, critical: row.critical === undefined ? "" : panelNumber(row.critical),
-    average: row.note ?? row.percentage ?? row.display ?? panelNumber(row.average ?? 0),
+    title: row.title, critical: row.critical === undefined ? "" : groupPanelNumber(panelNumber(row.critical), theme.commaGroup),
+    average: row.note ?? groupPanelNumber(row.percentage ?? row.display ?? panelNumber(row.average ?? 0), theme.commaGroup),
   })) ?? [];
   const allAttr = Array.from({ length: 9 }, (_entry, index) => score?.allAttr[index]);
   const source = avatar.legacy && Object.hasOwn(legacySources, avatar.legacy.source) ? legacySources[avatar.legacy.source] : undefined;
@@ -508,10 +509,11 @@ export async function makePanelDetailCard(
     data: {
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
-        ...coneDetails(cone, coneMeta) },
+        ...coneDetails(cone, coneMeta, theme.commaGroup) },
       dataSource: sourceLabel ?? equipmentLabel ?? (source || fieldsSource(snapshot)), updateTime: detailTime(avatar.legacy?.updatedAt ?? snapshot.updatedAt),
     },
-    attr, artisDetail: { charWeight: score?.charWeight ?? {}, mark: score?.mark, markClass: score?.markClass,
+    attr: Object.fromEntries(Object.entries(attr).map(([key, value]) => [key, groupPanelNumber(value, theme.commaGroup)])),
+    artisDetail: { charWeight: score?.charWeight ?? {}, mark: score?.mark, markClass: score?.markClass,
       classTitle: score?.charCfg.classTitle, allAttr, artis }, artisKeyTitle,
   });
 }

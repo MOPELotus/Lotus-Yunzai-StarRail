@@ -27,6 +27,7 @@ import { renderStarRailPanelList } from "./panel-list-skia.ts";
 import { renderStarRailRelicList, renderStarRailRelicMark } from "./panel-relic-skia.ts";
 import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
+import { groupPanelNumber } from "../../lib/group-panel-rank-settings.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
@@ -565,13 +566,15 @@ export function createStarRailPanel(
         }
         if (!result.damage) return `${selected.name}伤害计算暂不可用。${result.reason}。`;
         const damage = equipmentLabel ? { ...result.damage, buffs: [equipmentLabel, ...result.damage.buffs] } : result.damage;
-        const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id, context?.inlineImageByteLimit).catch(() => undefined);
+        const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id, context?.inlineImageByteLimit, theme.commaGroup)
+          .catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
+        const displayed = (value: string | number) => groupPanelNumber(String(value), theme.commaGroup);
         return [equipmentLabel, ...damage.rows.map(row => {
           if (row.average === undefined) return `${row.title} · ${row.note}`;
-          return row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${row.percentage ?? row.display ?? Math.round(row.average)}` :
-            `${row.title} · 暴击 ${Math.round(row.critical)} · 期望 ${Math.round(row.average)}`;
+          return row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${displayed(row.percentage ?? row.display ?? Math.round(row.average))}` :
+            `${row.title} · 暴击 ${displayed(Math.round(row.critical))} · 期望 ${displayed(Math.round(row.average))}`;
         })].filter(Boolean).join("\n");
       }
       let models;

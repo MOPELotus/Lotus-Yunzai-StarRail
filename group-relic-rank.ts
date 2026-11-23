@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createGroupRankRefresh, MAX_PROFILE_ID, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
-import { readGroupPanelRankEnabled, readGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
+import { groupPanelNumber, readGroupPanelRankEnabled, readGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
 import { relicRankCoverageText, relicRankLabels, renderStarRailRelicRank, type RelicRankMetric, type RelicRankRow } from "./group-relic-rank-card.ts";
 import { makePanelDetailCard, readPanelDamageMetadata, readPanelRankAvatar, readTheme, scorePanelAvatarRelics } from "./panel-card.ts";
 import { hasPersonalDamage, readStarRailPersonalDamage } from "./panel-damage.ts";
@@ -396,7 +396,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         if (afterRender) return afterRender;
         if (png) return { type: "image" as const, file: png };
         return [`${character.name} · 本群${label}排行`, relicRankCoverageText(coverage), ...rows.map(({ uid, score, grade }, index) =>
-          [`${index + 1}. UID ${uid}`, score.toFixed(1), grade].filter(Boolean).join(" · "))].join("\n");
+          [`${index + 1}. UID ${uid}`, groupPanelNumber(score.toFixed(1), theme.commaGroup), grade].filter(Boolean).join(" · "))].join("\n");
       } catch {
         if (!active.aborted) return `暂时无法刷新本群公开展板，未生成本轮${label}排行。`;
       } finally {
