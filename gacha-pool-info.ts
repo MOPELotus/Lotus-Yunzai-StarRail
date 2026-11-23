@@ -16,8 +16,15 @@ const version = /^(?:\d+\.)+\d+(?:上半|下半)?$/u;
 const legacyReprintCommand = /^#星铁([^\s#\p{Cc}\p{Cf}]{1,60})复刻$/u;
 const permanentCharacters = new Set(["姬子", "瓦尔特", "杰帕德", "布洛妮娅", "彦卿", "白露", "克拉拉"]);
 const oneDay = 86_400_000;
+// First Fate collaboration roster from thisee/xhh at f898ce6d08ee7a09bede98ef6e9f493d770560d0.
+// Version 3.4 official update confirms the July 11 opening time (HoYoverse news 157441).
+const firstCollaboration: StarRailGachaPeriod = {
+  version: "联动1.0", half: "", from: "2025-07-11 12:00:00", to: "未知",
+  char5: ["Saber", "Archer"], weapon5: ["没有回报的加冕", "理想燃烧的地狱"],
+};
 const help = ["星铁历史卡池", "*3.0卡池 查询整版，*4.1下半卡池 查询单期。",
-  "*白厄卡池、*舞舞舞卡池 查看角色或光锥历次入池，末尾加「详情」显示全套卡池。"].join("\n");
+  "*白厄卡池、*舞舞舞卡池 查看角色或光锥历次入池，末尾加「详情」或使用「跃迁」显示全套卡池。",
+  "*联动卡池、*联动跃迁 查看已收录的首期联动卡池。"].join("\n");
 
 type Section = typeof sections[number];
 type Kind = Section["kind"];
@@ -28,15 +35,18 @@ type Catalog = Readonly<Record<Kind, readonly CatalogItem[]>>;
 type StringMap = Readonly<Record<string, string>>;
 
 export function parseStarRailPoolInfo(message: string) {
-  const request = message.trim();
-  if (/^#星铁卡池(?:帮助)?$/u.test(request)) return { type: "help" } as const;
-  const byVersion = /^#星铁((?:\d+\.)+\d+)(上半|下半)?卡池$/u.exec(request);
+  const request = message.trim().replace(/^#*\*(?:星铁)?/u, "#星铁").replace(/^#+/u, "#");
+  if (/^#?星铁卡池(?:帮助)?$/u.test(request)) return { type: "help" } as const;
+  const byVersion = /^#?星铁((?:\d+\.)+\d+)(上半|下半)?(?:卡池|跃迁)$/u.exec(request);
   if (byVersion?.[1]) return { type: "version", version: byVersion[1], half: byVersion[2] ?? "" } as const;
-  const byItem = /^#([^#]{1,65}?)卡池(详情|详细)?$/u.exec(request);
+  const byItem = /^#?([^#]{1,65}?)(卡池|跃迁)(详情|详细)?$/u.exec(request);
   if (!byItem?.[1] || /^(?:原神|绝区零)/u.test(byItem[1])) return;
   const explicit = byItem[1].startsWith("星铁");
   const item = (explicit ? byItem[1].slice(2) : byItem[1]).trim();
-  if (item && item.length <= 60 && !version.test(item)) return { type: "item", item, detail: !!byItem[2], explicit } as const;
+  if (normalized(item) === "联动") return { type: "collaboration", explicit } as const;
+  if (item && item.length <= 60 && !version.test(item)) {
+    return { type: "item", item, detail: byItem[2] === "跃迁" || !!byItem[3], explicit } as const;
+  }
 }
 
 type Query = Exclude<NonNullable<ReturnType<typeof parseStarRailPoolInfo>>, { readonly type: "help" }>;
@@ -64,7 +74,7 @@ async function readPoolItems(root: string): Promise<Catalog> {
 }
 
 function normalized(value: string) {
-  return value.normalize("NFKC").toLowerCase().replace(/[·•・\s]/gu, "").replaceAll("『", "「").replaceAll("』", "」");
+  return value.normalize("NFKC").toLowerCase().replace(/[·•・,!『』「」\s]/gu, "");
 }
 
 function findItem(items: readonly CatalogItem[], name: string) {
@@ -86,8 +96,29 @@ function fromVersion(value: string) {
 }
 
 function sortPeriods(list: StarRailGachaPeriod[]) {
-  return list.sort((left, right) => fromVersion(right.version) - fromVersion(left.version) ||
-    Number(right.half === "下半") - Number(left.half === "下半"));
+  return list.sort((left, right) => {
+    if (left === firstCollaboration || right === firstCollaboration) return poolTime(right.from) - poolTime(left.from);
+    return fromVersion(right.version) - fromVersion(left.version) || Number(right.half === "下半") - Number(left.half === "下半");
+  });
+}
+
+function includesFirstCollaboration(version: string) {
+  const [major, minor] = version.split(".").map(Number);
+  return major! > 3 || major === 3 && minor! >= 4;
+}
+
+function withFirstCollaboration(catalog: Catalog): Catalog {
+  function append(kind: Kind, names: readonly string[], ids: readonly string[], aliases: StringMap, abbreviations: StringMap = {}) {
+    return [...catalog[kind], ...names.flatMap((name, index) => findItem(catalog[kind], name) ? [] : [{
+      id: ids[index]!, card: { name, abbr: abbreviations[name] ?? name, star: 5 as const },
+      aliases: (aliases[name] ?? "").split(",").filter(Boolean),
+    }])];
+  }
+  return {
+    characters: append("characters", firstCollaboration.char5, ["1014", "1015"], characterAliases, characterAbbreviations),
+    weapons: append("weapons", firstCollaboration.weapon5, ["23045", "23046"],
+      { "没有回报的加冕": "saber专武", "理想燃烧的地狱": "archer专武" }),
+  };
 }
 
 function poolTime(value: string) {
@@ -96,12 +127,14 @@ function poolTime(value: string) {
 
 function reprint(list: readonly StarRailGachaPeriod[], now: number): GachaPoolCardModel["reprint"] {
   let latestEnd = -Infinity;
+  let unknownEnd = false;
   for (const { from, to } of list) {
     const start = poolTime(from), end = poolTime(to);
     if (start <= now && now <= end) return { up: true, days: 0, text: "该角色/武器正在UP" };
+    if (start <= now && !Number.isFinite(end)) unknownEnd = true;
     if (end < now) latestEnd = Math.max(latestEnd, end);
   }
-  if (!Number.isFinite(latestEnd)) return;
+  if (unknownEnd || !Number.isFinite(latestEnd)) return;
   const days = Math.floor((now - latestEnd) / oneDay);
   return { up: false, days, text: `该角色/武器已 ${days} 天未复刻` };
 }
@@ -131,13 +164,16 @@ function itemHistory(periods: readonly StarRailGachaPeriod[], catalog: Catalog, 
 }
 
 export async function readStarRailPoolInfo(root: string, query: Query, now = Date.now()): Promise<GachaPoolCardModel | undefined> {
-  const [periods, catalog] = await Promise.all([readStarRailGachaSchedule(root), readPoolItems(root)]);
+  const [periods, items] = await Promise.all([readStarRailGachaSchedule(root), readPoolItems(root)]);
+  const catalog = withFirstCollaboration(items);
+  if (query.type === "collaboration") return { game: "sr", pools: [formatPeriod(firstCollaboration, catalog)] };
   if (query.type === "version") {
     const selected = sortPeriods(periods.filter((period) => period.version === query.version && (!query.half || period.half === query.half)));
-    if (selected.length) return { game: "sr", pools: selected.map((period) => formatPeriod(period, catalog)) };
-    return;
+    if (!selected.length) return;
+    if (includesFirstCollaboration(query.version)) selected.push(firstCollaboration);
+    return { game: "sr", pools: selected.map((period) => formatPeriod(period, catalog)) };
   }
-  const history = itemHistory(periods, catalog, query.item);
+  const history = itemHistory([...periods, firstCollaboration], catalog, query.item);
   if (history?.selected.length) return {
     game: "sr", pools: sortPeriods(history.selected).map(period => formatPeriod(period, catalog, query.detail ? undefined : history.target)),
     reprint: reprint(history.selected, now),
@@ -188,14 +224,15 @@ export async function queryStarRailPoolInfo(message: string, signal: AbortSignal
     if (!signal.aborted && explicit) return "星铁历史卡池暂时无法读取，请检查本地卡池资料。";
   }
   if (signal.aborted) return;
-  if (!model) return explicit ? `未找到 ${query.type === "version" ? `星铁${query.version}${query.half}` : query.item} 的卡池信息。` : undefined;
+  if (!model) return explicit ? `未找到 ${query.type === "version" ? `星铁${query.version}${query.half}` : query.type === "collaboration" ? "星铁联动" : query.item} 的卡池信息。` : undefined;
   try {
     const { png } = await renderGachaPoolCard(model, { themeDirectory });
     if (!signal.aborted) return { type: "image" as const, file: png };
   } catch {
     if (!signal.aborted) return [model.reprint?.text, ...model.pools.map((period) => {
       const names = period.groups.flatMap((group) => group.rows.flatMap((row) => row.map(({ name }) => name))).join("、");
-      return `${period.version} ${period.half} · ${period.from} 至 ${period.to}${names ? `\n${names}` : ""}`;
+      const title = [period.version, period.half].filter(Boolean).join(" ");
+      return `${title} · ${period.from} 至 ${period.to}${names ? `\n${names}` : ""}`;
     })].filter(Boolean).join("\n");
   }
 }
