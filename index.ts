@@ -46,6 +46,7 @@ import { createStarRailTeamDamageQuery } from "./team-damage-command.ts";
 import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
 import { createStarRailRosterQuery } from "./personal-roster-command.ts";
+import { createStarRailPersonalRecordQuery, matchStarRailPersonalRecord } from "./personal-record.ts";
 import { parseStarRailPersonalRoster } from "./personal-roster-model.ts";
 import { createStarRailGroupRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "./group-relic-rank.ts";
 import { queryStarRailRankStats, resolveStarRailCharacter } from "./rank-statistics.ts";
@@ -140,6 +141,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
   const transferPanel = createStarRailPanelTransfer(profiles, lockFile, signal);
   const roster = createStarRailRosterQuery(profiles, client, signal);
+  const personalRecord = createStarRailPersonalRecordQuery(profiles, client, signal);
   const gridFight = createStarRailGridFightQuery(profiles, client, signal);
   const rogue = createStarRailRogueQuery(profiles, client, signal);
   const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
@@ -266,6 +268,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
       if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
+      if (matchStarRailPersonalRecord(message)) return [];
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
@@ -330,6 +333,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat,
           context.adapter === "milky" ? context.inlineImageByteLimit : undefined);
       }
+      const personalRecordCommand = matchStarRailPersonalRecord(context.normalizedMessage);
+      if (personalRecordCommand) return personalRecord(context, personalRecordCommand);
       const rosterCommand = parseStarRailPersonalRoster(context.normalizedMessage);
       if (rosterCommand) return roster(context, rosterCommand);
       const resolvedRank = groupRankMatches.get(context) ?? parseStarRailRelicRank(context.normalizedMessage);
