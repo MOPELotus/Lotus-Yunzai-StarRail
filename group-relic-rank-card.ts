@@ -12,10 +12,12 @@ export type RelicRankMetric = keyof typeof relicRankLabels;
 export interface RelicRankRow {
   readonly uid: string;
   readonly characterId: string;
+  readonly characterName?: string;
   readonly score: number;
   readonly grade: string;
   readonly relicMark?: { readonly score: number; readonly grade: string };
   readonly presentation?: Awaited<ReturnType<typeof readPanelRankAvatar>>;
+  readonly metric?: RelicRankMetric;
 }
 export interface RelicRankCoverage {
   readonly registered: number;
@@ -88,17 +90,20 @@ function divider(ctx: Context, x: number, y: number) {
 }
 
 export async function renderStarRailRelicRank(
-  character: Character, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
-  coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark",
+  character: Character | undefined, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
+  coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark", aggregate?: { readonly title: string; readonly summary: string },
 ) {
   if (!rows.length || rows.length > maxGroupPanelRankLimit) throw new RangeError(`星铁遗器榜须为 1 至 ${maxGroupPanelRankLimit} 行。`);
   const theme = await readTheme();
-  const meta = object(theme.characters[String(character.id)]);
-  const path = text(meta?.weapon) || rows[0]?.presentation?.path;
+  const meta = character && object(theme.characters[String(character.id)]);
+  const path = aggregate
+    ? rows.some(row => row.presentation?.path === "记忆") ? "记忆" :
+      rows.some(row => row.presentation?.path === "欢愉") ? "欢愉" : undefined
+    : text(meta?.weapon) || rows[0]?.presentation?.path;
   const slotCount = path === "记忆" ? 6 : path === "欢愉" ? 5 : 4;
   const layout = path === "记忆" ? geometry.remembrance : path === "欢愉" ? geometry.elation : geometry.normal;
   const { width } = layout;
-  const element = elementArt[text(meta?.elem) || rows[0]?.presentation?.element || ""] || "sr";
+  const element = aggregate ? "hydro" : elementArt[text(meta?.elem) || rows[0]?.presentation?.element || ""] || "sr";
   const art = (relative: string) => themeArt(theme.root, relative);
   const font = typography(theme.root);
   const [background, texture, badge, first, talentRing, crown, emptyRelics, rarityFrames, rowImages] = await Promise.all([
@@ -106,9 +111,9 @@ export async function renderStarRailRelicRank(
     art("character/imgs/mark-icon.png"), art("character/imgs/mark-icon2.png"), art(`common/bg/talent-${element}.webp`),
     art("character/imgs/crown-sr.webp"), art("common/item/artifact-icon.webp"),
     Promise.all([1, 2, 3, 4, 5].map(star => art(`common/item/bg${star}.png`))),
-    Promise.all(rows.map(async ({ characterId, presentation }) => {
-      const name = text(object(theme.characters[characterId])?.name) || character.name;
-      const fallback = !/[\\/\p{Cc}]/u.test(name) && name !== "." && name !== ".."
+    Promise.all(rows.map(async ({ characterId, characterName, presentation }) => {
+      const name = text(object(theme.characters[characterId])?.name) || characterName || character?.name;
+      const fallback = name && !/[\\/\p{Cc}]/u.test(name) && name !== "." && name !== ".."
         ? art(`meta-sr/character/${name}/imgs/face.webp`) : undefined;
       const [face, weapon, talents, sets] = await Promise.all([
         presentation?.face ? image(presentation.face) : fallback,
@@ -161,8 +166,8 @@ export async function renderStarRailRelicRank(
     ctx.shadowBlur = 3;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
-    const name = character.name.replace(/^(?:穹|星)·(毁灭|存护|同谐|记忆|欢愉)$/u, "开拓者·$1");
-    write(`*${name}${relicRankLabels[metric]}排行`, 20, 63, 36, white, "left", false, true, width - 40);
+    const name = character?.name.replace(/^(?:穹|星)·(毁灭|存护|同谐|记忆|欢愉)$/u, "开拓者·$1");
+    write(aggregate?.title ?? `*${name}${relicRankLabels[metric]}排行`, 20, 63, 36, white, "left", false, true, width - 40);
     ctx.restore();
     box(97, 165 + extra, () => {
       fill(ctx, "#0006", 10, 97, panelWidth, 40);
@@ -178,7 +183,7 @@ export async function renderStarRailRelicRank(
         const next = x + ctx.measureText(title + "：").width + 3;
         write(body, next, y, 13, white, "left", false, false, width - next - 38);
       }
-      if (coverage) write(relicRankCoverageText(coverage), 54, 257, 13, gold, "left", false, false, width - 85);
+      if (coverage) write(aggregate?.summary ?? relicRankCoverageText(coverage), 54, 257, 13, gold, "left", false, false, width - 85);
     });
 
     rows.forEach((row, index) => {
@@ -186,22 +191,26 @@ export async function renderStarRailRelicRank(
       const known = row.presentation;
       const { face, weapon, talents, sets } = rowImages[index]!;
       const lightCone = known?.lightCone;
-      const badgeVariant = metric === "damage" ? "damage" : "mark";
-      const relicMark = metric === "damage" ? row.relicMark : row;
+      const rowMetric = row.metric ?? metric;
+      const badgeVariant = rowMetric === "damage" ? "damage" : "mark";
+      const relicMark = rowMetric === "damage" ? row.relicMark : row;
       box(y, 60, () => {
-        if (index === 0 && first && (metric === "damage" || metric === "mark")) badgeArt(ctx, first, badgeVariant, 15, y + 18, 48, 24);
+        if (aggregate) {
+          framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 18, y + 9, 42, 42, 21, face, true);
+        } else if (index === 0 && first && (metric === "damage" || metric === "mark")) badgeArt(ctx, first, badgeVariant, 15, y + 18, 48, 24);
         else {
           badgeArt(ctx, badge, badgeVariant, 27, y + 18, 24, 24);
           write(index + 1, 39, y + 30, 12, white, "center");
         }
         framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, face, true);
         if (known?.rank !== undefined) pill(known.rank, soulColors[known.rank] ?? "#666", layout.nameX, y + 13, 16);
-        write(known?.name || character.name, layout.nameX + (known?.rank === undefined ? 0 : 18), y + 21, 18, gold,
+        write(known?.name || row.characterName || character?.name || "", layout.nameX + (known?.rank === undefined ? 0 : 18), y + 21, 18, gold,
           "left", true, false, layout.talentX - layout.nameX - 19);
         write(row.uid, layout.nameX, y + 42, 12, white);
 
         for (let key = 0; key < slotCount; key++) {
           const t = known?.talents[key];
+          if (aggregate && !t) continue;
           const x = layout.talentX + key * 50;
           picture(ctx, talentRing, x, y, 56, 56);
           picture(ctx, talents[key], x + 15, y + 15, 26, 26);
@@ -239,7 +248,7 @@ export async function renderStarRailRelicRank(
           layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
         divider(ctx, layout.dmgX - 15, y + 10);
         cell(known?.damage?.title || "期望伤害", layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
-        const damageValue = known?.damage?.value ?? (metric === "damage" ? row.score.toFixed(1) : "—");
+        const damageValue = known?.damage?.value ?? (rowMetric === "damage" ? row.score.toFixed(1) : "—");
         cell(groupPanelNumber(damageValue, theme.commaGroup), layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
         divider(ctx, layout.secondX - 15, y + 10);
       });

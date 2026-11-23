@@ -83,6 +83,18 @@ test("星铁群榜优先匹配完整别名，再兼容只表示旧档号的尾�
   expect(await resolveStarRailRelicRank("*花骑士排行2", aliases)).toMatchObject({ character: { id: 1302 } });
 });
 
+test("无角色名的星铁群榜单独解析，保留旧指标与档号写法", async () => {
+  for (const [command, metric] of [
+    ["*最强排行", "damage"], ["#星铁群内排行最强", "damage"], ["*最高分排行", "mark"],
+    ["#星铁遗器排名 2", "mark"], ["*双暴排行", "crit"], ["*词条排行", "valid"],
+  ]) {
+    const aliases = async () => { throw new Error("聚合榜无需查询角色别名"); };
+    expect(await resolveStarRailRelicRank(command!, aliases)).toMatchObject({ character: undefined, metric });
+  }
+  expect(parseStarRailRelicRank("#原神最高分排行")).toBeUndefined();
+  expect(parseStarRailRelicRank("*重置群排行")).toBeUndefined();
+});
+
 const relicList = [
   { tid: 61021, type: 1, level: 15, mainAffixId: 1, subAffixList: [{ affixId: 7, cnt: 2, step: 1 }] },
   { tid: 61023, type: 3, level: 15, mainAffixId: 4, subAffixList: [{ affixId: 8, cnt: 3, step: 3 }, { affixId: 9, cnt: 1, step: 0 }] },
@@ -129,6 +141,47 @@ async function fixture() {
     });
   return { root, directory, account, rank, asked, use, setProvider, panelStore: createStarRailPanelArchive(lockFile, panelDirectory) };
 }
+
+test("星铁全群榜按角色选冠军，同 UID 只拉一次且渲染一张聚合图", async () => {
+  const { root, rank, asked, use } = await fixture();
+  const captured: unknown[] = [];
+  const png = new Uint8Array([1]);
+  let enabled = true;
+  let departingMember = false;
+  let departDuringRender = false;
+  try {
+    const board = rank(async (character, rows, _mode, _budget, _coverage, metric, aggregate) => {
+      captured.push([character, metric, aggregate?.title, rows.map(row => [row.characterId, row.uid, row.metric])]);
+      if (departDuringRender) departingMember = true;
+      return { png };
+    }, {
+      scoreDamage: async avatar => avatar.relics.length * 100,
+      renderStrongest: async () => { throw new Error("聚合榜不逐个发角色详情"); },
+      readEnabled: async (_game, group, fallback) => group === 77 && enabled && fallback,
+    });
+    await board.register(group77, 1, role(uid42), 111, verified);
+    await board.register({ ...group77, user_id: 43 }, 1, role(uid43), 111, verified);
+    await board.register({ ...group77, user_id: 45 }, 1, role(uid45), 111, verified);
+    use(uid => uid === uid42 ? visible(uid, avatar(3), avatar(2, 1102)) : visible(uid, avatar(2), avatar(3, 1102)));
+    const context = { ...group77, listCurrentGroupMembers: async () => [42, ...(departingMember ? [] : [43]), 99].map(id => ({ id })) };
+    expect(await board.query("*最强排行", context)).toEqual({ type: "image", file: png });
+    expect(await board.query("#星铁最高分排行", context)).toEqual({ type: "image", file: png });
+    expect(asked.slice(0, 2).sort()).toEqual([uid42, uid43]);
+    expect(asked.slice(2).sort()).toEqual([uid42, uid43]);
+    expect(captured).toEqual([
+      [undefined, "damage", "*最强排行", [["1302", uid42, "damage"], ["1102", uid43, "damage"]]],
+      [undefined, "mark", "*最高分排行", [["1302", uid42, "mark"], ["1102", uid43, "mark"]]],
+    ]);
+    departDuringRender = true;
+    expect(await board.query("*最强排行", context)).toContain("群成员或档案已变化");
+    expect(asked.slice(4).sort()).toEqual([uid42, uid43]);
+    enabled = false;
+    expect(await board.query("*最强排行", context)).toContain("未启用");
+    expect(asked).toHaveLength(6);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("群内查看本人星铁角色面板会登记当场刷新所需的 UID", async () => {
   const { root, rank, panelStore, asked } = await fixture();
