@@ -82,21 +82,29 @@ function matchRankTarget(targets: NonNullable<ReturnType<typeof relicRankTargets
   }
 }
 
+function legacyRelicRankTargets(message: string) {
+  const suffix = /(?<!\d)([1-9]\d{0,2})$/u.exec(message);
+  return suffix && Number(suffix[1]) <= MAX_PROFILE_ID ? relicRankTargets(message.slice(0, suffix.index).trimEnd()) ?? [] : [];
+}
+
 export function parseStarRailRelicRank(message: string) {
-  const targets = relicRankTargets(message);
-  if (targets) return matchRankTarget(targets);
+  return matchRankTarget(relicRankTargets(message) ?? []) ?? matchRankTarget(legacyRelicRankTargets(message));
 }
 
 export async function resolveStarRailRelicRank(message: string, readAliases = () => readGameCharacterAliases("sr")) {
-  const targets = relicRankTargets(message);
-  if (!targets) return;
+  const targets = relicRankTargets(message) ?? [];
   const preset = matchRankTarget(targets);
   if (preset) return preset;
+  const legacy = legacyRelicRankTargets(message);
+  if (!targets.length && !legacy.length) return;
+  const legacyPreset = matchRankTarget(legacy);
+  if (!targets.length && legacyPreset) return legacyPreset;
   const aliases = await readAliases();
-  return matchRankTarget(targets, name => {
+  const findAlias = (name: string) => {
     const canonical = aliases.get(characterAliasKey(name));
     if (canonical) return findStarRailRankCharacter(canonical);
-  });
+  };
+  return matchRankTarget(targets, findAlias) ?? legacyPreset ?? matchRankTarget(legacy, findAlias);
 }
 
 export function matchStarRailRelicRank(message: string) {

@@ -257,14 +257,14 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
       if (parseStarRailRogue(message)) return ["[starrail] 宇宙战绩"];
       const panelCommand = parsePanelCommand(message);
-      if (parseStarRailRelicRank(message) || panelCommand?.type === "discard" || panelCommand?.type === "extreme") return ["[starrail] 角色面板"];
-      if (parseChallengeQuery(message) || parseStarRailPersonalRoster(message) || (panelCommand && panelCommand.type !== "detail")) return [];
-      if (!panelCommand && (matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message))) return ["[gacha] 抽卡记录"];
-      const customRank = await resolveStarRailRelicRank(message);
-      if (customRank) {
-        groupRankMatches.set(context, customRank);
+      if (panelCommand?.type === "discard" || panelCommand?.type === "extreme") return ["[starrail] 角色面板"];
+      const rank = await resolveStarRailRelicRank(message);
+      if (rank) {
+        groupRankMatches.set(context, rank);
         return ["[starrail] 角色面板"];
       }
+      if (parseChallengeQuery(message) || parseStarRailPersonalRoster(message) || (panelCommand && panelCommand.type !== "detail")) return [];
+      if (!panelCommand && (matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message))) return ["[gacha] 抽卡记录"];
       return [];
     },
     async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & Pick<MessageEvent, "forward" | "privateCredentialSignal"> & {

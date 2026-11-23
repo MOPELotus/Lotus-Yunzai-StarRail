@@ -35,12 +35,16 @@ test("matches ordinary group ranks, explicit relic metrics and strongest without
 });
 
 test("旧复合群榜指令仍分发为列表并优先显式指标", () => {
-  for (const command of ["#星铁群内最强希儿排行", "*群内最强希儿排行", "#星铁群内排行最强希儿", "*群内最强希儿面版排行榜"]) {
+  for (const command of ["#星铁群内最强希儿排行", "*群内最强希儿排行", "#星铁群内排行最强希儿", "*群内最强希儿面版排行榜", "*群内排行最强希儿2"]) {
     expect(parseStarRailRelicRank(command)).toMatchObject({ character: { id: 1102 }, metric: "damage", strongest: false });
   }
   expect(parseStarRailRelicRank("*群内最高分希儿排行")).toMatchObject({ metric: "mark", strongest: false });
   expect(parseStarRailRelicRank("#星铁群内排行最高分希儿双暴")).toMatchObject({ metric: "crit", strongest: false });
   expect(parseStarRailRelicRank("#原神群内最强胡桃排行")).toBeUndefined();
+  expect(parseStarRailRelicRank("*最强银枝面板 255")).toMatchObject({ character: { id: 1302 }, metric: "damage", strongest: true });
+  for (const command of ["*银枝排名0", "*银枝排名256", "*银枝排名100000001", "*银枝排名统计2"]) {
+    expect(parseStarRailRelicRank(command)).toBeUndefined();
+  }
 });
 
 test("自定义别名用于星铁普通群榜、遗器及榜首，保留独立排名统计", async () => {
@@ -67,6 +71,13 @@ test("自定义别名用于星铁普通群榜、遗器及榜首，保留独立�
   });
   expect(await resolveStarRailRelicRank("*双暴花骑士加权有效词条排行", aliases)).toBeUndefined();
   expect(reads).toBe(4);
+});
+
+test("星铁群榜优先匹配完整别名，再兼容只表示旧档号的尾随数字", async () => {
+  const aliases = async () => new Map([["花骑士", "银枝"], ["银枝2", "希儿"]]);
+  expect(await resolveStarRailRelicRank("*最强银枝2", aliases)).toMatchObject({ character: { id: 1102 }, strongest: true });
+  expect(await resolveStarRailRelicRank("*最强银枝3", aliases)).toMatchObject({ character: { id: 1302 }, strongest: true });
+  expect(await resolveStarRailRelicRank("*花骑士排行2", aliases)).toMatchObject({ character: { id: 1302 } });
 });
 
 const relicList = [
@@ -142,7 +153,7 @@ test("星铁最强实时重刷所有登记，且只用当轮公开展板渲染�
     }
     expect(asked).toEqual([]);
     use(uid => visible(uid, avatar(uid === uid43 ? 3 : 2)));
-    expect(await board.query("*最强银枝面板", group77)).toEqual([
+    expect(await board.query("*最强银枝面板255", group77)).toEqual([
       expect.stringContaining(`本轮伤害榜首 · UID ${uid43}`), { type: "image", file: png },
     ]);
     expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
