@@ -1,5 +1,6 @@
 import { setTimeout as wait } from "node:timers/promises";
 import type { GameRole } from "@lotus-yunzai/account";
+import { normalizeStarRailRegion } from "./region.ts";
 import { selectStarRailUigf, type StarRailUigfArchive, type StarRailUigfPool } from "./gacha-uigf.ts";
 
 const origin = { hkrpg_cn: "https://public-operation-hkrpg.mihoyo.com", hkrpg_global: "https://public-operation-hkrpg-sg.hoyoverse.com" } as const;
@@ -10,7 +11,7 @@ const collaborationPath = relativePath + "getLdGachaLog";
 const pools = ["1", "2", "11", "12", "21", "22"] as const;
 const regions = {
   prod_gf_cn: "hkrpg_cn", prod_qd_cn: "hkrpg_cn", prod_official_usa: "hkrpg_global",
-  prod_official_euro: "hkrpg_global", prod_official_asia: "hkrpg_global", prod_official_cht: "hkrpg_global",
+  prod_official_eur: "hkrpg_global", prod_official_asia: "hkrpg_global", prod_official_cht: "hkrpg_global",
 } as const;
 const pageSize = 20;
 const maxPageBytes = 256 * 1024;
@@ -21,8 +22,10 @@ type Transport = (url: URL, init: RequestInit) => Promise<Response>;
 
 export class StarRailGachaLinkError extends Error {}
 
-export function checkedStarRailLinkRole({ uid, region, gameBiz }: GameRole): LinkRole {
-  if (!/^[1-9]\d{8,9}$/u.test(uid) || !Object.hasOwn(regions, region) || regions[region as Region] !== gameBiz) {
+export function checkedStarRailLinkRole(role: GameRole): LinkRole {
+  const { uid, gameBiz } = role;
+  const region = normalizeStarRailRegion(role.region);
+  if (!region || !/^[1-9]\d{8,9}$/u.test(uid) || !Object.hasOwn(regions, region) || regions[region as Region] !== gameBiz) {
     throw new StarRailGachaLinkError("当前档案没有可核验的星铁 UID 和区服，请先同步角色。");
   }
   return { uid, region: region as Region, gameBiz: gameBiz as LinkRole["gameBiz"] };
@@ -48,7 +51,7 @@ function readKey(input: string, role: LinkRole): string {
   const suppliedRegion = param("region");
   const suppliedBiz = param("game_biz");
   const version = param("authkey_ver");
-  if (suppliedRegion !== undefined && suppliedRegion !== role.region ||
+  if (suppliedRegion !== undefined && normalizeStarRailRegion(suppliedRegion) !== role.region ||
       suppliedBiz !== undefined && suppliedBiz !== role.gameBiz || version !== undefined && version !== "1") invalidLink();
   for (const field of ["uid", "game_uid"]) {
     const uid = param(field);
@@ -141,7 +144,7 @@ export async function readStarRailGachaLink(input: string, role: LinkRole, signa
       }
       const data = payload.data;
       if (payload.retcode !== 0 || !object(data) || !Array.isArray(data.list) || data.list.length > pageSize ||
-          data.region !== undefined && data.region !== role.region ||
+          data.region !== undefined && normalizeStarRailRegion(data.region) !== role.region ||
           data.uid !== undefined && String(data.uid) !== role.uid) badResponse();
       if (data.region_time_zone !== undefined) {
         const offset = data.region_time_zone;

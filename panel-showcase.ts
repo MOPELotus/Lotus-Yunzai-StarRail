@@ -1,4 +1,5 @@
 import type { GameRole } from "@lotus-yunzai/account";
+import { normalizeStarRailRegion } from "./region.ts";
 import { canonicalStarRailPanelCharacter, id, object, readLegacyPanel, whole, type PanelSnapshot, type ShowcaseProvider } from "./panel-model.ts";
 
 const endpoints = {
@@ -10,7 +11,7 @@ export const showcaseProviderNames = { mihomo: "Mihomo", avocado: "Avocado", enk
 const serverCodes: Readonly<Record<string, ShowcaseProvider>> = { "0": "mihomo", "2": "mihomo", "3": "avocado", "4": "enka" };
 const uidRegions: Readonly<Record<string, string>> = {
   "1": "prod_gf_cn", "2": "prod_gf_cn", "3": "prod_gf_cn", "4": "prod_gf_cn", "5": "prod_qd_cn",
-  "6": "prod_official_usa", "7": "prod_official_euro", "8": "prod_official_asia", "18": "prod_official_asia", "9": "prod_official_cht",
+  "6": "prod_official_usa", "7": "prod_official_eur", "8": "prod_official_asia", "18": "prod_official_asia", "9": "prod_official_cht",
 };
 const skillKeys: Readonly<Record<string, string>> = { "001": "a", "002": "e", "003": "q", "004": "t", "007": "z", "301": "me", "302": "mt", "420": "xe" };
 type Role = Pick<GameRole, "uid" | "region" | "gameBiz">;
@@ -33,7 +34,7 @@ export function showcaseTarget(role: Role, config = "0") {
   const region = uidRegions[prefix];
   const regionIndex = region === "prod_gf_cn" ? 0 : region === "prod_qd_cn" ? 1 : 2;
   const biz = regionIndex === 2 ? "hkrpg_global" : "hkrpg_cn";
-  if (!region || (role.region && role.region !== region) || (role.gameBiz && role.gameBiz !== biz)) {
+  if (!region || (role.region && normalizeStarRailRegion(role.region) !== region) || (role.gameBiz && role.gameBiz !== biz)) {
     throw new ShowcaseError("所选星铁档案的 UID 与区服不一致，无法查询公开展板。");
   }
   const choice = /^[0-4]{1,3}$/u.test(config) ? config[regionIndex] ?? config[0]! : "";
@@ -121,7 +122,7 @@ function normalizeShowcase(input: unknown, { uid, region, provider }: ReturnType
   const claimed = [root?.uid, profile?.uid].filter(value => value !== undefined);
   if (!profile) throw new ShowcaseError("公开星铁展板没有可用角色资料，请检查游戏内展板设置。", true);
   const regions = [root?.region, profile.region, root?.server, profile.server];
-  if (!claimed.length || claimed.some(value => id(value) !== uid) || regions.some(value => value !== undefined && value !== region)) {
+  if (!claimed.length || claimed.some(value => id(value) !== uid) || regions.some(value => value !== undefined && normalizeStarRailRegion(value) !== region)) {
     throw new ShowcaseError("公开星铁展板的 UID 或区服不匹配，未保存响应。");
   }
   const assist = avocado ? (profile.assistAvatar ? [profile.assistAvatar] : [])

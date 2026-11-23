@@ -86,6 +86,31 @@ test("international links preserve the returned local time and never use the nat
   await expect(readStarRailGachaLink(url, selected, signal, verify)).rejects.toThrow("完整星铁官方");
 });
 
+test("星铁欧服逐抽链接兼容新旧区服字段，错区链接和回包不会导入", async () => {
+  const uid = "700000123", canonical = "prod_official_eur", legacy = "prod_official_euro";
+  const origin = "https://public-operation-hkrpg-sg.hoyoverse.com";
+  const signal = new AbortController().signal;
+  const link = (region: string) => origin + path + "getGachaLog?authkey=fixture-eur&region=" + region;
+  for (const [saved, returned] of [[canonical, legacy], [legacy, canonical]] as const) {
+    const selected = checkedStarRailLinkRole({ ...role, uid, region: saved, gameBiz: "hkrpg_global" });
+    expect(selected.region).toBe(canonical);
+    const load = (region: string) => readStarRailGachaLink(link(returned), selected, signal, verify, {
+      intervalMs: 0,
+      async transport(endpoint) {
+        expect(endpoint.origin).toBe(origin);
+        const hasRow = endpoint.searchParams.get("gacha_type") === "11" && endpoint.searchParams.get("page") === "1";
+        return Response.json({ retcode: 0, data: { region, region_time_zone: 1,
+          list: hasRow ? [row("1800000000000000011", "11", uid)] : [] } });
+      },
+    });
+    await expect(load(returned)).resolves.toMatchObject({ uid, timezone: 1, records: [{ uid, gacha_type: "11" }] });
+    await expect(load("prod_official_asia")).rejects.toThrow("不一致");
+    await expect(readStarRailGachaLink(link("prod_official_asia"), selected, signal, verify, {
+      transport: async () => { throw new Error("错区链接不应出站"); },
+    })).rejects.toThrow("完整星铁官方");
+  }
+});
+
 test("session is bound to bot, QQ, verified login and profile and merges atomically without storing the link", async () => {
   const root = await mkdtemp(join(tmpdir(), "lotus-sr-gacha-link-"));
   try {

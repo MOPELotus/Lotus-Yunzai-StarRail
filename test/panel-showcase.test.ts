@@ -39,6 +39,19 @@ test("旧展板和备用入口选择原服务器位，拒绝错区服和私有 T
   expect(() => showcaseTarget(cn, "1")).toThrow("旧私有 Token");
 });
 
+test("星铁欧服展板统一两种区服写法，并拒绝其他区服的回包", async () => {
+  const uid = "700000123", canonical = "prod_official_eur", legacy = "prod_official_euro";
+  for (const [saved, returned] of [[canonical, legacy], [legacy, canonical]] as const) {
+    const target = showcaseTarget({ uid, region: saved, gameBiz: "hkrpg_global" }, "0");
+    expect(target.region).toBe(canonical);
+    const load = (region: string) => fetchStarRailShowcase(target, signal, async () =>
+      Response.json({ region, detailInfo: { uid, avatarDetailList: [character] } }), now);
+    await expect(load(returned)).resolves.toMatchObject({ uid, source: "mihomo" });
+    await expect(load(os.region)).rejects.toThrow("区服不匹配");
+  }
+  expect(() => showcaseTarget({ uid, region: os.region, gameBiz: "hkrpg_global" }, "0")).toThrow("区服不一致");
+});
+
 test("宿主将旧角色名刷新指令交给公开服务，普通和米游社刷新只调用官方角色接口", async () => {
   const root = await mkdtemp(join(tmpdir(), "lotus-starrail-named-showcase-"));
   const env = {
