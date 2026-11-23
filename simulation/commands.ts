@@ -3,13 +3,13 @@ import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { CommandReply } from "../../../lib/commands.ts";
 import type { ReplyOptions } from "../../../lib/messages.ts";
 import { parseWarpAdministration, runWarpAdministration } from "./admin.ts";
-import characterNames from "../challenge-character-names.json";
+import { pickWarpIdentity, readWarpAvatar, readWarpIdentityCatalog } from "./reincarnation.ts";
 import { emptyPity, simulateWarps, type WarpPull } from "./draw.ts";
 import { createWarpPoolSource, customWarpPool, isCollaborationWarp, personalWarpPool, type WarpKind } from "./pools.ts";
 import { createPersonalWarpPoolReader } from "./personal-pools.ts";
 import { renderWarpCard, renderWarpReincarnation } from "./card.ts";
 import { createWarpSettingsStore, readWarpAllowance, type WarpAllowance } from "./settings.ts";
-import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek, type WarpConversation } from "./store.ts";
+import { createWarpArchive, integer, lockWarpReincarnation, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek, type WarpConversation } from "./store.ts";
 
 const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星轨通|星轨|专属|普通|专|通)?票?$/u;
 const oneBotForwardLimit = 96 * 1024 * 1024;
@@ -54,13 +54,6 @@ interface WarpContext {
 type Reply = string | { readonly type: "image"; readonly file: Uint8Array };
 type WarpResult = ({ readonly text: string; readonly summary?: string } |
   { readonly pulls: readonly WarpPull[]; readonly pity: number }) & { readonly issued?: WarpAllowance };
-const characters = [...new Set(Object.values(characterNames))];
-const aeons = [
-  ["阿基维利", "开拓"], ["纳努克", "毁灭"], ["岚", "巡猎"], ["博识尊", "智识"], ["希佩", "同谐"], ["IX", "虚无"],
-  ["克里珀", "存护"], ["药师", "丰饶"], ["阿哈", "欢愉"], ["伊德莉拉", "纯美"], ["塔伊兹育罗斯", "繁育"],
-  ["奥博洛斯", "贪饕"], ["迷思", "神秘"], ["互", "均衡"], ["末王", "终末"], ["龙", "不朽"], ["太一", "秩序"], ["浮黎", "记忆"],
-] as const;
-
 function format(pull: WarpPull) {
   return `${pull.order}. ${pull.rarity}★ ${pull.name}${pull.featured ? " UP" : ""}${pull.pity ? `（第 ${pull.pity} 抽）` : ""}`;
 }
@@ -73,6 +66,7 @@ export function createStarRailSimulation({
   lockFile, signal, directory = warpStateDirectory(),
   poolSource = createWarpPoolSource(), now = Date.now, random = Math.random, render = renderWarpCard,
   renderReincarnation = renderWarpReincarnation,
+  readIdentityCatalog = readWarpIdentityCatalog, loadAvatar = readWarpAvatar,
 }: {
   readonly lockFile: AcquireRoleArchiveLock;
   readonly signal: AbortSignal;
@@ -82,6 +76,8 @@ export function createStarRailSimulation({
   readonly random?: () => number;
   readonly render?: typeof renderWarpCard;
   readonly renderReincarnation?: typeof renderWarpReincarnation;
+  readonly readIdentityCatalog?: typeof readWarpIdentityCatalog;
+  readonly loadAvatar?: typeof readWarpAvatar;
 }) {
   const archive = createWarpArchive(directory, lockFile);
   const settings = createWarpSettingsStore(lockFile, directory);
@@ -120,31 +116,44 @@ export function createStarRailSimulation({
       const rules = await settings.read();
       signal.throwIfAborted();
       if (relife) {
-        const outcome = await archive.update<{ remainingMinutes: number } | { name: string; path?: string }>(
-          { qq, uid: "1" }, async () => signal.throwIfAborted(), raw => {
-          const account = readWarpAccount(raw);
-          if (!isOwner() && (account.reincarnatedUntil ?? 0) > time) {
-            return { result: { remainingMinutes: Math.ceil((account.reincarnatedUntil! - time) / 60_000) } };
-          }
-          account.reincarnatedUntil = time + rules.reincarnationMinutes * 60_000;
-          const asAeon = random() < 0.5;
-          const choice = random();
-          const [name, path] = asAeon ? aeons[Math.floor(choice * aeons.length)]! : [characters[Math.floor(choice * characters.length)]!];
-          return { document: account, result: { name, path } } as const;
-        });
-        if ("remainingMinutes" in outcome) return `转生冷却中，还需等待 ${outcome.remainingMinutes} 分钟。`;
-        const { name, path } = outcome;
-        const sender = context.sender?.card || context.sender?.nickname;
-        const nickname = typeof sender === "string" && sender.trim() ? [...sender.trim()].slice(0, 32).join("") : "开拓者";
-        const title = `${nickname}，恭喜你转生成了 ${name}${path ? ` · ${path}` : ""}。`;
+        if (context.isDelegated) return "请在自己的会话使用星铁转生。";
+        const gate = await lockWarpReincarnation(directory, qq, lockFile);
         try {
-          const { png } = await renderReincarnation({ name, path, nickname, qq, allegiance: path && "星神",
-            inlineImageByteLimit: context.inlineImageByteLimit });
+          signal.throwIfAborted();
+          const account = readWarpAccount(await archive.read(qq, "1"));
+          const remaining = (account.reincarnatedUntil ?? 0) - now();
+          if (!isOwner() && remaining > 0) {
+            return `转生冷却中，还需等待 ${Math.ceil(remaining / 60_000)} 分钟。`;
+          }
+          const identityCatalog = await readIdentityCatalog();
+          const { name, path, allegiance, description } = pickWarpIdentity(identityCatalog, random);
+          const sender = context.sender?.nickname;
+          const nickname = (typeof sender === "string"
+            ? [...sender.replace(/\p{Cc}/gu, "").trim()].slice(0, 32).join("") : "") || "开拓者";
+          let png: Uint8Array;
+          try {
+            const avatar = await loadAvatar(qq, signal);
+            signal.throwIfAborted();
+            ({ png } = await renderReincarnation({ name, path, nickname, qq, allegiance, description, avatar,
+              colors: identityCatalog.colors, inlineImageByteLimit: context.inlineImageByteLimit }));
+            if (!png.length) throw new Error("转生图片为空。");
+          } catch {
+            if (signal.aborted) return;
+            const title = `${nickname}，恭喜你转生成了 ${name}${path ? ` · ${path}` : ""}。`;
+            return description ? `${title}\n身份：${description}` : title;
+          }
+          signal.throwIfAborted();
+          const until = now() + rules.reincarnationMinutes * 60_000;
+          await archive.update({ qq, uid: "1" }, async () => signal.throwIfAborted(), raw => {
+            const current = readWarpAccount(raw);
+            current.reincarnatedUntil = until;
+            return { document: current, result: undefined };
+          });
           if (!signal.aborted) return { type: "image", file: png };
-        } catch {
-          if (!signal.aborted) return title;
+          return;
+        } finally {
+          gate.close();
         }
-        return;
       }
       if (!rules.enabled) return "星铁模拟跃迁功能已关闭。";
       if (draw && draw.count > 10 && !rules.multiple) return "星铁模拟跃迁未开启多连抽。";

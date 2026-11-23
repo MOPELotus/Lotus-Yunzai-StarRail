@@ -5,6 +5,7 @@ import { registerGachaThemeFont } from "../../../packages/skia/gacha-theme-fonts
 import { readStarRailGachaItems, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
 import { renderStarRailCard, type StarRailCardOptions } from "../render-card.ts";
 import type { WarpPull } from "./draw.ts";
+import { starRailReincarnationThemeDirectory } from "./reincarnation-theme.ts";
 
 type Picture = Awaited<ReturnType<typeof loadImage>>;
 type Context = Parameters<Parameters<typeof renderStarRailCard>[2]>[0];
@@ -103,57 +104,114 @@ async function loadTheme(directory: string, pulls: readonly WarpPull[]) {
   return { layers, backdrop, titleIcon, star, artwork, font: fonts ? `${fonts}, ${fallbackFont}` : fallbackFont };
 }
 
-export async function renderWarpReincarnation({ name, nickname, qq, path, allegiance, inlineImageByteLimit, mode }: StarRailCardOptions & {
+export async function renderWarpReincarnation({
+  name, nickname, qq, path, allegiance, description, avatar, colors, inlineImageByteLimit, mode,
+}: StarRailCardOptions & {
   readonly name: string; readonly nickname: string; readonly qq: string; readonly path?: string; readonly allegiance?: string;
+  readonly description?: string; readonly avatar?: Uint8Array; readonly colors?: Readonly<Record<string, string>>;
 }) {
   const themeDirectory = starRailGachaThemeDirectory();
   const theme = await loadTheme(themeDirectory, [{ name, kind: "角色", rarity: 5, order: 1, featured: false }]);
   const art = theme.artwork[0];
-  const warp = await realpath(Bun.env.LOTUS_STAR_RAIL_WARP_THEME_DIR?.trim() || resolve(themeDirectory, "simulation")).catch(() => undefined);
-  const otherPortrait = path && await asset(warp, `img/icon/other/${name}.png`).then(file => file ? loadImage(file).catch(() => undefined) : undefined);
-  const backdrop = await asset(warp, "img/bg/bg1.png").then(file => file ? loadImage(file).catch(() => undefined) : undefined);
+  const warp = await realpath(starRailReincarnationThemeDirectory()).catch(() =>
+    realpath(resolve(themeDirectory, "simulation")).catch(() => undefined));
+  function picture(relative: string) {
+    return asset(warp, relative).then(file => file ? loadImage(file).catch(() => undefined) : undefined);
+  }
   const faction = allegiance ?? art?.allegiance;
   const factionKey = faction?.startsWith("仙舟") && faction !== "仙舟「罗浮」" ? "仙舟联盟" : faction;
-  const emblem = factionKey && await asset(warp, `img/icon/allegiance/${factionKey}.png`).then(file => file ? loadImage(file).catch(() => undefined) : undefined);
-  const fields = [
-    ["命途", path ?? art?.pathName],
-    ["阵营", faction],
-    ["身份", path ? "星神" : "星穹铁道角色"],
-  ] as const;
+  const [otherPortrait, backdrop, emblem, userAvatar, titleFont, detailFont] = await Promise.all([
+    path ? picture(`img/icon/other/${name}.png`) : undefined,
+    picture("img/bg/bg1.png"),
+    factionKey ? picture(`img/icon/allegiance/${factionKey}.png`) : undefined,
+    avatar?.length ? loadImage(Buffer.from(avatar)).catch(() => undefined) : undefined,
+    asset(warp, "font/NZBZ.ttf").then(file => file ? registerGachaThemeFont("StarRailRelifeTitle", file) : theme.font).catch(() => theme.font),
+    asset(warp, "font/SHCN-Bold.otf", 16 * 1024 * 1024).then(file => file ? registerGachaThemeFont("StarRailRelifeDetail", file) : theme.font).catch(() => theme.font),
+  ]);
+  const fields = [["命途", path ?? art?.pathName], ["阵营", faction]] as const;
   const elementColor: Readonly<Record<string, string>> = {
-    虚数: "#8b6800", 量子: "#444bb5", 风: "#116545", 冰: "#1c6095", 雷: "#872c9c", 火: "#a92325", 物理: "#545454",
+    虚数: "#EDBE43", 量子: "#6A79E3", 风: "#40C48B", 冰: "#48C0F8", 雷: "#D850F8", 火: "#ED453C", 物理: "#808080",
   };
-  const color = elementColor[art?.element ?? ""] ?? "#872c9c";
+  const element = art?.element ?? "";
+  const color = path ? "#D850F8" : (colors?.[element] ?? elementColor[element] ?? "#D850F8");
   const width = 1630, height = 777;
   return renderStarRailCard(width, height, ctx => {
     ctx.fillStyle = "#121025";
     ctx.fillRect(0, 0, width, height);
     if (backdrop ?? theme.backdrop) imageBox(ctx, (backdrop ?? theme.backdrop)!, 0, 0, width, height, true);
-    const portrait = art?.portrait ?? otherPortrait;
-    if (portrait) imageBox(ctx, portrait, 490, 0, 1140, 777);
+    const portrait = otherPortrait ?? art?.portrait;
+    if (portrait) {
+      const portraitWidth = 800 * portrait.width / portrait.height;
+      imageBox(ctx, portrait, width * 0.7 - portraitWidth / 2, 0, portraitWidth, 800);
+    }
     const ribbon = ctx.createLinearGradient(88, 0, 738, 0);
-    for (const [point, opacity] of [[0, "#fff5"], [0.24, "#fffffff4"], [0.76, "#fffffff4"], [1, "#fff5"]] as const) ribbon.addColorStop(point, opacity);
-    ctx.fillStyle = color;
+    for (const [point, opacity] of [[0, "#fff5"], [0.24, "#fff"], [0.76, "#fff"], [1, "#fff5"]] as const) ribbon.addColorStop(point, opacity);
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(174, 100, 64, 0, 2 * Math.PI);
-    ctx.fill();
-    label(ctx, [...nickname][0] ?? "星", 174, 119, theme.font, 52, 86, "center");
-    label(ctx, nickname, 276, 90, theme.font, 58, 445);
-    label(ctx, qq, 276, 144, theme.font, 40, 445, "left", "#e9d9ff");
+    ctx.arc(175, 100, 75, 0, 2 * Math.PI);
+    ctx.clip();
+    if (userAvatar && userAvatar.width <= 1024 && userAvatar.height <= 1024) imageBox(ctx, userAvatar, 100, 25, 150, 150, true);
+    else {
+      ctx.fillStyle = color;
+      ctx.fillRect(100, 25, 150, 150);
+      label(ctx, [...nickname][0] ?? "星", 175, 121, titleFont, 54, 86, "center");
+    }
+    ctx.restore();
+    label(ctx, nickname, 290, 91, titleFont, 65, 445, "left", color);
+    label(ctx, qq, 290, 152, titleFont, 48, 445, "left", color);
     ctx.fillStyle = ribbon;
     ctx.fillRect(88, 200, 650, 173);
-    label(ctx, "恭喜你转生成了", 413, 261, theme.font, 54, 570, "center", color);
-    label(ctx, name, 413, 350, theme.font, 90, 570, "center", color);
-    if (emblem) imageBox(ctx, emblem, 20, 372, 160, 205);
+    label(ctx, "恭喜你转生成了", 413, 261, titleFont, 59, 570, "center", color);
+    label(ctx, name, 413, 350, titleFont, 95, 570, "center", color);
     for (const [index, [field, value]] of fields.entries()) {
       if (!value) continue;
       const top = 420 + index * 80;
       ctx.fillStyle = ribbon;
       ctx.fillRect(88, top, 650, 53);
-      label(ctx, `${field}：${value}`, 413, top + 40, theme.font, 36, 540, "center", color);
+      label(ctx, `${field}：${value}`, 413, top + 40, detailFont, 38, 540, "center", color);
+    }
+    if (emblem) {
+      const fade = ctx.createLinearGradient(10, 0, 216, 0);
+      for (const [stop, value] of [[0, "#fff0"], [0.35, "#fff"], [0.65, "#fff"], [1, "#fff0"]] as const) fade.addColorStop(stop, value);
+      ctx.fillStyle = fade;
+      ctx.fillRect(10, 372, 206, 213);
+      imageBox(ctx, emblem, 10, 372, 206, 213);
+    }
+    const identity = "身份：" + (description ?? (path ? "星神" : "星穹铁道角色"));
+    const { rows, size, line } = wrapIdentity(ctx, identity, detailFont);
+    ctx.fillStyle = ribbon;
+    ctx.fillRect(88, 580, 650, rows.length * line + 14);
+    for (const [index, row] of rows.entries()) {
+      label(ctx, row, 413, 589 + size + index * line, detailFont, size, 610, "center", color);
     }
     label(ctx, "Lotus-Yunzai · StarRail", 20, 756, theme.font, 22, 550);
   }, { inlineImageByteLimit, mode });
+}
+
+function wrapIdentity(ctx: Context, text: string, font: string) {
+  for (let size = 30; size >= 16; size -= 2) {
+    ctx.font = `${size}px ${font}`;
+    const line = size + 5;
+    const rows: string[] = [];
+    let row = "";
+    for (const glyph of text) {
+      if (row && ctx.measureText(row + glyph).width > 610) {
+        const glyphs = [...row];
+        if (glyphs.length > 1 && /[、，。；：？！）】」』》,.!?]/u.test(glyph)) {
+          const last = glyphs.pop()!;
+          rows.push(glyphs.join(""));
+          row = last + glyph;
+        } else {
+          rows.push(row);
+          row = glyph;
+        }
+      } else row += glyph;
+    }
+    if (row) rows.push(row);
+    if (rows.length * line <= 151) return { rows, size, line };
+    if (size === 16) return { rows: [...rows.slice(0, 6), rows[6]!.slice(0, -1) + "…"], size, line };
+  }
+  throw new Error("转生身份排版无效。");
 }
 
 type Theme = Awaited<ReturnType<typeof loadTheme>>;

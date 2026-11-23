@@ -235,7 +235,7 @@ test("random names can use locally installed limited character and cones while m
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
-test("recall is held for high-rarity batches, budget failures keep metrics, and reincarnation cooldown survives restart", async () => {
+test("recall is held for high-rarity batches, budget failures keep metrics, and failed reincarnation starts no cooldown", async () => {
   const directory = await mkdtemp(join(tmpdir(), "warp-lifecycle-fixture-"));
   try {
     let time = active;
@@ -243,7 +243,7 @@ test("recall is held for high-rarity batches, budget failures keep metrics, and 
     const signal = new AbortController().signal;
     const make = () => createStarRailSimulation({ directory, lockFile, signal, now: () => time, poolSource: createWarpPoolSource(""),
       random: () => chance(), render: async () => { throw new Error("fixture"); },
-      renderReincarnation: async () => { throw new Error("fixture"); } });
+      renderReincarnation: async () => { throw new Error("fixture"); }, loadAvatar: async () => undefined });
     const run = make(), owner = { user_id: 60, group_id: 77, isMaster: true }, user = { user_id: 42, group_id: 77 };
     await run("#星铁设置抽卡撤回时间12", owner);
     expect(await run("#星铁单抽", user)).toMatchObject({ type: "recallable", seconds: 12 });
@@ -255,14 +255,14 @@ test("recall is held for high-rarity batches, budget failures keep metrics, and 
     expect(await run("#星铁四十连", user)).toMatchObject({ type: "recallable", seconds: 12,
       message: expect.stringContaining("今日模拟五星 30 个 · 本周 30 个五星") });
     expect(await run("#星铁转生", user)).toContain("阿基维利 · 开拓");
-    expect(await make()("#星铁转生", { user_id: 42 })).toContain("等待 120 分钟");
+    expect(await make()("#星铁转生", { user_id: 42 })).toContain("阿基维利 · 开拓");
     expect(await run("#星铁抽卡设置转生间隔1", owner)).toContain("转生间隔 1 分钟");
     expect(await run("#星铁转生", owner)).toContain("阿基维利");
     expect(await run("#星铁转生", owner)).toContain("阿基维利");
     time += 120 * 60_000;
     chance = () => 0.99;
     expect(await run("#星铁转生", user)).not.toContain("等待");
-    expect(await make()("#星铁转生", user)).toContain("等待 1 分钟");
+    expect(await make()("#星铁转生", user)).not.toContain("等待");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 

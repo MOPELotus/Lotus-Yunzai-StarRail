@@ -1,3 +1,5 @@
+import { lstat, mkdir, realpath } from "node:fs/promises";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { WarpPity } from "./draw.ts";
@@ -22,6 +24,17 @@ export function createWarpArchive(directory: string, lockFile: AcquireRoleArchiv
   return createRoleJsonArchive(directory, lockFile, {
     subject: "星铁模拟跃迁", lockSuffix: "warp-lock", maxBytes: 1024 * 1024, rejectNull: true,
   });
+}
+
+export async function lockWarpReincarnation(directory: string, qq: string, lock: AcquireRoleArchiveLock) {
+  if (!/^[1-9]\d*$/u.test(qq) || !integer(Number(qq))) throw new TypeError("星铁转生的 QQ 无效。");
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const root = join(await realpath(directory), "reincarnation-locks");
+  await mkdir(root, { recursive: true, mode: 0o700 });
+  if (!(await lstat(root)).isDirectory() || await realpath(root) !== root) {
+    throw new Error("星铁转生锁目录须为实体目录。");
+  }
+  return lock(join(root, `${qq}.sqlite`), "星铁转生");
 }
 
 export interface WarpBalance {
