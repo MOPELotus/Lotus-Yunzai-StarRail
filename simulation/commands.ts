@@ -8,7 +8,9 @@ import { emptyPity, simulateWarps, type WarpPull } from "./draw.ts";
 import { createWarpPoolSource, customWarpPool, isCollaborationWarp, personalWarpPool, type WarpKind } from "./pools.ts";
 import { createPersonalWarpPoolReader } from "./personal-pools.ts";
 import { renderWarpCard, renderWarpReincarnation } from "./card.ts";
-import { createWarpSettingsStore, readWarpAllowance, type WarpAllowance } from "./settings.ts";
+import { createWarpSettingsStore, defaultWarpSettings, readWarpAllowance, type WarpAllowance } from "./settings.ts";
+import { createIndependentWarpSettingsStore } from "./independent-settings.ts";
+import { createIndependentWarpDraw, type ReadIndependentWarpKey } from "./independent-state.ts";
 import { createWarpArchive, integer, lockWarpReincarnation, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek, type WarpConversation } from "./store.ts";
 
 const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星轨通|星轨|专属|普通|专|通)?票?$/u;
@@ -16,6 +18,7 @@ const oneBotForwardLimit = 96 * 1024 * 1024;
 const help = /^#星铁模拟(?:抽卡|跃迁)(?:帮助)?$/u;
 const reincarnation = /^#星铁转生$/u;
 const poolLabel = "(?:联动(?:角色|光锥|武器)?|(?:角色|光锥|武器)联动|角色|光锥|武器|常驻)池?";
+const independentDraw = /^#星铁(?:抽卡|十连)(?:角色|光锥|常驻|联动角色|联动光锥|联动)?$/u;
 const drawCommand = new RegExp(
   `^#星铁(?<before>${poolLabel})?(?<size>单抽|(?:[一二三四五六七八九]?十|百|10)[连抽卡奖]|抽[卡奖])(?<after>${poolLabel})?(?:池?(?<slot>[1-4]))?$`, "u",
 );
@@ -66,7 +69,7 @@ export function createStarRailSimulation({
   lockFile, signal, directory = warpStateDirectory(),
   poolSource = createWarpPoolSource(), now = Date.now, random = Math.random, render = renderWarpCard,
   renderReincarnation = renderWarpReincarnation,
-  readIdentityCatalog = readWarpIdentityCatalog, loadAvatar = readWarpAvatar,
+  readIdentityCatalog = readWarpIdentityCatalog, loadAvatar = readWarpAvatar, readIndependentLegacy,
 }: {
   readonly lockFile: AcquireRoleArchiveLock;
   readonly signal: AbortSignal;
@@ -78,9 +81,12 @@ export function createStarRailSimulation({
   readonly renderReincarnation?: typeof renderWarpReincarnation;
   readonly readIdentityCatalog?: typeof readWarpIdentityCatalog;
   readonly loadAvatar?: typeof readWarpAvatar;
+  readonly readIndependentLegacy?: ReadIndependentWarpKey;
 }) {
   const archive = createWarpArchive(directory, lockFile);
   const settings = createWarpSettingsStore(lockFile, directory);
+  const independentSettings = createIndependentWarpSettingsStore(lockFile, directory);
+  const drawIndependent = createIndependentWarpDraw(lockFile, directory, readIndependentLegacy, signal);
   const readPersonalPool = createPersonalWarpPoolReader(directory, lockFile);
 
   return async (message: string, context: WarpContext): Promise<CommandReply | undefined> => {
@@ -113,7 +119,9 @@ export function createStarRailSimulation({
           if (!isOwner()) throw new RangeError("当前会话的主人权限已变更。");
         } });
       }
-      const rules = await settings.read();
+      const compatibility = independentDraw.test(message) ? await independentSettings.read() : undefined;
+      const independent = compatibility?.enabled ? compatibility : undefined;
+      const rules = independent ? defaultWarpSettings() : await settings.read();
       signal.throwIfAborted();
       if (relife) {
         if (context.isDelegated) return "请在自己的会话使用星铁转生。";
@@ -155,21 +163,27 @@ export function createStarRailSimulation({
           gate.close();
         }
       }
-      if (!rules.enabled) return "星铁模拟跃迁功能已关闭。";
+      if (independent) {
+        if (group && independent.disabledGroups.includes(group)) return "本群已被禁用星铁抽卡功能。";
+        if (!(group ? independent.group : independent.private)) return;
+      } else if (!rules.enabled) return "星铁模拟跃迁功能已关闭。";
       if (draw && draw.count > 10 && !rules.multiple) return "星铁模拟跃迁未开启多连抽。";
       const allowance = readWarpAllowance(rules, group);
+      if (independent) allowance.recallSeconds = independent.recallSeconds;
       const customNames = draw?.kind === "cone" ? rules.poolNames.coneFive : rules.poolNames.characterFive;
       const collaboration = draw && isCollaborationWarp(draw.kind) ? draw.kind : undefined;
-      const manual = draw && !collaboration && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
-      const personal = draw && (draw.kind === "character" || draw.kind === "cone") && draw.slot <= 2
+      const manual = !independent && draw && !collaboration && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
+      const personal = !independent && draw && (draw.kind === "character" || draw.kind === "cone") && draw.slot <= 2
         ? personalWarpPool(draw.kind, draw.slot, await readPersonalPool(qq, time)) : undefined;
       const source = draw && !personal ? await poolSource(draw.kind, draw.slot, time).catch(error => {
         if (!manual) throw error;
         return undefined;
       }) : undefined;
-      const pool = personal ?? (draw && customWarpPool(draw.kind, draw.slot, source, rules));
+      const pool = personal ?? (draw && (independent ? source : customWarpPool(draw.kind, draw.slot, source, rules)));
       if (draw && !pool) return collaboration ? "暂未找到已收录的 Fate[UBW] 联动模拟卡池。" : "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
-      const result = await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
+      const result: WarpResult = independent && pool
+        ? await drawIndependent({ qq, group, time, now, pool, isOwner, rules: independent, random })
+        : await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
         const account = readWarpAccount(raw);
         const issued = account.balance.day !== day || (account.balance.expiresAt !== undefined && time >= account.balance.expiresAt);
         if (issued) account.balance = { day, special: allowance.special, regular: allowance.regular };
@@ -246,7 +260,8 @@ export function createStarRailSimulation({
       const five = result.pulls.filter(item => item.rarity === 5).length;
       const four = result.pulls.filter(item => item.rarity === 4).length;
       const count = result.pulls.length;
-      const shouldRetain = count === 10 ? five >= 1 || four >= 4 : count > 10 && (five >= 2 || four >= 25);
+      const shouldRetain = independent ? five >= 1
+        : count === 10 ? five >= 1 || four >= 4 : count > 10 && (five >= 2 || four >= 25);
       const recallSeconds = shouldRetain ? 0 : allowance.recallSeconds;
       const intro = `${pool.title} · 模拟 ${count} 抽 · ${five} 个五星 · ${four} 个四星 · 当前垫 ${result.pity} 抽`;
       const sourceName = context.sender?.nickname;

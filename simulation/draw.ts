@@ -68,3 +68,53 @@ export function simulateWarps(pool: WarpPool, state: WarpPity, count: number, ra
     return { ...choose(pool.three, random), order, featured: false };
   });
 }
+
+function independentFiveChance(kind: WarpPool["kind"], missed: number) {
+  if (kind === "cone" || kind === "collaboration-cone") {
+    if (missed >= 80) return 10_000;
+    if (missed >= 62) return 80 + (missed - 61) * 700;
+    if (missed >= 50) return 80 + (missed - 50) * 60;
+    if (missed >= 10 && missed <= 20) return 80 + (missed - 10) * 30;
+    return 80;
+  }
+  if (missed >= 90) return 10_000;
+  if (missed >= 74) return 590 + (missed - 74) * 530;
+  return 60 + Math.max(0, missed - 60) * 40;
+}
+
+function chooseIndependentItem(items: readonly WarpItem[], kind: WarpItem["kind"], random: () => number) {
+  const matched = items.filter(item => item.kind === kind);
+  return choose(matched.length ? matched : items, random);
+}
+
+export function simulateIndependentWarps(pool: WarpPool, state: WarpPity, random: () => number): WarpPull[] {
+  const cone = pool.kind === "cone" || pool.kind === "collaboration-cone";
+  const featuredFives = pool.featuredFivePool ?? (pool.featuredFive ? [pool.featuredFive] : []);
+  const featuredFourAvailable = (pool.kind === "character" || pool.kind === "cone") && pool.featuredFour.length > 0;
+  return Array.from({ length: 10 }, (_, index): WarpPull => {
+    const order = index + 1;
+    const pity = state.fiveMisses + 1;
+    if (random() * 10_000 < independentFiveChance(pool.kind, state.fiveMisses)) {
+      const featured = featuredFives.length > 0 && (state.nextFiveFeatured || random() < (cone ? 0.75 : 0.5));
+      const item = featured ? choose(featuredFives, random) : chooseByKind(pool.otherFive, random);
+      state.fiveMisses = 0;
+      state.fourOrBetterMisses = Math.min(Number.MAX_SAFE_INTEGER, state.fourOrBetterMisses + 1);
+      state.nextFiveFeatured = pool.kind !== "standard" && !featured;
+      return { ...item, order, featured, pity };
+    }
+
+    state.fiveMisses++;
+    const fourBase = pool.kind === "cone" ? 660 : 510;
+    const fourChance = state.fourOrBetterMisses >= 9 ? 10_000 : fourBase + Math.max(0, state.fourOrBetterMisses - 4) ** 2 * 500;
+    if (random() * 10_000 < fourChance) {
+      const featured = featuredFourAvailable && (state.nextFourFeatured || random() < 0.5);
+      const kind = (pool.kind === "character" || pool.kind === "collaboration-character") && random() < 0.5 ? "角色" : "光锥";
+      const item = featured ? choose(pool.featuredFour, random) : chooseIndependentItem(pool.otherFour, kind, random);
+      state.fourOrBetterMisses = 0;
+      state.nextFourFeatured = !featured;
+      return { ...item, order, featured };
+    }
+    state.fourOrBetterMisses++;
+    return { ...choose(pool.three, random), order, featured: false };
+  });
+}

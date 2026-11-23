@@ -168,7 +168,17 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
   const ledger = createStarRailLedgerQuery(profiles, client, signal);
   const online = createStarRailOnlineQuery(profiles, client, signal);
-  const simulate = createStarRailSimulation({ lockFile, signal });
+  const simulate = createStarRailSimulation({ lockFile, signal, async readIndependentLegacy(key) {
+    signal.throwIfAborted();
+    const reply = await globalThis.redis?.multi().get(key).addCommand(["PEXPIRETIME", key]).exec();
+    signal.throwIfAborted();
+    if (!reply || reply[0] === null || reply[1] === -2) return;
+    const [raw, expiresAt] = reply;
+    if (typeof raw !== "string" || typeof expiresAt !== "number" || !Number.isSafeInteger(expiresAt) || expiresAt <= 0) {
+      throw new TypeError("独立星铁旧模拟键没有有效的过期时间。");
+    }
+    return { raw, expiresAt };
+  } });
   const history = createStarRailGachaHistoryStore(historyRoot, lockFile, legacyHistoryRoots);
   const archive = createStarRailGachaRecordArchive({ directory: recordsRoot, legacyDirectory: legacyRecordsRoot }, lockFile);
   const hasDisplayHistory = async (qq: string, uid: string) =>
