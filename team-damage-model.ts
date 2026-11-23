@@ -1,5 +1,7 @@
 import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import { canonicalStarRailPanelCharacter, text } from "./panel-model.ts";
+import panelCharacterNames from "./challenge-character-names.json";
+import { alias as panelAliases, abbr as panelAbbr } from "./panel-theme/character-alias.ts";
 
 const spellings = /^(?:#?(?:崩坏星穹铁道|星穹铁道|星穹|星铁|星轨|穹轨|崩铁|铁道)|\*+)\s*(?:队伍伤害|队伤|伤害)(详情|过程|全图)?/u;
 
@@ -36,7 +38,8 @@ const aliases = new Map<string, string[]>([
   ["黄椒砂佩", ["黄泉", "椒丘", "砂金", "佩拉"]],
   ["黑塔队", ["大黑塔", "翡翠", "阮梅", "藿藿"]],
 ]);
-const roleAliases: Record<string, string[]> = {
+const roleKey = (input: string) => input.normalize("NFKC").toLowerCase().replace(/[\s·•・.。&_\-—/\\|:,、()[\]【】「」『』]/gu, "");
+const roleAliases = new Map(Object.entries({
   "开拓者·同谐": ["同谐主", "同协主", "和谐主", "开拓者同谐", "同谐开拓者"],
   "开拓者·记忆": ["记忆主", "开拓者记忆", "记忆开拓者"],
   "开拓者·毁灭": ["毁灭主", "物理主", "开拓者毁灭"],
@@ -47,8 +50,7 @@ const roleAliases: Record<string, string[]> = {
   "托帕&账账": ["托帕", "账账", "托帕账账", "托帕帐帐"],
   "银狼LV.999": ["银狼lv999", "银狼lv.999", "银狼LV999", "狼尊"],
   "千冶•刃": ["千冶刃", "千冶·刃"],
-};
-const roleKey = (input: string) => input.normalize("NFKC").toLowerCase().replace(/[\s·•・.。&_\-—/\\|:,、()[\]【】「」『』]/gu, "");
+}).map(([name, names]) => [roleKey(name), names]));
 
 export interface TeamRole extends Json {
   item_id: string | number;
@@ -59,18 +61,33 @@ export interface TeamRole extends Json {
   hasLegacy?: boolean;
 }
 
-export function teamRoleName(role: TeamRole) {
+const panelNames: Readonly<Record<string, string>> = panelCharacterNames;
+const knownAliases: Readonly<Record<string, string>> = panelAliases;
+const shortNames: Readonly<Record<string, string>> = panelAbbr;
+
+function teamRoleCatalogName(role: TeamRole) {
   return text(role.nick_name) || text(role.name) || String(role.item_id);
+}
+
+export function teamRoleName(role: TeamRole) {
+  return String(role.item_id) === "1224" ? panelNames["1224"]! : teamRoleCatalogName(role);
 }
 
 export class TeamDamageError extends Error {}
 
-export function resolveTeamDamageRoles(tokens: readonly string[], catalog: readonly TeamRole[]) {
+export function resolveTeamDamageRoles(tokens: readonly string[], catalog: readonly TeamRole[], {
+  customAliases, ownedIds = [],
+}: { readonly customAliases?: ReadonlyMap<string, string>; readonly ownedIds?: readonly string[] } = {}) {
   const entries = new Map<string, TeamRole>();
-  for (const role of [...catalog].sort((a, b) => Number(b.item_id) - Number(a.item_id))) {
-    const name = teamRoleName(role);
-    const enhanced = canonicalStarRailPanelCharacter(String(role.item_id), true) !== String(role.item_id);
-    const aliases = [name, text(role.name), String(role.item_id), ...(Object.hasOwn(roleAliases, name) ? roleAliases[name]! : [])];
+  const owned = new Set(ownedIds);
+  for (const role of [...catalog].sort((a, b) =>
+    Number(owned.has(String(b.item_id))) - Number(owned.has(String(a.item_id))) || Number(b.item_id) - Number(a.item_id))) {
+    const id = String(role.item_id);
+    const name = teamRoleCatalogName(role);
+    const panelName = panelNames[id] ?? name;
+    const enhanced = canonicalStarRailPanelCharacter(id, true) !== id;
+    const aliases = [name, text(role.name), id, panelName, shortNames[panelName] ?? "",
+      ...(knownAliases[panelName]?.split(",") ?? []), ...(roleAliases.get(roleKey(name)) ?? [])];
     if (enhanced) aliases.push(`${name}Pro`, `加强${name}`, `${name}加强`, `加强版${name}`);
     if (/[&＆]/u.test(name)) aliases.push(name.split(/[&＆]/u)[0]!, name.replace(/[&＆]/u, "和"), name.replace(/[&＆]/u, "与"));
     const trailblazer = name.match(/^开拓者[·•.・]?(.*)$/u)?.[1];
@@ -79,6 +96,11 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
       if (/^80(?:0[1-9]|10)$/u.test(String(role.item_id))) aliases.push(`${trailblazer}${Number(role.item_id) % 2 ? "男" : "女"}主`);
     }
     for (const term of aliases.map(roleKey)) if (term && !entries.has(term)) entries.set(term, role);
+  }
+  for (const [alias, canonical] of customAliases ?? []) {
+    const key = roleKey(alias);
+    const role = entries.get(roleKey(canonical));
+    if (key && !entries.has(key) && role) entries.set(key, role);
   }
   const terms = [...entries.keys()].sort((a, b) => b.length - a.length);
   const expanded = tokens.length === 1 ? aliases.get(roleKey(tokens[0]!)) ?? tokens : tokens;
@@ -96,6 +118,11 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
     selected.push(...segmented.slice(0, 4 - selected.length));
   }
   if (!selected.length) throw new TeamDamageError("请指定星铁队伍角色，例如 *队伍伤害飞托阮同。");
-  if (new Set(selected.map(role => String(role.item_id))).size !== selected.length) throw new TeamDamageError("同一角色只能在队伍中安排一次。");
+  const characterIds = selected.map(role => {
+    const id = String(role.item_id);
+    if (/^80(?:0[1-9]|10)$/u.test(id)) return "trailblazer";
+    return id === "1224" ? "1001" : id;
+  });
+  if (new Set(characterIds).size !== selected.length) throw new TeamDamageError("同一角色只能在队伍中安排一次。");
   return selected;
 }

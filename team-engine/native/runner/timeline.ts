@@ -1,4 +1,5 @@
 // Public report preserves the event attribution and row limits of Lotus's Python timeline.
+import panelCharacterNames from "../../../challenge-character-names.json";
 import type { TeamBattleResult } from "../../../team-damage-runtime.ts";
 import { evaluate, parse } from "../rules/expression.ts";
 import type { BattleEvent, Payload } from "./contracts.ts";
@@ -135,7 +136,8 @@ function publicTimeline(events: readonly BattleEvent[], runner: BattleRunner,
 export function reportBattle(runner: BattleRunner, cycles: number,
   notices: readonly string[] = []): TeamBattleResult | { error: "limit" } {
   if (runner.state.truncated) return { error: "limit" };
-  const contributors = new Map(runner.encounter.team.map(actor => [actor.id, actor.name]));
+  const contributors = new Map(runner.encounter.team.map(actor =>
+    [actor.id, actor.id === "1224" ? panelCharacterNames["1224"] : actor.name]));
   const amounts = new Map([...contributors.keys()].map(id => [id, 0]));
   for (const [id, damage] of runner.state.damageByActor) {
     const unit = runner.state.actors.get(id);

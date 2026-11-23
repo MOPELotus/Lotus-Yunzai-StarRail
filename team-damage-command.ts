@@ -65,9 +65,11 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
             current.role.region !== region || current.role.gameBiz !== gameBiz) throw new ProfileError("changed", changed);
         signal.throwIfAborted();
       };
-      const roles = resolveTeamDamageRoles(command.roles, starRailTeamCatalog);
       const owner = starRailTraceOwner(account, account.role);
       const [snapshot, theme] = await Promise.all([readPanel(qq, uid, owner), readTheme()]);
+      const roles = resolveTeamDamageRoles(command.roles, starRailTeamCatalog, {
+        customAliases: theme.customAliases, ownedIds: snapshot?.avatars.map(avatar => avatar.id),
+      });
       const members: TeamSimulationMember[] = [];
       const team: TeamMember[] = [];
       for (const role of roles) {

@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test";
 import { parsePanelCommand, type PanelAvatar } from "../panel-model.ts";
 import { projectTeamOwnedPanel } from "../team-owned-panel.ts";
-import { parseStarRailTeamDamage, resolveTeamDamageRoles } from "../team-damage-model.ts";
+import { parseStarRailTeamDamage, resolveTeamDamageRoles, teamRoleName } from "../team-damage-model.ts";
+
+import { starRailTeamCatalog } from "../team-damage-runtime.ts";
 
 const makeRole = (item_id: string, nick_name: string) => ({ item_id, nick_name, dps_template: {} });
 const feixiao = makeRole("1220", "飞霄");
@@ -25,6 +27,20 @@ test("旧队伤档号、详情和队伍缩写独立于单体伤害", () => {
   expect(resolveTeamDamageRoles(["飞霄托帕阮梅同谐主"], catalog)).toEqual(catalog);
   expect(() => resolveTeamDamageRoles(["飞霄未知"], catalog)).toThrow("无法识别");
   expect(() => resolveTeamDamageRoles(["飞霄", "飞霄"], catalog)).toThrow("只能");
+});
+
+test("真实目录的同名角色使用本人面板和旧名，明确命途不被同名覆盖", () => {
+  const resolve = (names: string[], ownedIds: string[] = []) => resolveTeamDamageRoles(names, starRailTeamCatalog, {
+    ownedIds, customAliases: new Map([["三月巡逻", "三月七·巡猎"]]),
+  }).map(role => role.item_id);
+  expect(resolve(["飞霄同协主托帕"], ["8005"])).toEqual(["1220", "8005", "1112"]);
+  expect(resolve(["火主"], ["8003"])).toEqual(["8003"]);
+  expect(resolve(["三月七"], ["1001"])).toEqual(["1001"]);
+  expect(resolve(["三月巡逻"], ["1001"])).toEqual(["1224"]);
+  expect(resolve(["巡猎三月七"], ["1001"])).toEqual(["1224"]);
+  expect(teamRoleName(starRailTeamCatalog.find(role => role.item_id === "1224")!)).toBe("三月七·巡猎");
+  expect(() => resolve(["物理主", "火主"])).toThrow("只能");
+  expect(() => resolve(["三月七·巡猎", "1001"])).toThrow("只能");
 });
 
 test("合成面板投影仅送战斗数值，不传账号与 UID，基础和百分比维度保持独立", () => {

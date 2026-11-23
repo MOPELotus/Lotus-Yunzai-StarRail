@@ -66,12 +66,12 @@ test("工作进程保持单 JSON 回包和输入边界", async () => {
 
 test("行动详情显示官方形态与角色名称", async () => {
   const signal = new AbortController().signal;
-  const roster = ["1310", "1303", "1014", "1015"].map(id => ({ id }));
+  const roster = ["1310", "1224", "1014", "1015"].map(id => ({ id }));
   const report = await calculateTeamDamage(roster, 3, 3, signal);
   const lines = report.turns.flatMap(turn => turn.lines);
   expect(lines).toContain("进入「完全燃烧」");
   expect(lines).toContain("退出「完全燃烧」");
-  expect(report.damage.map(row => row.name)).toEqual(expect.arrayContaining(["Saber", "Archer"]));
-  expect(report.turns.map(turn => turn.title)).toEqual(expect.arrayContaining(["Saber", "Archer"]));
+  expect(report.damage.map(row => row.name)).toEqual(expect.arrayContaining(["Saber", "Archer", "三月七·巡猎"]));
+  expect(report.turns.map(turn => turn.title)).toEqual(expect.arrayContaining(["Saber", "Archer", "三月七·巡猎"]));
   expect(lines.join("\n")).not.toMatch(/[A-Za-z_]/u);
 }, 16_000);
