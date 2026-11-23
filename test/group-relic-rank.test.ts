@@ -114,7 +114,7 @@ async function fixture() {
   type Options = NonNullable<Parameters<typeof createStarRailGroupRelicRank>[3]>;
   const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage" | "readEnabled" | "readLimit"> = {}) =>
     createStarRailGroupRelicRank(createProfileStore(accounts), lockFile, new AbortController().signal, {
-      directory, panelDirectory, groups: "77, 78", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
+      directory, panelDirectory, groups: "77, 78, 80", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
       readEnabled: async (_game, _group, defaultEnabled) => defaultEnabled,
       fetchShowcase: (target, signal) => fetchStarRailShowcase(target, signal, async (url, init) => {
         const uid = url.pathname.split("/").at(-1)!;
@@ -158,8 +158,68 @@ test("群内查看本人星铁角色面板会登记当场刷新所需的 UID", a
   }
 }, 30_000);
 
+test("星铁本人面板列表和两路全量更新登记各自群，手工 UID 与代查不入榜", async () => {
+  const { root, rank, asked } = await fixture();
+  const env = {
+    LOTUS_STAR_RAIL_PANEL_THEME_DIR: Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR,
+    LOTUS_STAR_RAIL_SHOWCASE_SERVER: Bun.env.LOTUS_STAR_RAIL_SHOWCASE_SERVER,
+    LOTUS_STAR_RAIL_LEGACY_PANEL_DIR: Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR,
+  };
+  const originalFetch = globalThis.fetch;
+  const signal = new AbortController().signal;
+  const requests: { path: string; cookie: string | null }[] = [];
+  try {
+    Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR = join(root, "theme");
+    Bun.env.LOTUS_STAR_RAIL_SHOWCASE_SERVER = "0";
+    Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR = join(root, "legacy");
+    globalThis.fetch = Object.assign(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      const cookie = new Headers(init?.headers).get("cookie");
+      requests.push({ path: url.pathname, cookie });
+      if (url.hostname === "api.mihomo.me") return visible(uid42, avatar(3));
+      if (url.pathname.endsWith("/avatar/info")) return Response.json({ retcode: 0, data: {
+        role: { role_id: uid42, region: "prod_gf_cn" }, avatar_list: [{ id: 1302, name: "银枝", level: 80, rarity: 5 }],
+      } });
+      return new Response(null, { status: 404 });
+    }, { preconnect: originalFetch.preconnect });
+    const profiles = createProfileStore(join(root, "profiles"));
+    const board = rank();
+    const panel = createStarRailPanel(profiles, createProfileHoyoClient(profiles), lockFile, signal,
+      board, join(root, "panels"), undefined, join(root, "showcases"));
+    const run = (msg: string, context = group77) => panel("42", parsePanelCommand(msg)!, context);
+    expect(await board.query(command, group77)).toContain("暂无已登记");
+    expect(await run(`*展板更新面板${uid42}`)).toMatchObject({ type: "image" });
+    expect(await board.query(command, group77)).toContain("暂无已登记");
+    expect(await panel("42", parsePanelCommand("*展板更新面板")!, { ...group77, isDelegated: true })).toContain("本人");
+    expect(await run("*更新面板")).toMatchObject({ type: "image" });
+    expect(await board.query(command, group77)).toContain("本轮公开展板 1/1 已计分");
+    expect(asked).toEqual([uid42]);
+    const group78 = { ...group77, group_id: 78 };
+    expect(await board.query(command, group78)).toContain("暂无已登记");
+    expect(await run("*展板更新面板", group78)).toMatchObject({ type: "image" });
+    expect(await board.query(command, group78)).toContain("本轮公开展板 1/1 已计分");
+    const group80 = { ...group77, group_id: 80 };
+    expect(await board.query(command, group80)).toContain("暂无已登记");
+    expect(await run("*面板", group80)).toMatchObject({ type: "image" });
+    expect(await board.query(command, group80)).toContain("本轮公开展板 1/1 已计分");
+    expect(asked).toEqual([uid42, uid42, uid42]);
+    expect(requests).toEqual([
+      { path: `/sr_info/${uid42}`, cookie: null },
+      { path: "/game_record/app/hkrpg/api/avatar/info", cookie: "ltuid=12; ltoken=synthetic-private-cookie" },
+      { path: `/sr_info/${uid42}`, cookie: null },
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(env)) {
+      if (value === undefined) delete Bun.env[key];
+      else Bun.env[key] = value;
+    }
+    await rm(root, { recursive: true, force: true });
+  }
+}, 35_000);
+
 test("星铁最强实时重刷所有登记，且只用当轮公开展板渲染榜首一个面板", async () => {
-  const { root, rank, panelStore, asked, use } = await fixture();
+  const { root, directory, rank, panelStore, asked, use } = await fixture();
   const draw: string[] = [];
   const png = new Uint8Array([1]);
   try {
@@ -179,6 +239,10 @@ test("星铁最强实时重刷所有登记，且只用当轮公开展板渲染�
     });
     await board.observe(group77, 1, role(uid42), shown("1001"), verified);
     await board.observe({ ...group77, user_id: 43 }, 1, role(uid43), shown("1001"), verified);
+    const oldRegistrationFile = join(directory, "onebot", "99", "77", "42.json");
+    const oldRegistration = JSON.parse(await readFile(oldRegistrationFile, "utf8"));
+    delete oldRegistration.profiles["1"].observedAt;
+    await writeFile(oldRegistrationFile, JSON.stringify(oldRegistration));
     for (const context of [{ ...group77, message_type: "private" }, { ...group77, isDelegated: true }, { ...group77, group_id: 79 }]) {
       expect(await board.query("*最强银枝", context)).toMatch(/只能在群聊|未启用/u);
     }

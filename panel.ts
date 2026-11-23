@@ -255,7 +255,9 @@ export function createStarRailPanel(
       const explicitUid = "uid" in command;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
       const groupPanel = type === "relics" || (type === "detail" && !explicitUid && !("equipment" in command));
-      const observedAt = groupPanel && account && await groupRank?.allows(context) ? Date.now() : undefined;
+      const registerList = !explicitUid && (type === "list" || type === "update" || type === "reload" ||
+        (type === "showcase" && !command.name));
+      const observedAt = (groupPanel || registerList) && account && await groupRank?.allows(context) ? Date.now() : undefined;
       const key = `${qq}:${uid}`;
       const initialPanel = await store.read(qq, uid);
       const discardedAt = panelDiscardedAt(initialPanel);
@@ -384,6 +386,11 @@ export function createStarRailPanel(
           return "请先获取角色面板数据后再查看遗器列表。";
         }
         return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
+      }
+      if (registerList && observedAt !== undefined && groupRank && context?.user_id?.toString() === qq &&
+          snapshot.avatars.some(avatar => !["customize", "change", "share"].includes(avatar.legacy?.source ?? ""))) {
+        await groupRank.register(context, profileId, role, observedAt, verify).catch(() => undefined);
+        await verify();
       }
       if (account && context?.user_id?.toString() === qq && !context.isDelegated &&
           (type === "detail" || type === "damage" || type === "export" || type === "practice") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {

@@ -31,7 +31,7 @@ export interface StarRailGroupRankContext {
 type Scope = { readonly adapter: "onebot" | "milky"; readonly bot: number; readonly group: number; readonly qq: number };
 type Role = Pick<GameRole, "uid" | "region" | "gameBiz">;
 type Summary = Pick<RelicRankRow, "characterId" | "grade" | "score"> & { readonly observedAt: number };
-type Observation = { readonly profileId: number; readonly role: Role; readonly summary: Record<string, Summary> };
+type Observation = { readonly profileId: number; readonly role: Role; readonly observedAt: number; readonly summary: Record<string, Summary> };
 type BoundProfile = { readonly qq: number; readonly profileId: number; readonly role: Role; readonly observedAt: number };
 type Candidate = { readonly role: Role; readonly profiles: BoundProfile[] };
 
@@ -157,7 +157,8 @@ function observations(raw: unknown, scope: Scope, qq: number): Record<string, Ob
       const decoded = decodeSummary(rawSummary);
       if (decoded?.characterId === characterId) summary[characterId] = decoded;
     }
-    records[key] = { profileId, role, summary };
+    const observedAt = Math.max(positive(row?.observedAt) ? row.observedAt : 0, ...Object.values(summary).map(item => item.observedAt));
+    if (observedAt) records[key] = { profileId, role, observedAt, summary };
   }
   return records;
 }
@@ -243,32 +244,47 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
     return false;
   }
 
+  async function record(context: StarRailGroupRankContext, profileId: number, selectedRole: Role, observedAt: number,
+    verify: () => Promise<void>, summary?: Summary) {
+    const scope = scopeOf(context), role = publicRole(selectedRole);
+    if (!scope || !role || !positive(observedAt) || !positive(profileId) || profileId > MAX_PROFILE_ID ||
+        context.groupActivitySignal?.aborted || signal.aborted || !await groupEnabled(scope)) return;
+    if (!await groupMembers(scope, context) || !await stillActive({ qq: scope.qq, profileId, role, observedAt })) return;
+    await archive(scope).update({ qq: String(scope.group), uid: String(scope.qq) }, async () => {
+      await verify();
+      context.groupActivitySignal?.throwIfAborted();
+      signal.throwIfAborted();
+      if (!await groupEnabled(scope) || (!summary && !await groupMembers(scope, context))) throw new Error("星铁群榜登记已失效。");
+      context.groupActivitySignal?.throwIfAborted();
+      signal.throwIfAborted();
+    }, async raw => {
+      const boundary = panelDiscardedAt(await panelStore.read(String(scope.qq), role.uid));
+      if (observedAt <= boundary) return { result: undefined };
+      const profiles = observations(raw, scope, scope.qq);
+      const previous = profiles[String(profileId)];
+      const existing = previous && previous.observedAt > boundary && sameRole(previous.role, role) ? previous : undefined;
+      if (!summary && existing) return { result: undefined };
+      if (previous && !existing && previous.observedAt > observedAt) return { result: undefined };
+      const prior = existing?.summary ?? {};
+      if (summary && (prior[summary.characterId]?.observedAt ?? 0) > summary.observedAt) return { result: undefined };
+      profiles[String(profileId)] = { profileId, role, observedAt: Math.max(observedAt, existing?.observedAt ?? 0),
+        summary: summary ? { ...prior, [summary.characterId]: summary } : prior };
+      return { document: { version: 1, ...scope, profiles }, result: undefined };
+    });
+  }
+
   return {
     async allows(context: StarRailGroupRankContext | undefined) {
       if (!context || !context.listCurrentGroupMembers || context.groupActivitySignal?.aborted || signal.aborted) return false;
       const scope = scopeOf(context);
       return !!scope && await groupEnabled(scope) && !context.groupActivitySignal?.aborted && !signal.aborted;
     },
+    register(context: StarRailGroupRankContext, profileId: number, role: Role, observedAt: number, verify: () => Promise<void>) {
+      return record(context, profileId, role, observedAt, verify);
+    },
     async observe(context: StarRailGroupRankContext, profileId: number, selectedRole: Role, shown: Summary, verify: () => Promise<void>) {
-      const scope = scopeOf(context), role = publicRole(selectedRole), summary = decodeSummary(shown);
-      if (!scope || !role || !summary || !positive(profileId) || profileId > MAX_PROFILE_ID ||
-          context.groupActivitySignal?.aborted || signal.aborted || !await groupEnabled(scope)) return;
-      if (!await groupMembers(scope, context) || !await stillActive({ qq: scope.qq, profileId, role, observedAt: summary.observedAt })) return;
-      await archive(scope).update({ qq: String(scope.group), uid: String(scope.qq) }, async () => {
-        await verify();
-        context.groupActivitySignal?.throwIfAborted();
-        signal.throwIfAborted();
-        if (!await groupEnabled(scope)) throw new Error("本群未启用星铁群榜。");
-        context.groupActivitySignal?.throwIfAborted();
-        signal.throwIfAborted();
-      }, (raw) => {
-        const profiles = observations(raw, scope, scope.qq);
-        const previous = profiles[String(profileId)];
-        const prior = previous && sameRole(previous.role, role) ? previous.summary : {};
-        if ((prior[summary.characterId]?.observedAt ?? 0) > summary.observedAt) return { result: undefined };
-        profiles[String(profileId)] = { profileId, role, summary: { ...prior, [summary.characterId]: summary } };
-        return { document: { version: 1, ...scope, profiles }, result: undefined };
-      });
+      const summary = decodeSummary(shown);
+      if (summary) await record(context, profileId, selectedRole, summary.observedAt, verify, summary);
     },
     async query(rank: string | Awaited<ReturnType<typeof resolveStarRailRelicRank>>, context: StarRailGroupRankContext) {
       const active = context.groupActivitySignal ? AbortSignal.any([signal, context.groupActivitySignal]) : signal;
@@ -303,9 +319,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const qq = Number(/^([1-9]\d*)\.json$/u.exec(file)?.[1]);
           if (!members.has(qq) || qq === scope.bot) continue;
           const saved = await store.read(String(scope.group), String(qq)).then(raw => observations(raw, scope, qq)).catch(() => ({}));
-          for (const { profileId, role, summary } of Object.values(saved as Record<string, Observation>)) {
-            const observedAt = Math.max(0, ...Object.values(summary).map(row => row.observedAt));
-            if (!observedAt) continue;
+          for (const { profileId, role, observedAt } of Object.values(saved as Record<string, Observation>)) {
             const profile = { qq, profileId, role, observedAt };
             if (!await stillActive(profile)) continue;
             const candidate = registered.get(role.uid);
