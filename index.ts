@@ -1,4 +1,5 @@
 import { matchPanelTransferCommand, type PanelTransferAccess } from "../../lib/panel-transfer-command.ts";
+import type { LegacyPanelRecoveryOffer } from "../../lib/legacy-panel-recovery-flow.ts";
 import { createStarRailPanelTransfer } from "./panel-transfer.ts";
 import { matchArkRankCommand } from "../../lib/ark-custom-rank-command.ts";
 import { createStarRailCustomRank } from "./custom-rank.ts";
@@ -292,6 +293,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly canManagePackages?: true;
       readonly isDelegated?: boolean;
       readonly panelTransfer?: PanelTransferAccess;
+      readonly offerLegacyPanelRecovery?: LegacyPanelRecoveryOffer;
       readonly reply?: (message: string, quote?: boolean) => unknown;
     }) {
       const transfer = matchPanelTransferCommand(context.normalizedMessage);

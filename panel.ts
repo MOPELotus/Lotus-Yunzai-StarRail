@@ -3,6 +3,7 @@ import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequ
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { MessageEvent } from "../../lib/messages.ts";
+import type { LegacyPanelRecoveryOffer } from "../../lib/legacy-panel-recovery-flow.ts";
 import { createStarRailPanelOriginals } from "./panel-original.ts";
 import type { PanelRebuilder } from "../../lib/panel-rebuild.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelPracticeCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
@@ -28,7 +29,7 @@ import { renderStarRailPanelDetail } from "./panel-detail-skia.ts";
 import { renderStarRailPersonalDamage } from "./panel-damage-card.ts";
 import { groupPanelNumber } from "../../lib/group-panel-rank-settings.ts";
 import type { createStarRailGroupRelicRank, StarRailGroupRankContext } from "./group-relic-rank.ts";
-import { id as readId, normalizePanel, object, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
+import { id as readId, normalizePanel, object, readLegacyPanel, text, whole, type PanelAvatar, type PanelCommand, type PanelSnapshot } from "./panel-model.ts";
 
 export { legacySnapshot } from "./panel-legacy.ts";
 const extremePanelUid = "100000000";
@@ -116,7 +117,7 @@ export function createStarRailPanel(
   }
 
   async function refreshPanel(account: ProfileRequestContext, verify: (revision?: string) => Promise<void>,
-    discardedAt: number, active: AbortSignal) {
+    discardedAt: number, active: AbortSignal, allowRecovery?: true) {
     const { qq, role: { uid } } = account;
     const key = `${qq}:${uid}`;
     if (refreshing.has(key)) return { status: "busy" } as const;
@@ -124,7 +125,11 @@ export function createStarRailPanel(
     try {
       await verify();
       const startedAt = new Date(Math.max(Date.now(), discardedAt + 1));
-      const result = await client.fetchStarRailPanel(account, { signal: active });
+      const result = await client.fetchStarRailPanel(account, { signal: active }).catch((error: unknown) => {
+        if (allowRecovery && !active.aborted && error instanceof HoyoRequestError && error.code !== "profile-changed") return error;
+        throw error;
+      });
+      if (result instanceof HoyoRequestError) return { status: "unavailable", error: result } as const;
       await verify(result.revision);
       const next = normalizePanel(uid, result.avatars, startedAt);
       if (!next.avatars.length) return { status: "empty" } as const;
@@ -169,7 +174,10 @@ export function createStarRailPanel(
   };
 
   async function query(qq: string, command: PanelCommand,
-    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & { readonly reply?: (message: string) => unknown }) {
+    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & {
+      readonly offerLegacyPanelRecovery?: LegacyPanelRecoveryOffer;
+      readonly reply?: (message: string) => unknown;
+    }) {
     const { type, profileId, name } = command;
     if (type === "extreme") return queryExtremePanel(name, context?.inlineImageByteLimit);
     const uploadFile = context?.uploadFile;
@@ -218,14 +226,60 @@ export function createStarRailPanel(
           (context.adapter !== undefined && context.adapter !== "onebot" && context.adapter !== "milky")))) return "请在绑定网关的私聊会话中导出星铁面板。";
       if (!uploadFile) return "当前会话不支持发送星铁面板文件。";
     }
+    const recover = type === "update" && context?.message_type === "private" && !context.isDelegated &&
+      context.user_id?.toString() === qq ? context.offerLegacyPanelRecovery : undefined;
+    async function offerRecovery(uid: string) {
+      if (!recover || signal.aborted) return;
+      async function isEmpty() {
+        return !signal.aborted && !refreshing.has(`${qq}:${uid}`) &&
+          await store.read(qq, uid) === null && !await legacySnapshot(uid);
+      }
+      if (!await isEmpty().catch(() => false)) return;
+      return recover({
+        game: "sr", profileId, uid, isEmpty,
+        async save(data, verify) {
+          await verify();
+          if (!await isEmpty()) return;
+          const legacy = readLegacyPanel(uid, data);
+          const avatars = legacy.avatars.filter(avatar => avatar.legacy &&
+            ["mysPanelHSR", "homo", "EnkaHSR", "avocado.wiki"].includes(avatar.legacy.source));
+          if (!avatars.length) return 0;
+          const updatedAt = legacy.updatedAt && Date.parse(legacy.updatedAt) <= Date.now()
+            ? legacy.updatedAt : new Date(0).toISOString();
+          return store.update<number | undefined>({ qq, uid }, async () => {
+            signal.throwIfAborted();
+            await verify();
+            if (refreshing.has(`${qq}:${uid}`) || await legacySnapshot(uid)) {
+              throw new ProfileError("changed", "星铁面板档案已变更。");
+            }
+          }, current => current === null ? {
+            document: { ...legacy, updatedAt, avatars },
+            result: avatars.length,
+          } : { result: undefined });
+        },
+      });
+    }
     try {
       const account = await profiles.requestContext(qq, profileId, "sr").catch(error => {
-        if (type !== "update" && type !== "export" && type !== "refresh-traces" && error instanceof ProfileError && error.code === "login-required") return undefined;
+        if (error instanceof ProfileError) {
+          if (recover && (error.code === "login-required" || error.code === "missing" || error.code === "role-missing")) return error;
+          if (type !== "update" && type !== "export" && type !== "refresh-traces" && error.code === "login-required") return undefined;
+        }
         throw error;
       });
+      const explicitUid = "uid" in command;
+      if (account instanceof ProfileError) {
+        const selected = await profiles.savedRole(qq, profileId, "sr").catch(error => {
+          if (error instanceof ProfileError && (error.code === "missing" || error.code === "role-missing")) throw account;
+          throw error;
+        });
+        if (explicitUid && command.uid !== selected.uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
+        const offer = await offerRecovery(selected.uid);
+        if (offer) return offer;
+        throw account;
+      }
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
       const { uid } = role;
-      const explicitUid = "uid" in command;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
       const groupPanel = type === "relics" || (type === "detail" && !explicitUid && !("equipment" in command));
       const registerList = !explicitUid && (type === "list" || type === "update" || type === "reload" ||
@@ -255,9 +309,14 @@ export function createStarRailPanel(
       }
 
       if (type === "update" && account) {
-        const result = await refreshPanel(account, verify, discardedAt, signal);
+        const result = await refreshPanel(account, verify, discardedAt, signal, recover ? true : undefined);
+        if (result.status === "unavailable") {
+          const offer = await offerRecovery(uid);
+          if (offer) return offer;
+          throw result.error;
+        }
         if (result.status === "busy") return "此星铁角色面板正在更新，请稍后查询。";
-        if (result.status === "empty") return "米游社未返回星铁角色数据，原面板已保留。";
+        if (result.status === "empty") return (await offerRecovery(uid)) ?? "米游社未返回星铁角色数据，原面板已保留。";
         snapshot = result.snapshot;
         updated = result.updated;
       } else if (type !== "showcase") {
