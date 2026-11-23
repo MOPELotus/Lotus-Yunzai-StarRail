@@ -55,6 +55,8 @@ import { createStarRailSimulation, matchesWarpCommand } from "./simulation/comma
 import { createStarRailRogueQuery } from "./rogue-command.ts";
 import { parseStarRailRogue } from "./rogue-model.ts";
 
+import { createStarRailGrowthQuery, matchStarRailGrowth } from "./growth/command.ts";
+
 const updateCommand = /^#星铁更新(?:抽卡|跃迁)(?:记录)?([1-9]\d{0,2})?$/u;
 const helpCommand = /^#星铁(?:抽卡|记录)帮助$/u;
 const recordPrefix = "#星铁逐抽";
@@ -160,6 +162,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const roster = createStarRailRosterQuery(profiles, client, signal);
   const personalRecord = createStarRailPersonalRecordQuery(profiles, client, signal);
   const gridFight = createStarRailGridFightQuery(profiles, client, signal);
+  const growth = createStarRailGrowthQuery(profiles, client, signal);
   const rogue = createStarRailRogueQuery(profiles, client, signal);
   const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
   const monthly = createStarRailMonthlyQuery(profiles, client, signal);
@@ -290,6 +293,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
+      if (matchStarRailGrowth(message)) return ["[starrail] 养成计算"];
       if (parseStarRailRogue(message)) return ["[starrail] 宇宙战绩"];
       if (matchPublicDamageRank(message, "sr")) return ["[starrail] 角色面板"];
       const panelCommand = parsePanelCommand(message);
@@ -340,6 +344,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (team) return teamDamage(context, team);
       const gridFightCommand = parseStarRailGridFight(context.normalizedMessage);
       if (gridFightCommand) return gridFight(context, gridFightCommand);
+      const growthCommand = matchStarRailGrowth(context.normalizedMessage);
+      if (growthCommand) return growth(context, growthCommand);
       const rogueCommand = parseStarRailRogue(context.normalizedMessage);
       if (rogueCommand) return rogue(context, rogueCommand);
       const challenge = parseChallengeQuery(context.normalizedMessage);
