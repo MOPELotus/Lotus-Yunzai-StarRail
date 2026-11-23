@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { lockFile } from "../../../lib/file-lock.ts";
 import { createStarRailSimulation, parseWarpCommand } from "../simulation/commands.ts";
 import { emptyPity, simulateWarps } from "../simulation/draw.ts";
-import { createWarpPoolSource } from "../simulation/pools.ts";
+import { createWarpPoolSource, readWarpRandomCandidates } from "../simulation/pools.ts";
 import { createWarpSettingsStore, defaultWarpRates } from "../simulation/settings.ts";
 import { createWarpArchive, warpDay } from "../simulation/store.ts";
 
@@ -206,6 +206,32 @@ test("custom pools, editable base rates, reset and optional weekly boost remain 
     expect(poolNames.characterFive).toHaveLength(2);
     expect(poolNames.coneFour).toHaveLength(5);
     expect(await run("#星铁抽卡设置四星光锥概率非法", owner)).toContain("请输入");
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("random names can use locally installed limited character and cones while manual pools survive source damage", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-random-catalog-"));
+  try {
+    const meta = join(directory, "meta-sr");
+    await Promise.all(["character", "weapon"].map(name => mkdir(join(meta, name), { recursive: true })));
+    await writeFile(join(meta, "character", "data.json"), JSON.stringify({ 1102: { name: "希儿", star: 5 }, 1001: { name: "三月七", star: 4 } }));
+    await writeFile(join(meta, "weapon", "data.json"), JSON.stringify({ 23001: { name: "于夜色中", type: "巡猎", star: 5 },
+      21001: { name: "论剑", type: "巡猎", star: 4 } }));
+    const candidates = await readWarpRandomCandidates(directory);
+    expect(candidates.characterFive).toContain("希儿");
+    expect(candidates.coneFive).toContain("于夜色中");
+    expect(candidates.characterFour.filter(name => name === "三月七")).toEqual(["三月七"]);
+
+    const run = createStarRailSimulation({ directory, lockFile, signal: new AbortController().signal, now: () => active,
+      poolSource: async () => { throw new Error("corrupt upstream fixture"); },
+      random: () => 0, render: async () => { throw new Error("fixture"); } });
+    const owner = { user_id: 60, isMaster: true }, user = { user_id: 42 };
+    expect(await run("#星铁单抽", user)).toContain("无法完成");
+    await run("#星铁抽卡设置五星角色希儿", owner);
+    await run("#星铁抽卡设置四星角色三月七", owner);
+    expect(output(await run("#星铁单抽", user))).toContain("5★ 希儿 UP");
+    await run("#星铁抽卡设置卡池同步开启", owner);
+    expect(await run("#星铁单抽", user)).toContain("无法完成");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 

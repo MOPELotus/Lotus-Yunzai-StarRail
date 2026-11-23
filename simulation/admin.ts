@@ -1,4 +1,4 @@
-import { warpRandomCandidates } from "./pools.ts";
+import { readWarpRandomCandidates } from "./pools.ts";
 import { defaultWarpRates, readWarpAllowance, type createWarpSettingsStore, type WarpAllowance, type WarpPoolNames, type WarpRates,
   type WarpSettings } from "./settings.ts";
 
@@ -44,7 +44,9 @@ function toggle(input: string | undefined) {
   throw new RangeError("请提供开启或关闭。");
 }
 
-function editGlobal(settings: WarpSettings, field: string, value: string | undefined, random: () => number) {
+type PoolCandidates = Awaited<ReturnType<typeof readWarpRandomCandidates>>;
+
+function editGlobal(settings: WarpSettings, field: string, value: string | undefined, random: () => number, candidates?: PoolCandidates) {
   if (field === "概率复位") settings.rates = { ...defaultWarpRates };
   else if (field === "转生间隔") settings.reincarnationMinutes = number(value, 1, 1440);
   else if (Object.hasOwn(rateFields, field)) {
@@ -52,11 +54,11 @@ function editGlobal(settings: WarpSettings, field: string, value: string | undef
     settings.rates[key] = number(value, 0, key === "featuredFive" ? 100 : 10_000);
   } else if (Object.hasOwn(toggleFields, field)) {
     settings[toggleFields[field as keyof typeof toggleFields]] = toggle(value);
-  } else if (field === "随机卡池") {
+  } else if (field === "随机卡池" && candidates) {
     settings.automaticPools = false;
     settings.poolNames = {
-      characterFive: take(warpRandomCandidates.characterFive, 2, random), characterFour: take(warpRandomCandidates.characterFour, 3, random),
-      coneFive: take(warpRandomCandidates.coneFive, 2, random), coneFour: take(warpRandomCandidates.coneFour, 5, random),
+      characterFive: take(candidates.characterFive, 2, random), characterFour: take(candidates.characterFour, 3, random),
+      coneFive: take(candidates.coneFive, 2, random), coneFour: take(candidates.coneFour, 5, random),
     };
   } else if (Object.hasOwn(poolFields, field)) {
     const key = poolFields[field as keyof typeof poolFields] as keyof WarpPoolNames;
@@ -97,7 +99,8 @@ export async function runWarpAdministration(request: NonNullable<ReturnType<type
   const { field, value } = request;
   if (request.scope === "global") {
     if (field === "违禁词" || field === "屏蔽词") return "全局词表通过群管的屏蔽词设置管理。";
-    return summarize(field ? await settings.update(current => editGlobal(current, field, value, random), verifyOwner) : await settings.read());
+    const candidates = field === "随机卡池" ? await readWarpRandomCandidates() : undefined;
+    return summarize(field ? await settings.update(current => editGlobal(current, field, value, random, candidates), verifyOwner) : await settings.read());
   }
   const saved = field ? await settings.update(current => {
     const key: keyof WarpAllowance = allowanceFields[field as keyof typeof allowanceFields];

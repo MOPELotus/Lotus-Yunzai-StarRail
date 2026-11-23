@@ -136,7 +136,12 @@ export function createStarRailSimulation({
       if (!rules.enabled) return "星铁模拟跃迁功能已关闭。";
       if (draw && draw.count > 10 && !rules.multiple) return "星铁模拟跃迁未开启多连抽。";
       const allowance = readWarpAllowance(rules, group);
-      const pool = draw && customWarpPool(draw.kind, draw.slot, await poolSource(draw.kind, draw.slot, time), rules);
+      const customNames = draw?.kind === "cone" ? rules.poolNames.coneFive : rules.poolNames.characterFive;
+      const manual = draw && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
+      const source = draw && await poolSource(draw.kind, draw.slot, time).catch(error => {
+        if (!manual) throw error;
+      });
+      const pool = draw && customWarpPool(draw.kind, draw.slot, source, rules);
       if (draw && !pool) return "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
       const result = await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
         const account = readWarpAccount(raw);

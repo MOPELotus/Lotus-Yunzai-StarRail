@@ -1,6 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 import { readStarRailGachaSchedule } from "../gacha-schedule.ts";
-import { starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
+import { readStarRailGachaCatalog, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
 import { validWarpPoolName, type WarpSettings } from "./settings.ts";
 
 export type WarpKind = "character" | "cone" | "standard";
@@ -92,12 +92,25 @@ export function customWarpPool(kind: WarpKind, slot: number, pool: WarpPool | un
   };
 }
 
-export const warpRandomCandidates = {
+const fallbackRandomCandidates = {
   characterFive: standardCharacters.map(item => item.name),
   characterFour: fourCharacters.map(item => item.name),
   coneFive: standardCones.map(item => item.name),
   coneFour: fourCones.map(item => item.name),
 };
+
+export async function readWarpRandomCandidates(root = starRailGachaThemeDirectory()) {
+  const catalog = await readStarRailGachaCatalog(root).catch(() => undefined);
+  const collect = (kind: "characters" | "weapons", rank: 4 | 5, fallback: readonly string[]) =>
+    [...new Set([...fallback, ...[...(catalog?.[kind].values() ?? [])]
+      .filter(item => item.rank === rank && validWarpPoolName(item.name)).map(item => item.name)])];
+  return {
+    characterFive: collect("characters", 5, fallbackRandomCandidates.characterFive),
+    characterFour: collect("characters", 4, fallbackRandomCandidates.characterFour),
+    coneFive: collect("weapons", 5, fallbackRandomCandidates.coneFive),
+    coneFour: collect("weapons", 4, fallbackRandomCandidates.coneFour),
+  };
+}
 
 const stamp = (text: string) => `${text.replace(" ", "T")}+08:00`;
 const knownUntil = Math.max(...builtIn.map(item => Date.parse(item.end)));
