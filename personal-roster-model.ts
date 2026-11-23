@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { GameRole } from "@lotus-yunzai/account";
+import { gameCommandProfileId, type GameRole } from "@lotus-yunzai/account";
 import { readTheme, readPanelTalentCons } from "./panel-card.ts";
 import { id, object, text, whole, normalizePanel, recoverStarRailSkillLevel, isStarRailTalentUnlocks, type PanelAvatar } from "./panel-model.ts";
 
@@ -14,11 +14,11 @@ export function parseStarRailPersonalRoster(message: string) {
   if (!start) return;
   const command = message.slice(start[0].length).trim();
   const named = roster.exec(command);
-  if (named) return { mode: "roster" as const, profileId: Number(named[1] ?? 1) };
+  if (named) return { mode: "roster" as const, profileId: gameCommandProfileId("sr", named[1]) };
   const traces = talent.exec(command);
   if (!traces) return;
   const [, day, rarity, profileId] = traces;
-  return { mode: "talent" as const, profileId: Number(profileId ?? 1), day: day ?? "",
+  return { mode: "talent" as const, profileId: gameCommandProfileId("sr", profileId), day: day ?? "",
     rarity: rarity ? /五|5/u.test(rarity) ? 5 : 4 : undefined };
 }
 

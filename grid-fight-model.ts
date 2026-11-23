@@ -1,4 +1,4 @@
-import { normalizeProfileRoleArtworkUrl } from "@lotus-yunzai/account";
+import { gameCommandProfileId, normalizeProfileRoleArtworkUrl } from "@lotus-yunzai/account";
 import names from "./challenge-character-names.json";
 import type { GridFightRecentCount } from "./grid-fight-config.ts";
 
@@ -14,13 +14,13 @@ export function parseStarRailGridFight(message: string) {
     // profile only. A single bare number is always the game record number.
     const first = match[3], slot = match[4];
     if (!first && slot && !/档案/u.test(value)) return;
-    return { mode: "detail", index: Number(first ?? 1), profileId: Number(slot ?? 1) } as const;
+    return { mode: "detail", index: Number(first ?? 1), profileId: gameCommandProfileId("sr", slot) } as const;
   }
   const recentEntry = recent.exec(value);
-  if (recentEntry) return { mode: "recent", profileId: Number(recentEntry[1] ?? 1) } as const;
+  if (recentEntry) return { mode: "recent", profileId: gameCommandProfileId("sr", recentEntry[1]) } as const;
   const entry = overview.exec(value);
   if (entry && (entry[1] || entry[2] === "货币战争")) {
-    return { mode: "overview", profileId: Number(entry[3] ?? 1) } as const;
+    return { mode: "overview", profileId: gameCommandProfileId("sr", entry[3]) } as const;
   }
 }
 

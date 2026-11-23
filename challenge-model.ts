@@ -1,6 +1,6 @@
 // Adapted from Lotus-ReFactor services/starRailChallenge/service.js and
 // core/render/starrail-abyss.js. Source and asset details are in README.md.
-import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { StarRailChallengeKind, StarRailChallengeOptions, StarRailChallengePeriod } from "@lotus-yunzai/hoyo-client";
 
 const words = /^(?:#星铁|\*)(往期|上期|本期|最新|当期)?(简易)?(深渊|忘却之庭|忘却|混沌回忆|混沌|虚构叙事|虚构|末日幻影|末日|异相仲裁|异乡|异相|异向|仲裁)\s*([1-9]\d{0,2})?$/u;
@@ -17,7 +17,7 @@ export function parseChallengeQuery(message: string) {
   const match = words.exec(message);
   if (!match) return;
   const [, modifier, simple, word, id] = match;
-  const profileId = Number(id ?? 1);
+  const profileId = gameCommandProfileId("sr", id);
   if (profileId > MAX_PROFILE_ID) return;
   const period = modifier === "上期" ? "last" : modifier === "往期" ? "recent" : "current";
   const latest = word === "深渊" && (modifier === "最新" || modifier === "当期");

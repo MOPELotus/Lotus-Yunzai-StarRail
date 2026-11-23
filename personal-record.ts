@@ -1,4 +1,4 @@
-import { MAX_PROFILE_ID, ProfileError, gameRegionDisplayName, normalizeProfileRoleArtworkUrl, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, gameRegionDisplayName, normalizeProfileRoleArtworkUrl, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { renderStarRailPersonalRecord } from "./personal-record-card.ts";
 
@@ -8,7 +8,7 @@ const elements = new Set(["fire", "ice", "imaginary", "lightning", "physical", "
 
 export function matchStarRailPersonalRecord(message: string) {
   const match = command.exec(message.trim());
-  return match ? { profileId: Number(match[1] ?? 1) } : undefined;
+  return match ? { profileId: gameCommandProfileId("sr", match[1]) } : undefined;
 }
 
 function object(value: unknown): Record<string, unknown> | undefined {

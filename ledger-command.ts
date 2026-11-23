@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient, type StarRailLedgerKind, type StarRailLedgerRow } from "@lotus-yunzai/hoyo-client";
 import { renderStarRailLedgerCard } from "./account-report-renderer.ts";
 
@@ -17,7 +17,7 @@ export function matchStarRailLedger(message: string) {
   const match = pattern.exec(message);
   if (!match) return;
   const kind: StarRailLedgerKind = match[2] ? "cone" : names[match[1] as keyof typeof names];
-  return { kind, page: Number(match[3] ?? 1), profileId: Number(match[4] ?? 1) };
+  return { kind, page: Number(match[3] ?? 1), profileId: gameCommandProfileId("sr", match[4]) };
 }
 
 export function makeStarRailLedgerCard(uid: string, kind: StarRailLedgerKind, page: number, rows: readonly StarRailLedgerRow[]) {

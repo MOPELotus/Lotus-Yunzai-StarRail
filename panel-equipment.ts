@@ -1,5 +1,5 @@
 // Same-archive equipment replacement follows apps/profile/ProfileChange.js in the MIT source.
-import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { PanelAvatar } from "./panel-model.ts";
 import type { CoreSkillLevels } from "./panel-skill-preview.ts";
 import { readNamedCone } from "./panel-cone-preview.ts";
@@ -59,7 +59,7 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
   const skillsUseSuffix = archive && content && !readSkillLevels(content) && readSkillLevels(`${content} ${archive}`);
   const suffixIsArgument = levelUsesSuffix || skillsUseSuffix;
   const request = suffixIsArgument ? `${content} ${archive}` : content;
-  const profileId = Number(suffixIsArgument ? 1 : archive ?? 1);
+  const profileId = gameCommandProfileId("sr", suffixIsArgument ? undefined : archive);
   if (!name || !request || profileId > MAX_PROFILE_ID || name.includes("换") || /\d{9,}/u.test(name + request)) return;
 
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,

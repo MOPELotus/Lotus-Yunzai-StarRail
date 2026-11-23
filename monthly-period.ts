@@ -1,3 +1,4 @@
+import { gameCommandProfileId } from "@lotus-yunzai/account";
 import { starRailMonthlyMonth } from "./monthly-archive.ts";
 
 const named = new Map(["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"].map((word, index) => [word, index + 1]));
@@ -10,14 +11,14 @@ const task = /^(?:#星铁|#|\*|＊|[#*]?sr)星琼任务$/u;
 export function matchStarRailMonthly(message: string) {
   const current = message.trim();
   const live = modern.exec(current);
-  if (live) return { type: "month" as const, legacy: false, month: undefined, profileId: Number(live[1] ?? 1) };
+  if (live) return { type: "month" as const, legacy: false, month: undefined, profileId: gameCommandProfileId("sr", live[1]) };
   const archived = legacy.exec(current);
   if (archived) {
     const [, month, profileId] = archived;
-    return { type: "month" as const, legacy: true, month: month === undefined ? undefined : named.get(month) ?? Number(month), profileId: Number(profileId ?? 1) };
+    return { type: "month" as const, legacy: true, month: month === undefined ? undefined : named.get(month) ?? Number(month), profileId: gameCommandProfileId("sr", profileId) };
   }
   const selected = statistics.exec(current);
-  if (selected) return { type: "statistics" as const, selection: selected[1], profileId: Number(selected[2] ?? 1) };
+  if (selected) return { type: "statistics" as const, selection: selected[1], profileId: gameCommandProfileId("sr", selected[2]) };
   if (task.test(current)) return { type: "task" as const };
 }
 

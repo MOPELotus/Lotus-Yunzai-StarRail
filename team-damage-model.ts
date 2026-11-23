@@ -1,4 +1,4 @@
-import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import { canonicalStarRailPanelCharacter, text } from "./panel-model.ts";
 
 const spellings = /^(?:#?(?:崩坏星穹铁道|星穹铁道|星穹|星铁|星轨|穹轨|崩铁|铁道)|\*+)\s*(?:队伍伤害|队伤|伤害)(详情|过程|全图)?/u;
@@ -10,7 +10,7 @@ export function parseStarRailTeamDamage(message: string) {
   const front = /^(\d+)(?!\d)/u.exec(body);
   const back = front || /(?:lv|等级)\s*\d+$/iu.test(body) ? undefined
     : /(?:\s*档案\s*|(?<![a-zA-Z.\d])\s*)([1-9]\d{0,2})$/u.exec(body);
-  const profileId = Number(front?.[1] ?? back?.[1] ?? 1);
+  const profileId = gameCommandProfileId("sr", front?.[1] ?? back?.[1]);
   if (profileId < 1 || profileId > MAX_PROFILE_ID) return { profileId, detail: false, cycle: 5, enemies: 3, roles: [], uid: "" };
   if (front) body = body.slice(front[0].length);
   if (back) body = body.slice(0, back.index);

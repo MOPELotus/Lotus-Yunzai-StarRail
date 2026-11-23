@@ -210,8 +210,7 @@ export function createStarRailPanel(
         if (!owner) return "档案的登录凭据与账号不一致，请重新登录。";
         const { uid } = owner;
         if (!target) {
-          const suffix = profileId === 1 ? "" : ` 档案${profileId}`;
-          return `你确认要删除面板数据吗？请回复 *删除面板${uid}${suffix} 以删除面板数据。`;
+          return `你确认要删除面板数据吗？请回复 *删除面板${uid} 档案${profileId} 以删除面板数据。`;
         }
         if (target !== uid) return "仅允许删除当前登录档案已同步的星铁 UID。";
         await store.update({ qq, uid }, async () => {
@@ -238,7 +237,7 @@ export function createStarRailPanel(
     if (type === "export") {
       const group = context?.message_type === "group";
       if (group && !command.share) {
-        return `请私聊发送【*导出面板${profileId === 1 ? "" : profileId}】。如确认将本人面板发到本群，请发送【*强制导出面板${profileId === 1 ? "" : profileId}】。`;
+        return `请私聊发送【*导出面板${profileId}】。如确认将本人面板发到本群，请发送【*强制导出面板${profileId}】。`;
       }
       if (context?.isDelegated || (context?.message_type !== "private" && (!group || !context.group_id || !context.self_id ||
           (context.adapter !== undefined && context.adapter !== "onebot" && context.adapter !== "milky")))) return "请在绑定网关的私聊会话中导出星铁面板。";

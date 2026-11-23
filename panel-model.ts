@@ -1,6 +1,6 @@
 // Field mappings and list ordering adapted from miao-plugin
 // apps/profile/ProfileList.js and models/serv/api/MysPanelHSR{Api,Data,Mappings}.js.
-import { MAX_PROFILE_ID } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import names from "./challenge-character-names.json";
 import { parseEquipmentChange } from "./panel-equipment.ts";
 
@@ -177,37 +177,37 @@ export function parsePanelCommand(message: string) {
   const extreme = /^(?:#星铁|\*)\s*(?:群内?)?\s*(?:排名|排行)?\s*极限\s*([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:\s*(?:面[板版]|详情|详细))?$/u.exec(message)?.[1]?.trim();
   if (extreme) return { type: "extreme" as const, name: extreme, profileId: 1 };
   const practice = practiceOverview.exec(message);
-  if (practice) return { type: "practice" as const, name: "", profileId: Number(practice[1] ?? 1), rarity: undefined };
+  if (practice) return { type: "practice" as const, name: "", profileId: gameCommandProfileId("sr", practice[1]), rarity: undefined };
   const alias = practiceAliases.exec(message);
   const aliasBody = alias?.[1];
   if (alias && aliasBody && aliasBody !== "角色统计") {
     const rarity = /[五5]+星/u.test(aliasBody) ? 5 : /星/u.test(aliasBody) ? 4 : undefined;
-    return { type: "practice" as const, name: "", profileId: Number(alias[2] ?? 1), rarity };
+    return { type: "practice" as const, name: "", profileId: gameCommandProfileId("sr", alias[2]), rarity };
   }
   const traces = traceRefresh.exec(message);
-  if (traces) return { type: "refresh-traces" as const, name: "", profileId: Number(traces[1] ?? 1) };
+  if (traces) return { type: "refresh-traces" as const, name: "", profileId: gameCommandProfileId("sr", traces[1]) };
   const discard = discardPanel.exec(message);
-  if (discard) return { type: "discard" as const, name: "", profileId: Number(discard[2] ?? discard[3] ?? 1), ...(discard[1] && { uid: discard[1] }) };
+  if (discard) return { type: "discard" as const, name: "", profileId: gameCommandProfileId("sr", discard[2] ?? discard[3]), ...(discard[1] && { uid: discard[1] }) };
   const reload = reloadPanel.exec(message);
   const showcase = reload ? undefined : showcasePanel.exec(message);
   const refresh = reload || showcase ? undefined : refreshPanel.exec(message);
   const operation = reload ?? showcase ?? refresh;
   if (operation) {
-    const profileId = Number(operation[2] ?? operation[3] ?? 1);
+    const profileId = gameCommandProfileId("sr", operation[2] ?? operation[3]);
     if (refresh && (profileId < 1 || profileId > MAX_PROFILE_ID)) return;
     return { type: reload ? "reload" as const : showcase ? "showcase" as const : "update" as const, name: "", profileId, ...(operation[1] && { uid: operation[1] }) };
   }
   const namedShowcase = characterShowcase.exec(message);
   const showcaseName = namedShowcase?.[1]?.trim();
   if (showcaseName) {
-    const profileId = Number(namedShowcase?.[2] ?? 1);
+    const profileId = gameCommandProfileId("sr", namedShowcase?.[2]);
     if (profileId <= MAX_PROFILE_ID) return { type: "showcase" as const, name: showcaseName, profileId };
   }
   const exporting = /^(?:#星铁|\*)(强制)?导出面板(?:\s*(?:档案\s*)?(\d+))?$/u.exec(message);
-  if (exporting) return { type: "export" as const, name: "", profileId: Number(exporting[2] ?? 1), share: Boolean(exporting[1]) };
+  if (exporting) return { type: "export" as const, name: "", profileId: gameCommandProfileId("sr", exporting[2]), share: Boolean(exporting[1]) };
   const relicList = /^(?:(?:#星铁|\*)(?:遗器|圣遗物)|#遗器)列表(?:\s*(\d{9,10})(?!\d))?(?:\s*(?:档案\s*)?([1-9]\d{0,2}))?$/u.exec(message);
   if (relicList) {
-    const profileId = Number(relicList[2] ?? 1);
+    const profileId = gameCommandProfileId("sr", relicList[2]);
     if (profileId > MAX_PROFILE_ID) return;
     const uid = relicList[1];
     if (uid && !/^(?:18|[1-9])\d{8}$/u.test(uid)) return;
@@ -227,7 +227,7 @@ function parseLocalPanelCommand(message: string) {
   const damage = /^(?:#星铁|\*)([\p{L}\p{N}·・•_.&★ -]{1,28}?)(?:伤害|武器)(\d{1,6})?(?:\s+([1-9]\d{0,2}))?$/u.exec(message);
   const damagedRole = damage?.[1]?.trim();
   if (damage && damagedRole && !damagedRole.includes("换") && !/^(?:队伍|阵容|团队|实战|模拟)$/u.test(damagedRole)) {
-    const profileId = Number(damage[3] ?? 1);
+    const profileId = gameCommandProfileId("sr", damage[3]);
     if (profileId > MAX_PROFILE_ID) return;
     const scenario = damage[2];
     return { type: "damage" as const, profileId, name: damagedRole, scenario: scenario === undefined ? undefined : Math.max(1, Number(scenario)) };
@@ -235,7 +235,7 @@ function parseLocalPanelCommand(message: string) {
   const command = /^(?:#星铁|\*)(.+?)\s*([1-9]\d{0,2})?$/u.exec(message);
   if (!command || !command[1]) return;
   const body = command[1].trim();
-  const profileId = Number(command[2] ?? 1);
+  const profileId = gameCommandProfileId("sr", command[2]);
   if (profileId > MAX_PROFILE_ID) return;
   if (/^(?:面板角色|角色面板|面板)(?:列表)?$/u.test(body))
     return { type: "list" as const, profileId, name: "" };

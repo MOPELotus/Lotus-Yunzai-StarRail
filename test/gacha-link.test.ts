@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { withGameCommandProfiles } from "@lotus-yunzai/account";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -146,8 +147,9 @@ test("session is bound to bot, QQ, verified login and profile and merges atomica
     login = "changed";
     expect(await send(url)).toContain("已变化");
     expect(calls).toBe(0);
-    expect(await send("#星铁抽卡链接2")).toContain("两分钟");
-    expect(await send(url)).toContain("新增 1");
+    const scope = (profileId: number) => ({ user: 42, profiles: { sr: profileId }, isCurrent: () => true });
+    expect(await withGameCommandProfiles(scope(2), () => send("#星铁抽卡链接"))).toContain("两分钟");
+    expect(await withGameCommandProfiles(scope(7), () => send(url))).toContain("新增 1");
     const stored = await archive.read({ qq: "42", uid: role.uid }, { legacyTimezone: 8 });
     expect(stored).toMatchObject({ status: "available", archive: { uid: role.uid, timezone: 8 } });
     expect(JSON.stringify(stored)).not.toContain(key);

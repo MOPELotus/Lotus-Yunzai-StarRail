@@ -1,4 +1,4 @@
-import { normalizeProfileRoleArtworkUrl } from "@lotus-yunzai/account";
+import { gameCommandProfileId, normalizeProfileRoleArtworkUrl } from "@lotus-yunzai/account";
 import names from "./challenge-character-names.json";
 
 type Row = Record<string, unknown>;
@@ -26,14 +26,14 @@ export function parseStarRailRogue(message: string): RogueQuery | undefined {
     return {
       mode: name === "常规" ? "normal" : name === "周期" ? "weekly-help" : "weekly",
       period: name === "上期" || name === "上周" ? "previous" : "current",
-      profileId: Number(profile ?? 1), ownUid, index: Number(ordinal ?? 1),
+      profileId: gameCommandProfileId("sr", profile), ownUid, index: Number(ordinal ?? 1),
     };
   }
   const overall = summary.exec(command);
   if (!overall) return;
   const [, time, , , slot, bareSlot, ownUid] = overall;
   return { mode: command.includes("蝗灾") ? "locust" : command.startsWith("差分") ? "tourn" : "universe",
-    period: time === "上期" ? "previous" : "current", profileId: Number(slot ?? bareSlot ?? 1), ownUid, index: 1 };
+    period: time === "上期" ? "previous" : "current", profileId: gameCommandProfileId("sr", slot ?? bareSlot), ownUid, index: 1 };
 }
 
 export interface RogueTile {

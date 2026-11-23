@@ -1,4 +1,4 @@
-import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { isStarRailGachaLinkMessage, starRailLinkEntry } from "../../lib/private-access.ts";
 import { starRailLegacyArchiveTimezone } from "./gacha-files.ts";
 import { checkedStarRailLinkRole, readStarRailGachaLink, StarRailGachaLinkError } from "./gacha-link-source.ts";
@@ -57,7 +57,7 @@ export function createStarRailGachaLinkCommand(profiles: Profiles,
     const qq = String(user_id);
     const scope = `${adapter ?? "onebot"}:${self_id}:${qq}`;
     if (entry) {
-      const profileId = Number(entry[1] ?? 1);
+      const profileId = gameCommandProfileId("sr", entry[1]);
       if (profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
       if (pending.size >= 1024 && !pending.has(scope)) return "当前录入会话较多，请稍后重试。";
       const request = { profileId, connection, expires: performance.now() + ttl, identity: currentIdentity(profiles, qq, profileId) };

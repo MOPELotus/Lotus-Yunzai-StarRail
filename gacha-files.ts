@@ -1,4 +1,4 @@
-import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type GameRole } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, type createProfileStore, type GameRole } from "@lotus-yunzai/account";
 import { createGachaFileImport, type GachaFileImportContext } from "@lotus-yunzai/gacha/file-import";
 import { StarRailGachaArchiveError, type createStarRailGachaRecordArchive } from "./gacha-record-archive.ts";
 import { convertStarRailUigfTimezone, exportStarRailUigf, selectStarRailUigf } from "./gacha-uigf.ts";
@@ -81,7 +81,7 @@ export function createStarRailGachaFiles(
     }
     const exporting = exportCommand.exec(command);
     if (!exporting) return;
-    const profileId = Number(exporting[3] ?? 1);
+    const profileId = gameCommandProfileId("sr", exporting[3]);
     if (profileId > MAX_PROFILE_ID) return;
     const { message_type, user_id, uploadFile } = context;
     if (typeof user_id !== "number" || !Number.isSafeInteger(user_id) || user_id < 1) {
@@ -89,7 +89,7 @@ export function createStarRailGachaFiles(
     }
     const version = exporting[2] === "v2" ? "v2" : "v4";
     if (message_type === "group" && !exporting[1]) {
-      const suffix = `${version === "v2" ? "jsonv2" : ""}${profileId === 1 ? "" : profileId}`;
+      const suffix = `${version === "v2" ? "jsonv2" : ""}${profileId}`;
       return `建议私聊导出，若你确认要在此导出，请发送【*强制导出记录${suffix}】。`;
     }
     if (!uploadFile) return "当前会话暂不支持发送抽卡文件。";

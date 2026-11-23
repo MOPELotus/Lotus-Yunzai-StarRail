@@ -10,7 +10,7 @@ import type { MessageEvent } from "../../lib/messages.ts";
 import { isStarRailGachaLinkMessage, starRailLinkEntry } from "../../lib/private-access.ts";
 import { createGameCharacterAliasCommands, matchGameCharacterAliasCommand } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath } from "node:url";
-import { createProfileStore, MAX_PROFILE_ID, ProfileError } from "@lotus-yunzai/account";
+import { gameCommandProfileId, createProfileStore, MAX_PROFILE_ID, ProfileError } from "@lotus-yunzai/account";
 import { createGachaUpdater } from "@lotus-yunzai/gacha/update";
 import { createProfileHoyoClient, HoyoRequestError } from "@lotus-yunzai/hoyo-client";
 import { buildStarRailGachaDetail, type StarRailGachaDetailPool } from "./gacha-detail.ts";
@@ -105,21 +105,21 @@ function matchGachaQuery(message: string): { profileId: number; view: GachaView;
   const special = specialCommand.exec(message);
   if (special) {
     return {
-      profileId: Number(special[5] ?? 1),
+      profileId: gameCommandProfileId("sr", special[5]),
       view: { special: specialPools.get(special[2] ?? "") ?? "all", statistics: special[4] === "统计" },
       all: !special[2] || !!(special[1] || special[3]),
     };
   }
   const version = versionCommand.exec(message);
   if (version && !(version[1] === "全部" && version[2])) {
-    return { profileId: Number(version[3] ?? 1), view: { version: versionPools.get(version[1]!) ?? "up" }, all: !!version[2] };
+    return { profileId: gameCommandProfileId("sr", version[3]), view: { version: versionPools.get(version[1]!) ?? "up" }, all: !!version[2] };
   }
   const pool = poolCommand.exec(message);
   if (!pool) return;
   const name = pool[2]!;
   const view = pool[4] === "统计" ? { version: versionPools.get(name) ?? "up" }
     : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
-  return { profileId: Number(pool[5] ?? 1), view, all: !!(pool[1] || pool[3]) };
+  return { profileId: gameCommandProfileId("sr", pool[5]), view, all: !!(pool[1] || pool[3]) };
 }
 
 function legacyGachaQuery(message: string): ReturnType<typeof matchGachaQuery> {
@@ -131,7 +131,7 @@ function legacyGachaQuery(message: string): ReturnType<typeof matchGachaQuery> {
   const view: GachaView = special || !name
     ? { special: special ?? "all", statistics: false }
     : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
-  return { profileId: Number(match[3] ?? 1), view, all: !name };
+  return { profileId: gameCommandProfileId("sr", match[3]), view, all: !name };
 }
 
 function matchGachaCommand(input: string) {
@@ -144,7 +144,7 @@ function matchGachaCommand(input: string) {
   const legacy = matched || query ? undefined : legacyGachaQuery(message);
   const view = query ?? legacy;
   if (!matched && !view) return;
-  const profileId = view?.profileId ?? Number(matched?.[1] ?? 1);
+  const profileId = view?.profileId ?? gameCommandProfileId("sr", matched?.[1]);
   if (profileId <= MAX_PROFILE_ID) return { profileId, query: view, recordArchive: recordArchive || !!legacy };
 }
 
@@ -356,7 +356,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const historyPage = matchStarRailLedger(context.normalizedMessage);
       if (historyPage) return ledger(context, historyPage);
       const onlineMatch = starRailOnlineCommand.exec(context.normalizedMessage);
-      if (onlineMatch) return online(context, Number(onlineMatch[1] ?? 1));
+      if (onlineMatch) return online(context, gameCommandProfileId("sr", onlineMatch[1]));
       const team = parseStarRailTeamDamage(context.normalizedMessage);
       if (team) return teamDamage(context, team);
       const gridFightCommand = parseStarRailGridFight(context.normalizedMessage);

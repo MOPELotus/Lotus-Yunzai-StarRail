@@ -1,4 +1,4 @@
-import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
+import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, defaultStarRailGrowthLevels, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { resolveStarRailCharacter } from "../rank-statistics.ts";
 import { renderStarRailGrowth, starRailGrowthText } from "./card.ts";
@@ -14,7 +14,7 @@ export function matchStarRailGrowth(message: string) {
   const name = fields.name.trim();
   if (name === "角色") return { mode: "help" } as const;
   const input = fields.levels!.split(/[\s,，]+/u).filter(Boolean);
-  const profileId = Number(fields.profile ?? 1);
+  const profileId = gameCommandProfileId("sr", fields.profile);
   if (!name || input.length > defaultStarRailGrowthLevels.length || profileId < 1 || profileId > MAX_PROFILE_ID ||
       input.some(value => !/^\d{1,3}$/u.test(value) || Number(value) < 1)) return { mode: "invalid" } as const;
   return { mode: "calculate", name, profileId,
