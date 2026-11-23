@@ -1,4 +1,8 @@
 import { expect, test } from "bun:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { parsePanelCommand, normalizePanel, readLegacyPanel } from "../panel-model.ts";
 import { collectPanelRelics, readTheme } from "../panel-card.ts";
 import { scoreStarRailRelics } from "../relic-score.ts";
@@ -64,14 +68,27 @@ test("汇总遗器沿用同档案、旧筛选、降序和并列逆序", async ()
     { ...original, slot: 2, name: "只有有效主词条", main: { key: "atk", value: "350" }, subs: [{ key: "stance", value: "5%" }] },
     { ...original, slot: 3, name: "保留有效副词条", main: { key: "cpct", value: "32%" }, subs: [{ key: "cdmg", value: "22%" }] },
   );
-  const result = await collectPanelRelics({ version: 1, uid, source: "legacy", avatars: sorted }, theme, scope);
-  expect(result.eligible).toBe(34);
-  expect(result.entries).toHaveLength(28);
-  expect(result.entries[0]?.part.name).toBe("保留有效副词条");
-  expect(result.entries[1]?.part.name).toBe("测试头部 31");
-  expect(result.entries[27]?.part.name).toBe("测试头部 5");
-  expect(result.entries.some(({ part }) => part.name === "只有有效主词条")).toBeFalse();
-  expect(result.entries.every(({ scored }, index) => !index || scored._mark <= result.entries[index - 1]!.scored._mark)).toBeTrue();
+  const root = await mkdtemp(join(tmpdir(), "lotus-starrail-relic-list-"));
+  try {
+    const configRoot = pathToFileURL(root + "/");
+    const config = join(root, "config/panel-rank.yaml");
+    const snapshot = { version: 1, uid, source: "legacy", avatars: sorted } as const;
+    const result = await collectPanelRelics(snapshot, theme, scope, configRoot);
+    expect(result.eligible).toBe(34);
+    expect(result.entries).toHaveLength(28);
+    expect(result.entries[0]?.part.name).toBe("保留有效副词条");
+    expect(result.entries[1]?.part.name).toBe("测试头部 31");
+    expect(result.entries[27]?.part.name).toBe("测试头部 5");
+    expect(result.entries.some(({ part }) => part.name === "只有有效主词条")).toBeFalse();
+    expect(result.entries.every(({ scored }, index) => !index || scored._mark <= result.entries[index - 1]!.scored._mark)).toBeTrue();
+    await mkdir(join(root, "config"));
+    await writeFile(config, "artifactListLimit: 4\n");
+    expect((await collectPanelRelics(snapshot, theme, scope, configRoot)).entries).toEqual(result.entries.slice(0, 4));
+    await writeFile(config, "artifactListLimit: 100\n");
+    expect((await collectPanelRelics(snapshot, theme, scope, configRoot)).entries).toHaveLength(33);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("星铁遗器列表兼容旧入口、档案号与末尾 UID，避开原神圣遗物列表", () => {

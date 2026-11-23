@@ -1,6 +1,7 @@
 import { showcaseProviderNames } from "./panel-showcase.ts";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
+import { readArtifactListLimit } from "../../lib/group-panel-rank-settings.ts";
 import { readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
@@ -633,7 +634,8 @@ export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelA
 
 type RelicRating = NonNullable<ReturnType<typeof scoreStarRailRelics>>;
 
-export async function collectPanelRelics(snapshot: PanelSnapshot, theme: Metadata, signal: AbortSignal) {
+export async function collectPanelRelics(snapshot: PanelSnapshot, theme: Metadata, signal: AbortSignal, configRoot?: URL) {
+  const maxEntries = await readArtifactListLimit(configRoot);
   const eligible: { name: string; part: PanelAvatar["relics"][number];
     scored: RelicRating["artis"][number]; charWeight: RelicRating["charWeight"] }[] = [];
   for (const avatar of snapshot.avatars) {
@@ -650,7 +652,7 @@ export async function collectPanelRelics(snapshot: PanelSnapshot, theme: Metadat
   const kept = eligible.filter(({ part, scored, charWeight }) => part.slot < 2 || (charWeight[scored.main.key] ?? 0) <= 0 ||
     scored.attrs.some(attr => (charWeight[attr.key] ?? 0) > 0));
   kept.sort((left, right) => left.scored._mark - right.scored._mark);
-  return { eligible: eligible.length, entries: kept.reverse().slice(0, 28) };
+  return { eligible: eligible.length, entries: kept.reverse().slice(0, maxEntries) };
 }
 
 export async function makePanelRelicListCard(snapshot: PanelSnapshot, theme: Metadata, signal: AbortSignal, localOnly = false) {
