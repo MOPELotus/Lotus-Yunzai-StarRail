@@ -103,10 +103,10 @@ export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock, 
 export function createStarRailPanel(
   profiles: ReturnType<typeof createProfileStore>, client: ReturnType<typeof createProfileHoyoClient>,
   lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,
-  archiveDirectory?: string, extremeSampleFile = bundledExtremePanel,
+  archiveDirectory?: string, extremeSampleFile = bundledExtremePanel, showcaseArchiveDirectory = showcaseDirectory,
 ) {
   const store = createStarRailPanelArchive(lock, archiveDirectory);
-  const showcases = createRoleJsonArchive(showcaseDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
+  const showcases = createRoleJsonArchive(showcaseArchiveDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
   const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   const refreshing = new Set<string>();
 
@@ -347,7 +347,7 @@ export function createStarRailPanel(
         if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询，请稍后再试。";
         refreshing.add(refreshKey);
         try {
-          const cached = managedSnapshot(uid, await showcases.read(qq, uid), true);
+          const cached = type === "reload" ? managedSnapshot(uid, await showcases.read(qq, uid), true) : undefined;
           const started = new Date(Math.max(Date.now(), discardedAt + 1));
           if (cached?.source === target.provider && cached.updatedAt && Date.parse(cached.updatedAt) > discardedAt &&
               Date.parse(cached.updatedAt) + (whole(cached.showcaseTtl, 86_400) ?? 60) * 1000 > started.getTime()) {

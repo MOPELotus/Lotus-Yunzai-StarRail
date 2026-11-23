@@ -1,13 +1,16 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createProfileStore } from "@lotus-yunzai/account";
+import { createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { normalizeGameCommand } from "../../../lib/command-prefix.ts";
 import { CommandRegistry } from "../../../lib/commands.ts";
 import { lockFile } from "../../../lib/file-lock.ts";
 import type { MessageEvent } from "../../../lib/messages.ts";
 import { createModule } from "../index.ts";
 import { parsePanelCommand } from "../panel-model.ts";
+import { createStarRailPanel } from "../panel.ts";
 import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
 
 const cn = { uid: "500000123", region: "prod_qd_cn", gameBiz: "hkrpg_cn" };
@@ -98,6 +101,72 @@ account:
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("手动星铁展板更新跳过缓存并保留并发互斥、限流回执及普通重载", async () => {
+  const root = await mkdtemp(join(tmpdir(), "lotus-starrail-showcase-refresh-"));
+  const showcases = join(root, "showcases");
+  const archive = join(showcases, "42", `${cn.uid}.json`);
+  const env = {
+    LOTUS_STAR_RAIL_LEGACY_PANEL_DIR: Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR,
+    LOTUS_STAR_RAIL_SHOWCASE_SERVER: Bun.env.LOTUS_STAR_RAIL_SHOWCASE_SERVER,
+  };
+  const originalFetch = globalThis.fetch;
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let requests = 0;
+  try {
+    Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR = root;
+    Bun.env.LOTUS_STAR_RAIL_SHOWCASE_SERVER = "0";
+    await writeFile(join(root, "42-2.yaml"), `version: 1
+user: { qq: '42' }
+profile: { id: 2 }
+account:
+  game_roles: { sr: [{ uid: '${cn.uid}', region: ${cn.region}, game_biz: ${cn.gameBiz} }] }
+  current_uid: { sr: '${cn.uid}' }
+`);
+    globalThis.fetch = Object.assign(async (input: string | URL | Request) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      expect(url.href).toBe(`https://api.mihomo.me/sr_info/${cn.uid}`);
+      const request = ++requests;
+      if (request === 2) {
+        entered.resolve();
+        await release.promise;
+      }
+      if (request >= 3) return new Response(null, { status: 429 });
+      return Response.json({ ttl: 3600, detailInfo: { uid: cn.uid, avatarDetailList: [{ ...character, level: 60 + 10 * request }] } });
+    }, { preconnect: originalFetch.preconnect });
+    const profiles = createProfileStore(root);
+    const client = createProfileHoyoClient(profiles, async () => { throw new Error("不应请求官方账号接口"); });
+    const panel = createStarRailPanel(profiles, client, lockFile, signal, undefined, join(root, "managed"), undefined, showcases);
+    const command = parsePanelCommand("*展板更新面板2")!;
+    const chat = { message_type: "private", user_id: 42 };
+    await panel("42", command, chat);
+    expect(JSON.parse(await readFile(archive, "utf8"))).toMatchObject({ showcaseTtl: 3600, avatars: [{ level: 70 }] });
+
+    const second = panel("42", command, chat);
+    await Promise.race([entered.promise, second.then(() => { throw new Error("第二次手动更新应立即发起展板请求"); })]);
+    expect(await panel("42", command, chat)).toContain("正在查询");
+    expect(requests).toBe(2);
+    release.resolve();
+    await second;
+    const current = await readFile(archive, "utf8");
+    expect(JSON.parse(current)).toMatchObject({ showcaseTtl: 3600, avatars: [{ level: 80 }] });
+
+    expect(await panel("42", command, chat)).toContain("公开星铁展板请求过于频繁");
+    let notices = 0;
+    await panel("42", parsePanelCommand("*重载面板2")!, { ...chat, reply: () => { notices++; return true; } });
+    expect([requests, notices]).toEqual([3, 0]);
+    expect(await readFile(archive, "utf8")).toBe(current);
+  } finally {
+    release.resolve();
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(env)) {
+      if (value === undefined) delete Bun.env[key];
+      else Bun.env[key] = value;
+    }
+    await rm(root, { recursive: true, force: true });
+  }
+}, 15000);
 
 test("Mihomo 原始接口仅发绑定 UID，展板覆盖同名助战，角色和词条迁入同一面板模型", async () => {
   const result = await fetchStarRailShowcase(showcaseTarget(cn, "0"), signal, async (url, init) => {
