@@ -1,3 +1,4 @@
+import type { TrialTitleMode } from "../../lib/panel-trial-display.ts";
 import { calculateLegacyPanelAttributeRows, calculateManagedElation, damageAttribute, type PanelAttributeRows } from "./panel-attributes.ts";
 import type { readPanelDamageMetadata } from "./panel-card.ts";
 import { object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
@@ -814,4 +815,4 @@ export function calculateStarRailPersonalDamage(avatar: PanelAvatar, metadata: M
   return readStarRailPersonalDamage(avatar, metadata, scenario).damage;
 }
 
-export type StarRailPersonalDamage = ReturnType<typeof originalDamage>;
+export type StarRailPersonalDamage = ReturnType<typeof originalDamage> & { readonly trialTitleMode?: TrialTitleMode };

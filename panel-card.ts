@@ -6,7 +6,7 @@ import { readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import { calculateLegacyPanelAttributeRows, calculateLegacyPanelAttributes, damageAttribute, formatPanelAttribute, isFlatRelicAttribute, leveledAttributes, readLegacyRelicAttributes } from "./panel-attributes.ts";
-import { readStarRailPersonalDamage } from "./panel-damage.ts";
+import { readStarRailPersonalDamage, type StarRailPersonalDamage } from "./panel-damage.ts";
 import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.ts";
 import rankAbbreviations from "./panel-theme/rank-abbreviations.json";
@@ -462,7 +462,7 @@ export async function makePanelDetailCard(
   { equipmentLabel, skillPreview, previewDamage, localOnly, sourceLabel, allowCustomizedSample, builtInPortraitOnly }: {
     equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean; sourceLabel?: string; allowCustomizedSample?: boolean;
     builtInPortraitOnly?: boolean;
-    previewDamage?: ReturnType<typeof readStarRailPersonalDamage>["damage"];
+    previewDamage?: StarRailPersonalDamage;
   } = {},
 ) {
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
@@ -549,7 +549,8 @@ export async function makePanelDetailCard(
   return preparedModel(theme, "profile-detail", {
     mode: "profile", element, uid: snapshot.uid, charWeapon: path, hsr_paths: path,
     bodyClass: [theme.defaultStyle ? "original-theme" : "", `char-${name}`].filter(Boolean).join(" "),
-    scale: 1.6, viewport: { width: 600, height: 900 }, damageRows, damageAuthor: damage?.createdBy, original,
+    scale: 1.6, viewport: { width: 600, height: 900 }, damageRows, damageAuthor: damage?.createdBy,
+    trialTitleMode: previewDamage?.trialTitleMode, original,
     data: {
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",

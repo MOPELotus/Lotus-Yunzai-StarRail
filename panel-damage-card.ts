@@ -1,3 +1,4 @@
+import { layoutTrialDamageTitles, trialDamageTitleLineHeight } from "../../lib/panel-trial-display.ts";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { renderStarRailCard } from "./render-card.ts";
@@ -56,7 +57,6 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const body = bodyFont ? `${bodyFont}, ${fallback}` : fallback;
   const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
   const formatNumber = (value: number) => groupPanelNumber(number.format(value), commaGroup);
-  const labels = damage.rows.map((row, index) => `${index + 1}. ${row.title}`);
   const rowMetrics = (["damage", "shield", "heal", "support"] as const).filter(metric => damage.rows.some(row => row.metric === metric));
   const resultHeading = rowMetrics.map(metric => personalDamageMetricLabel[metric]).join(" / ");
   const baseline = damage.rows[damage.selected]!;
@@ -72,12 +72,15 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   )));
   const swapCellWidth = Math.max(110, Math.ceil(swapTextWidth + 12));
   const criticalGap = Math.max(162, glyphUnits(resultHeading) * 8 + 16);
-  const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.map(glyphUnits));
-  const noteWidth = Math.max(...damage.rows.map((row, index) => row.note ? 112 + 9 * glyphUnits(labels[index]! + row.note) : 0));
-  const width = Math.max(660, 210 + damage.swaps.length * swapCellWidth, rowWidth, noteWidth);
   const comparison = damage.rows.some(row => row.change !== undefined);
-  const rowHeight = comparison ? 54 : 34;
-  const listHeight = 45 + damage.rows.length * rowHeight;
+  measure.font = `18px ${body}`;
+  const titles = layoutTrialDamageTitles(damage.rows, comparison ? 54 : 34, damage.trialTitleMode,
+    line => measure.measureText(line).width <= 270);
+  const labels = titles.rows.map(({ lines }, index) => [`${index + 1}. ${lines[0]}`, ...lines.slice(1)]);
+  const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.flat().map(glyphUnits));
+  const noteWidth = Math.max(...damage.rows.map((row, index) => row.note ? 112 + 9 * glyphUnits(labels[index]![0]! + row.note) : 0));
+  const width = Math.max(660, 210 + damage.swaps.length * swapCellWidth, rowWidth, noteWidth);
+  const listHeight = 45 + titles.height;
   const swapTop = 161 + listHeight;
   const swapHeight = damage.swaps.length ? 110 + damage.swaps.length * 45 : 0;
   const buffTop = swapTop + (swapHeight ? swapHeight + 14 : 0);
@@ -86,16 +89,18 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const valueX = width - 46, critX = valueX - criticalGap;
   const matrixX = (index: number) => 170 + (index + 0.5) * (width - 210) / damage.swaps.length;
   const metricLabel = personalDamageMetricLabel[baseline.metric];
+  const selectedTitle = damage.trialTitleMode === 1 ? titles.rows[damage.selected]!.lines[0] : baseline.title;
   const swapHeading = baseline.percentage !== undefined ? "词条替换 · 变化（百分点） / 辅助比例"
     : baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}`
     : "词条替换 · 期望变化 / 期望与暴击伤害";
 
   return renderStarRailCard(width, height, ctx => {
-    function text(value: string, x: number, y: number, size: number, color = "#f5f3f7", align: CanvasTextAlign = "left", family = body) {
+    function text(value: string, x: number, y: number, size: number, color = "#f5f3f7", align: CanvasTextAlign = "left", family = body, maxWidth?: number) {
       ctx.textAlign = align;
       ctx.fillStyle = color;
       ctx.font = `${size}px ${family}`;
-      ctx.fillText(value, x, y);
+      if (maxWidth === undefined) ctx.fillText(value, x, y);
+      else ctx.fillText(value, x, y, maxWidth);
     }
 
     function box(y: number, boxHeight: number, title: string) {
@@ -141,7 +146,7 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     ctx.shadowBlur = 4;
     ctx.shadowOffsetY = 1;
     text(`${damage.name}伤害`, 40, 78, 44, "#fff", "left", heading);
-    text(`${personalDamageEnemyLevel} 级弱点敌人 · ${baseline.title}`, 42, 113, 19, "#fff");
+    text(`${personalDamageEnemyLevel} 级弱点敌人 · ${selectedTitle}`, 42, 113, 19, "#fff", "left", body, damage.trialTitleMode === 2 ? width - 84 : undefined);
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
@@ -149,8 +154,8 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     text("暴击伤害", critX, 173, 16, "#f5f3f7", "right");
     text(resultHeading, valueX, 173, 16, "#f5f3f7", "right");
     for (const [index, row] of damage.rows.entries()) {
-      const y = 208 + index * rowHeight, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
-      text(labels[index]!, 42, y, 18, color);
+      const y = 208 + titles.rows[index]!.top, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
+      labels[index]!.forEach((label, line) => text(label, 42, y + line * trialDamageTitleLineHeight, 18, color));
       if (row.note === undefined) {
         text(row.critical === undefined ? "—" : formatNumber(row.critical), critX, y, 18, color, "right");
       }

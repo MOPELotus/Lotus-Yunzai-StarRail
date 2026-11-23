@@ -1,3 +1,4 @@
+import { readPanelTrialDisplay, trialDamageTitleLines } from "../../lib/panel-trial-display.ts";
 import { fileURLToPath } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequestContext } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
@@ -38,6 +39,7 @@ const extremePanelUid = "100000000";
 const bundledExtremePanel = fileURLToPath(new URL("../../resources/extreme-panels/sr.json", import.meta.url));
 const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
 const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
+const configRoot = new URL("../../", import.meta.url);
 const maxBytes = 8 * 1024 * 1024;
 
 function panelDamageText(damage: StarRailPersonalDamage, commaGroup?: number) {
@@ -46,10 +48,11 @@ function panelDamageText(damage: StarRailPersonalDamage, commaGroup?: number) {
     return difference === undefined ? number : `${number}（${formatStarRailDamageChange(difference)}）`;
   }
   return damage.rows.map(row => {
-    if (row.average === undefined) return `${row.title} · ${row.note}`;
+    const title = trialDamageTitleLines(row.title, damage.trialTitleMode).join("\n");
+    if (row.average === undefined) return `${title} · ${row.note}`;
     const average = display(row.percentage ?? row.display ?? Math.round(row.average), row.change?.average);
-    if (row.critical === undefined) return `${row.title} · ${personalDamageMetricLabel[row.metric]} ${average}`;
-    return `${row.title} · 暴击 ${display(Math.round(row.critical), row.change?.critical)} · 期望 ${average}`;
+    if (row.critical === undefined) return `${title} · ${personalDamageMetricLabel[row.metric]} ${average}`;
+    return `${title} · 暴击 ${display(Math.round(row.critical), row.change?.critical)} · 期望 ${average}`;
   });
 }
 
@@ -511,7 +514,7 @@ export function createStarRailPanel(
       let selected: PanelAvatar | undefined;
       const skillPreview = "equipment" in command && "skillLevels" in command.equipment;
       let equipmentLabel: string | undefined;
-      let previewDamage: ReturnType<typeof readStarRailPersonalDamage> | undefined;
+      let previewDamage: (ReturnType<typeof readStarRailPersonalDamage> & { damage?: StarRailPersonalDamage }) | undefined;
       const archiveSuffix = profileId === 1 ? "" : ` ${profileId}`;
       if (type === "damage" || type === "detail" || type === "relics") {
         selected = findPanelAvatar(snapshot.avatars, name, theme);
@@ -605,11 +608,15 @@ export function createStarRailPanel(
           if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
           equipmentLabel = labels.join(" · ");
           if (type !== "relics" && equipmentMetadata && hasPersonalDamage(selected.id)) {
-            const originalMetadata = await readPanelDamageMetadata(selected, theme);
+            const display = await readPanelTrialDisplay(configRoot);
+            const originalMetadata = display.showDifference ? await readPanelDamageMetadata(selected, theme) : undefined;
             await verify();
-            previewDamage = readStarRailPersonalDamage(temporary, equipmentMetadata,
+            const result = readStarRailPersonalDamage(temporary, equipmentMetadata,
               "scenario" in command ? command.scenario : undefined, equipmentRows, skillPreview,
               originalMetadata && { avatar: selected, metadata: originalMetadata });
+            previewDamage = result.damage && display.showDifference ? { ...result, damage: {
+              ...result.damage, trialTitleMode: display.longTitle,
+            } } : result;
           }
           selected = { ...temporary, stats: formatPanelAttributeRows(equipmentRows) };
         }

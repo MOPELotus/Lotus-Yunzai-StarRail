@@ -1,3 +1,4 @@
+import { layoutTrialDamageTitles, trialDamageTitleLineHeight } from "../../lib/panel-trial-display.ts";
 // Native drawing of the Star Rail profile-detail layout. Geometry and artwork follow
 // the fixed MIT Miao reference in panel-theme/character/profile-detail.{html,css}.
 import { Canvas, type CanvasRenderingContext2D as Context } from "skia-canvas";
@@ -71,7 +72,10 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
   const damageY = relicY + relicRows * 200 + (relicRows ? 10 : 0);
   const damageComparison = damageRows.some(row => row.change !== undefined);
   const damageRowHeight = damageComparison ? 54 : 40;
-  const damageHeight = damageRows.length ? 75 + damageRowHeight * (damageRows.length + 1) : 0;
+  const rows = [{ title: "伤害类型", critical: "暴击伤害", average: "期望伤害", change: undefined }, ...damageRows];
+  measure.font = `15px ${font.body}`;
+  const titles = layoutTrialDamageTitles(rows, damageRowHeight, model.trialTitleMode, line => measure.measureText(line).width <= 201);
+  const damageHeight = damageRows.length ? 75 + titles.height : 0;
   const height = Math.ceil(damageY + damageHeight + 37);
 
   return renderStarRailCard(width, height, ctx => {
@@ -295,15 +299,16 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       fill(ctx, dark, 10, damageY, 575, 40);
       text("伤害计算", 30, damageY + 20, 16, tan);
       text(damageComparison ? "与换装前相比" : `使用 *${data.abbr}伤害 查看伤害详情`, 109, damageY + 20, 12, "#bbb");
-      const rows = [{ title: "伤害类型", critical: "暴击伤害", average: "期望伤害", change: undefined }, ...damageRows];
       rows.forEach((row, index) => {
-        const y = damageY + 40 + index * damageRowHeight;
-        fill(ctx, index % 2 ? dark : darkOdd, 10, y, 575, damageRowHeight);
+        const { lines, top, height: rowHeight } = titles.rows[index]!;
+        const y = damageY + 40 + top;
+        fill(ctx, index % 2 ? dark : darkOdd, 10, y, 575, rowHeight);
         ctx.strokeStyle = "#ffffff28";
-        ctx.strokeRect(10, y, 230, damageRowHeight);
-        ctx.strokeRect(240, y, 184, damageRowHeight);
-        ctx.strokeRect(424, y, 161, damageRowHeight);
-        text(row.title, 220, y + 20, 15, tan, "right", false, false, 201);
+        ctx.strokeRect(10, y, 230, rowHeight);
+        ctx.strokeRect(240, y, 184, rowHeight);
+        ctx.strokeRect(424, y, 161, rowHeight);
+        lines.forEach((title, line) => text(title, 220, y + 20 + line * trialDamageTitleLineHeight,
+          15, tan, "right", false, false, 201));
         if (row.critical) text(row.critical, 332, y + 20, index ? 18 : 15, index ? white : tan, "center");
         text(row.average, row.critical ? 504 : 412, y + 20, index ? 18 : 15, index ? white : tan, "center", false, false, row.critical ? 151 : 330);
         for (const [delta, x] of [[row.change?.critical, 332], [row.change?.average, row.critical ? 504 : 412]] as const) {
