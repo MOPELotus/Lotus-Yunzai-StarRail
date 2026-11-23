@@ -34,6 +34,7 @@ import { createStarRailMonthlyQuery, starRailMonthlyCommand } from "./monthly-co
 import { createStarRailLedgerQuery, matchStarRailLedger } from "./ledger-command.ts";
 import { createStarRailOnlineQuery, starRailOnlineCommand } from "./online-command.ts";
 import { createStarRailPanel, createStarRailPersonalPanelReader } from "./panel.ts";
+import { starRailOriginalCommand } from "./panel-original.ts";
 import { createStarRailTeamDamageQuery } from "./team-damage-command.ts";
 import { parseStarRailTeamDamage } from "./team-damage-model.ts";
 import { parsePanelCommand } from "./panel-model.ts";
@@ -267,13 +268,17 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (!panelCommand && (matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message))) return ["[gacha] 抽卡记录"];
       return [];
     },
-    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext & Pick<MessageEvent, "forward" | "privateCredentialSignal"> & {
+    async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext &
+      Partial<Pick<MessageEvent, "forward" | "privateCredentialSignal" | "reply_id" | "lookupReply" | "message">> & {
       readonly at?: string | number;
       readonly isNapCat?: (signal: AbortSignal) => Promise<boolean>;
       readonly adapter?: "milky";
       readonly inlineImageByteLimit?: number;
       readonly isBotMaster?: (userId: number) => boolean;
+      readonly groupOriginalSignal?: AbortSignal;
     }) {
+      const original = starRailOriginalCommand(context.normalizedMessage);
+      if (original) return await panel.original(context) ?? (original === "explicit" ? "请引用当前会话中本人查询的星铁角色面板。" : undefined);
       const linked = await gachaLink(context);
       if (linked !== undefined) return linked;
       if (matchesWarpCommand(context.normalizedMessage)) return simulate(context.normalizedMessage, context);

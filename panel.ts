@@ -6,6 +6,7 @@ import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequ
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { MessageEvent } from "../../lib/messages.ts";
+import { createStarRailPanelOriginals } from "./panel-original.ts";
 import type { PanelRebuilder } from "../../lib/panel-rebuild.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelPracticeCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
 import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
@@ -109,6 +110,10 @@ export function createStarRailPanel(
   const store = createStarRailPanelArchive(lock, archiveDirectory);
   const showcases = createRoleJsonArchive(showcaseArchiveDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
   const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
+  const originals = createStarRailPanelOriginals(profiles, signal, { storage: {
+    async get(key) { return globalThis.redis?.get(key); },
+    async set(key, value, seconds) { return globalThis.redis?.set(key, value, { EX: seconds }); },
+  } });
   const refreshing = new Set<string>();
 
   async function queryExtremePanel(name: string, inlineImageByteLimit?: number) {
@@ -633,6 +638,15 @@ export function createStarRailPanel(
           }, verify).catch(() => undefined);
           await verify();
         }
+        const model = models[0];
+        const photo = model && "original" in model ? model.original : undefined;
+        const owner = type === "detail" && account ? starRailTraceOwner(account, role) : undefined;
+        if (context?.self_id && context.user_id?.toString() === qq && photo && owner) {
+          return { type: "delivery" as const, message: images[0]!, async onDelivered(confirmed: number) {
+            await verify();
+            await originals.delivered(context, confirmed, { ...owner, profileId }, photo);
+          } };
+        }
         return images[0];
       }
       if (images.length) return { type: "forward" as const, nodes: [`UID ${uid} · ${snapshot.avatars.length} 位角色`, ...images] };
@@ -657,5 +671,5 @@ export function createStarRailPanel(
       return "星铁面板暂时无法读取或更新，请稍后重试。";
     }
   }
-  return Object.assign(query, { rebuild });
+  return Object.assign(query, { rebuild, original: originals.reply });
 }

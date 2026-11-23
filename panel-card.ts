@@ -11,7 +11,8 @@ import { relicAttributeMap, scoreStarRailRelics } from "./relic-score.ts";
 import { alias, abbr } from "./panel-theme/character-alias.ts";
 import rankAbbreviations from "./panel-theme/rank-abbreviations.json";
 import { isStarRailTalentUnlocks, object, officialArtHosts, recoverStarRailSkillLevel, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
-import { readStarRailPanelPortrait } from "./panel-portrait.ts";
+import { isStarRailLocalPanelPhoto, panelPhotoHash, readStarRailLocalPanelPhoto, readStarRailPanelPortrait,
+  type StarRailLocalPanelPhoto } from "./panel-portrait.ts";
 
 const packagedTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
 const aliases: Readonly<Record<string, string>> = alias;
@@ -140,13 +141,42 @@ export async function readPanelAvatarFace(theme: Metadata, avatarId: string) {
 }
 
 const maxImageBytes = 768 * 1024;
+type RemotePanelPhoto = { readonly url: string; readonly sha256: string };
+export type StarRailPanelPhoto = StarRailLocalPanelPhoto | RemotePanelPhoto;
+
+function portraitUrl(source: string) {
+  try {
+    const url = new URL(source);
+    if (url.protocol === "https:" && officialArtHosts.has(url.hostname) && !url.username && !url.password && !url.port) return url;
+  } catch {}
+}
+
+export function isStarRailPanelPhoto(value: unknown): value is StarRailPanelPhoto {
+  if (isStarRailLocalPanelPhoto(value)) return true;
+  if (!value || typeof value !== "object" || "root" in value) return false;
+  const item = value as Partial<RemotePanelPhoto>;
+  return typeof item.sha256 === "string" && /^[a-f0-9]{64}$/u.test(item.sha256) &&
+    typeof item.url === "string" && item.url.length <= 512 && portraitUrl(item.url) !== undefined;
+}
+
+function dataImage(bytes: Buffer) {
+  const type = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ? "png"
+    : bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP" ? "webp"
+      : bytes[0] === 255 && bytes[1] === 216 ? "jpeg" : "";
+  return type ? `data:image/${type};base64,${bytes.toString("base64")}` : "";
+}
+
+function imageBytes(source: string) {
+  return Buffer.from(source.slice(source.indexOf(",") + 1), "base64");
+}
+
 async function remoteArt(source: string | undefined, signal: AbortSignal) {
   if (!source || signal.aborted) return "";
   const deadline = AbortSignal.any([signal, AbortSignal.timeout(4000)]);
   let response: Response | undefined;
   try {
-    const url = new URL(source);
-    if (url.protocol !== "https:" || !officialArtHosts.has(url.hostname) || url.username || url.password || url.port) return "";
+    const url = portraitUrl(source);
+    if (!url) return "";
     response = await fetch(url, { redirect: "error", credentials: "omit", signal: deadline });
     if (!response.ok || response.redirected || !response.body || Number(response.headers.get("Content-Length")) > maxImageBytes) return "";
     const chunks: Uint8Array[] = [];
@@ -156,11 +186,7 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
       if (size > maxImageBytes) return "";
       chunks.push(chunk);
     }
-    const bytes = Buffer.concat(chunks);
-    const type = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ? "png"
-      : bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP" ? "webp"
-      : bytes[0] === 255 && bytes[1] === 216 ? "jpeg" : "";
-    return type ? `data:image/${type};base64,${bytes.toString("base64")}` : "";
+    return dataImage(Buffer.concat(chunks));
   } catch {
     return "";
   } finally {
@@ -170,8 +196,22 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
 
 async function panelPortrait(theme: Metadata, avatar: PanelAvatar, name: string, signal: AbortSignal, special = false) {
   const selected = await readStarRailPanelPortrait(theme.root, avatar.id, name, special);
-  if (selected) return cssFile(selected.file);
-  return remoteArt(avatar.splash || avatar.face, signal);
+  if (selected) {
+    const src = dataImage(selected.bytes);
+    return { src: src || cssFile(selected.file), original: src ? selected.original : undefined };
+  }
+  const url = avatar.splash || avatar.face;
+  const src = await remoteArt(url, signal);
+  const original = src && url ? { url, sha256: panelPhotoHash(imageBytes(src)) } : undefined;
+  return { src, original: isStarRailPanelPhoto(original) ? original : undefined };
+}
+
+export async function readStarRailPanelPhoto(photo: StarRailPanelPhoto, signal: AbortSignal) {
+  if (!isStarRailPanelPhoto(photo) || signal.aborted) return;
+  if ("root" in photo) return readStarRailLocalPanelPhoto((await readTheme()).root, photo);
+  const source = await remoteArt(photo.url, signal);
+  const bytes = source && imageBytes(source);
+  if (bytes && panelPhotoHash(bytes) === photo.sha256) return bytes;
 }
 
 function preparedModel<Fields extends Json>(theme: Metadata,
@@ -463,7 +503,8 @@ export async function makePanelDetailCard(
   const traceIds = new Set(avatar.traces.filter(trace => trace.active).map(trace => trace.id.slice(-3)));
   const special = avatar.rank === 6 || score?.markClass === "ACE" || score?.markClass === "MAX" ||
     (completeSkills && ["101", "102", "103", "201", "202", "203", "204", "205", "206", "207", "208", "209", "210"].every(id => traceIds.has(id)));
-  imgs.splash = await panelPortrait(theme, avatar, name, artSignal, special);
+  const { src, original } = await panelPortrait(theme, avatar, name, artSignal, special);
+  imgs.splash = src;
   const treeData = await makeTraceTree(avatar, name, character, theme, artSignal);
   const artis = [];
   for (const row of avatar.relics) {
@@ -505,7 +546,7 @@ export async function makePanelDetailCard(
   return preparedModel(theme, "profile-detail", {
     mode: "profile", element, uid: snapshot.uid, charWeapon: path, hsr_paths: path,
     bodyClass: [theme.defaultStyle ? "original-theme" : "", `char-${name}`].filter(Boolean).join(" "),
-    scale: 1.6, viewport: { width: 600, height: 900 }, damageRows, damageAuthor: damage?.createdBy,
+    scale: 1.6, viewport: { width: 600, height: 900 }, damageRows, damageAuthor: damage?.createdBy, original,
     data: {
       name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
@@ -619,7 +660,7 @@ export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelA
   const { name, element, score } = await scorePanelAvatarRelics(avatar, theme);
   if (!score) return;
   const artSignal = AbortSignal.any([signal, AbortSignal.timeout(6000)]);
-  const splash = await panelPortrait(theme, avatar, name, artSignal);
+  const { src: splash } = await panelPortrait(theme, avatar, name, artSignal);
   const parts = await Promise.all(avatar.relics.flatMap(part => {
     const scored = score.artis[part.slot];
     if (!scored) return [];

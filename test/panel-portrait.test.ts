@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { readStarRailPanelPortrait } from "../panel-portrait.ts";
+import { readStarRailLocalPanelPhoto, readStarRailPanelPortrait } from "../panel-portrait.ts";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64");
 
@@ -38,7 +38,16 @@ test("star rail uses decodable same-form gallery art before the matching origina
     const synced = await write(`${base}/snapshots/${generation}/sr-character/希儿/gallery.png`);
     await write(`${base}/snapshots/${generation}/gs-character/希儿Pro.png`);
     await symlink(`snapshots/${generation}`, join(root, base, "current"));
-    expect((await readStarRailPanelPortrait(root, "1102", "希儿", false, root))?.file).toBe(synced);
+    const selectedSnapshot = await readStarRailPanelPortrait(root, "1102", "希儿", false, root);
+    expect(selectedSnapshot?.file).toBe(synced);
+    expect(selectedSnapshot?.original).toMatchObject({ root: "synced", snapshot: generation, path: ["希儿", "gallery.png"] });
+    const next = "gallery-00000000-0000-4000-8000-000000000002";
+    await write(`${base}/snapshots/${next}/sr-character/希儿/gallery.png`, Buffer.concat([png, Buffer.from([0])]));
+    await symlink(`snapshots/${next}`, join(root, base, "next"));
+    await rename(join(root, base, "next"), join(root, base, "current"));
+    expect(await readStarRailLocalPanelPhoto(root, selectedSnapshot!.original!, root)).toEqual(png);
+    await rm(synced);
+    expect(await readStarRailLocalPanelPhoto(root, selectedSnapshot!.original!, root)).toBeUndefined();
     const selected = await write("data/character-gallery/sr-character/希儿/local.png");
     expect((await readStarRailPanelPortrait(root, "1102", "希儿", false, root))?.file).toBe(selected);
     expect((await readStarRailPanelPortrait(root, "2102", "希儿", false, root))?.file).toBe(upgraded);
