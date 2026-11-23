@@ -148,7 +148,7 @@ function elapsed(days: number | undefined) {
 }
 
 export async function buildStarRailPersonalRoster(response: RosterResponse, role: GameRole,
-  command: RosterCommand, theme: Theme, signal: AbortSignal, now = new Date()) {
+  command: RosterCommand, theme: Theme, signal: AbortSignal, now = new Date(), qFace = true) {
   const panels = new Map<string, PanelAvatar>();
   for (const row of response.talents) {
     const key = boundedId(row.id ?? row.avatar_id);
@@ -174,8 +174,9 @@ export async function buildStarRailPersonalRoster(response: RosterResponse, role
   const banner = (header && await local(theme, "character", header.name, "imgs", "banner.webp")) ||
     await local(theme, "character", "common", "imgs", "banner.webp");
   const face = header
-    ? await local(theme, "character", header.name, "imgs", "face-q.webp") ||
-      await local(theme, "character", header.name, "imgs", "qface.webp") || header.face
+    ? (qFace && (await local(theme, "character", header.name, "imgs", "face-q.webp") ||
+      await local(theme, "character", header.name, "imgs", "qface.webp"))) ||
+      await local(theme, "character", header.name, "imgs", "face.webp")
     : "";
   const civil = new Date(now.valueOf() + 8 * 3_600_000);
   const time = civil.toISOString().slice(5, 16).replace("T", " ");

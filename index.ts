@@ -152,10 +152,11 @@ function matchGachaCommand(input: string) {
   if (profileId <= MAX_PROFILE_ID) return { profileId, query: view, recordArchive: recordArchive || !!legacy };
 }
 
-export function createModule({ signal, lockFile, runtimeVersion }: {
+export function createModule({ signal, lockFile, runtimeVersion, roleQFace = true }: {
   signal: AbortSignal;
   lockFile: Parameters<typeof createStarRailGachaHistoryStore>[1];
   runtimeVersion?: { readonly version?: string; readonly revision?: string };
+  roleQFace?: boolean;
 }) {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
   const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
@@ -163,10 +164,10 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const client = createProfileHoyoClient(profiles);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
-  const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
+  const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank, undefined, undefined, undefined, { qFace: roleQFace });
   const panelArchive = createStarRailPanelArchive(lockFile);
   const transferPanel = createStarRailPanelTransfer(profiles, lockFile, signal);
-  const roster = createStarRailRosterQuery(profiles, client, signal);
+  const roster = createStarRailRosterQuery(profiles, client, signal, { qFace: roleQFace });
   const personalRecord = createStarRailPersonalRecordQuery(profiles, client, signal);
   const gridFight = createStarRailGridFightQuery(profiles, client, signal);
   const growth = createStarRailGrowthQuery(profiles, client, signal);
@@ -232,7 +233,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
           ? gachaPortraitCharacter(catalog.characters.values(), (await readLegacyPlayerPortrait("sr", uid, signal).catch(() => undefined))?.face)
           : undefined);
       const [{ face, avatar }, resolveItem, schedule, draws] = await Promise.all([
-        readGachaPlayerArt(themeDirectory, "sr", nickname || "开拓者", character, role.avatar, signal),
+        readGachaPlayerArt(themeDirectory, "sr", nickname || "开拓者", character, role.avatar, signal, roleQFace),
         rawArchive ? undefined : readStarRailGachaItems(themeDirectory, catalog),
         rawArchive || !("special" in view) ? readStarRailGachaSchedule(themeDirectory) : [],
         rawArchive && readStarRailRecordItems(themeDirectory, catalog).then((resolver) => starRailRecordDraws(rawArchive, resolver)),
@@ -282,7 +283,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
           render(page, scale) {
             const result = page === 1 ? first : buildPage(page);
             if (!result) throw new Error("星铁抽卡记录缺少分页。");
-            const options = { themeDirectory, scale, avatar };
+            const options = { themeDirectory, scale, avatar, qFace: roleQFace };
             return result.kind === "record-special" ? renderStarRailRecordSpecial(result.model, options)
               : result.kind === "special" ? renderStarRailGachaSpecial(result.model, options)
               : result.kind === "detail" ? renderStarRailGachaDetail(result.model, options)

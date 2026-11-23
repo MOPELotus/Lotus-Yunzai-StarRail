@@ -237,7 +237,7 @@ function formatDate(value: string | undefined) {
 }
 
 export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadata, profileId: number, signal: AbortSignal,
-  updated = false, localOnly = false) {
+  updated = false, localOnly = false, qFace = true) {
   const avatars = snapshot.avatars.map(avatar => {
     const catalog = lookup(avatar, theme);
     return { avatar, ...catalog, star: avatar.rarity ?? whole(catalog.meta?.star, 5) };
@@ -251,7 +251,7 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
     for (let offset = start; offset < end; offset += 8) {
       signal.throwIfAborted();
       chars.push(...await Promise.all(avatars.slice(offset, Math.min(offset + 8, end)).map(async ({ avatar, name, abbr, star }) => ({
-        face: await localArt(theme, ["character", name, "imgs", "face-q.webp"])
+        face: (qFace && await localArt(theme, ["character", name, "imgs", "face-q.webp"]))
           || await localArt(theme, ["character", name, "imgs", "face.webp"]) || await remoteArt(avatar.face, artSignal),
         abbr, star: star ?? "", cons: avatar.rank ?? "—", isNew: updated,
       }))));

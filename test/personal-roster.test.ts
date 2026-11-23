@@ -77,6 +77,8 @@ test("星铁名册表头优先读取原 Q 版文件名，也兼容现有旧别�
       expect(model.face.endsWith("/" + name)).toBe(true);
       expect(model.rows[0]?.face.endsWith("/face.webp")).toBe(true);
     }
+    const normal = await buildStarRailPersonalRoster(response, role, selected, theme, signal, sunday, false);
+    expect(normal.face.endsWith("/face.webp")).toBe(true);
   });
 });
 

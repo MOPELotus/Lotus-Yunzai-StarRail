@@ -93,6 +93,7 @@ export function createStarRailPanel(
   profiles: ReturnType<typeof createProfileStore>, client: ReturnType<typeof createProfileHoyoClient>,
   lock: AcquireRoleArchiveLock, signal: AbortSignal, groupRank?: ReturnType<typeof createStarRailGroupRelicRank>,
   archiveDirectory?: string, extremeSampleFile = bundledExtremePanel, showcaseArchiveDirectory = showcaseDirectory,
+  { qFace = true } = {},
 ) {
   const store = createStarRailPanelArchive(lock, archiveDirectory);
   const showcases = createRoleJsonArchive(showcaseArchiveDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
@@ -656,7 +657,7 @@ export function createStarRailPanel(
           relicScore = detail.artisDetail;
         }
       } else {
-        models = await makePanelListCards(snapshot, theme, profileId, signal, updated, type === "reload" || publicLookup);
+        models = await makePanelListCards(snapshot, theme, profileId, signal, updated, type === "reload" || publicLookup, qFace);
       }
       const images = [];
       for (const model of models) {

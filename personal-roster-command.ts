@@ -17,7 +17,7 @@ type Client = Pick<ReturnType<typeof createProfileHoyoClient>, "fetchStarRailPer
 const changed = "星铁档案已变更，请重新查询。";
 
 export function createStarRailRosterQuery(profiles: Profiles, client: Client, lifecycle: AbortSignal,
-  { theme = readTheme, draw = renderStarRailPersonalRoster, now = () => new Date() } = {}) {
+  { theme = readTheme, draw = renderStarRailPersonalRoster, now = () => new Date(), qFace = true } = {}) {
   return async function query(context: RosterContext, spec: RosterCommand) {
     const signal = context.privateCredentialSignal ? AbortSignal.any([lifecycle, context.privateCredentialSignal]) : lifecycle;
     if (signal.aborted) return [];
@@ -41,7 +41,7 @@ export function createStarRailRosterQuery(profiles: Profiles, client: Client, li
       await verify();
       if (!reply.roster.length) return "米游社未返回当前星铁角色名册。请确认此档案已同步本人角色。";
       const availableTheme = await theme();
-      const model = await buildStarRailPersonalRoster(reply, source.role, spec, availableTheme, signal, now());
+      const model = await buildStarRailPersonalRoster(reply, source.role, spec, availableTheme, signal, now(), qFace);
       await verify();
       if (!model.rows.length) {
         if (model.week !== undefined && model.week !== 7) {
