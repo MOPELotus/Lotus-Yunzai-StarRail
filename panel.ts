@@ -7,7 +7,7 @@ import type { LegacyPanelRecoveryOffer } from "../../lib/legacy-panel-recovery-f
 import { createStarRailPanelOriginals } from "./panel-original.ts";
 import type { PanelRebuilder } from "../../lib/panel-rebuild.ts";
 import { findPanelAvatar, makePanelDetailCard, makePanelListCards, makePanelPracticeCards, makePanelRelicCard, makePanelRelicListCard, readPanelDamageMetadata, readPanelTalentCons, readTheme } from "./panel-card.ts";
-import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows, type PanelAttributeRows } from "./panel-attributes.ts";
+import { calculateEquipmentAttributeRows, changePanelLevel, formatPanelAttributeRows } from "./panel-attributes.ts";
 import { changePanelEidolon } from "./panel-eidolon.ts";
 import { changePanelRelicSets } from "./panel-relic-set.ts";
 import { changePanelFullTraces } from "./panel-trace-preview.ts";
@@ -21,7 +21,8 @@ import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner
   starRailTraceOwner, type StarRailTraceOwner } from "./panel-trace-refresh.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
-import { hasPersonalDamage, personalDamageMetricLabel, personalDamageNames, readStarRailPersonalDamage } from "./panel-damage.ts";
+import { formatStarRailDamageChange, hasPersonalDamage, personalDamageMetricLabel, personalDamageNames,
+  readStarRailPersonalDamage, type StarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPanelPractice } from "./panel-practice-skia.ts";
 import { renderStarRailPanelList } from "./panel-list-skia.ts";
 import { renderStarRailRelicList, renderStarRailRelicMark } from "./panel-relic-skia.ts";
@@ -38,6 +39,19 @@ const bundledExtremePanel = fileURLToPath(new URL("../../resources/extreme-panel
 const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/", import.meta.url));
 const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
 const maxBytes = 8 * 1024 * 1024;
+
+function panelDamageText(damage: StarRailPersonalDamage, commaGroup?: number) {
+  function display(value: string | number, difference: number | undefined) {
+    const number = groupPanelNumber(String(value), commaGroup);
+    return difference === undefined ? number : `${number}（${formatStarRailDamageChange(difference)}）`;
+  }
+  return damage.rows.map(row => {
+    if (row.average === undefined) return `${row.title} · ${row.note}`;
+    const average = display(row.percentage ?? row.display ?? Math.round(row.average), row.change?.average);
+    if (row.critical === undefined) return `${row.title} · ${personalDamageMetricLabel[row.metric]} ${average}`;
+    return `${row.title} · 暴击 ${display(Math.round(row.critical), row.change?.critical)} · 期望 ${average}`;
+  });
+}
 
 export function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty = false) {
   if (raw === null) return;
@@ -497,8 +511,7 @@ export function createStarRailPanel(
       let selected: PanelAvatar | undefined;
       const skillPreview = "equipment" in command && "skillLevels" in command.equipment;
       let equipmentLabel: string | undefined;
-      let equipmentRows: PanelAttributeRows | undefined;
-      let equipmentMetadata: Awaited<ReturnType<typeof readPanelDamageMetadata>>;
+      let previewDamage: ReturnType<typeof readStarRailPersonalDamage> | undefined;
       const archiveSuffix = profileId === 1 ? "" : ` ${profileId}`;
       if (type === "damage" || type === "detail" || type === "relics") {
         selected = findPanelAvatar(snapshot.avatars, name, theme);
@@ -548,7 +561,7 @@ export function createStarRailPanel(
           }
 
           // A donor changes the cone metadata, but the talent thresholds belong to the target.
-          equipmentMetadata = await readPanelDamageMetadata(temporary, theme);
+          const equipmentMetadata = await readPanelDamageMetadata(temporary, theme);
           // At a saved level boundary, the level preview needs the original base HP before other changes clear it.
           if ("level" in change && equipmentMetadata) {
             const replacement = changePanelLevel(temporary, change.level, equipmentMetadata);
@@ -587,19 +600,26 @@ export function createStarRailPanel(
             temporary = replacement.avatar;
             labels.push(replacement.label);
           }
-          equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata, promotion);
+          const equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata, promotion);
           await verify();
           if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
           equipmentLabel = labels.join(" · ");
+          if (type !== "relics" && equipmentMetadata && hasPersonalDamage(selected.id)) {
+            const originalMetadata = await readPanelDamageMetadata(selected, theme);
+            await verify();
+            previewDamage = readStarRailPersonalDamage(temporary, equipmentMetadata,
+              "scenario" in command ? command.scenario : undefined, equipmentRows, skillPreview,
+              originalMetadata && { avatar: selected, metadata: originalMetadata });
+          }
           selected = { ...temporary, stats: formatPanelAttributeRows(equipmentRows) };
         }
       }
 
       const builtInPortraitOnly = selected ? await starRailUsesBuiltInPortrait(context) : false;
       if (type === "damage" && selected) {
-        const metadata = equipmentMetadata ?? await readPanelDamageMetadata(selected, theme);
-        const scenario = "scenario" in command ? command.scenario : undefined;
-        const result = metadata ? readStarRailPersonalDamage(selected, metadata, scenario, equipmentRows, skillPreview) : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined };
+        const metadata = previewDamage ? undefined : await readPanelDamageMetadata(selected, theme);
+        const result = previewDamage ?? (metadata ? readStarRailPersonalDamage(selected, metadata, "scenario" in command ? command.scenario : undefined)
+          : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined });
         await verify();
         if (result.scenarioCount !== undefined) {
           return equipmentLabel
@@ -612,12 +632,7 @@ export function createStarRailPanel(
           .catch(() => undefined);
         await verify();
         if (card) return { type: "image" as const, file: card.png };
-        const displayed = (value: string | number) => groupPanelNumber(String(value), theme.commaGroup);
-        return [equipmentLabel, ...damage.rows.map(row => {
-          if (row.average === undefined) return `${row.title} · ${row.note}`;
-          return row.critical === undefined ? `${row.title} · ${personalDamageMetricLabel[row.metric]} ${displayed(row.percentage ?? row.display ?? Math.round(row.average))}` :
-            `${row.title} · 暴击 ${displayed(Math.round(row.critical))} · 期望 ${displayed(Math.round(row.average))}`;
-        })].filter(Boolean).join("\n");
+        return [equipmentLabel, ...panelDamageText(damage, theme.commaGroup)].filter(Boolean).join("\n");
       }
       let models;
       let relicScore: { readonly mark?: string; readonly markClass?: string; readonly incomplete?: number } | undefined;
@@ -629,7 +644,8 @@ export function createStarRailPanel(
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
-          const detail = await makePanelDetailCard(snapshot, selected, theme, signal, { equipmentLabel, skillPreview, localOnly: explicitUid, builtInPortraitOnly });
+          const detail = await makePanelDetailCard(snapshot, selected, theme, signal,
+            { equipmentLabel, skillPreview, previewDamage: previewDamage?.damage, localOnly: explicitUid, builtInPortraitOnly });
           models = [detail];
           relicScore = detail.artisDetail;
         }
@@ -650,7 +666,8 @@ export function createStarRailPanel(
             if (type === "relics" && relicScore) return `UID ${uid} · ${selected.name} · 遗器总分 ${relicScore.mark} · ${relicScore.markClass}`;
             const visible = [selected.name, selected.level && `Lv.${selected.level}`, selected.rank !== undefined && `${selected.rank}魂`,
               selected.cone?.name, ...selected.relics.map(relic => relic.name)].filter(Boolean).join(" · ");
-            return [`UID ${uid}`, equipmentLabel, visible].filter(Boolean).join("\n");
+            const damage = previewDamage?.damage;
+            return [`UID ${uid}`, equipmentLabel, visible, ...(damage ? panelDamageText(damage, theme.commaGroup) : [])].filter(Boolean).join("\n");
           }
           const label = snapshot.source === "miyoushe" || snapshot.source === "legacy"
             ? "星铁面板" : `星铁公开展板 · ${showcaseProviderNames[snapshot.source]}`;

@@ -459,9 +459,10 @@ async function makeTraceTree(avatar: PanelAvatar, name: string, metadata: Json, 
 
 export async function makePanelDetailCard(
   snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
-  { equipmentLabel, skillPreview, localOnly, sourceLabel, allowCustomizedSample, builtInPortraitOnly }: {
+  { equipmentLabel, skillPreview, previewDamage, localOnly, sourceLabel, allowCustomizedSample, builtInPortraitOnly }: {
     equipmentLabel?: string; skillPreview?: boolean; localOnly?: boolean; sourceLabel?: string; allowCustomizedSample?: boolean;
     builtInPortraitOnly?: boolean;
+    previewDamage?: ReturnType<typeof readStarRailPersonalDamage>["damage"];
   } = {},
 ) {
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
@@ -537,10 +538,11 @@ export async function makePanelDetailCard(
     const difference = value - base;
     attr[slot + "Plus"] = (difference < 0 ? "" : "+") + format(difference);
   }
-  const damage = equipmentLabel ? undefined : readStarRailPersonalDamage(avatar, metadata, undefined, derived, skillPreview).damage;
+  const damage = equipmentLabel ? previewDamage : readStarRailPersonalDamage(avatar, metadata, undefined, derived, skillPreview).damage;
   const damageRows = damage?.rows.map(row => ({
     title: row.title, critical: row.critical === undefined ? "" : groupPanelNumber(panelNumber(row.critical), theme.commaGroup),
     average: row.note ?? groupPanelNumber(row.percentage ?? row.display ?? panelNumber(row.average ?? 0), theme.commaGroup),
+    change: row.change,
   })) ?? [];
   const allAttr = Array.from({ length: 9 }, (_entry, index) => score?.allAttr[index]);
   const source = avatar.legacy && Object.hasOwn(legacySources, avatar.legacy.source) ? legacySources[avatar.legacy.source] : undefined;

@@ -3,6 +3,7 @@
 import { Canvas, type CanvasRenderingContext2D as Context } from "skia-canvas";
 import { fill, image, picture, relicPortrait, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import type { makePanelDetailCard } from "./panel-card.ts";
+import { formatStarRailDamageChange } from "./panel-damage.ts";
 import { renderStarRailCard } from "./render-card.ts";
 
 type Model = Awaited<ReturnType<typeof makePanelDetailCard>>;
@@ -68,7 +69,9 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
   const summaryY = 617 + (weapon ? weaponHeight + 10 : 0);
   const relicY = summaryY + (artisDetail.mark === undefined ? 0 : 113);
   const damageY = relicY + relicRows * 200 + (relicRows ? 10 : 0);
-  const damageHeight = damageRows.length ? 115 + 40 * damageRows.length : 0;
+  const damageComparison = damageRows.some(row => row.change !== undefined);
+  const damageRowHeight = damageComparison ? 54 : 40;
+  const damageHeight = damageRows.length ? 75 + damageRowHeight * (damageRows.length + 1) : 0;
   const height = Math.ceil(damageY + damageHeight + 37);
 
   return renderStarRailCard(width, height, ctx => {
@@ -291,18 +294,24 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       box(10, damageY, 575, damageHeight);
       fill(ctx, dark, 10, damageY, 575, 40);
       text("伤害计算", 30, damageY + 20, 16, tan);
-      text(`使用 *${data.abbr}伤害 查看伤害详情`, 109, damageY + 20, 12, "#bbb");
-      const rows = [{ title: "伤害类型", critical: "暴击伤害", average: "期望伤害" }, ...damageRows];
+      text(damageComparison ? "与换装前相比" : `使用 *${data.abbr}伤害 查看伤害详情`, 109, damageY + 20, 12, "#bbb");
+      const rows = [{ title: "伤害类型", critical: "暴击伤害", average: "期望伤害", change: undefined }, ...damageRows];
       rows.forEach((row, index) => {
-        const y = damageY + 40 + index * 40;
-        fill(ctx, index % 2 ? dark : darkOdd, 10, y, 575, 40);
+        const y = damageY + 40 + index * damageRowHeight;
+        fill(ctx, index % 2 ? dark : darkOdd, 10, y, 575, damageRowHeight);
         ctx.strokeStyle = "#ffffff28";
-        ctx.strokeRect(10, y, 230, 40);
-        ctx.strokeRect(240, y, 184, 40);
-        ctx.strokeRect(424, y, 161, 40);
+        ctx.strokeRect(10, y, 230, damageRowHeight);
+        ctx.strokeRect(240, y, 184, damageRowHeight);
+        ctx.strokeRect(424, y, 161, damageRowHeight);
         text(row.title, 220, y + 20, 15, tan, "right", false, false, 201);
         if (row.critical) text(row.critical, 332, y + 20, index ? 18 : 15, index ? white : tan, "center");
         text(row.average, row.critical ? 504 : 412, y + 20, index ? 18 : 15, index ? white : tan, "center", false, false, row.critical ? 151 : 330);
+        for (const [delta, x] of [[row.change?.critical, 332], [row.change?.average, row.critical ? 504 : 412]] as const) {
+          if (delta !== undefined) {
+            text(formatStarRailDamageChange(delta), x, y + 39, 12,
+              delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8", "center");
+          }
+        }
       });
       fill(ctx, "#0008", 10, damageY + damageHeight - 35, 575, 35);
       text("目标为80级弱点敌人", 25, damageY + damageHeight - 17, 12, "#bbb");

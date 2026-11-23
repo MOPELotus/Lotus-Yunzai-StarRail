@@ -4,7 +4,7 @@ import { renderStarRailCard } from "./render-card.ts";
 import { Canvas, loadImage } from "skia-canvas";
 import { groupPanelNumber } from "../../lib/group-panel-rank-settings.ts";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
-import { personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
+import { formatStarRailDamageChange, personalDamageEnemyLevel, personalDamageMetricLabel, type StarRailPersonalDamage } from "./panel-damage.ts";
 import { readStarRailPanelPortrait } from "./panel-portrait.ts";
 
 const elementBackground: Readonly<Record<string, string>> = { 量子: "quantum", 雷: "electro", 冰: "cryo", 虚数: "geo", 风: "anemo", 火: "pyro", 物理: "sr" };
@@ -75,7 +75,9 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const rowWidth = 173 + criticalGap + 9 * Math.max(...labels.map(glyphUnits));
   const noteWidth = Math.max(...damage.rows.map((row, index) => row.note ? 112 + 9 * glyphUnits(labels[index]! + row.note) : 0));
   const width = Math.max(660, 210 + damage.swaps.length * swapCellWidth, rowWidth, noteWidth);
-  const listHeight = 45 + damage.rows.length * 34;
+  const comparison = damage.rows.some(row => row.change !== undefined);
+  const rowHeight = comparison ? 54 : 34;
+  const listHeight = 45 + damage.rows.length * rowHeight;
   const swapTop = 161 + listHeight;
   const swapHeight = damage.swaps.length ? 110 + damage.swaps.length * 45 : 0;
   const buffTop = swapTop + (swapHeight ? swapHeight + 14 : 0);
@@ -143,17 +145,23 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    box(147, listHeight, "伤害计算");
+    box(147, listHeight, comparison ? "伤害计算 · 相比换装前" : "伤害计算");
     text("暴击伤害", critX, 173, 16, "#f5f3f7", "right");
     text(resultHeading, valueX, 173, 16, "#f5f3f7", "right");
     for (const [index, row] of damage.rows.entries()) {
-      const y = 208 + index * 34, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
+      const y = 208 + index * rowHeight, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
       text(labels[index]!, 42, y, 18, color);
       if (row.note === undefined) {
         text(row.critical === undefined ? "—" : formatNumber(row.critical), critX, y, 18, color, "right");
       }
       const value = row.note ?? groupPanelNumber(row.percentage ?? row.display ?? (row.average === undefined ? "—" : number.format(row.average)), commaGroup);
       text(value, valueX, y, 18, color, "right");
+      for (const [delta, x] of [[row.change?.critical, critX], [row.change?.average, valueX]] as const) {
+        if (delta !== undefined) {
+          text(formatStarRailDamageChange(delta), x, y + 19, 13,
+            delta > 0 ? "#a9dfb4" : delta < 0 ? "#f5a8ac" : "#e1d9e8", "right");
+        }
+      }
     }
 
     const baselineAverage = baseline.average;

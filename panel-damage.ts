@@ -126,6 +126,10 @@ type DamageRow = {
   display?: string;
   percentage?: string;
 } & ({ average: number; note?: never } | { average?: never; note: string });
+type DamageScenario = DamageRow & {
+  readonly scenario: number;
+  readonly change?: { readonly critical?: number; readonly average?: number };
+};
 type Character = {
   name: string;
   element: string;
@@ -682,7 +686,7 @@ function weaponEffects(avatar: PanelAvatar, metadata: Metadata, character: Chara
 
 function originalDamage(
   avatar: PanelAvatar, metadata: Metadata, scenario: number | undefined,
-  character: Character, rows: PanelAttributeRows | undefined, skillPreview: boolean,
+  character: Character, rows: PanelAttributeRows | undefined, skillPreview: boolean, includeSwaps = true,
 ) {
   if (!avatar.level || avatar.rank === undefined || metadata.character.elem !== character.element ||
       (avatar.element && avatar.element !== character.element)) throw new MissingDamageData("缺少角色等级、星魂或元素资料");
@@ -751,7 +755,7 @@ function originalDamage(
     throw new MissingDamageData("伤害场景序号无效", scenarios.length);
   }
   const statKeys = rule.mainAttr.split(",") as (keyof typeof attrMap)[];
-  const swaps = current.row.average === undefined ? [] : statKeys.map(from => ({
+  const swaps = !includeSwaps || current.row.average === undefined ? [] : statKeys.map(from => ({
     title: attrMap[from]!.title, amount: String(attrMap[from]!.value) + (from === "speed" ? "" : "%"),
     values: statKeys.map(to => {
       if (from === to) return;
@@ -759,14 +763,47 @@ function originalDamage(
       return result?.average !== undefined ? { critical: result.critical, average: result.average, ...(result.display === undefined ? {} : { display: result.display }), ...(result.percentage === undefined ? {} : { percentage: result.percentage }) } : undefined;
     }),
   }));
-  return { name: character.name, element: character.element, createdBy: rule.createdBy, rows: scenarios.map(({ row }) => row), swaps, selected, buffs: current.row.active };
+  const damageRows: DamageScenario[] = scenarios.map(({ row, index }) => ({ ...row, scenario: index }));
+  return { name: character.name, element: character.element, createdBy: rule.createdBy, rows: damageRows, swaps, selected, buffs: current.row.active };
 }
 
-export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number, rows?: PanelAttributeRows, skillPreview = false) {
+export function formatStarRailDamageChange(value: number) {
+  const magnitude = Math.abs(value).toFixed(1);
+  return Number(magnitude) === 0 ? "0.0%" : `${value > 0 ? "↑" : "↓"} ${magnitude}%`;
+}
+
+function relativeDamage(before: number | undefined, after: number | undefined) {
+  if (before === undefined || before === 0 || after === undefined) return;
+  const change = (after - before) / before * 100;
+  return Number.isFinite(change) ? change : undefined;
+}
+
+function compareDamage(rows: readonly DamageScenario[], previous: readonly DamageScenario[]) {
+  const byScenario = new Map(previous.map(row => [row.scenario, row]));
+  return rows.map(row => {
+    const before = byScenario.get(row.scenario);
+    if (!before || before.metric !== row.metric || (before.percentage === undefined) !== (row.percentage === undefined)) return row;
+    const critical = relativeDamage(before.critical, row.critical);
+    const average = relativeDamage(before.average, row.average);
+    return critical === undefined && average === undefined ? row : { ...row, change: { critical, average } };
+  });
+}
+
+export function readStarRailPersonalDamage(avatar: PanelAvatar, metadata: Metadata, scenario?: number, rows?: PanelAttributeRows,
+  skillPreview = false, baseline?: { readonly avatar: PanelAvatar; readonly metadata: Metadata }) {
   const character = characters.get(avatar.id);
   if (!character) return { reason: "该星铁角色的个人伤害规则尚未接入", scenarioCount: undefined } as const;
   try {
-    return { damage: originalDamage(avatar, metadata, scenario, character, rows, skillPreview) } as const;
+    const damage = originalDamage(avatar, metadata, scenario, character, rows, skillPreview);
+    if (baseline?.avatar.id === avatar.id) {
+      try {
+        const before = originalDamage(baseline.avatar, baseline.metadata, undefined, character, undefined, false, false);
+        return { damage: { ...damage, rows: compareDamage(damage.rows, before.rows) } } as const;
+      } catch (error) {
+        if (!(error instanceof MissingDamageData)) throw error;
+      }
+    }
+    return { damage } as const;
   } catch (error) {
     if (!(error instanceof MissingDamageData)) throw error;
     return { reason: error.message, scenarioCount: error.scenarioCount } as const;

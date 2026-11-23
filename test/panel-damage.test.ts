@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { calculateStarRailPersonalDamage, readStarRailPersonalDamage } from "../panel-damage.ts";
+import { calculateStarRailPersonalDamage, formatStarRailDamageChange, readStarRailPersonalDamage } from "../panel-damage.ts";
 import { parsePanelCommand, starRailLegacySkillLevel, type PanelAvatar } from "../panel-model.ts";
 import advancedFixtures from "./fixtures/panel-damage.json";
 import additionalFixtures from "./fixtures/panel-damage-additional.json";
@@ -77,6 +77,55 @@ describe("Star Rail personal damage", () => {
     expect(damage.swaps[0]?.values[1]?.average).toBeCloseTo(5053.373023517272, 7);
     expect(damage.swaps[3]?.values[2]?.average).toBeCloseTo(5307.785353169554, 7);
     expect(damage.buffs.some(buff => buff.startsWith("繁星竞技场2："))).toBe(true);
+  });
+
+  test("computes the two percentages independently without changing the selected scenario, relic matrix or saved build", () => {
+    const before = structuredClone(avatar);
+    const changed = { ...avatar, stats: avatar.stats.map(stat =>
+      stat.key === "atk" ? { ...stat, value: "2650" } : stat.key === "cpct" ? { ...stat, value: "15%" } : stat) };
+    const original = calculateStarRailPersonalDamage(avatar, metadata)!;
+    const independent = calculateStarRailPersonalDamage(changed, metadata, 2)!;
+    const result = readStarRailPersonalDamage(changed, metadata, 2, undefined, false, { avatar, metadata }).damage!;
+    expect(result.selected).toBe(1);
+    expect(result.swaps).toEqual(independent.swaps);
+    expect(result.buffs).toEqual(independent.buffs);
+    expect(result.rows[1]?.change?.critical).toBeGreaterThan(0);
+    expect(result.rows[1]?.change?.average).toBeLessThan(0);
+    for (const [index, row] of result.rows.entries()) {
+      const base = original.rows[index]!, next = independent.rows[index]!;
+      expect(row.change?.critical).toBeCloseTo((next.critical! / base.critical! - 1) * 100, 8);
+      expect(row.change?.average).toBeCloseTo((next.average! / base.average! - 1) * 100, 8);
+    }
+    expect(avatar).toEqual(before);
+    expect(formatStarRailDamageChange(12.362)).toBe("↑ 12.4%");
+    expect(formatStarRailDamageChange(-6.265)).toBe("↓ 6.3%");
+    expect(formatStarRailDamageChange(-0.01)).toBe("0.0%");
+  });
+
+  test("matches original rule scenarios across different eidolons and does not invent a missing baseline", () => {
+    const herta = advancedFixtures.find(fixture => fixture.avatar.id === "1401")!;
+    const { setNames, ...inputs } = herta.metadata;
+    const sets = new Map(Object.entries(setNames));
+    const metadata = { ...inputs, setForId: (id: string) => sets.get(id) };
+    const changed = { ...herta.avatar, rank: 6 };
+    const baseline = { avatar: herta.avatar, metadata };
+    const result = readStarRailPersonalDamage(changed, metadata, 5, undefined, false, baseline).damage!;
+    const prior = calculateStarRailPersonalDamage(herta.avatar, metadata)!;
+    expect(result.selected).toBe(4);
+    expect(result.rows).toHaveLength(5);
+    expect(result.rows.some(row => row.change?.average !== undefined)).toBe(true);
+    for (const row of result.rows) {
+      const old = prior.rows.find(entry => entry.scenario === row.scenario);
+      if (!old) expect(row.change).toBeUndefined();
+      else if (row.average !== undefined && old.average) {
+        expect(row.change?.average).toBeCloseTo((row.average / old.average - 1) * 100, 8);
+      }
+    }
+    const missing = readStarRailPersonalDamage(changed, metadata, 5, undefined, false, {
+      ...baseline, avatar: { ...herta.avatar, skills: [] },
+    }).damage!;
+    expect(missing.rows.every(row => row.change === undefined)).toBe(true);
+    expect(missing.rows.map(row => row.average)).toEqual(result.rows.map(row => row.average));
   });
 
   test("withholds numbers for unsupported equipment or missing data", () => {
