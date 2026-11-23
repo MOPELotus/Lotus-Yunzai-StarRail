@@ -2,7 +2,7 @@ import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard } from "./render-card.ts";
 import { Canvas, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 
 export interface TeamMember {
@@ -227,7 +227,7 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
 }
 
 export async function renderStarRailTeamDamage(report: TeamDamageReport, directory: string, signal: AbortSignal,
-  verify: () => Promise<void>, mode: "auto" | "gpu" = "auto") {
+  verify: () => Promise<void>, inlineImageByteLimit?: number) {
   const root = await realpath(directory).catch(() => undefined);
   const assets = root ? await Promise.all([
     image(root, join(root, "character/imgs/bg-02.jpg")),
@@ -241,8 +241,7 @@ export async function renderStarRailTeamDamage(report: TeamDamageReport, directo
     const tileHeight = background ? width * background.height / background.width : 0;
     const center = tileHeight ? (height - tileHeight) / 2 : 0;
     signal.throwIfAborted();
-    const { png, engine } = await renderPng(width * scale, height * scale, ctx => {
-      ctx.scale(scale, scale);
+    const { png, engine } = await renderStarRailCard(width, height, ctx => {
       fill(ctx, "#26142a", 0, 0, width, height);
       if (background && tileHeight > 0) {
         for (let y = center - Math.ceil(center / tileHeight) * tileHeight; y < height; y += tileHeight) {
@@ -251,7 +250,7 @@ export async function renderStarRailTeamDamage(report: TeamDamageReport, directo
       }
       if (artwork) ctx.drawImage(artwork, 0, -25, width, width * artwork.height / artwork.width);
       paints.forEach(paint => paint(ctx));
-    }, mode);
+    }, { inlineImageByteLimit });
     await verify();
     console.log(`[渲染] 星铁队伍伤害 ${engine.renderer} ${engine.api} ${engine.device}`);
     result.push(png);

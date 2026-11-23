@@ -43,6 +43,14 @@ test("真实目录的同名角色使用本人面板和旧名，明确命途不�
   expect(() => resolve(["三月七·巡猎", "1001"])).toThrow("只能");
 });
 
+test("强化称谓和强化档案 ID 共用原始编号，允许显式强化且禁止重复上阵", () => {
+  expect(resolveTeamDamageRoles(["镜流"], starRailTeamCatalog)[0]).not.toHaveProperty("enhancementRequested");
+  for (const name of ["镜流Pro", "加强镜流", "2212"]) {
+    expect(resolveTeamDamageRoles([name], starRailTeamCatalog)[0]).toMatchObject({ item_id: "1212", enhancementRequested: true });
+    expect(() => resolveTeamDamageRoles(["镜流", name], starRailTeamCatalog)).toThrow("只能");
+  }
+});
+
 test("合成面板投影仅送战斗数值，不传账号与 UID，基础和百分比维度保持独立", () => {
 
   const avatar: PanelAvatar = {

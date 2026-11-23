@@ -59,6 +59,7 @@ export interface TeamRole extends Json {
   element?: string;
   path?: string;
   hasLegacy?: boolean;
+  enhancementRequested?: boolean;
 }
 
 const panelNames: Readonly<Record<string, string>> = panelCharacterNames;
@@ -85,10 +86,10 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
     const id = String(role.item_id);
     const name = teamRoleCatalogName(role);
     const panelName = panelNames[id] ?? name;
-    const enhanced = canonicalStarRailPanelCharacter(id, true) !== id;
+    const enhanced = canonicalStarRailPanelCharacter(id, true);
     const aliases = [name, text(role.name), id, panelName, shortNames[panelName] ?? "",
       ...(knownAliases[panelName]?.split(",") ?? []), ...(roleAliases.get(roleKey(name)) ?? [])];
-    if (enhanced) aliases.push(`${name}Pro`, `加强${name}`, `${name}加强`, `加强版${name}`);
+
     if (/[&＆]/u.test(name)) aliases.push(name.split(/[&＆]/u)[0]!, name.replace(/[&＆]/u, "和"), name.replace(/[&＆]/u, "与"));
     const trailblazer = name.match(/^开拓者[·•.・]?(.*)$/u)?.[1];
     if (trailblazer) {
@@ -96,6 +97,13 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
       if (/^80(?:0[1-9]|10)$/u.test(String(role.item_id))) aliases.push(`${trailblazer}${Number(role.item_id) % 2 ? "男" : "女"}主`);
     }
     for (const term of aliases.map(roleKey)) if (term && !entries.has(term)) entries.set(term, role);
+    if (enhanced !== id) {
+      const selected = { ...role, enhancementRequested: true };
+      for (const alias of [enhanced, `${name}Pro`, `加强${name}`, `${name}加强`, `加强版${name}`]) {
+        const key = roleKey(alias);
+        if (!entries.has(key)) entries.set(key, selected);
+      }
+    }
   }
   for (const [alias, canonical] of customAliases ?? []) {
     const key = roleKey(alias);

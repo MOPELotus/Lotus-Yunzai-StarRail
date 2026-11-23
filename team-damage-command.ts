@@ -32,6 +32,7 @@ interface Context {
   readonly isDelegated?: boolean;
   readonly privateCredentialSignal?: AbortSignal;
   readonly calculationSignal?: AbortSignal;
+  readonly inlineImageByteLimit?: number;
 }
 
 export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof createProfileStore>,
@@ -76,7 +77,7 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
         const key = String(role.item_id);
         const enhanced = canonicalStarRailPanelCharacter(key, true);
         const avatar = snapshot?.avatars.find(candidate => enhanced !== key && candidate.id === enhanced) ??
-          snapshot?.avatars.find(candidate => candidate.id === key);
+          (role.enhancementRequested ? undefined : snapshot?.avatars.find(candidate => candidate.id === key));
         const meta = avatar && await readPanelDamageMetadata(avatar, theme);
         let stats = avatar?.stats ?? [];
         if (avatar && meta && !stats.length) {
@@ -86,7 +87,7 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
         const staticCone = avatar ? (avatar.cone ? meta && readPanelStaticConeEffects(avatar, meta) : []) : undefined;
         const coneBase = meta && avatar?.cone ? leveledAttributes(meta.cone, avatar.cone.level, avatar.cone.promote, true) : undefined;
         const panel = avatar && projectTeamOwnedPanel(avatar, stats, staticCone, coneBase);
-        const version = role.hasLegacy && enhanced !== key && avatar?.id === key ? "legacy" : undefined;
+        const version = role.enhancementRequested ? "enhanced" : role.hasLegacy && enhanced !== key && avatar?.id === key ? "legacy" : undefined;
         members.push({ id: key, version, panel });
         const cone = panel ? panel.cone : { id: starRailTeamDefaultCone(key, role.path ?? ""), level: 80, rank: 1 };
         team.push({
@@ -104,7 +105,7 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
       const result = await calculateTeamDamage(members, command.cycle, command.enemies, signal);
       await verify();
       const report = teamDamageReport(uid, command, team, result);
-      const files = await renderStarRailTeamDamage(report, theme.root, signal, verify).catch(() => []);
+      const files = await renderStarRailTeamDamage(report, theme.root, signal, verify, context.inlineImageByteLimit).catch(() => []);
       await verify();
       if (files.length) return files.map(file => ({ type: "image" as const, file }));
       return [
