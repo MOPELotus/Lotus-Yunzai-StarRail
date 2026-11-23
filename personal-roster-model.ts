@@ -173,7 +173,10 @@ export async function buildStarRailPersonalRoster(response: RosterResponse, role
   const header = all.find(row => row.id === preferred) ?? all[0];
   const banner = (header && await local(theme, "character", header.name, "imgs", "banner.webp")) ||
     await local(theme, "character", "common", "imgs", "banner.webp");
-  const face = (header && await local(theme, "character", header.name, "imgs", "qface.webp")) || header?.face || "";
+  const face = header
+    ? await local(theme, "character", header.name, "imgs", "face-q.webp") ||
+      await local(theme, "character", header.name, "imgs", "qface.webp") || header.face
+    : "";
   const civil = new Date(now.valueOf() + 8 * 3_600_000);
   const time = civil.toISOString().slice(5, 16).replace("T", " ");
   const materialWeek = new Date(now.valueOf() + 4 * 3_600_000).getUTCDay() || 7;

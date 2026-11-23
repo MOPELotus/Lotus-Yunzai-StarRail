@@ -64,6 +64,22 @@ test("Miao uses 04:00 China time and leaves Sunday materials unfiltered", async 
   });
 });
 
+test("星铁名册表头优先读取原 Q 版文件名，也兼容现有旧别名", async () => {
+  await withTheme(async theme => {
+    const path = join(theme.root, "meta-sr", "character", "飞霄", "imgs");
+    await mkdir(path, { recursive: true });
+    const selected = parseStarRailPersonalRoster("*角色2")!;
+    const signal = new AbortController().signal;
+    const draw = async () => buildStarRailPersonalRoster(response, role, selected, theme, signal, sunday);
+    for (const name of ["face.webp", "qface.webp", "face-q.webp"]) {
+      await writeFile(join(path, name), "本地路径夹具");
+      const model = await draw();
+      expect(model.face.endsWith("/" + name)).toBe(true);
+      expect(model.rows[0]?.face.endsWith("/face.webp")).toBe(true);
+    }
+  });
+});
+
 test("reads the selected profile and refuses delegation, invalid profiles and changed accounts before delivering", async () => {
   await withTheme(async theme => {
     let reads = 0, checks = 0;
