@@ -1,3 +1,4 @@
+import { gachaProbabilityFor, type GachaDisplaySettings } from "@lotus-yunzai/gacha/display-settings";
 import { applyGachaGuarantees, gachaLuckFor, type GachaLuck } from "@lotus-yunzai/gacha";
 import { buildStarRailLegacyRecords, type StarRailLegacyGachaRecord } from "./gacha-display.ts";
 
@@ -66,6 +67,7 @@ export interface StarRailGachaDetailOptions {
   readonly resolvePool?: (record: StarRailLegacyGachaRecord) => { isUp?: boolean; isNewPool?: boolean } | undefined;
   readonly pool?: StarRailGachaDetailPool;
   readonly maxRows?: number;
+  readonly display?: GachaDisplaySettings;
   readonly page?: number;
 }
 
@@ -95,7 +97,7 @@ function dateAt(time: number): string {
 }
 
 export function buildStarRailGachaDetail({
-  uid, history, face, now = new Date(), resolveItem, resolvePool, pool = "GachaType_AvatarUp", maxRows = 30, page,
+  uid, history, face, now = new Date(), resolveItem, resolvePool, pool = "GachaType_AvatarUp", display, maxRows = display?.detailRows ?? 30, page,
 }: StarRailGachaDetailOptions): StarRailGachaDetailModel | undefined {
   if (!Number.isSafeInteger(maxRows) || maxRows < 0 || (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
     throw new RangeError("星铁抽卡显示分页参数无效。");
@@ -148,7 +150,10 @@ export function buildStarRailGachaDetail({
   const isvalidNum = upNum ? (upUsed / upNum).toFixed(2) : 0;
   const upYs = Number(isvalidNum) * 160;
   const state = applyGachaGuarantees(model.upRate ? five : []);
-  const luck = gachaLuckFor(model, fiveNum, fiveUsed, upNum, upUsed, state, five.some(({ isNewPool }) => isNewPool));
+  const luck = gachaLuckFor(
+    gachaProbabilityFor("sr", model.legacy, model, display), fiveNum, fiveUsed, upNum, upUsed,
+    state, five.some(({ isNewPool }) => isNewPool), display?.luck,
+  );
 
   const stat: GachaDetailStats = {
     allNum, noFiveNum: pity, fiveNum, fiveAvg: fiveNum ? (fiveUsed / fiveNum).toFixed(2) : 0,

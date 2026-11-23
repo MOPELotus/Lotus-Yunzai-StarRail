@@ -1,3 +1,4 @@
+import { readGachaDisplaySettings } from "../../lib/gacha-display-settings.ts";
 import { matchPanelTransferCommand, type PanelTransferAccess } from "../../lib/panel-transfer-command.ts";
 import type { LegacyPanelRecoveryOffer } from "../../lib/legacy-panel-recovery-flow.ts";
 import { createStarRailPanelTransfer } from "./panel-transfer.ts";
@@ -205,29 +206,30 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       const options = { ...shared, history: snapshot, resolveItem, face: { name: nickname || "旅行者" } };
       const resolvePool = resolveStarRailDetailPool(schedule);
       const resolveRecordPool = draws && resolveStarRailRecordPool(schedule);
+      const display = !("special" in view) ? await readGachaDisplaySettings(new URL("../../", import.meta.url)) : undefined;
       function buildPage(page?: number) {
         if (draws) {
           const records = { ...shared, draws, resolvePool: resolveRecordPool, page };
           if ("detail" in view) {
-            const model = buildStarRailRecordDetail({ ...records, pool: view.detail });
+            const model = buildStarRailRecordDetail({ ...records, pool: view.detail, display });
             return model && { kind: "detail" as const, model: { ...model, recordArchive: true as const } };
           }
           if ("special" in view) {
             const model = buildStarRailRecordSpecial({ ...records, pool: view.special });
             return model && { kind: "record-special" as const, model };
           }
-          const model = buildStarRailRecordVersion({ ...records, type: view.version, schedule });
+          const model = buildStarRailRecordVersion({ ...records, type: view.version, maxRows: display?.versionRows, schedule });
           return model && { kind: "version" as const, model };
         }
         if ("detail" in view) {
-          const model = buildStarRailGachaDetail({ ...options, pool: view.detail, resolvePool, page });
+          const model = buildStarRailGachaDetail({ ...options, pool: view.detail, display, resolvePool, page });
           return model && { kind: "detail" as const, model };
         }
         if ("special" in view) {
           const model = buildStarRailGachaSpecial({ ...options, pool: view.special, page });
           return model && { kind: "special" as const, model };
         }
-        const model = buildStarRailGachaVersion({ ...options, type: view.version, schedule, page });
+        const model = buildStarRailGachaVersion({ ...options, type: view.version, maxRows: display?.versionRows, schedule, page });
         return model && { kind: "version" as const, model };
       }
       const first = buildPage(all ? 1 : undefined);

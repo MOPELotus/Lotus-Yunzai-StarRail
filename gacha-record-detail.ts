@@ -1,3 +1,4 @@
+import { gachaProbabilityFor, type GachaDisplaySettings } from "@lotus-yunzai/gacha/display-settings";
 import { applyGachaGuarantees, gachaLuckFor } from "@lotus-yunzai/gacha";
 import { detailPools, type StarRailGachaDetailModel, type StarRailGachaDetailPool } from "./gacha-detail.ts";
 import type { StarRailRecordDraw } from "./gacha-record-source.ts";
@@ -12,6 +13,7 @@ export interface StarRailRecordDetailOptions {
   readonly pool?: StarRailGachaDetailPool;
   readonly resolvePool?: (draw: StarRailRecordDraw) => { isUp?: boolean; isNewPool?: boolean } | undefined;
   readonly maxRows?: number;
+  readonly display?: GachaDisplaySettings;
   readonly page?: number;
   readonly now?: Date;
 }
@@ -28,7 +30,7 @@ function newest(a: StarRailRecordDraw, b: StarRailRecordDraw): number {
 }
 
 export function buildStarRailRecordDetail({
-  uid, draws, face, pool = "GachaType_AvatarUp", resolvePool, maxRows = 30, page, now = new Date(),
+  uid, draws, face, pool = "GachaType_AvatarUp", resolvePool, display, maxRows = display?.detailRows ?? 30, page, now = new Date(),
 }: StarRailRecordDetailOptions): StarRailGachaDetailModel | undefined {
   if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError("星铁抽卡显示 UID 无效。");
   if (!Number.isSafeInteger(maxRows) || maxRows < 0 || (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
@@ -100,7 +102,10 @@ export function buildStarRailRecordDetail({
   const initialUp = fiveLog.at(-1)?.isUp;
   const state = applyGachaGuarantees(!unclassified && model.upRate ? closedFive : [], initialUp === undefined ? null : !initialUp);
   const luck = unclassified ? undefined
-    : gachaLuckFor(model, closedFive.length, fiveUsed, upNum, upUsed, state, closedFive.some(({ isNewPool }) => isNewPool));
+    : gachaLuckFor(
+      gachaProbabilityFor("sr", model.legacy, model, display), closedFive.length, fiveUsed, upNum, upUsed,
+      state, closedFive.some(({ isNewPool }) => isNewPool), display?.luck,
+    );
 
   const stat: Gacha["stat"] = {
     allNum, noFiveNum: pity, noFourNum, fiveNum, fourNum,
