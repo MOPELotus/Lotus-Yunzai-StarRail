@@ -1,3 +1,4 @@
+import { matchPublicDamageRank } from "../../lib/rank-statistics.ts";
 import { gachaImageReply } from "../../lib/gacha-image-reply.ts";
 import type { MessageEvent } from "../../lib/messages.ts";
 import { isStarRailGachaLinkMessage, starRailLinkEntry } from "../../lib/private-access.ts";
@@ -257,6 +258,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
       if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
       if (parseStarRailRogue(message)) return ["[starrail] 宇宙战绩"];
+      if (matchPublicDamageRank(message, "sr")) return ["[starrail] 角色面板"];
       const panelCommand = parsePanelCommand(message);
       if (panelCommand?.type === "discard" || panelCommand?.type === "extreme") return ["[starrail] 角色面板"];
       const rank = await resolveStarRailRelicRank(message);

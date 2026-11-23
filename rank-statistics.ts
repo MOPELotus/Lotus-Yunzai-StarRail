@@ -1,5 +1,5 @@
 import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
-import { fetchRankStats, rankPercentiles } from "../../lib/rank-statistics.ts";
+import { fetchRankStats, queryPublicDamageRank, rankPercentiles } from "../../lib/rank-statistics.ts";
 import { renderDamageRankStatsCard } from "../../packages/skia/rank-stats-card.ts";
 import characterNames from "./challenge-character-names.json";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
@@ -33,6 +33,8 @@ export async function resolveStarRailCharacter(name: string) {
 }
 
 export async function queryStarRailRankStats(message: string, signal: AbortSignal) {
+  const rank = await queryPublicDamageRank(message, "sr", resolveStarRailCharacter, signal);
+  if (rank !== undefined) return rank;
   const name = rankStatsName(message);
   if (!name || signal.aborted) return;
   const character = await resolveStarRailCharacter(name);
