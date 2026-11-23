@@ -1,3 +1,5 @@
+import { matchPanelTransferCommand, type PanelTransferAccess } from "../../lib/panel-transfer-command.ts";
+import { createStarRailPanelTransfer } from "./panel-transfer.ts";
 import { matchArkRankCommand } from "../../lib/ark-custom-rank-command.ts";
 import { createStarRailCustomRank } from "./custom-rank.ts";
 import { matchPublicDamageRank } from "../../lib/rank-statistics.ts";
@@ -135,6 +137,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank);
+  const transferPanel = createStarRailPanelTransfer(profiles, lockFile, signal);
   const roster = createStarRailRosterQuery(profiles, client, signal);
   const gridFight = createStarRailGridFightQuery(profiles, client, signal);
   const rogue = createStarRailRogueQuery(profiles, client, signal);
@@ -253,6 +256,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
     },
     async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
+      if (matchPanelTransferCommand(message)?.game === "sr") return ["[starrail] 角色面板"];
       const customRankCommand = matchArkRankCommand(message);
       if (customRankCommand && (!customRankCommand.game || customRankCommand.game === "sr")) return ["[starrail] 角色面板"];
       if (matchStarRailShowcaseSettings(message)) return ["[starrail] 角色面板"];
@@ -287,7 +291,11 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       readonly groupOriginalSignal?: AbortSignal;
       readonly canManagePackages?: true;
       readonly isDelegated?: boolean;
+      readonly panelTransfer?: PanelTransferAccess;
+      readonly reply?: (message: string, quote?: boolean) => unknown;
     }) {
+      const transfer = matchPanelTransferCommand(context.normalizedMessage);
+      if (transfer?.game === "sr") return transferPanel(transfer, context);
       const customRankCommand = matchArkRankCommand(context.normalizedMessage);
       if (customRankCommand) return publicRank(customRankCommand, context);
       const sources = matchStarRailShowcaseSettings(context.normalizedMessage);

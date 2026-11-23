@@ -39,7 +39,7 @@ const showcaseDirectory = fileURLToPath(new URL("../../data/starrail/showcases/"
 const traceDirectory = fileURLToPath(new URL("../../data/starrail/trace-levels/", import.meta.url));
 const maxBytes = 8 * 1024 * 1024;
 
-async function legacySnapshot(uid: string, sampleFile?: string) {
+export async function legacySnapshot(uid: string, sampleFile?: string) {
   if (!/^[1-9]\d{8,9}$/u.test(uid)) throw new Error("旧面板档案 UID 无效。");
   const root = resolve(Bun.env.LOTUS_STAR_RAIL_LEGACY_PANEL_DIR?.trim() || legacyDirectory);
   let handle;
@@ -69,11 +69,11 @@ async function legacySnapshot(uid: string, sampleFile?: string) {
   }
 }
 
-function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty = false) {
+export function managedSnapshot(uid: string, raw: unknown, showcase = false, allowEmpty = false) {
   if (raw === null) return;
   const stored = object(raw);
   const source = stored?.source;
-  const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe";
+  const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe" || source === "legacy";
   if (stored?.version !== 1 || stored.uid !== uid || !allowedSource || typeof stored.updatedAt !== "string" ||
       !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || (!allowEmpty && !stored.avatars.length && !panelDiscardedAt(raw)) ||
       stored.avatars.length > 256 || stored.avatars.some(row => !object(row) || !readId(row.id) || typeof row.name !== "string" ||
