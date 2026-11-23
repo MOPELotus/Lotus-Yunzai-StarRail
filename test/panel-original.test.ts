@@ -66,6 +66,17 @@ account:
     const master = { ...context, isBotMaster: (user: number) => user === 42 };
     expect(await panel.reply(master)).toEqual({ type: "image", file: contents });
     expect(await panel.reply({ ...master, inlineImageByteLimit: 1 })).toContain("超过");
+    const modern = join(directory, "config/global.yaml");
+    await mkdir(dirname(modern));
+    await writeFile(modern, "starrail: { original_pic: true, back_call_original_pic: true, back_call_original_pic_time: 0 }\n");
+    expect(await panel.reply(context)).toEqual({ type: "image", file: contents });
+    await writeFile(modern, "starrail: { original_pic: true, back_call_original_pic: true, back_call_original_pic_time: 15 }\n");
+    expect(await panel.reply(context)).toEqual({ type: "recallable", seconds: 15, message: { type: "image", file: contents } });
+    await writeFile(modern, "starrail: { original_pic: true, back_call_original_pic: false, back_call_original_pic_time: 15 }\n");
+    expect(await panel.reply(context)).toEqual({ type: "image", file: contents });
+    await writeFile(modern, "starrail: { original_pic: false }\n");
+    expect(await panel.reply(context)).toContain("功能已关闭");
+    expect(await panel.reply(master)).toEqual({ type: "image", file: contents });
     await writeFile(profileFile, profile("13"));
     expect(await panel.reply(master)).toBeUndefined();
     await writeFile(profileFile, profile("12"));

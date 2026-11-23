@@ -1,13 +1,12 @@
-import { readFile } from "node:fs/promises";
 import { MAX_PROFILE_ID, type createProfileStore } from "@lotus-yunzai/account";
 import type { CommandReply, MessageFallbackContext } from "../../lib/commands.ts";
+import { readStarRailOriginalSettings } from "./panel-original-config.ts";
 import { isStarRailPanelPhoto, readStarRailPanelPhoto, type StarRailPanelPhoto } from "./panel-card.ts";
 import { matchesStarRailTraceOwner, starRailTraceOwner, type StarRailTraceOwner } from "./panel-trace-refresh.ts";
 
 const lifetime = 3600;
 const capacity = 1024;
 const configRoot = new URL("../../", import.meta.url);
-const legacySettings = ["plugins/StarRail-plugin/config/PanelSetting.yaml", "backup/plugins/StarRail-plugin/config/PanelSetting.yaml"];
 type Context = Partial<Pick<MessageFallbackContext, "self_id" | "user_id" | "group_id" | "isDelegated" |
   "reply_id" | "message" | "lookupReply" | "privateCredentialSignal" | "groupOriginalSignal" | "inlineImageByteLimit" | "isBotMaster">> & {
     readonly adapter?: string;
@@ -41,21 +40,6 @@ function validReceipt(receipt: Partial<Receipt> | undefined, now: number) {
   return receipt?.binding && positive(receipt.binding.profileId) && receipt.binding.profileId <= MAX_PROFILE_ID &&
     typeof receipt.expiresAt === "number" && receipt.expiresAt > now && receipt.expiresAt <= now + lifetime * 1000 &&
     isStarRailPanelPhoto(receipt.photo);
-}
-
-async function settings(root: URL) {
-  for (const path of legacySettings) {
-    try {
-      const config = Bun.YAML.parse(await readFile(new URL(path, root), "utf8")) as
-        { originalPic?: unknown; backCalloriginalPic?: unknown; backCalloriginalPicTime?: unknown } | undefined;
-      const value = config?.backCalloriginalPicTime;
-      const time = typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= 120 ? value : 30;
-      return { enabled: config?.originalPic !== false, seconds: config?.backCalloriginalPic === false ? 0 : time };
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") break;
-    }
-  }
-  return { enabled: true, seconds: 30 };
 }
 
 export function createStarRailPanelOriginals(profiles: Pick<ReturnType<typeof createProfileStore>, "requestContext" | "savedRole">,
@@ -108,8 +92,8 @@ export function createStarRailPanelOriginals(profiles: Pick<ReturnType<typeof cr
         if (!receipt || active.aborted || receipt.binding.qq !== String(context.user_id)) return;
         const quote = await context.lookupReply();
         if (!quote || quote.user_id !== context.self_id || quote.message.filter(part => part.type === "image").length !== 1) return;
-        const config = await settings(root);
-        if (!config.enabled && context.isBotMaster?.(context.user_id!) !== true) return "星铁原图功能已关闭。";
+        const config = await readStarRailOriginalSettings(root);
+        if (!config.starrailOriginalEnabled && context.isBotMaster?.(context.user_id!) !== true) return "星铁原图功能已关闭。";
         const { binding } = receipt;
         async function stillOwned() {
           active.throwIfAborted();
@@ -123,7 +107,8 @@ export function createStarRailPanelOriginals(profiles: Pick<ReturnType<typeof cr
         if (!file || !await stillOwned()) return;
         if (context.inlineImageByteLimit !== undefined && file.byteLength > context.inlineImageByteLimit) return "星铁面板原图超过当前会话的图片大小上限。";
         const message = { type: "image", file } as const;
-        return config.seconds ? { type: "recallable", message, seconds: config.seconds } : message;
+        const seconds = config.starrailOriginalRecall ? config.starrailOriginalRecallSeconds : 0;
+        return seconds ? { type: "recallable", message, seconds } : message;
       } catch { return; }
     },
   };
