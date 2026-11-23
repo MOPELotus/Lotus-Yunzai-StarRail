@@ -1,4 +1,4 @@
-import { renderPng } from "@lotus-yunzai/skia";
+import { nativeImageRasterScale, renderPng } from "@lotus-yunzai/skia";
 import type { CanvasRenderingContext2D as Context } from "skia-canvas";
 
 export interface StarRailCardOptions {
@@ -8,13 +8,14 @@ export interface StarRailCardOptions {
 
 export async function renderStarRailCard(width: number, height: number, draw: (ctx: Context) => void,
   { mode = "auto", inlineImageByteLimit }: StarRailCardOptions) {
+  const standard = nativeImageRasterScale() === 4;
   const render = (scale: 2 | 4) => renderPng(width * scale, height * scale, ctx => {
     ctx.scale(scale, scale);
     draw(ctx);
-  }, mode, { allowHalfScale: scale === 4 });
+  }, mode, { allowHalfScale: standard && scale === 4 });
   const full = await render(4);
   if (inlineImageByteLimit === undefined || full.png.byteLength <= inlineImageByteLimit) return full;
-  if (!full.reducedScaleReason) {
+  if (standard && !full.reducedScaleReason) {
     const smaller = await render(2);
     if (smaller.png.byteLength <= inlineImageByteLimit) return smaller;
   }

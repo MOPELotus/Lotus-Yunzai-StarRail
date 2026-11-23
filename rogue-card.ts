@@ -151,7 +151,7 @@ export async function renderStarRailRogue(card: RogueCard, signal: AbortSignal, 
   signal.throwIfAborted();
   FontLibrary.use("LotusStarRailRogue", [fileURLToPath(new URL("SR.ttf", original))]);
   const font = { body: '"LotusStarRailRogue", "Noto Sans CJK SC", sans-serif', title: '"LotusStarRailRogue", "Noto Sans CJK SC", sans-serif' };
-  const scale = nativeImageRasterScale();
+  const standard = nativeImageRasterScale() === 4;
   function draw(ctx: Context) {
     const write = styles(ctx, font);
     fill(ctx, "#100a0e", 0, 0, width, height);
@@ -179,10 +179,10 @@ export async function renderStarRailRogue(card: RogueCard, signal: AbortSignal, 
   const pngAt = (density: number) => renderPng(width * density, height * density, ctx => {
     ctx.scale(density, density);
     draw(ctx);
-  }, mode, { allowHalfScale: density === 4 });
-  const full = await pngAt(scale);
+  }, mode, { allowHalfScale: standard && density === 4 });
+  const full = await pngAt(4);
   if (full.png.byteLength <= inlineImageByteLimit) return full;
-  if (scale === 4 && !full.reducedScaleReason) {
+  if (standard && !full.reducedScaleReason) {
     const half = await pngAt(2);
     if (half.png.byteLength <= inlineImageByteLimit) return half;
   }

@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { loadOfficialArtwork } from "@lotus-yunzai/account";
-import { renderPng } from "@lotus-yunzai/skia";
+import { nativeImageRasterScale, renderPng } from "@lotus-yunzai/skia";
 import { loadImage, type Image, type CanvasRenderingContext2D as Context } from "skia-canvas";
 import { registerGachaThemeFont } from "../../packages/skia/gacha-theme-fonts.ts";
 import { fill, image, picture, rounded, styles } from "./panel-skia-theme.ts";
@@ -290,8 +290,8 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
     if (!detail && model.historyCount > 0) text(`可查询 ${model.historyCount} 条战绩 · *币战战报1`, width / 2, footer + 9, 14, muted, "center");
     text("Lotus-Yunzai · 米游社战绩", width / 2, footer + 37, 17, gold, "center");
   }, mode);
-  if (!grouped) return render(4);
-  const tooTall = height * 4 >= 30_680 && await checkNapCat?.();
+  if (nativeImageRasterScale() === 1) return render(4);
+  const tooTall = grouped && height * 4 >= 30_680 && await checkNapCat?.();
   if (!tooTall) {
     const first = await render(4).catch(() => undefined);
     if (first && (inlineImageByteLimit === undefined || first.png.length <= inlineImageByteLimit)) return first;
