@@ -4,9 +4,13 @@ import { StarRailGachaArchiveError, type createStarRailGachaRecordArchive } from
 import { convertStarRailUigfTimezone, exportStarRailUigf, selectStarRailUigf } from "./gacha-uigf.ts";
 
 const importCommand = /^#星铁(强制)?导入记录(?:json)?([1-9]\d{0,2})?$/u;
-const exportCommand = /^#星铁(强制)?导出记录(?:json)?(v2|v4)?([1-9]\d{0,2})?$/u;
+const exportCommand = /^#星铁(强制)?导出(?:抽卡|跃迁)?记录(?:json)?(v2|v4)?([1-9]\d{0,2})?$/u;
 const poolNames = { "11": "角色", "12": "光锥", "21": "角色联动", "22": "光锥联动", "2": "新手", "1": "常驻" } as const;
 const oldExporters = new Set(["Miao-Yunzai", "TRSS-Yunzai", "Yunzai-Bot"]);
+
+export function normalizeStarRailGachaCommand(message: string) {
+  return message.replace(/^#?(?:[*＊]?sr|＊)/u, "#星铁");
+}
 
 export interface StarRailGachaFileContext extends GachaFileImportContext {
   readonly normalizedMessage: string;
@@ -14,13 +18,14 @@ export interface StarRailGachaFileContext extends GachaFileImportContext {
 }
 
 export function matchesStarRailGachaFiles(context: StarRailGachaFileContext): boolean {
-  const imported = importCommand.exec(context.normalizedMessage);
+  const command = normalizeStarRailGachaCommand(context.normalizedMessage);
+  const imported = importCommand.exec(command);
   if (imported) return Number(imported[2] ?? 1) <= MAX_PROFILE_ID;
   const validId = (value: number | undefined) => value !== undefined && Number.isSafeInteger(value) && value > 0;
   if (context.attachment && /\.json$/iu.test(context.attachment.name) &&
       validId(context.self_id) && validId(context.user_id) &&
       (context.message_type === "private" || (context.message_type === "group" && validId(context.group_id)))) return true;
-  const exported = exportCommand.exec(context.normalizedMessage);
+  const exported = exportCommand.exec(command);
   return !!exported && Number(exported[3] ?? 1) <= MAX_PROFILE_ID;
 }
 
@@ -68,12 +73,13 @@ export function createStarRailGachaFiles(
   });
 
   return async (context: StarRailGachaFileContext) => {
-    const imported = importCommand.exec(context.normalizedMessage);
+    const command = normalizeStarRailGachaCommand(context.normalizedMessage);
+    const imported = importCommand.exec(command);
     if (imported || context.attachment) {
       const reply = await receive(context, imported);
       if (imported || reply !== undefined) return reply;
     }
-    const exporting = exportCommand.exec(context.normalizedMessage);
+    const exporting = exportCommand.exec(command);
     if (!exporting) return;
     const profileId = Number(exporting[3] ?? 1);
     if (profileId > MAX_PROFILE_ID) return;

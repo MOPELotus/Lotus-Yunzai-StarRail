@@ -15,7 +15,7 @@ import { createProfileHoyoClient, HoyoRequestError } from "@lotus-yunzai/hoyo-cl
 import { buildStarRailGachaDetail, type StarRailGachaDetailPool } from "./gacha-detail.ts";
 import { renderStarRailGachaDetail } from "./gacha-detail-card.ts";
 import { readStarRailGachaItems, readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
-import { createStarRailGachaFiles, matchesStarRailGachaFiles, starRailLegacyArchiveTimezone, type StarRailGachaFileContext } from "./gacha-files.ts";
+import { createStarRailGachaFiles, matchesStarRailGachaFiles, normalizeStarRailGachaCommand, starRailLegacyArchiveTimezone, type StarRailGachaFileContext } from "./gacha-files.ts";
 import { queryStarRailPoolInfo } from "./gacha-pool-info.ts";
 import { createStarRailGachaRecordArchive, StarRailGachaArchiveError } from "./gacha-record-archive.ts";
 import { buildStarRailRecordDetail } from "./gacha-record-detail.ts";
@@ -54,12 +54,13 @@ import { createStarRailSimulation, matchesWarpCommand } from "./simulation/comma
 import { createStarRailRogueQuery } from "./rogue-command.ts";
 import { parseStarRailRogue } from "./rogue-model.ts";
 
-const updateCommand = /^#星铁更新抽卡记录([1-9]\d{0,2})?$/u;
+const updateCommand = /^#星铁更新(?:抽卡|跃迁)(?:记录)?([1-9]\d{0,2})?$/u;
 const helpCommand = /^#星铁(?:抽卡|记录)帮助$/u;
 const recordPrefix = "#星铁逐抽";
 const recordDefault = /^(?:记录|祈愿|分析|统计)(?:[1-9]\d{0,2})?$/u;
 const poolCommand = /^#星铁(全部)?(抽卡|抽奖|角色|光锥|武器|常驻|up)池?(全部)?(记录|祈愿|分析|统计)([1-9]\d{0,2})?$/u;
 const versionCommand = /^#星铁(版本|全部)(全部)?统计([1-9]\d{0,2})?$/u;
+const legacyRecordCommand = /^#星铁(角色联动|光锥联动|武器联动|角色|光锥|武器|常驻|新手|联动)?(?:跃迁|抽卡)?(记录|分析|统计)([1-9]\d{0,2})?$/u;
 const specialCommand = /^#星铁(?:(全部)?(角色联动|光锥联动|武器联动|新手)池?(全部)?(记录|祈愿|分析|统计)|全部(?:记录|祈愿|分析))([1-9]\d{0,2})?$/u;
 const detailPools = new Map<string, StarRailGachaDetailPool>([
   ["光锥", "GachaType_EquipmentUp"], ["武器", "GachaType_EquipmentUp"], ["常驻", "GachaType_Standard"],
@@ -83,12 +84,12 @@ const legacyRecordsRoot = fileURLToPath(new URL("../../data/srJson/", import.met
 const help = [
   "星铁抽卡记录",
   "#登录列表 可查看档案，#同步角色 可同步星铁角色。",
-  "*更新抽卡记录 可更新官方范围内的记录。",
+  "*更新抽卡记录 或 *更新跃迁 可更新国服小程序范围内的五星和垫抽汇总。",
   "*抽卡记录、*光锥记录、*常驻记录、*新手记录、*角色联动记录、*光锥联动记录 可查看指定卡池。",
   "*全部记录 可查看各池，*版本统计 可按活动卡池期次查看。",
   "私聊 *导入记录 可接收 UIGF / SRGF 文件，*导出记录 可发送本地逐抽档案。",
   "私聊 *抽卡链接 可录入本档案的官方跃迁链接，更新本地逐抽。",
-  "*逐抽记录、*逐抽版本统计、*逐抽全部记录 查看本地逐抽档案。",
+  "*逐抽记录、*逐抽版本统计、*逐抽全部记录 查看本地逐抽档案。*跃迁记录 查看本地逐抽总览。",
   "末尾加档案编号可选档案，如 *抽卡记录2。单池可加「全部」查看各页，如 *角色全部记录2。",
 ].join("\n");
 
@@ -116,15 +117,30 @@ function matchGachaQuery(message: string): { profileId: number; view: GachaView;
   return { profileId: Number(pool[5] ?? 1), view, all: !!(pool[1] || pool[3]) };
 }
 
-function matchGachaCommand(message: string) {
+function legacyGachaQuery(message: string): ReturnType<typeof matchGachaQuery> {
+  const match = legacyRecordCommand.exec(message);
+  if (!match) return;
+  // Old 统计 fell through to the local overview even when a pool name preceded it.
+  const name = match[2] === "统计" ? "" : match[1] ?? "";
+  const special = name === "联动" ? "GachaType_CollabAvatarUp" : specialPools.get(name);
+  const view: GachaView = special || !name
+    ? { special: special ?? "all", statistics: false }
+    : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
+  return { profileId: Number(match[3] ?? 1), view, all: !name };
+}
+
+function matchGachaCommand(input: string) {
+  const message = normalizeStarRailGachaCommand(input);
   const matched = updateCommand.exec(message);
   const recordArchive = message.startsWith(recordPrefix);
   const suffix = recordArchive ? message.slice(recordPrefix.length) : "";
   const queryMessage = recordArchive ? `#星铁${recordDefault.test(suffix) ? "抽卡" : ""}${suffix}` : message;
   const query = matched ? undefined : matchGachaQuery(queryMessage);
-  if (!matched && !query) return;
-  const profileId = query?.profileId ?? Number(matched?.[1] ?? 1);
-  if (profileId <= MAX_PROFILE_ID) return { profileId, query, recordArchive };
+  const legacy = matched || query ? undefined : legacyGachaQuery(message);
+  const view = query ?? legacy;
+  if (!matched && !view) return;
+  const profileId = view?.profileId ?? Number(matched?.[1] ?? 1);
+  if (profileId <= MAX_PROFILE_ID) return { profileId, query: view, recordArchive: recordArchive || !!legacy };
 }
 
 export function createModule({ signal, lockFile, runtimeVersion }: {
@@ -348,14 +364,16 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
         }
         return panel(String(userId), panelCommand, context);
       }
-      const poolInfo = await queryStarRailPoolInfo(context.normalizedMessage, signal);
-      if (poolInfo !== undefined) return poolInfo;
+      const command = matchGachaCommand(context.normalizedMessage);
+      if (!command) {
+        const poolInfo = await queryStarRailPoolInfo(context.normalizedMessage, signal);
+        if (poolInfo !== undefined) return poolInfo;
+      }
       const rankStats = await queryStarRailRankStats(context.normalizedMessage, signal);
       if (rankStats !== undefined) return rankStats;
       const fileReply = await gachaFiles(context);
       if (fileReply !== undefined) return fileReply;
       if (helpCommand.test(context.normalizedMessage)) return help;
-      const command = matchGachaCommand(context.normalizedMessage);
       if (!command) return;
       const { profileId, query: view, recordArchive } = command;
       const { user_id } = context;
