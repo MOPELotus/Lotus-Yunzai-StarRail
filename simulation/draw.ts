@@ -36,7 +36,8 @@ function chooseByKind(items: readonly WarpItem[], random: () => number) {
 
 export function simulateWarps(pool: WarpPool, state: WarpPity, count: number, random = Math.random,
   rates: WarpRates = defaultWarpRates, week?: { five: number }, weeklyBonus = false): WarpPull[] {
-  const cone = pool.kind === "cone";
+  const cone = pool.kind === "cone" || pool.kind === "collaboration-cone";
+  const featuredItems = pool.featuredFivePool ?? (pool.featuredFive ? [pool.featuredFive] : []);
   const featuredRate = cone ? 0.75 : 0.5;
   const featuredFive = rates.featuredFive === null ? featuredRate : rates.featuredFive / 100;
   const baseFive = (cone ? rates.coneFive : rates.characterFive) / 10_000;
@@ -50,9 +51,9 @@ export function simulateWarps(pool: WarpPool, state: WarpPity, count: number, ra
       if (week) week.five = Math.min(Number.MAX_SAFE_INTEGER, week.five + 1);
       state.fiveMisses = 0;
       state.fourOrBetterMisses = 0;
-      const featured = pool.featuredFive && (state.nextFiveFeatured || random() < featuredFive);
-      state.nextFiveFeatured = !!pool.featuredFive && !featured;
-      const item = featured ? pool.featuredFive! : chooseByKind(pool.otherFive, random);
+      const featured = featuredItems.length > 0 && (state.nextFiveFeatured || random() < featuredFive);
+      state.nextFiveFeatured = featuredItems.length > 0 && !featured;
+      const item = featured ? (featuredItems.length === 1 ? featuredItems[0]! : choose(featuredItems, random)) : chooseByKind(pool.otherFive, random);
       return { ...item, order, pity, featured: !!featured };
     }
     state.fiveMisses++;

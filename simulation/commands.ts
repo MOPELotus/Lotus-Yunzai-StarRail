@@ -3,23 +3,28 @@ import type { CommandReply } from "../../../lib/commands.ts";
 import { parseWarpAdministration, runWarpAdministration } from "./admin.ts";
 import characterNames from "../challenge-character-names.json";
 import { emptyPity, simulateWarps, type WarpPull } from "./draw.ts";
-import { createWarpPoolSource, customWarpPool, type WarpKind } from "./pools.ts";
+import { createWarpPoolSource, customWarpPool, isCollaborationWarp, type WarpKind } from "./pools.ts";
 import { renderWarpCard, renderWarpReincarnation } from "./card.ts";
 import { createWarpSettingsStore, readWarpAllowance } from "./settings.ts";
-import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek } from "./store.ts";
+import { createWarpArchive, integer, readWarpAccount, warpDay, warpRetentionDays, warpStateDirectory, warpWeek, type WarpConversation } from "./store.ts";
 
 const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星轨通|星轨|专属|普通|专|通)?票?$/u;
 const oneBotForwardLimit = 96 * 1024 * 1024;
 const help = /^#星铁模拟(?:抽卡|跃迁)(?:帮助)?$/u;
 const reincarnation = /^#星铁转生$/u;
-const drawCommand = /^#星铁(?<before>角色池?|光锥池?|武器池?|常驻池?)?(?<size>单抽|(?:[一二三四五六七八九]?十|百|10)[连抽卡奖]|抽[卡奖])(?<after>角色池?|光锥池?|武器池?|常驻池?)?(?:池?(?<slot>[1-4]))?$/u;
+const poolLabel = "(?:联动(?:角色|光锥|武器)?|(?:角色|光锥|武器)联动|角色|光锥|武器|常驻)池?";
+const drawCommand = new RegExp(
+  `^#星铁(?<before>${poolLabel})?(?<size>单抽|(?:[一二三四五六七八九]?十|百|10)[连抽卡奖]|抽[卡奖])(?<after>${poolLabel})?(?:池?(?<slot>[1-4]))?$`, "u",
+);
 
 export function parseWarpCommand(message: string) {
   const { before, after, size, slot } = drawCommand.exec(message)?.groups ?? {};
   if (!size || (before && after)) return;
   const label = before ?? after ?? "";
-  const kind: WarpKind = label.startsWith("常驻") ? "standard" : /^(?:光锥|武器)/u.test(label) ? "cone" : "character";
-  if (kind === "standard" && slot) return;
+  const cone = /光锥|武器/u.test(label);
+  const kind: WarpKind = label.includes("联动") ? (cone ? "collaboration-cone" : "collaboration-character")
+    : label.startsWith("常驻") ? "standard" : cone ? "cone" : "character";
+  if ((kind === "standard" || isCollaborationWarp(kind)) && slot) return;
   const multiple = "一二三四五六七八九".indexOf(size[0]!) + 1;
   const count = size === "单抽" ? 1 : size.startsWith("百") ? 100 : (multiple || 1) * 10;
   return { kind, slot: Number(slot ?? 1), count };
@@ -82,6 +87,7 @@ export function createStarRailSimulation({
       "星铁模拟跃迁",
       "*单抽、*十连、*百连 可模拟角色活动跃迁，末尾可加卡池编号。",
       "*十连光锥、*十连常驻 可切换池；用 *我的星轨票 查询余量，每天北京时间 04:00 补满。用 *转生 抽取角色或星神。",
+      "*十连联动、*十连联动光锥 可模拟 Fate[UBW] 角色、光锥联动，保底各自累积。",
       "模拟使用近似概率，与游戏内跃迁记录分开。",
     ].join("\n");
     const draw = parseWarpCommand(message);
@@ -137,13 +143,14 @@ export function createStarRailSimulation({
       if (draw && draw.count > 10 && !rules.multiple) return "星铁模拟跃迁未开启多连抽。";
       const allowance = readWarpAllowance(rules, group);
       const customNames = draw?.kind === "cone" ? rules.poolNames.coneFive : rules.poolNames.characterFive;
-      const manual = draw && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
+      const collaboration = draw && isCollaborationWarp(draw.kind) ? draw.kind : undefined;
+      const manual = draw && !collaboration && draw.kind !== "standard" && !rules.automaticPools && customNames?.[draw.slot - 1];
       const source = draw && await poolSource(draw.kind, draw.slot, time).catch(error => {
         if (!manual) throw error;
         return undefined;
       });
       const pool = draw && customWarpPool(draw.kind, draw.slot, source, rules);
-      if (draw && !pool) return "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
+      if (draw && !pool) return collaboration ? "暂未找到已收录的 Fate[UBW] 联动模拟卡池。" : "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
       const result = await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
         const account = readWarpAccount(raw);
         const issued = account.balance.day !== day || (account.balance.expiresAt !== undefined && time >= account.balance.expiresAt);
@@ -157,9 +164,12 @@ export function createStarRailSimulation({
         if (balance[ticket] < draw.count) {
           const conversation = account.conversations[conversationKey];
           const today = conversation?.today?.day === day ? conversation.today : undefined;
-          const week = conversation?.week?.id === warpWeek(time) ? conversation.week.five : 0;
-          const recent = today?.five ? `今日模拟五星 ${today.five >= 8 ? `${today.five} 个` : today.samples.map(item => `${item.name}（${item.pity} 抽）`).join("、")}`
-            : `今日已累计 ${(pool.kind === "cone" ? today?.cone : today?.standardAndCharacter) ?? 0} 抽无五星`;
+          const week = !collaboration && conversation?.week?.id === warpWeek(time) ? conversation.week.five : 0;
+          const collaborationToday = collaboration ? today?.collaboration?.[collaboration] : undefined;
+          const summary = collaboration ? collaborationToday : today;
+          const total = collaboration ? collaborationToday?.draws : pool.kind === "cone" ? today?.cone : today?.standardAndCharacter;
+          const recent = summary?.five ? `今日模拟五星 ${summary.five >= 8 ? `${summary.five} 个` : summary.samples.map(item => `${item.name}（${item.pity} 抽）`).join("、")}`
+            : `今日已累计 ${total ?? 0} 抽无五星`;
           const result = { text: `你的${ticket === "regular" ? "通票" : "专票"}不足。需要 ${draw.count} 张，你还有 ${balance[ticket]} 张。\n${recent}${week >= 2 ? ` · 本周 ${week} 个五星` : ""}`,
             recall: true as const };
           return issued ? { document: account, result } : { result };
@@ -170,24 +180,31 @@ export function createStarRailSimulation({
           const expired = conversation.expiresAt === undefined ? day - conversation.lastDay >= warpRetentionDays : time >= conversation.expiresAt;
           if (expired) delete account.conversations[key];
         }
-        const conversation = account.conversations[conversationKey] ?? {
+        const conversation: WarpConversation = account.conversations[conversationKey] ?? {
           lastDay: day, pity: { character: emptyPity(), cone: emptyPity(), standard: emptyPity() },
         };
         conversation.lastDay = day;
         delete conversation.expiresAt;
         account.conversations[conversationKey] = conversation;
         const weekId = warpWeek(time);
-        if (conversation.week?.id !== weekId) conversation.week = { id: weekId, five: 0 };
+        if (!collaboration && conversation.week?.id !== weekId) conversation.week = { id: weekId, five: 0 };
         if (conversation.today?.day !== day) conversation.today = { day, standardAndCharacter: 0, cone: 0, five: 0, samples: [] };
-        const metric = pool.kind === "cone" ? "cone" : "standardAndCharacter";
         const today = conversation.today;
-        today[metric] = Math.min(Number.MAX_SAFE_INTEGER, today[metric] + draw.count);
-        const pity = conversation.pity[pool.kind];
-        const pulls = simulateWarps(pool, pity, draw.count, random, rules.rates, conversation.week, rules.weeklyBonus);
+        const collaborationToday = collaboration
+          ? ((today.collaboration ??= {})[collaboration] ??= { draws: 0, five: 0, samples: [] }) : undefined;
+        if (collaborationToday) {
+          collaborationToday.draws = Math.min(Number.MAX_SAFE_INTEGER, collaborationToday.draws + draw.count);
+        } else {
+          const metric = pool.kind === "cone" ? "cone" : "standardAndCharacter";
+          today[metric] = Math.min(Number.MAX_SAFE_INTEGER, today[metric] + draw.count);
+        }
+        const pity = conversation.pity[pool.kind] ??= emptyPity();
+        const pulls = simulateWarps(pool, pity, draw.count, random, rules.rates, collaboration ? undefined : conversation.week, rules.weeklyBonus);
+        const summary = collaborationToday ?? today;
         for (const pull of pulls) {
           if (pull.rarity !== 5) continue;
-          today.five = Math.min(Number.MAX_SAFE_INTEGER, today.five + 1);
-          if (today.samples.length < 7) today.samples.push({ name: pull.name, pity: pull.pity! });
+          summary.five = Math.min(Number.MAX_SAFE_INTEGER, summary.five + 1);
+          if (summary.samples.length < 7) summary.samples.push({ name: pull.name, pity: pull.pity! });
         }
         return { document: account, result: { pulls, pity: pity.fiveMisses } };
       });

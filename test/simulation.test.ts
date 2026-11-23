@@ -265,3 +265,77 @@ test("recall is held for high-rarity batches, budget failures keep metrics, and 
     expect(await make()("#星铁转生", user)).toContain("等待 1 分钟");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test("Fate collaboration uses the two confirmed historical rosters and never substitutes regular banners", async () => {
+  for (const message of ["#星铁十连联动", "#星铁抽卡联动角色", "#星铁角色联动十连"]) {
+    expect(parseWarpCommand(message)).toEqual({ kind: "collaboration-character", count: 10, slot: 1 });
+  }
+  for (const message of ["#星铁十连联动光锥", "#星铁光锥联动抽卡", "#星铁联动武器十连"]) {
+    expect(parseWarpCommand(message)).toEqual({ kind: "collaboration-cone", count: 10, slot: 1 });
+  }
+  for (const message of ["#星铁联动卡池", "#星铁抽卡记录", "#星铁十连联动2", "#星铁十连其他联动"]) {
+    expect(parseWarpCommand(message)).toBeUndefined();
+  }
+
+  const select = createWarpPoolSource("/不存在的普通卡池-fixture.json");
+  const firstStart = Date.parse("2025-07-11T12:00:00+08:00");
+  expect(await select("collaboration-character", 1, firstStart - 1)).toBeUndefined();
+  expect((await select("collaboration-character", 1, firstStart))?.featuredFivePool?.map(item => item.name))
+    .toEqual(["Saber", "Archer"]);
+  expect(await select("collaboration-character", 2, active)).toBeUndefined();
+  const characters = (await select("collaboration-character", 1, active))!;
+  const cones = (await select("collaboration-cone", 1, active))!;
+  expect(characters.featuredFivePool?.map(item => item.name)).toEqual(["Saber", "Archer", "远坂凛", "吉尔伽美什"]);
+  expect(cones.featuredFivePool?.map(item => item.name)).toEqual(["没有回报的加冕", "理想燃烧的地狱", "星火悄然闪耀", "所见即我"]);
+  for (const pool of [characters, cones]) {
+    expect(pool.featuredFour).toEqual([]);
+    const isCone = pool.kind === "collaboration-cone";
+    const missed = { ...emptyPity(), fiveMisses: isCone ? 79 : 89 };
+    expect(simulateWarps(pool, missed, 1, rolls()).at(0)).toMatchObject({
+      rarity: 5, featured: false, pity: isCone ? 80 : 90, kind: isCone ? "光锥" : "角色",
+    });
+    expect(missed.nextFiveFeatured).toBe(true);
+    expect(simulateWarps(pool, missed, 1, rolls(0, 0.99)).at(0)).toMatchObject({
+      name: isCone ? "所见即我" : "吉尔伽美什", featured: true, pity: 1,
+    });
+    const four = { ...emptyPity(), fourOrBetterMisses: 9 };
+    expect(simulateWarps(pool, four, 1, rolls()).at(0)).toMatchObject({ rarity: 4, featured: false });
+    expect(four.nextFourFeatured).toBe(false);
+  }
+});
+
+test("collaboration reads v1 three-pool saves and keeps own group, daily summary and cross-day pity", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "warp-collaboration-test-"));
+  try {
+    let now = Date.parse("2026-11-20T03:59:59+08:00");
+    const identity = { qq: "42", uid: "1" };
+    const archive = createWarpArchive(directory, lockFile);
+    const old = { lastDay: warpDay(now), pity: { character: { ...emptyPity(), fiveMisses: 30 }, cone: emptyPity(), standard: emptyPity() },
+      today: { day: warpDay(now), standardAndCharacter: 35, cone: 1, five: 0, samples: [] }, week: { id: 0, five: 9 } };
+    await archive.update(identity, async () => {}, () => ({
+      document: { version: 1, balance: { day: warpDay(now), special: 33, regular: 10 }, conversations: { "77": old } }, result: null,
+    }));
+    const make = () => createStarRailSimulation({ directory, lockFile, signal: new AbortController().signal,
+      poolSource: createWarpPoolSource(""), now: () => now, random: rolls(), render: async () => { throw new Error("fixture"); } });
+    const group = { user_id: 42, group_id: 77 };
+    expect(output(await make()("#星铁十连联动", group))).toContain("Fate[UBW] 角色联动");
+    expect(output(await make()("#星铁十连联动光锥", group))).toContain("Fate[UBW] 光锥联动");
+    await make()("#星铁十连联动", { user_id: 42 });
+    expect(output(await make()("#星铁十连联动", group))).toContain("今日已累计 10 抽无五星");
+    expect(output(await make()("#星铁十连联动光锥", { user_id: 42 }))).toContain("今日已累计 0 抽无五星");
+    let value = await archive.read(identity.qq, identity.uid) as { conversations: Record<string, unknown> };
+    expect(value.conversations["77"]).toMatchObject({ pity: {
+      character: old.pity.character, cone: old.pity.cone, standard: old.pity.standard,
+      "collaboration-character": { fiveMisses: 10 }, "collaboration-cone": { fiveMisses: 10 },
+    }, today: { standardAndCharacter: 35, cone: 1 }, week: old.week });
+    now += 1000;
+    await make()("#星铁单抽联动光锥", group);
+    value = await archive.read(identity.qq, identity.uid) as typeof value;
+    expect(value.conversations["77"]).toMatchObject({ pity: {
+      "collaboration-character": { fiveMisses: 10 }, "collaboration-cone": { fiveMisses: 11 },
+    }, today: { day: warpDay(now), standardAndCharacter: 0, cone: 0, collaboration: {
+      "collaboration-cone": { draws: 1 },
+    } } });
+    expect(value.conversations.private).toMatchObject({ pity: { "collaboration-character": { fiveMisses: 10 } } });
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

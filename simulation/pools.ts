@@ -3,7 +3,12 @@ import { readStarRailGachaSchedule } from "../gacha-schedule.ts";
 import { readStarRailGachaCatalog, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
 import { validWarpPoolName, type WarpSettings } from "./settings.ts";
 
-export type WarpKind = "character" | "cone" | "standard";
+export type CollaborationWarpKind = "collaboration-character" | "collaboration-cone";
+export type WarpKind = "character" | "cone" | "standard" | CollaborationWarpKind;
+
+export function isCollaborationWarp(kind: WarpKind): kind is CollaborationWarpKind {
+  return kind === "collaboration-character" || kind === "collaboration-cone";
+}
 export interface WarpItem {
   readonly name: string;
   readonly kind: "角色" | "光锥";
@@ -13,6 +18,7 @@ export interface WarpPool {
   readonly title: string;
   readonly kind: WarpKind;
   readonly featuredFive?: WarpItem;
+  readonly featuredFivePool?: readonly WarpItem[];
   readonly featuredFour: readonly WarpItem[];
   readonly otherFive: readonly WarpItem[];
   readonly otherFour: readonly WarpItem[];
@@ -37,6 +43,21 @@ const standard: WarpPool = {
   kind: "standard", title: "群星跃迁", featuredFour: [],
   otherFive: [...standardCharacters, ...standardCones], otherFour: [...fourCharacters, ...fourCones], three,
 };
+
+// The independent simulator combined each kind of Fate collaboration banner into one local pool.
+const fateWarps = [
+  { startsAt: Date.parse("2025-07-11T12:00:00+08:00"), characters: ["Saber", "Archer"], cones: ["没有回报的加冕", "理想燃烧的地狱"] },
+  { startsAt: Date.parse("2026-07-24T12:00:00+08:00"), characters: ["远坂凛", "吉尔伽美什"], cones: ["星火悄然闪耀", "所见即我"] },
+];
+
+function collaborationPool(kind: CollaborationWarpKind, time: number): WarpPool | undefined {
+  const editions = fateWarps.filter(({ startsAt }) => time >= startsAt);
+  if (!editions.length) return;
+  const cone = kind === "collaboration-cone";
+  return { kind, title: `Fate[UBW] ${cone ? "光锥" : "角色"}联动跃迁`,
+    featuredFivePool: editions.flatMap(edition => cone ? cones(5, edition.cones) : characters(5, edition.characters)),
+    featuredFour: [], otherFive: cone ? standardCones : standardCharacters, otherFour: standard.otherFour, three };
+}
 
 interface Banner {
   readonly character: string;
@@ -77,7 +98,7 @@ function isBanner(value: unknown): value is Banner {
 }
 
 export function customWarpPool(kind: WarpKind, slot: number, pool: WarpPool | undefined, settings: WarpSettings): WarpPool | undefined {
-  if (kind === "standard" || settings.automaticPools) return pool;
+  if (kind === "standard" || isCollaborationWarp(kind) || settings.automaticPools) return pool;
   const isCone = kind === "cone";
   const build = isCone ? cones : characters;
   const fiveNames = settings.poolNames[isCone ? "coneFive" : "characterFive"];
@@ -119,6 +140,7 @@ const knownFrom = Math.min(...builtIn.map(item => Date.parse(item.start)));
 export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS?.trim(), theme = starRailGachaThemeDirectory) {
   return async (kind: WarpKind, slot: number, time: number): Promise<WarpPool | undefined> => {
     if (kind === "standard") return standard;
+    if (isCollaborationWarp(kind)) return slot === 1 ? collaborationPool(kind, time) : undefined;
     let banners = builtIn;
     if (file) {
       const info = await stat(file);
