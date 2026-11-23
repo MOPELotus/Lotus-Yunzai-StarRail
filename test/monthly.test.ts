@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { makeStarRailMonthlyCard, starRailMonthlyText } from "../monthly-card.ts";
-import { starRailMonthlyCommand } from "../monthly-command.ts";
+import { matchStarRailMonthly } from "../monthly-period.ts";
 
 const snapshot = {
   month: "11", monthly: { hcoin: 3, railsPass: 12345 }, today: { hcoin: 0, railsPass: 1 },
@@ -12,12 +12,12 @@ const snapshot = {
 test("当月入口保留原星铁收入别名及本人档号，避开流水和游戏日历", () => {
   for (const word of ["星琼获取", "月历", "月收入", "收入", "原石"]) {
     for (const prefix of ["#星铁", "*", "＊", "#sr"]) {
-      expect(starRailMonthlyCommand.exec(prefix + word)?.[0]).toBe(prefix + word);
-      expect(starRailMonthlyCommand.exec(prefix + word + " 档案2")?.[1]).toBe("2");
+      expect(matchStarRailMonthly(prefix + word)).toEqual({ type: "month", legacy: false, profileId: 1, month: undefined });
+      expect(matchStarRailMonthly(prefix + word + " 档案2")).toEqual({ type: "month", legacy: false, profileId: 2, month: undefined });
     }
   }
   for (const excluded of ["#星铁充值记录", "#星铁星琼记录", "#星铁日历", "#星铁月收入上月", "#绝区零月收入", "#收入"]) {
-    expect(starRailMonthlyCommand.test(excluded)).toBe(false);
+    expect(matchStarRailMonthly(excluded)).toBeUndefined();
   }
 });
 

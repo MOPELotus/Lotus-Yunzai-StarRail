@@ -37,7 +37,9 @@ import { parseChallengeQuery } from "./challenge-model.ts";
 import { queryStarRailChallenge } from "./challenge.ts";
 import { createStarRailGridFightQuery } from "./grid-fight-command.ts";
 import { parseStarRailGridFight } from "./grid-fight-model.ts";
-import { createStarRailMonthlyQuery, starRailMonthlyCommand } from "./monthly-command.ts";
+import { createStarRailMonthlyQuery } from "./monthly-command.ts";
+import { matchStarRailMonthly } from "./monthly-period.ts";
+import { createStarRailMonthlyArchive } from "./monthly-archive.ts";
 import { createStarRailLedgerQuery, matchStarRailLedger } from "./ledger-command.ts";
 import { createStarRailOnlineQuery, starRailOnlineCommand } from "./online-command.ts";
 import { createStarRailPanel, createStarRailPersonalPanelReader } from "./panel.ts";
@@ -165,7 +167,11 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
   const growth = createStarRailGrowthQuery(profiles, client, signal);
   const rogue = createStarRailRogueQuery(profiles, client, signal);
   const teamDamage = createStarRailTeamDamageQuery(profiles, createStarRailPersonalPanelReader(lockFile), signal);
-  const monthly = createStarRailMonthlyQuery(profiles, client, signal);
+  const monthlyArchive = createStarRailMonthlyArchive(
+    fileURLToPath(new URL("../../data/starrail/monthly/", import.meta.url)),
+    ["../../backup/legacy-data/SR_NoteData/", "../../data/SR_NoteData/"].map(path => fileURLToPath(new URL(path, import.meta.url))),
+    lockFile);
+  const monthly = createStarRailMonthlyQuery(profiles, client, signal, monthlyArchive);
   const ledger = createStarRailLedgerQuery(profiles, client, signal);
   const online = createStarRailOnlineQuery(profiles, client, signal);
   const simulate = createStarRailSimulation({ lockFile, signal, async readIndependentLegacy(key) {
@@ -297,7 +303,7 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
       if (matchesWarpCommand(message)) return ["[starrail] 模拟跃迁"];
       if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
-      if (starRailMonthlyCommand.test(message)) return ["[starrail] 星琼月收入"];
+      if (matchStarRailMonthly(message)) return ["[starrail] 星琼月收入"];
       if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
       if (matchStarRailPersonalRecord(message)) return [];
       if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
@@ -345,8 +351,8 @@ export function createModule({ signal, lockFile, runtimeVersion }: {
       if (matchesWarpCommand(context.normalizedMessage)) return simulate(context.normalizedMessage, context);
       const aliases = matchGameCharacterAliasCommand(context.normalizedMessage);
       if (aliases?.game === "sr") return characterAliases(aliases, context);
-      const month = starRailMonthlyCommand.exec(context.normalizedMessage);
-      if (month) return monthly(context, Number(month[1] ?? 1));
+      const month = matchStarRailMonthly(context.normalizedMessage);
+      if (month) return monthly(month, context);
       const historyPage = matchStarRailLedger(context.normalizedMessage);
       if (historyPage) return ledger(context, historyPage);
       const onlineMatch = starRailOnlineCommand.exec(context.normalizedMessage);

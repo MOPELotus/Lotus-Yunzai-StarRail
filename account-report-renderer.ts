@@ -1,7 +1,9 @@
 import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
-import { Canvas, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
+import { fileURLToPath } from "node:url";
+import { Canvas, FontLibrary, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 import type { makeStarRailLedgerCard } from "./ledger-command.ts";
 import type { makeStarRailMonthlyCard } from "./monthly-card.ts";
+import type { StarRailMonthlyStatistics } from "./monthly-statistics.ts";
 import type { makeStarRailOnlineCard } from "./online-command.ts";
 
 const theme = new URL("./monthly-theme/", import.meta.url);
@@ -10,10 +12,10 @@ const colors = ["#5470c6", "#91cc75", "#fac858"];
 const image = (path: string) => loadImage(new URL(path, theme));
 
 function label(ctx: Context, value: string, x: number, y: number, size: number,
-  { color = "#111", weight = 400, align = "left", maxWidth }: {
-    color?: string; weight?: number; align?: CanvasTextAlign; maxWidth?: number;
+  { color = "#111", weight = 400, align = "left", maxWidth, family = font }: {
+    color?: string; weight?: number; align?: CanvasTextAlign; maxWidth?: number; family?: string;
   } = {}) {
-  ctx.font = `${weight} ${size}px ${font}`;
+  ctx.font = `${weight} ${size}px ${family}`;
   ctx.textBaseline = "middle";
   ctx.textAlign = align;
   ctx.fillStyle = color;
@@ -212,5 +214,114 @@ export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typ
     if (!model.complete) label(ctx, "已达到查询页数上限，仅显示本次读取的记录。", 400, footerY + 40, 16,
       { color: "#a45000", align: "center" });
     label(ctx, model.cardBrand, 400, footerY + noteHeight + 32, 24, { align: "center" });
+  }, options);
+}
+
+const statisticsNumbers = "LotusStarRailStatisticsNumbers";
+const statisticsColors = ["#73a9c6", "#d56565", "#70b2b4", "#bd9a5a", "#739970", "#7a6da7", "#597ea0", "#ffb6c1"];
+const statisticsActions = new Map(["other", "adventure_reward", "space_reward", "daily_reward", "abyss_reward",
+  "mail_reward", "event_reward", "combat_reward"].map((action, index) => [action, index]));
+let statisticsFont = false;
+
+export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStatistics, options: StarRailCardOptions = {}) {
+  if (!statisticsFont) {
+    FontLibrary.use(statisticsNumbers, fileURLToPath(new URL("statistics/tttgbnumber.ttf", theme)));
+    statisticsFont = true;
+  }
+  const [logo, banner] = await Promise.all([image("statistics/logo.png"), image("statistics/header.webp")]);
+  const contentWidth = 530, scale = 1.3;
+  const pieHeight = Math.max(282, 52 + model.sources.length * 18);
+  const height = 608 + pieHeight;
+  const monthName = (key: string) => `${Number(key.slice(4))}月`;
+  const cards = [
+    [model.hcoin >= 10_000 ? `${(model.hcoin / 10_000).toFixed(2)}w` : String(model.hcoin), "总星琼"],
+    [`${model.wishes}抽`, "总抽数"], [monthName(model.bestJade.key), "星琼最多"],
+    [String(model.bestJade.snapshot.monthly.hcoin), `${monthName(model.bestJade.key)}星琼`],
+    [`${model.railsPass}张`, "总专&通票"], [monthName(model.bestPass.key), "专&通票最多"],
+    ...model.sources.slice(0, 2).map(({ count, name }) => [String(count), name]),
+  ];
+  return renderStarRailCard(Math.round(contentWidth * scale), Math.ceil(height * scale), ctx => {
+    ctx.scale(scale, scale);
+    const number = (value: string, x: number, y: number, size: number, color = "#1e1f20") =>
+      label(ctx, value, x, y, size, { color, align: "center", family: `"${statisticsNumbers}", ${font}` });
+    const section = (title: string, y: number, h: number) => {
+      box(ctx, 15, y, 500, h, 15, "#fff");
+      box(ctx, 7, y - 10, 76, 24, [15, 0, 15, 15], "#d4b98c");
+      label(ctx, title, 16, y + 2, 14, { color: "#fff" });
+    };
+    ctx.fillStyle = "#f5f6fb";
+    ctx.fillRect(0, 0, contentWidth, height);
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(15, 20, 500, 71, [15, 50, 50, 15]);
+    ctx.clip();
+    ctx.fillStyle = "#516070";
+    ctx.fillRect(15, 20, 500, 71);
+    const bannerWidth = banner.width / banner.height * 71;
+    ctx.drawImage(banner, 515 - bannerWidth, 20, bannerWidth, 71);
+    ctx.restore();
+    label(ctx, `ID: ${model.uid}`, 35, 43, 24, { color: "#e8ebee", family: `"${statisticsNumbers}", ${font}` });
+    label(ctx, `${model.period.label}星琼统计`, 35, 69, 20, { weight: 700, color: "#f3f6f8" });
+    ctx.drawImage(logo, 350, 13, 150, logo.height / logo.width * 150);
+
+    section("数据总览", 112, 124);
+    cards.forEach(([amount, title], index) => {
+      const x = 82 + (index % 4) * 122;
+      const y = 144 + Math.floor(index / 4) * 50;
+      number(amount!, x, y, 22);
+      label(ctx, title!, x, y + 22, 13, { color: "#7f858a", align: "center", maxWidth: 115 });
+    });
+
+    section("月份统计", 259, 302);
+    const chartBottom = 522;
+    const peak = Math.max(1, ...model.months.map(month => month.snapshot.monthly.hcoin));
+    const decade = 10 ** Math.floor(Math.log10(Math.ceil(peak / 4)));
+    const stepSize = [1, 2, 2.5, 5, 10].map(step => step * decade).find(step => step * 4 >= peak) ?? peak;
+    const maximum = stepSize * 4;
+    const chartWidth = 433;
+    const step = chartWidth / model.months.length;
+    const barWidth = Math.min(50, step * 0.65);
+    ctx.strokeStyle = "#e4e9f0";
+    for (let line = 0; line <= 4; line++) {
+      const y = chartBottom - line * 50;
+      ctx.beginPath(); ctx.moveTo(61, y); ctx.lineTo(500, y); ctx.stroke();
+      number(String(Math.round(maximum * line / 4)), 40, y, 10, "#59616e");
+    }
+    model.months.forEach(({ key, snapshot, finalized }, index) => {
+      const amount = snapshot.monthly.hcoin;
+      const x = 64 + (index + 0.5) * step;
+      const bar = 200 * amount / maximum;
+      ctx.fillStyle = finalized ? "#5b8ff9" : "#95b3ec";
+      ctx.fillRect(x - barWidth / 2, chartBottom - bar, barWidth, bar);
+      number(String(amount), x, chartBottom - bar - 11, 10);
+      label(ctx, monthName(key), x, chartBottom + 15, 12, { align: "center" });
+    });
+
+    section("详细统计", 582, pieHeight);
+    const sum = model.sources.reduce((total, row) => total + row.count, 0);
+    const cx = 154, cy = 582 + pieHeight / 2;
+    let angle = -Math.PI / 2;
+    ctx.lineWidth = 23;
+    for (const [index, { name, count, action }] of model.sources.entries()) {
+      const color = statisticsColors[statisticsActions.get(action ?? "") ?? index % statisticsColors.length]!;
+      if (sum && count) {
+        const end = angle + (count / sum) * 2 * Math.PI;
+        ctx.beginPath(); ctx.arc(cx, cy, 84, angle, end); ctx.strokeStyle = color; ctx.stroke();
+        const percent = Math.round(100 * count / sum);
+        if (percent >= 2) {
+          const center = (angle + end) / 2;
+          number(`${percent}%`, cx + Math.cos(center) * 84, cy + Math.sin(center) * 84, 11, "#1e1f20");
+        }
+        angle = end;
+      }
+      const y = 609 + 18 * index;
+      box(ctx, 280, y - 5, 10, 10, 2, color);
+      label(ctx, name, 296, y, 13, { maxWidth: 140 });
+      label(ctx, String(count), 492, y, 13, { align: "right", color: "#59616e" });
+    }
+    label(ctx, "总计", cx, cy - 10, 14, { align: "center" });
+    number(String(sum), cx, cy + 13, 24);
+    label(ctx, `已归档 ${model.months.length}/${model.period.last - model.period.first + 1} 个月 · Lotus-Yunzai`,
+      contentWidth / 2, height - 12, 11, { color: "#7994a7", align: "center" });
   }, options);
 }
