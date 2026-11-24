@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequestContext } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
-import type { MessageEvent } from "../../lib/messages.ts";
+import type { MessageEvent, ReplyOptions } from "../../lib/messages.ts";
 import type { LegacyPanelRecoveryOffer } from "../../lib/legacy-panel-recovery-flow.ts";
 import { createStarRailPanelOriginals } from "./panel-original.ts";
 import type { PanelRebuilder } from "../../lib/panel-rebuild.ts";
@@ -22,6 +22,7 @@ import { applyStarRailTraces, confirmedStarRailTraces, matchesStarRailTraceOwner
   starRailTraceOwner, type StarRailTraceOwner } from "./panel-trace-refresh.ts";
 import { fetchStarRailShowcase, ShowcaseError, showcaseProviderNames, showcaseTarget } from "./panel-showcase.ts";
 import { readShowcaseServer } from "./panel-showcase-config.ts";
+import { resolveStarRailCharacter } from "./rank-statistics.ts";
 import { formatStarRailDamageChange, hasPersonalDamage, personalDamageMetricLabel, personalDamageNames,
   readStarRailPersonalDamage, type StarRailPersonalDamage } from "./panel-damage.ts";
 import { renderStarRailPanelPractice } from "./panel-practice-skia.ts";
@@ -193,9 +194,9 @@ export function createStarRailPanel(
   };
 
   async function query(qq: string, command: PanelCommand,
-    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile"> & {
+    context?: StarRailGroupRankContext & Pick<MessageEvent, "uploadFile" | "privateCredentialSignal"> & {
       readonly offerLegacyPanelRecovery?: LegacyPanelRecoveryOffer;
-      readonly reply?: (message: string) => unknown;
+      readonly reply?: (message: string, quote?: boolean, options?: ReplyOptions) => unknown;
     }) {
     const { type, profileId, name } = command;
     if (type === "extreme") return queryExtremePanel(name, context?.inlineImageByteLimit, await starRailUsesBuiltInPortrait(context));
@@ -299,6 +300,8 @@ export function createStarRailPanel(
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
       const { uid } = role;
       if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
+      const namedPanel = (type === "detail" || type === "damage" || type === "relics") && !("equipment" in command);
+      const allowEmptyPanel = namedPanel || type === "list" || type === "reload" || type === "practice";
       const groupPanel = type === "relics" || (type === "detail" && !explicitUid && !("equipment" in command));
       const registerList = !explicitUid && (type === "list" || type === "update" || type === "reload" ||
         (type === "showcase" && !command.name));
@@ -312,9 +315,12 @@ export function createStarRailPanel(
       let legacy: Record<string, unknown> | undefined;
       let updated = false;
       let publicLookup = false;
+      let fallbackSession: AbortSignal | undefined;
+      let preloadedTheme: Awaited<ReturnType<typeof readTheme>> | undefined;
       async function verify(updatedRevision?: string) {
         if (updatedRevision !== undefined) revision = updatedRevision;
         signal.throwIfAborted();
+        fallbackSession?.throwIfAborted();
         const selectedRole = traceOwner ? await profiles.savedRole(qq, profileId, "sr").catch(() => undefined) : undefined;
         const latestAccount = account ? await profiles.requestContext(qq, profileId, "sr").catch(() => undefined) : undefined;
         const latestRole = account ? latestAccount?.role : await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
@@ -324,6 +330,7 @@ export function createStarRailPanel(
             panelDiscardedAt(await store.read(qq, uid)) !== discardedAt) {
           throw new ProfileError("changed", "星铁面板档案已变更，请重新查询。");
         }
+        fallbackSession?.throwIfAborted();
       }
 
       if (type === "update" && account) {
@@ -338,14 +345,14 @@ export function createStarRailPanel(
         snapshot = result.snapshot;
         updated = result.updated;
       } else if (type !== "showcase") {
-        snapshot = managedSnapshot(uid, initialPanel, false, type === "practice");
-        if (!discardedAt && (!snapshot || (type === "practice" && !snapshot.avatars.length))) {
+        snapshot = managedSnapshot(uid, initialPanel, false, allowEmptyPanel);
+        if (!discardedAt && !snapshot?.avatars.length) {
           const old = await legacySnapshot(uid);
           snapshot = old?.snapshot;
           if (old?.snapshot.avatars.length) legacy = old.data;
         }
         if (type !== "refresh-traces" && !snapshot?.avatars.length) {
-          const saved = managedSnapshot(uid, await showcases.read(qq, uid), true, type === "practice");
+          const saved = managedSnapshot(uid, await showcases.read(qq, uid), true, allowEmptyPanel);
           if (saved?.updatedAt && Date.parse(saved.updatedAt) > discardedAt) snapshot = saved;
         }
       }
@@ -390,8 +397,17 @@ export function createStarRailPanel(
         }
       }
 
-      if (type === "showcase" || (type === "reload" && !discardedAt && !snapshot?.avatars.length && context?.reply)) {
-        publicLookup = true;
+      const canUsePublicFallback = !discardedAt && (!explicitUid || type === "reload") && !context?.isDelegated && context?.reply &&
+        context.user_id?.toString() === qq && (context.message_type === "private" || context.message_type === "group");
+      let publicFallback = Boolean(canUsePublicFallback && !snapshot?.avatars.length && (type === "list" || type === "reload"));
+      if (canUsePublicFallback && namedPanel) {
+        preloadedTheme = await readTheme();
+        publicFallback = !findPanelAvatar(snapshot?.avatars ?? [], name, preloadedTheme) && Boolean(await resolveStarRailCharacter(name));
+      }
+      if (type === "showcase" || publicFallback) {
+        if (publicFallback) fallbackSession = context?.message_type === "group" ? context.groupActivitySignal : context?.privateCredentialSignal;
+        const showcaseSignal = fallbackSession ? AbortSignal.any([signal, fallbackSession]) : signal;
+        await verify();
         const bound = await profiles.savedRole(qq, profileId, "sr");
         if (bound.uid !== uid || bound.region !== role.region || bound.gameBiz !== role.gameBiz) {
           return "所选档案当前绑定的星铁角色无法核验。";
@@ -401,21 +417,25 @@ export function createStarRailPanel(
         if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询，请稍后再试。";
         refreshing.add(refreshKey);
         try {
-          const cached = type === "reload" ? managedSnapshot(uid, await showcases.read(qq, uid), true) : undefined;
+          const cached = publicFallback ? managedSnapshot(uid, await showcases.read(qq, uid), true) : undefined;
           const started = new Date(Math.max(Date.now(), discardedAt + 1));
+          let publicSnapshot;
           if (cached?.source === target.provider && cached.updatedAt && Date.parse(cached.updatedAt) > discardedAt &&
               Date.parse(cached.updatedAt) + (whole(cached.showcaseTtl, 86_400) ?? 60) * 1000 > started.getTime()) {
-            snapshot = cached;
+            publicSnapshot = cached;
           } else {
             await verify();
-            if (type === "reload") {
-              const notice = `本地暂无星铁面板，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`;
-              const delivered = await Promise.resolve().then(() => context?.reply?.(notice)).catch(() => false);
-              if (delivered !== true) return `通知发送失败，已取消公开展板回退。可使用 *展板更新面板${profileId === 1 ? "" : profileId} 主动查询。`;
+            if (publicFallback) {
+              const absent = namedPanel ? `本地暂无「${name}」的星铁面板` : "本地暂无星铁面板";
+              const notice = `${absent}，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`;
+              let confirmed = false;
+              const accepted = await Promise.resolve().then(() =>
+                context?.reply?.(notice, false, { onDelivered() { confirmed = true; } })).catch(() => false);
+              if (accepted !== true || !confirmed) return `通知发送失败，已取消公开展板回退。可使用 *展板更新面板${profileId === 1 ? "" : profileId} 主动查询。`;
             }
             await verify();
-            const next = await fetchStarRailShowcase(target, signal, undefined, started);
-            snapshot = await showcases.update({ qq, uid }, verify, current => {
+            const next = await fetchStarRailShowcase(target, showcaseSignal, undefined, started);
+            publicSnapshot = await showcases.update({ qq, uid }, verify, current => {
               const previous = managedSnapshot(uid, current, true);
               if (previous?.source === target.provider && previous.updatedAt && Date.parse(previous.updatedAt) > started.getTime()) {
                 return { result: previous };
@@ -423,13 +443,17 @@ export function createStarRailPanel(
               return { document: next, result: next };
             });
           }
+          if (!publicFallback || !namedPanel || (preloadedTheme && findPanelAvatar(publicSnapshot.avatars, name, preloadedTheme))) {
+            snapshot = publicSnapshot;
+            publicLookup = true;
+          }
         } finally {
           refreshing.delete(refreshKey);
         }
       }
 
       if (!snapshot?.avatars.length) {
-        if (type === "reload") await verify();
+        if (type === "reload" || publicFallback) await verify();
         if (type === "relic-list" || type === "practice") {
           await verify();
           if (type === "practice") return `UID ${uid} 暂无星铁角色数据，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
@@ -473,7 +497,7 @@ export function createStarRailPanel(
         const retained = unresolved ? `旧格式有 ${unresolved} 项技能无法确认基础等级，已保留原档对应字段。` : "";
         return `已导出 ${name}（${format}）。${retained}`;
       }
-      const theme = await readTheme();
+      const theme = preloadedTheme ?? await readTheme();
       if (type === "practice") {
         const models = await makePanelPracticeCards(snapshot, theme, signal, command.rarity, legacy);
         await verify();
