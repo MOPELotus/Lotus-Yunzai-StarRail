@@ -85,7 +85,7 @@ function periodText(begin: unknown, end: unknown) {
 function avatar(row: Json, names: NameLookup) {
   const id = number(row.id ?? row.avatar_id);
   return {
-    id, name: text(row.name_mi18n ?? row.name) || names(String(id)) || (id ? `角色 ${id}` : ""),
+    id, name: text(row.name_mi18n) || text(row.name) || names(String(id)) || (id ? `角色 ${id}` : ""),
     icon: text(row.icon, 2048), rarity: number(row.rarity, 5), rank: number(row.rank, 6), level: number(row.level, 100),
   };
 }
