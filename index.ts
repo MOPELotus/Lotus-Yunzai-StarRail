@@ -16,7 +16,7 @@ import { gachaPortraitCharacter, readGachaPlayerArt } from "@lotus-yunzai/gacha/
 import { createStarRailPanelArchive, panelDiscardedAt } from "./panel-discard.ts";
 import { readLegacyPlayerPortrait } from "../../lib/own-role-legacy-artwork.ts";
 import { object } from "./panel-model.ts";
-import { createProfileHoyoClient, HoyoRequestError } from "@lotus-yunzai/hoyo-client";
+import { createProfileHoyoClient, GameRecordRequestError, HoyoRequestError } from "@lotus-yunzai/hoyo-client";
 import { buildStarRailGachaDetail, type StarRailGachaDetailPool } from "./gacha-detail.ts";
 import { renderStarRailGachaDetail } from "./gacha-detail-card.ts";
 import { readStarRailGachaCatalog, readStarRailGachaItems, readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
@@ -27,13 +27,13 @@ import { buildStarRailRecordDetail } from "./gacha-record-detail.ts";
 import { resolveStarRailRecordPool, starRailRecordDraws } from "./gacha-record-source.ts";
 import { buildStarRailRecordSpecial, renderStarRailRecordSpecial } from "./gacha-record-special.ts";
 import { buildStarRailRecordVersion } from "./gacha-record-version.ts";
-import { renderStarRailGachaFailure, renderStarRailGachaResult } from "./gacha-result-card.ts";
+import { renderStarRailGachaFailure, renderStarRailGachaResult, starRailGachaFailureText } from "./gacha-result-card.ts";
 import { readStarRailGachaSchedule, resolveStarRailDetailPool } from "./gacha-schedule.ts";
 import { buildStarRailGachaSpecial, type StarRailGachaSpecialOptions } from "./gacha-special.ts";
 import { renderStarRailGachaSpecial } from "./gacha-special-card.ts";
 import { createStarRailGachaHistoryStore } from "./gacha-store.ts";
 import { createStarRailGachaLinkCommand } from "./gacha-link-command.ts";
-import { createStarRailGachaSync } from "./gacha-sync.ts";
+import { createStarRailGachaSync, StarRailGachaUpdateBusy } from "./gacha-sync.ts";
 import { buildStarRailGachaVersion, type StarRailGachaVersionOptions } from "./gacha-version.ts";
 import { renderStarRailGachaVersion } from "./gacha-version-card.ts";
 
@@ -308,8 +308,13 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     commands: {},
     panelRebuild: panel.rebuild,
     async gachaUpdate(qq: string, profileId: number) {
-      const result = await updateGacha(qq, profileId);
-      return result && { uid: result.log.uid };
+      try {
+        const result = await updateGacha(qq, profileId);
+        return result && { uid: result.log.uid };
+      } catch (error) {
+        if (error instanceof StarRailGachaUpdateBusy) return undefined;
+        throw error;
+      }
     },
     async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
@@ -436,20 +441,22 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         }
       } catch (error) {
         if (signal.aborted) return;
+        if (error instanceof StarRailGachaUpdateBusy) return error.message;
         if (error instanceof ProfileError) {
           if (error.code === "missing" || error.code === "login-required") {
             return `[starrail] 请先登录 profile ${profileId}。`;
           }
           if (error.code === "role-missing") return `[starrail] profile ${profileId} 没有同步星铁 UID。`;
         }
-        const reason = error instanceof HoyoRequestError && error.status === 429 ? "rate-limited"
+        const limited = error instanceof GameRecordRequestError && error.reason === "rate-limited";
+        const reason = limited ? "rate-limited"
           : (error instanceof ProfileError && error.code === "changed") ||
             (error instanceof HoyoRequestError && error.code === "profile-changed") ? "profile-changed" : "request-failed";
         try {
           const { png } = await renderStarRailGachaFailure({ qq, profileId, reason });
           return { type: "image" as const, file: png };
         } catch {
-          return "[starrail] 星铁抽卡记录更新失败，请检查档案登录状态与星铁 UID。";
+          return starRailGachaFailureText(reason);
         }
       }
     },

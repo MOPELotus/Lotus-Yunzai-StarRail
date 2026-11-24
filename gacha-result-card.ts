@@ -13,6 +13,15 @@ const failureMessages = {
   "profile-changed": "更新星铁抽卡历史时档案已变更，请重新发起请求。",
   "request-failed": "星铁抽卡记录更新失败。",
 } as const;
+const failureAdvice = {
+  "rate-limited": "已有记录仍可查询，稍后再更新。",
+  "profile-changed": "确认当前档案和星铁 UID 后重新发起。",
+  "request-failed": "检查档案登录状态与星铁 UID。",
+} as const;
+
+export function starRailGachaFailureText(reason: keyof typeof failureMessages) {
+  return reason === "request-failed" ? `${failureMessages[reason]}${failureAdvice[reason]}` : failureMessages[reason];
+}
 
 interface GachaCardFailure {
   readonly qq: string;
@@ -35,6 +44,6 @@ export function renderStarRailGachaFailure(
   const lead = `QQ ${qq} · Profile ${profileId}\n${failureMessages[reason]}`;
   return renderStatusCard(title, lead, [
     "阶段：profile Cookie / 星铁官方活动接口",
-    "建议：检查 profile 登录状态与星铁 UID；无需 authkey。",
+    `建议：${failureAdvice[reason]}`,
   ], at, options);
 }
