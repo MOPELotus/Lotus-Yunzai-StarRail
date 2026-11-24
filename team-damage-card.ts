@@ -1,3 +1,4 @@
+import { miaoTemplateFont } from "../../lib/game-template-fonts.ts";
 import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
@@ -31,7 +32,7 @@ export interface TeamDamageReport {
 }
 
 const width = 720, inset = 14, innerWidth = width - inset * 2, scale = 4;
-const font = '"Noto Sans CJK SC", "Microsoft YaHei", sans-serif';
+const font = miaoTemplateFont();
 const gold = "#f4ddb2", white = "#fff", header = "#15101cde", body = "#15101cba";
 const maxAsset = 16 * 1024 * 1024;
 type Paint = (ctx: Context) => void;
@@ -65,7 +66,7 @@ function fill(ctx: Context, color: string, x: number, y: number, w: number, h: n
 }
 
 function type(ctx: Context, text: string, x: number, y: number, size: number, color: string, bold = false, align: CanvasTextAlign = "center") {
-  ctx.font = `${bold ? "700 " : ""}${size}px ${font}`;
+  ctx.font = `${bold ? "700 " : ""}${size}px ${bold ? miaoTemplateFont(true) : font}`;
   ctx.fillStyle = color;
   ctx.textBaseline = "middle";
   ctx.textAlign = align;
@@ -102,7 +103,7 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
   const paints: Paint[] = [];
   const lineHeight = (size: number) => Math.round(size * 1.45);
   function lines(value: string, max: number, size: number, bold = false) {
-    measure.font = `${bold ? "700 " : ""}${size}px ${font}`;
+    measure.font = `${bold ? "700 " : ""}${size}px ${bold ? miaoTemplateFont(true) : font}`;
     return wrap(value, max, text => measure.measureText(text).width);
   }
 

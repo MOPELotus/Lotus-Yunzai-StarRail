@@ -1,3 +1,4 @@
+import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { reportResourceProgress, type ResourceProgressCallback } from "../../lib/resource-progress.ts";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
@@ -7,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const targetPath = "data/starrail/challenge-theme";
 const installedCheckout = new URL("../../", import.meta.url);
-const defaultTheme = fileURLToPath(new URL(targetPath + "/", installedCheckout));
+const defaultTheme = builtinResourceDirectory("templates/starrail-challenge");
 const backdropRoots = ["plugins/Lotus-ReFactor/resources/starrail-abyss", "plugins/Lotus-Plugin/resources/starrail-abyss"];
 const portraitsRoot = "plugins/miao-plugin/resources/meta-sr/character";
 const maxPortraitBytes = 4 * 1024 * 1024;

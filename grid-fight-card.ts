@@ -1,3 +1,4 @@
+import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { loadOfficialArtwork } from "@lotus-yunzai/account";
@@ -32,7 +33,7 @@ const staticArt = {
 } as const;
 type StaticArt = keyof typeof staticArt;
 
-const defaultTheme = fileURLToPath(new URL("../../data/starrail/grid-fight-theme/", import.meta.url));
+const defaultTheme = builtinResourceDirectory("games/starrail-grid");
 type ArtTransport = NonNullable<Parameters<typeof loadOfficialArtwork>[1]>["transport"];
 
 async function readArtwork(model: GridFightCard, directory: string, signal: AbortSignal, transport?: ArtTransport) {
@@ -121,7 +122,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
   const footer = layout.length ? nextSection + 6 : firstSection + 131;
   const height = footer + 62;
   let face = '"Noto Sans CJK SC", serif';
-  for (const path of [join(directory, "../common/font/SR.ttf"), join(fontTheme, "common/font/SR.ttf")]) {
+  for (const path of [join(directory, "SR.ttf"), join(directory, "../common/font/SR.ttf"), join(fontTheme, "common/font/SR.ttf")]) {
     try {
       face = registerGachaThemeFont("StarRailGridFight", path) + ", " + face;
       break;

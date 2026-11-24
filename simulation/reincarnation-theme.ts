@@ -1,3 +1,4 @@
+import { builtinResourceDirectory } from "../../../lib/builtin-resources.ts";
 import { reportResourceProgress, type ResourceProgressCallback } from "../../../lib/resource-progress.ts";
 import { createHash } from "node:crypto";
 import { link, lstat, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
@@ -16,7 +17,7 @@ type Entry = (typeof reincarnationOriginals)[number];
 type Download = (url: string, init: RequestInit) => Promise<Response>;
 
 export function starRailReincarnationThemeDirectory() {
-  return Bun.env.LOTUS_STAR_RAIL_WARP_THEME_DIR?.trim() || fileURLToPath(new URL(assetRoot, installed));
+  return Bun.env.LOTUS_STAR_RAIL_WARP_THEME_DIR?.trim() || builtinResourceDirectory("games/starrail-reincarnation");
 }
 
 async function file(root: string, path: string, maximum: number, signal?: AbortSignal) {

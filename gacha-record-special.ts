@@ -1,3 +1,4 @@
+import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { fileURLToPath } from "node:url";
 import {
   renderGachaSpecialCard, type GachaSpecialCardOptions, type GachaSpecialMetric,
@@ -22,7 +23,7 @@ const pools = [
 const dateFormat = new Intl.DateTimeFormat("sv-SE", {
   timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
 });
-const defaultGenshinResources = fileURLToPath(new URL("../../data/starrail/genshin-theme", import.meta.url));
+const defaultGenshinResources = builtinResourceDirectory("games/genshin");
 
 type Pool = typeof pools[number];
 type ResolvePool = (draw: StarRailRecordDraw) => { readonly isUp?: boolean } | undefined;

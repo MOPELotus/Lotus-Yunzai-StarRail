@@ -1,10 +1,11 @@
+import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { fileURLToPath } from "node:url";
 import { renderGachaSpecialCard, type GachaSpecialCardOptions, type GachaSpecialMetric } from "@lotus-yunzai/skia/genshin-gacha-special";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
 import type { StarRailGachaSpecialModel } from "./gacha-special.ts";
 
 type Pool = StarRailGachaSpecialModel["pools"][number];
-const defaultGenshinResources = fileURLToPath(new URL("../../data/starrail/genshin-theme", import.meta.url));
+const defaultGenshinResources = builtinResourceDirectory("games/genshin");
 
 function metrics(pool: Pool): readonly (readonly GachaSpecialMetric[])[] {
   // The API only supplies real five-star rows and aggregate counts. Extremes need the full visible list.

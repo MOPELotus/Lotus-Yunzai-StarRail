@@ -1,3 +1,5 @@
+import { genshinTemplateFont } from "../../../lib/game-template-fonts.ts";
+import { builtinResourceDirectory } from "../../../lib/builtin-resources.ts";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadOfficialArtwork } from "@lotus-yunzai/account";
@@ -11,7 +13,7 @@ const width = 550;
 const titleColor = "#a57f72";
 const resultColor = "#91837a";
 const border = "#d9d3c7";
-const defaultTheme = fileURLToPath(new URL("../../../data/starrail/genshin-theme/", import.meta.url));
+const defaultTheme = builtinResourceDirectory("games/genshin");
 const skillPattern = /\.skill\s*\{[^}]*data:image\/png;base64,([A-Za-z0-9+/=]+)\)/u;
 type Options = StarRailCardOptions & {
   readonly themeDirectory?: string;
@@ -105,7 +107,7 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
   if (bottom > 7_800) throw new Error("星铁养成卡超出单张图片容量。");
   const image = (url?: string) => url ? images.get(url) : undefined;
 
-  const face = [font, '"Noto Sans CJK SC"', "sans-serif"].filter(Boolean).join(", ");
+  const face = [font, genshinTemplateFont()].filter(Boolean).join(", ");
   function paint(ctx: CanvasRenderingContext2D) {
     const write = styles(ctx, { body: face, title: face });
     const fitted = (text: string, x: number, y: number, size: number, max: number, color: string, bold = false) => {
