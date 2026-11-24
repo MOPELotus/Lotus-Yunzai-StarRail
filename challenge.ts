@@ -7,17 +7,17 @@ import { readStarRailRecordItems, starRailGachaThemeDirectory } from "./gacha-de
 
 export async function queryStarRailChallenge(
   qq: string, query: ChallengeQuery, profiles: ReturnType<typeof createProfileStore>,
-  client: ReturnType<typeof createProfileHoyoClient>, signal: AbortSignal,
+  client: Pick<ReturnType<typeof createProfileHoyoClient>, "fetchStarRailChallenge">, signal: AbortSignal,
   isNapCat?: (signal: AbortSignal) => Promise<boolean>,
   inlineImageByteLimit?: number,
 ) {
   const { profileId } = query;
   try {
-    const source = await profiles.requestContext(qq, profileId, "sr");
+    const source = await profiles.requestSelectedContext(qq, profileId, "sr");
     const { records, revision } = await client.fetchStarRailChallenge(source, { ...query, signal });
     const current = async () => {
       signal.throwIfAborted();
-      const latest = await profiles.requestContext(qq, profileId, "sr").catch(() => undefined);
+      const latest = await profiles.requestSelectedContext(qq, profileId, "sr").catch(() => undefined);
       return latest !== undefined && latest.revision === revision && latest.role.uid === source.role.uid && latest.role.region === source.role.region;
     };
     if (!await current()) return "星铁档案已变更，请重新查询。";
