@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
 import { normalizePanel, readLegacyPanel, readStarRailExtraEidolon, type PanelAvatar } from "../panel-model.ts";
+import { makePanelDetailCard, readTheme } from "../panel-card.ts";
+import { builtinResourceDirectory } from "../../../lib/builtin-resources.ts";
 import { parseEquipmentChange } from "../panel-equipment.ts";
 import { calculateStarRailPersonalDamage } from "../panel-damage.ts";
 import physical from "./fixtures/panel-damage-physical-imaginary.json";
@@ -43,3 +45,36 @@ for (const [id, fixtures, title] of [["1204",additional,"30层神君单体伤害
     if (id === "1204") expect(changed.rows.some(row=>row.title==="10层神君单体伤害")).toBe(false);
   });
 }
+
+
+test("官方ex_ranks数组通过归一化进入真实奇缘伤害及面板投影，普通星魂与角色身份不变", async () => {
+  const fixture = additional.find(entry => entry.avatar.id === "1204")!;
+  const row = { id: 1204, name: "景元", level: 80, rank: 2, ex_ranks: [{ id: 120401 }] };
+  const official = normalizePanel("100000001", [row]).avatars[0]!;
+  expect([official.id, official.name, official.rank, official.exCons]).toEqual(["1204", "景元", 2, 1]);
+  expect(readStarRailExtraEidolon({ ex_ranks: [{ id: "120401" }] }, "1204")).toBe(1);
+  for (const ex_ranks of [[], [{}], [{ id: 0 }], [{ id: -1 }], [{ id: "" }]])
+    expect(readStarRailExtraEidolon({ ex_ranks }, "1204")).toBe(0);
+  expect(readStarRailExtraEidolon({ ex_ranks: [{ id: 120401 }, { id: 120401 }] }, "1204")).toBe(1);
+  expect(readStarRailExtraEidolon({ ex_ranks: [{}, { id: 120401 }] }, "1204")).toBe(0);
+  expect(readStarRailExtraEidolon({ ex_ranks: [{ id: 120401, is_activated: false }] }, "1204")).toBe(0);
+  expect(readStarRailExtraEidolon({ ex_ranks: [{ id: 120401, is_unlocked: false }] }, "1204")).toBe(0);
+  expect(readStarRailExtraEidolon({ exCons: 0, ex_ranks: [{ id: 120401 }] }, "1204")).toBe(0);
+  const unchanged = { ...structuredClone(fixture.avatar), rank: official.rank } as PanelAvatar;
+  const avatar: PanelAvatar = { ...unchanged, exCons: official.exCons };
+  const { setNames, ...metadata } = fixture.metadata;
+  const sets = new Map(Object.entries(setNames));
+  const options = { ...metadata, setForId: (key: string) => sets.get(key) };
+  const before = calculateStarRailPersonalDamage(unchanged, options)!;
+  const after = calculateStarRailPersonalDamage(avatar, options)!;
+  expect(before.rows.some(row => row.title === "30层神君单体伤害")).toBe(false);
+  expect(after.rows.find(row => row.title === "30层神君单体伤害")?.average).toBeGreaterThan(0);
+  const snapshot = { ...normalizePanel("100000001", [row]), avatars: [avatar] };
+  const model = await makePanelDetailCard(snapshot, avatar, await readTheme(builtinResourceDirectory("games/miao")),
+    new AbortController().signal, { localOnly: true, builtInPortraitOnly: true });
+  expect(model.data).toMatchObject({ name: "景元", cons: unchanged.rank, exCons: 1 });
+  expect(model.data.imgs.consEx).toContain("cons-ex.webp");
+  expect(avatar.id).toBe(unchanged.id);
+  expect(avatar.skills).toEqual(unchanged.skills);
+  expect(unchanged.exCons).toBeUndefined();
+});

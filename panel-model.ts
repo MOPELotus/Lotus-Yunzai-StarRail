@@ -288,6 +288,11 @@ export function readStarRailExtraEidolon(row: Json, characterId: string): number
   for (const key of ["exRankList", "exRankIdList", "ex_rank_list"]) {
     if (Array.isArray(row[key])) return Math.min(6, new Set(row[key] as unknown[]).size);
   }
+  // Official Myspanel returns owned extra-eidolon records, not the keyed legacy map.
+  if (Array.isArray(row.ex_ranks)) {
+    const first = object(row.ex_ranks[0]);
+    return id(first?.id) && first?.is_activated !== false && first?.is_unlocked !== false ? 1 : 0;
+  }
   const ranks = object(row.ex_ranks);
   if (ranks) return Math.min(6, Object.keys(ranks).length);
   if (!["1204", "1213", "1308"].includes(characterId)) return 0;
