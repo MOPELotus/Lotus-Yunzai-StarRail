@@ -1,4 +1,4 @@
-// Layout follows the MIT Miao rank-profile-list HTML/CSS at 28607618.
+// Layout follows the MIT Miao rank-profile-list HTML/CSS; extra Eidolon border matches 87b09ace.
 import type { CanvasRenderingContext2D as Context, Image } from "skia-canvas";
 import { groupPanelNumber, maxGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
@@ -150,8 +150,20 @@ export async function renderStarRailRelicRank(
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-    function pill(value: string | number, color: string, x: number, y: number, w: number) {
+    function pill(value: string | number, color: string, x: number, y: number, w: number, extraEidolon = false) {
       fill(ctx, color, x, y, w, 15, 4);
+      if (extraEidolon) {
+        // Original .cons.has-ex-cons::before: 135deg rainbow, 1.5px inset border, 4px corners.
+        const gradient = ctx.createLinearGradient(x, y, x + w, y + 15);
+        ["#ff3366", "#ff9933", "#ffe600", "#33cc99", "#3399ff", "#cc33ff"].forEach((color, index) =>
+          gradient.addColorStop(index / 5, color));
+        ctx.save();
+        rounded(ctx, x + .75, y + .75, w - 1.5, 13.5, 3.25);
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
       write(value, x + w / 2, y + 8, 12, white, "center");
     }
     function cell(value: string, x: number, y: number, size: number, color: string, width: number) {
@@ -211,7 +223,7 @@ export async function renderStarRailRelicRank(
           write(index + 1, 39, y + 30, 12, white, "center");
         }
         framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, face, true);
-        if (known?.rank !== undefined) pill(known.rank, soulColors[known.rank] ?? "#666", layout.nameX, y + 13, 16);
+        if (known?.rank !== undefined) pill(known.rank, soulColors[known.rank] ?? "#666", layout.nameX, y + 13, 16, (known.exCons ?? 0) > 0);
         write(known?.name || row.characterName || character?.name || "", layout.nameX + (known?.rank === undefined ? 0 : 18), y + 21, 18, gold,
           "left", true, false, layout.talentX - layout.nameX - 19);
         write(row.uid, layout.nameX, y + 42, 12, white);

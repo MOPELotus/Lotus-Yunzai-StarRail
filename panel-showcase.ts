@@ -1,3 +1,4 @@
+import { readStarRailExtraEidolon } from "./panel-model.ts";
 import type { GameRole } from "@lotus-yunzai/account";
 import { normalizeStarRailRegion } from "./region.ts";
 import { canonicalStarRailPanelCharacter, id, object, readLegacyPanel, whole, type PanelSnapshot, type ShowcaseProvider } from "./panel-model.ts";
@@ -111,7 +112,7 @@ function normalizeAvatar(input: unknown, provider: ShowcaseProvider) {
   }
   const equip = object(row.equipment);
   const equipId = id(avocado ? equip?.id : equip?.tid);
-  return { original, id: avatarId, name: `角色 ${avatarId}`, _source: source, level, promote: whole(row.promotion, 6), cons: whole(row.rank, 6) ?? 0,
+  return { original, id: avatarId, name: `角色 ${avatarId}`, _source: source, level, promote: whole(row.promotion, 6), cons: whole(row.rank, 6) ?? 0, exCons: readStarRailExtraEidolon(row, original),
     weapon: equipId ? { id: equipId, level: whole(equip?.level, 80), promote: whole(equip?.promotion, 6), affix: whole(equip?.rank, 5) } : undefined,
     talent, trees: skillRows.length ? trees : undefined, artis: normalizeRelics(avocado ? row.relics : row.relicList, avocado) };
 }

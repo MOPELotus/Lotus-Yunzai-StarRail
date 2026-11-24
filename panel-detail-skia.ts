@@ -17,6 +17,13 @@ const attributeLabels = [
   ["cpct", "暴击率", 5], ["cdmg", "暴击伤害", 6], ["dmg", "伤害加成", 8], ["stance", "击破特攻", 4],
   ["effPct", "效果命中", 11], ["effDef", "效果抵抗", 12], ["heal", "治疗加成", 9], ["joy", "欢愉度", 13],
 ] as const;
+// Calculation snapshots retain full precision; the original panel displays short decimal values.
+function panelStat(value: string | undefined) {
+  if (!value || !/^[+-]?[\d,]+\.\d{3,}%?$/u.test(value)) return value;
+  const number = Number(value.replaceAll(",", "").replace(/%$/u, ""));
+  if (!Number.isFinite(number)) return value;
+  return number.toLocaleString("en-US", { useGrouping: value.includes(","), maximumFractionDigits: 1 }) + (value.endsWith("%") ? "%" : "");
+}
 const skillNames = { a: "普攻", e: "战技", t: "天赋", q: "爆发", me: "忆灵技", mt: "忆灵天赋", xe: "欢愉技" } as const;
 const rankColors: Readonly<Record<string, string>> = { ACE: "#e85656", MAX: "#e85656", SSS: gold, SS: gold, S: "#d699ff", A: "#d699ff" };
 const relicShortTitles: Readonly<Record<string, string>> = {
@@ -176,13 +183,15 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
         fill(ctx, "#0008", 383.5, y + 7, 30, 18, 5);
         text(weight, 398.5, y + 16, 12, weight >= 80 ? gold : white, "center");
       }
-      text(attr[key], 502, y + 16, 17, white, "right");
+      text(panelStat(attr[key]), 502, y + 16, 17, white, "right");
       fill(ctx, "#0003", 512.3, y, 67.7, 32);
-      text(attr[key + "Base"], 570, y + 11, 12, attr[key + "Base"] === "0.0%" ? "#bbb9" : "#eee", "right");
-      text(attr[key + "Plus"], 570, y + 24, 12, "#90e800", "right");
+      text(panelStat(attr[key + "Base"]), 570, y + 11, 12, attr[key + "Base"] === "0.0%" ? "#bbb9" : "#eee", "right");
+      text(panelStat(attr[key + "Plus"]), 570, y + 24, 12, "#90e800", "right");
     });
     ctx.restore();
-    for (let i = 1; i <= 6; i++) icon(data.imgs[`cons${i}`], 15 + (i - 1) * 40, 465, 50, 50, i <= Number(data.cons));
+    const extra = Boolean(data.imgs.consEx);
+    for (let i = 1; i <= 6; i++) icon(data.imgs[`cons${i}`], 15 + (i - 1) * 40, extra ? 420 : 465, 50, 50, i <= Number(data.cons));
+    if (extra) icon(data.imgs.consEx, 15, 468, 50, 50, data.exCons > 0);
     text([`数据源：${data.dataSource}`, data.updateTime].filter(Boolean).join("  "), 585, 520, 12, "#fffd", "right", false, false, 560);
 
     const extras = model.hsr_paths === "记忆" ? ["me", "mt"] as const : model.charWeapon === "欢愉" ? ["xe"] as const : [];

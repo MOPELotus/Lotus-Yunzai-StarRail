@@ -337,4 +337,12 @@ export default {
       check: ({ attr, calc, params }) => ((params.entryJoy ?? calc(attr.joy!)) as number) >= 40
     }]
   },
+  贪噬禁果的异端: {
+    2: attr('cdmg', 16),
+    4: { title: '使装备者普攻造成的伤害提高[aDmg]%。当装备者施放普攻时，使装备者的攻击力提高[atkPct]%', data: { aDmg: 36, atkPct: 20 } }
+  },
+  戏梦点星的伶人: {
+    2: attr('speedPct', 6),
+    4: { check: ({ params }) => Number(params.certifiedBanger) >= 10, title: '若装备者持有的好活当赏大于等于10点，则使我方全体目标的暴击伤害提高[cpct]%', data: { cpct: 12 } }
+  },
 } satisfies Record<string, Record<number, Buff | Buff[]>>

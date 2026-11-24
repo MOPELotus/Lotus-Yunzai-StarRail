@@ -44,7 +44,7 @@ type EquipmentCommand = {
   name: string;
   profileId: number;
   scenario: number | undefined;
-  equipment: DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number } | { skillLevels: CoreSkillLevels } | { namedCone: string };
+  equipment: ({ extraEidolon: 0 | 1 } | DonorEquipment | Superimposition | { eidolon: number } | { relicSets: string[] } | { fullTraces: true; eidolon?: number } | { level: number; eidolon?: number } | { level: number; fullTraces: true; eidolon?: number } | { skillLevels: CoreSkillLevels } | { namedCone: string }) & { extraEidolon?: 0 | 1 };
 };
 
 export function parseEquipmentChange(message: string): EquipmentCommand | undefined {
@@ -64,6 +64,13 @@ export function parseEquipmentChange(message: string): EquipmentCommand | undefi
 
   const command = { type: mode === "伤害" ? "damage" as const : "detail" as const, name, profileId,
     scenario: scenario === undefined ? undefined : Number(scenario) };
+  const extra = /(无|没有|关闭)?(?:奇缘星魂|奇缘)/u.exec(request);
+  if (extra) {
+    const remaining = request.replace(extra[0], "").replace(/^换|换$/gu, "").trim();
+    const previous = remaining ? parseEquipmentChange(message.replace(request, remaining)) : undefined;
+    if (remaining && !previous) return;
+    return { ...(previous ?? command), equipment: { ...previous?.equipment, extraEidolon: extra[1] ? 0 as const : 1 as const } };
+  }
   const segments = request.split("换").map(segment => segment.trim());
   if (request.includes("满行迹") && eidolonToken.test(request)) {
     const equipment = readFullCharacterPreview(segments);

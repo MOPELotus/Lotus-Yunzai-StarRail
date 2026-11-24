@@ -133,6 +133,7 @@ export interface PanelAvatar {
   rarity?: number;
   level?: number;
   rank?: number;
+  exCons?: number;
   path: string;
   face: string;
   splash: string;
@@ -279,6 +280,23 @@ export function canonicalStarRailPanelCharacter(original: string, enhanced: bool
   const transformed = `2${original.slice(1)}`;
   return enhanced && enhancedIds.has(original) && mappedNames[transformed] ? transformed : original;
 }
+/** Extra eidolons are independent from ordinary rank and never imply a higher skill level. */
+export function readStarRailExtraEidolon(row: Json, characterId: string): number {
+  for (const key of ["exCons", "ex_rank", "extra_rank", "ex_cons"]) {
+    if (row[key] !== undefined && row[key] !== null) return whole(row[key], 6) ?? 0;
+  }
+  for (const key of ["exRankList", "exRankIdList", "ex_rank_list"]) {
+    if (Array.isArray(row[key])) return Math.min(6, new Set(row[key] as unknown[]).size);
+  }
+  const ranks = object(row.ex_ranks);
+  if (ranks) return Math.min(6, Object.keys(ranks).length);
+  if (!["1204", "1213", "1308"].includes(characterId)) return 0;
+  const point = characterId + "01";
+  const skills = [...array(row.skills), ...array(row.skillTreeList), ...array(row.behaviorList)];
+  return skills.some(skill => String(skill.point_id ?? skill.pointId ?? skill.id) === point &&
+    skill.is_activated !== false && (skill.is_activated === true || (whole(skill.level, 25) ?? 0) > 0)) ? 1 : 0;
+}
+
 function officialAvatar(row: Json): PanelAvatar | undefined {
   const original = id(row.id);
   const level = whole(row.level, 80);
@@ -296,7 +314,7 @@ function officialAvatar(row: Json): PanelAvatar | undefined {
   const allSkills = [...skillRows, ...array(object(row.servant_detail)?.servant_skills)];
   const seen = new Set();
   return {
-    id: avatarId, name, level, rank: whole(row.rank, 6), rarity: whole(row.rarity, 5),
+    id: avatarId, name, level, rank: whole(row.rank, 6), exCons: readStarRailExtraEidolon(row, avatarId), rarity: whole(row.rarity, 5),
     element: elements[rawElement] ?? rawElement, path: text(row.avatar_path ?? row.path), face: safeArt(row.icon ?? row.image),
     splash: safeArt(row.large_icon ?? row.image), stats: array(row.properties).slice(0, 45).flatMap(row => property(row, true) ?? []),
     skills: allSkills.flatMap(row => readOfficialPanelSkill(row) ?? []).filter(row => !seen.has(row.key) && Boolean(seen.add(row.key))),
@@ -356,7 +374,7 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
     const stamp = typeof row._time === "string" ? Date.parse(row._time)
       : typeof row._time === "number" && Number.isSafeInteger(row._time) && row._time >= 1e9 && row._time <= 9_999_999_999_999
         ? (row._time < 1e11 ? row._time * 1000 : row._time) : NaN;
-    parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), element: text(row.elem), path: "", face: "", splash: "",
+    parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), exCons: readStarRailExtraEidolon(row, avatarId), element: text(row.elem), path: "", face: "", splash: "",
       skills, traces, stars: [], stats: [], legacy: { source, promote: whole(row.promote, 6), updatedAt: Number.isFinite(stamp) ? new Date(stamp).toISOString() : undefined,
         dataComplete: Array.isArray(row.trees) && relics.length === legacyParts.length }, cone: gear && coneId ? { id: coneId, name: text(gear.name), image: "", description: "",
         rank: whole(gear.affix, 5), level: whole(gear.level, 80), promote: whole(gear.promote, 6) } : undefined, relics });

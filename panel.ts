@@ -609,6 +609,11 @@ export function createStarRailPanel(
             temporary = replacement.avatar;
             labels.unshift(replacement.label);
           }
+          if (change.extraEidolon !== undefined) {
+            if (!["1204", "1213", "1308"].includes(temporary.id)) return `「${temporary.name}」暂无奇缘星魂资料。`;
+            temporary = { ...temporary, exCons: change.extraEidolon };
+            labels.push(`临时奇缘星魂 · ${change.extraEidolon ? "开启" : "关闭"}`);
+          }
           if ("fullTraces" in change) {
             const replacement = changePanelFullTraces(temporary, equipmentMetadata?.character.tree);
             if ("error" in replacement) {

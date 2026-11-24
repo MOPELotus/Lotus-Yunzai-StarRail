@@ -8,7 +8,7 @@ import { lockFile } from "../../../lib/file-lock.ts";
 import { createStarRailGroupRelicRank, matchStarRailRelicRank, parseStarRailRelicRank, resolveStarRailRelicRank, type StarRailGroupRankContext } from "../group-relic-rank.ts";
 import { readPanelRankAvatar, readTheme } from "../panel-card.ts";
 import { createStarRailPanelArchive, discardedStarRailPanel } from "../panel-discard.ts";
-import { parsePanelCommand } from "../panel-model.ts";
+import { normalizePanel, parsePanelCommand } from "../panel-model.ts";
 import { createStarRailPanel } from "../panel.ts";
 import { fetchStarRailShowcase, showcaseTarget } from "../panel-showcase.ts";
 
@@ -598,4 +598,26 @@ test("projects public gear, original talent levels, and absent damage into the o
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+
+test("奇缘星魂随群榜投影保留，普通星魂数字不叠加", async () => {
+  const root = await mkdtemp(join(tmpdir(), "lotus-sr-rank-extra-eidolon-"));
+  try {
+    const characters = { 1204: { name: "景元", weapon: "智识" },
+      1213: { name: "丹恒·饮月", weapon: "毁灭" }, 1308: { name: "黄泉", weapon: "虚无" } };
+    await mkdir(join(root, "meta-sr/character"), { recursive: true });
+    await writeFile(join(root, "meta-sr/character/data.json"), JSON.stringify(characters));
+    const theme = await readTheme(root);
+    for (const exCons of [undefined, 0, 1]) {
+      const snapshot = normalizePanel(uid42, Object.entries(characters).map(([id, character]) => ({
+        id, name: character.name, level: 80, rank: 2, rarity: 5, exCons, skills: [], relics: [],
+      })));
+      for (const avatar of snapshot.avatars) {
+        const row = await readPanelRankAvatar(avatar, theme);
+        expect(row.rank).toBe(2);
+        expect(row.exCons).toBe(exCons ?? 0);
+      }
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

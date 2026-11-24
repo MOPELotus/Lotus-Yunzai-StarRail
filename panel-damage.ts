@@ -716,7 +716,7 @@ function originalDamage(
     throw new MissingDamageData("缺少套装所需的效果命中属性");
   }
   const buffs = [...(rule.buffs ?? []), ...weaponBuffs, ...relics.effects].sort((a, b) => (a.sort ?? 1) - (b.sort ?? 1));
-  const meta = { characterName: character.name, cons: rank, level, trees, talent, weapon };
+  const meta = { characterName: character.name, cons: rank, exCons: avatar.exCons ?? 0, level, trees, talent, weapon };
   const defaultParams = (typeof rule.defParams === "function" ? rule.defParams(meta as unknown as Variables) : rule.defParams) ?? {};
 
   function calculate(detail: Rule["details"][number], incAttr = "", reduceAttr = ""): DamageRow | undefined {

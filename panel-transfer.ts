@@ -59,7 +59,7 @@ function transferAvatar(value: unknown): PanelAvatar | undefined {
       subs: array(row.subs).slice(0, 4).flatMap(part => transferStat(part) ?? []), legacyMainId: main, legacySubIds: subs }];
   });
   return {
-    id: key, name, level, rank: whole(row.rank, 6), rarity: nonEmpty(row.rarity, 5),
+    id: key, name, level, rank: whole(row.rank, 6), exCons: whole(row.exCons, 6) ?? 0, rarity: nonEmpty(row.rarity, 5),
     element: text(row.element, 20), path: text(row.path, 20), face: art(row.face), splash: art(row.splash), skills, traces,
     stars: array(row.stars).slice(0, 6).map(star => ({ image: art(star.image), active: star.active === true })),
     stats: array(row.stats).slice(0, 45).flatMap(stat => transferStat(stat) ?? []), relics,

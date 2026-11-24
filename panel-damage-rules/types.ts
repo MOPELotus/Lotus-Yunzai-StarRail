@@ -18,6 +18,7 @@ export type Variables = {
   calc: (attr: BaseAttr | number) => number;
   talent: SkillValues;
   cons: number;
+  exCons?: number;
   trees: Record<string, boolean>;
   params: Params;
   artis: Numbers;
@@ -96,7 +97,7 @@ export type EngineAttr = Record<string, unknown> & {
   fykx: number;
   refine: number;
 };
-export type DamageMetadata = Pick<Variables, "characterName" | "cons" | "level" | "talent" | "trees" | "weapon"> & { mastery?: string };
+export type DamageMetadata = Pick<Variables, "characterName" | "cons" | "exCons" | "level" | "talent" | "trees" | "weapon"> & { mastery?: string };
 export type DamageTag = string | false;
 export type DynamicDamage = Partial<Record<"dynamicDmg" | "dynamicPhy" | "dynamicCpct" | "dynamicCdmg" | "dynamicEnemydmg", number>>;
 export type CalcArgs = {

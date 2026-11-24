@@ -253,7 +253,7 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
       chars.push(...await Promise.all(avatars.slice(offset, Math.min(offset + 8, end)).map(async ({ avatar, name, abbr, star }) => ({
         face: (qFace && await localArt(theme, ["character", name, "imgs", "face-q.webp"]))
           || await localArt(theme, ["character", name, "imgs", "face.webp"]) || await remoteArt(avatar.face, artSignal),
-        abbr, star: star ?? "", cons: avatar.rank ?? "—", isNew: updated,
+        abbr, star: star ?? "", cons: avatar.rank ?? "—", exCons: avatar.exCons ?? 0, isNew: updated,
       }))));
     }
     pages.push(preparedModel(theme, "profile-list", {
@@ -329,7 +329,7 @@ export async function makePanelPracticeCards(snapshot: PanelSnapshot, theme: Met
     const relics = await Promise.all([...setCounts].flatMap(([set, count]) => count >= 2
       ? [localArt(theme, ["artifact", set, theme.relicSets.get(set)?.outer ? "arti-1.webp" : "arti-5.webp"])] : []));
     rows.push({
-      id: avatar.id, name: abbr, star, level: avatar.level, cons: avatar.rank, talent, talentSum, weapon,
+      id: avatar.id, name: abbr, star, level: avatar.level, cons: avatar.rank, exCons: avatar.exCons ?? 0, talent, talentSum, weapon,
       face: await localArt(theme, ["character", name, "imgs", "face.webp"]),
       relics: relics.filter(Boolean),
       rating: rating && { mark: rating.mark, markClass: rating.markClass },
@@ -503,6 +503,7 @@ export async function makePanelDetailCard(
   const completeSkills = Object.entries({ a: 6, e: 10, q: 10, t: 10 }).every(([key, level]) =>
     (talent[key]?.original ?? (!avatar.rank ? talent[key]?.level : undefined)) === level);
   const traceIds = new Set(avatar.traces.filter(trace => trace.active).map(trace => trace.id.slice(-3)));
+  imgs.consEx = await localArt(theme, ["character", name, "imgs", "cons-ex.webp"]);
   const special = avatar.rank === 6 || score?.markClass === "ACE" || score?.markClass === "MAX" ||
     (completeSkills && ["101", "102", "103", "201", "202", "203", "204", "205", "206", "207", "208", "209", "210"].every(id => traceIds.has(id)));
   const { src, original } = await panelPortrait(theme, avatar, name, artSignal, special, builtInPortraitOnly);
@@ -552,7 +553,7 @@ export async function makePanelDetailCard(
     scale: 1.6, viewport: { width: 600, height: 900 }, damageRows, damageAuthor: damage?.createdBy,
     trialTitleMode: previewDamage?.trialTitleMode, original,
     data: {
-      name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", imgs, talent, treeData,
+      name, abbr, level: avatar.level ?? "—", cons: avatar.rank ?? "—", exCons: avatar.exCons ?? 0, imgs, talent, treeData,
       weapon: cone && { name: weaponName, splash: weaponImg, level: cone.level ?? "—", affix: cone.rank ?? "—",
         ...coneDetails(cone, coneMeta, theme.commaGroup) },
       dataSource: sourceLabel ?? equipmentLabel ?? (source || fieldsSource(snapshot)), updateTime: detailTime(avatar.legacy?.updatedAt ?? snapshot.updatedAt),
@@ -647,7 +648,7 @@ export async function readPanelRankAvatar(avatar: PanelAvatar, theme: Metadata, 
     }
   }
   return {
-    name: name.length < 4 ? name : abbr, element, path, rarity: avatar.rarity ?? whole(meta?.star, 5), rank: avatar.rank, lightCone, talents, sets, damage,
+    name: name.length < 4 ? name : abbr, element, path, rarity: avatar.rarity ?? whole(meta?.star, 5), rank: avatar.rank, exCons: avatar.exCons ?? 0, lightCone, talents, sets, damage,
     face: await localArt(theme, ["character", name, "imgs", "face.webp"]),
   };
 }
