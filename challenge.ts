@@ -26,14 +26,28 @@ export async function queryStarRailChallenge(
     const lookup = await readStarRailRecordItems(themeDirectory).catch(() => undefined);
     const bundledNames: Readonly<Record<string, string>> = characterNames;
     const results = normalizeStarRailChallenge(records, query, (id) => lookup?.(id)?.name || bundledNames[id]);
+    async function render(page: typeof results) {
+      const checkNapCat = isNapCat && query.period === "recent" && page[0]?.peak.length === 3 ? () => isNapCat(signal) : undefined;
+      try {
+        const { png } = await renderStarRailAbyss({ uid, results: page }, signal, checkNapCat,
+          { themeDirectory, resolveItem: lookup }, inlineImageByteLimit);
+        return { type: "image" as const, file: png };
+      } catch {
+        return makeChallengeText(uid, page);
+      }
+    }
+
+    const peakHistory = query.period === "recent" && results.length === 1 && results[0]?.kind === "peak" ? results[0] : undefined;
     let reply;
-    try {
-      const peak = results.length === 1 && results[0]?.kind === "peak" ? results[0].peak : undefined;
-      const checkNapCat = isNapCat && query.period === "recent" && peak?.length === 3 ? () => isNapCat(signal) : undefined;
-      const { png } = await renderStarRailAbyss({ uid, results }, signal, checkNapCat, { themeDirectory, resolveItem: lookup }, inlineImageByteLimit);
-      reply = { type: "image" as const, file: png };
-    } catch {
-      reply = makeChallengeText(uid, results);
+    if (peakHistory && peakHistory.peak.length > 3) {
+      const nodes: Array<Awaited<ReturnType<typeof render>>> = [`星铁往期异相仲裁 · UID ${uid} · ${peakHistory.peak.length} 期`];
+      for (let start = 0; start < peakHistory.peak.length; start += 3) {
+        signal.throwIfAborted();
+        nodes.push(await render([{ ...peakHistory, peak: peakHistory.peak.slice(start, start + 3) }]));
+      }
+      reply = { type: "forward" as const, nodes, batchSize: 1 };
+    } else {
+      reply = await render(results);
     }
     if (!await current()) return "星铁档案已变更，请重新查询。";
     return reply;

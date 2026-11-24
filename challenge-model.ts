@@ -11,6 +11,9 @@ const aliases: Record<string, StarRailChallengeKind> = {
   异相仲裁: "peak", 异乡: "peak", 异相: "peak", 异向: "peak", 仲裁: "peak",
 };
 const coreKinds = ["hall", "story", "boss"] as const;
+const rotation = ["boss", "story", "hall"] as const;
+const rotationStart = Date.parse("2024-06-24T04:00:00+08:00");
+const rotationPeriodMs = 14 * 24 * 60 * 60 * 1000;
 export type ChallengeQuery = NonNullable<ReturnType<typeof parseChallengeQuery>>;
 
 export function parseChallengeQuery(message: string) {
@@ -95,8 +98,8 @@ function node(row: Json | undefined, label: string, names: NameLookup) {
   const buff = object(row.buff);
   const value = {
     label, score: number(row.score), round: number(row.round_num), defeated: flag(row.boss_defeated),
-    time: dateText(row.challenge_time ?? row.challengeTime, true),
-    buff: [text(buff?.name_mi18n ?? buff?.name), text(buff?.desc_mi18n, 240)].filter(Boolean).join("："),
+    time: dateText(row.challenge_time, true) || dateText(row.challengeTime, true),
+    buff: [text(buff?.name_mi18n) || text(buff?.name), text(buff?.desc_mi18n, 240)].filter(Boolean).join("："),
     avatars: items(row.avatars).slice(0, 8).map(row => avatar(row, names)),
   };
   if (value.score !== "" || value.round !== "" || value.defeated !== undefined || value.time || value.buff || value.avatars.length) return value;
@@ -106,7 +109,7 @@ function floor(row: Json, names: NameLookup) {
   if (row.is_fast === true) return;
   const nodes = ["node_1", "node_2", "node_3"].flatMap((key, index) => node(object(row[key]), `节点${index + 1}`, names) ?? []);
   const value = {
-    mazeId: number(row.maze_id), title: text(row.name ?? row.floor) || "关卡",
+    mazeId: number(row.maze_id), title: text(row.name) || text(row.floor) || "关卡",
     score: number(row.score), stars: number(row.star_num, 4), round: number(row.round_num), tierce: row.is_tierce === true, nodes,
   };
   if (value.score !== "" || value.stars !== "" || value.round !== "" || nodes.length) return value;
@@ -121,15 +124,16 @@ function peakFight(row: Json, names: NameLookup) {
   };
 }
 
-function peakRecord(row: Json, names: NameLookup) {
+function peakRecord(row: Json, names: NameLookup, summaryBattleNum: NumberOrBlank) {
   const group = object(row.group);
   const boss = object(row.boss_record);
   const bossInfo = object(row.boss_info);
   const mobs = items(row.mob_records);
+  const battleNum = number(row.battle_num);
   return {
     title: [text(group?.game_version), text(group?.name_mi18n) || "异相仲裁"].filter(Boolean).join(" "),
     period: periodText(group?.begin_time, group?.end_time), ended: group?.status === "End", bossStars: number(row.boss_stars),
-    mobStars: number(row.mob_stars), battleNum: number(row.battle_num),
+    mobStars: number(row.mob_stars), battleNum: battleNum === "" ? summaryBattleNum : battleNum,
     boss: boss && {
       ...peakFight(boss, names), title: text(bossInfo?.name_mi18n) || "王棋关卡",
       icon: text(bossInfo?.icon, 2048), hard: boss.hard_mode === true,
@@ -156,15 +160,17 @@ function toResult({ kind, schedule, simple, data }: ChallengeRecord, query: Chal
   const maxFloor = object(data.max_floor_detail);
   if (maxFloor) floorRows.push(maxFloor);
   const peakRows = items(data.challenge_peak_records);
-  const previous = peakRows.find(row => object(row.group)?.status === "New") ? peakRows.find(row => object(row.group)?.status === "End") : peakRows[1];
-  const peak = query.period === "recent" ? peakRows.slice(0, 3)
+  const groupStatus = (row: Json) => object(row.group)?.status;
+  const previous = peakRows.find(row => groupStatus(row) === "End") ?? (peakRows.some(row => groupStatus(row) === "New") ? undefined : peakRows[0]);
+  const peak = query.period === "recent" ? peakRows
     : [query.period === "last" ? previous : peakRows[0]].filter((value): value is Json => Boolean(value));
+  const summaryBattleNum = number(object(data.challenge_peak_best_record_brief)?.total_battle_num);
   const periodLabel = query.period === "last" ? "上期记录" : query.period === "recent" && kind === "peak" ? "往期记录" : "本期记录";
   return {
     kind, label: labels[kind], periodLabel, simple, startedAt: timestamp(begin), endsAt: timestamp(end),
     period: periodText(begin, end), stars: number(data.star_num ?? data.total_star), extraStars: number(data.extra_star_num),
     maxFloor: text(data.max_floor), maxFloorId: number(data.max_floor_id), battleNum: number(data.battle_num),
-    floors: floorRows.flatMap(row => floor(row, names) ?? []), peak: peak.map(row => peakRecord(row, names)),
+    floors: floorRows.flatMap(row => floor(row, names) ?? []), peak: peak.map(row => peakRecord(row, names, summaryBattleNum)),
   };
 }
 
@@ -172,8 +178,11 @@ export function normalizeStarRailChallenge(records: readonly ChallengeRecord[], 
   const results = records.map(record => toResult(record, query, names));
   if (!query.latest || results.length < 2) return results;
   const dated = results.filter(({ startedAt, endsAt }) => startedAt > 0 && startedAt <= now && (!endsAt || endsAt > now));
-  if (!dated.length) return results;
-  return [dated.reduce((latest, record) => record.startedAt > latest.startedAt ? record : latest)];
+  if (dated.length) return [dated.reduce((latest, record) => record.startedAt > latest.startedAt ? record : latest)];
+  // The original command uses the fixed fourteen-day cycle when the API has no usable period dates.
+  const period = Math.max(0, Math.floor((now - rotationStart) / rotationPeriodMs));
+  const current = results.find(({ kind }) => kind === rotation[period % rotation.length]);
+  return current ? [current] : results;
 }
 
 export type ChallengeResult = ReturnType<typeof normalizeStarRailChallenge>[number];
