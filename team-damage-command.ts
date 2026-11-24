@@ -67,7 +67,12 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
         signal.throwIfAborted();
       };
       const owner = starRailTraceOwner(account, account.role);
-      const [snapshot, theme] = await Promise.all([readPanel(qq, uid, owner), readTheme()]);
+      const [panelSource, theme] = await Promise.all([
+        readPanel(qq, uid, owner).then(snapshot => ({ snapshot, unreadable: false }), () => ({ snapshot: undefined, unreadable: true })),
+        readTheme(),
+      ]);
+      const { snapshot, unreadable } = panelSource;
+      const defaultSource = unreadable ? "基准配装（本人面板暂不可读）" : "基准配装";
       const roles = resolveTeamDamageRoles(command.roles, starRailTeamCatalog, {
         customAliases: theme.customAliases, ownedIds: snapshot?.avatars.map(avatar => avatar.id),
       });
@@ -95,7 +100,7 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
           level: panel?.level ?? 80, rank: panel?.rank ?? 0,
           weapon: cone?.id ? (panel ? text(avatar?.cone?.name) : "") || starRailTeamCones[cone.id] || "光锥资料未记录" : "未装备",
           weaponLevel: cone?.id ? cone.level ?? 0 : 0, weaponRank: cone?.id ? cone.rank : 0,
-          source: panel ? "本人面板" : avatar ? "基准配装（本地数据不全）" : "基准配装",
+          source: panel ? "本人面板" : avatar ? "基准配装（本地数据不全）" : defaultSource,
           face: await readPanelAvatarFace(theme, avatar?.id ?? key),
           stats: ["cpct", "cdmg", "atk", "speed", "stance", "effPct"].map(key =>
             panel ? stats.find(row => row.key === key)?.value ?? "未记录" : "未记录"),
