@@ -1,3 +1,4 @@
+import { reportResourceProgress, type ResourceProgressCallback } from "../../lib/resource-progress.ts";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { link, lstat, mkdir, mkdtemp, open, realpath, rm, writeFile } from "node:fs/promises";
@@ -126,7 +127,7 @@ async function store(root: string, path: string, bytes: Buffer, signal?: AbortSi
   }
 }
 
-async function copyPortraits(donor: string, root: string, target: string, signal?: AbortSignal) {
+async function copyPortraits(donor: string, root: string, target: string, signal?: AbortSignal, onProgress?: ResourceProgressCallback) {
   const original = join(donor, portraitsRoot);
   const index = await readLocal(join(original, "data.json"), 1024 * 1024, signal);
   if (!index) return 0;
@@ -138,7 +139,9 @@ async function copyPortraits(donor: string, root: string, target: string, signal
   } catch { return 0; }
 
   let copied = 0;
-  for (const [id, row] of Object.entries(data)) {
+  const rows = Object.entries(data);
+  for (const [position, [id, row]] of rows.entries()) {
+    reportResourceProgress(onProgress, signal, "starrail-portraits", "核对并恢复角色头像", position, rows.length);
     signal?.throwIfAborted();
     const name = row?.name;
     if (!/^[1-9]\d{3,8}$/u.test(id) || String(row?.id) !== id || typeof name !== "string" ||
@@ -153,24 +156,29 @@ async function copyPortraits(donor: string, root: string, target: string, signal
       break;
     }
   }
+  reportResourceProgress(onProgress, signal, "starrail-portraits", "角色头像核对完成", rows.length, rows.length);
   return copied;
 }
 
 /** Restore the original assets from an installation copy, with an explicit first-install download option. */
 export async function prepareStarRailChallengeTheme(checkout: URL, {
-  source = checkout, override, signal, download,
+  source = checkout, override, signal, download, onProgress,
 }: {
   readonly source?: URL;
   readonly override?: string;
   readonly signal?: AbortSignal;
+  readonly onProgress?: ResourceProgressCallback;
   readonly download?: boolean | TemplateFetch;
 } = {}) {
+  const report = (message: string, completed?: number, total?: number) => reportResourceProgress(onProgress, signal, "starrail-theme", message, completed, total);
+  report("检查星铁挑战主题");
   if (override?.trim()) return { templates: 0, portraits: 0, missing: [] as string[] };
   const [root, donor] = await Promise.all([realpath(fileURLToPath(checkout)), realpath(fileURLToPath(source))]);
   const target = join(root, targetPath);
   let templates = 0;
   const absent: TemplateAsset[] = [];
-  for (const candidate of template) {
+  for (const [position, candidate] of template.entries()) {
+    report(`核对 ${candidate[0]}`, position, template.length);
     const [asset, genshin, size] = candidate;
     const output = join(target, asset);
     if (!(await entry(output))) {
@@ -189,7 +197,13 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
     const deadline = AbortSignal.timeout(templateDownloadTimeoutMs);
     const downloadSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
     const request = typeof download === "function" ? download : fetch;
-    const originals = await Promise.all(absent.map(asset => downloadOriginal(asset, request, downloadSignal)));
+    let fetched = 0;
+    report("下载缺失挑战主题", 0, absent.length);
+    const originals = await Promise.all(absent.map(async asset => {
+      const bytes = await downloadOriginal(asset, request, downloadSignal);
+      report(`主题已处理 ${asset[0]}`, ++fetched, absent.length);
+      return bytes;
+    }));
     signal?.throwIfAborted();
     if (originals.every(bytes => bytes !== undefined)) {
       for (const [index, bytes] of originals.entries()) {
@@ -202,6 +216,7 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
     const info = await entry(join(target, asset));
     if (!info?.isFile() || !info.size) missing.push(asset);
   }
-  const portraits = await copyPortraits(donor, root, target, signal);
+  report("恢复本地角色头像");
+  const portraits = await copyPortraits(donor, root, target, signal, onProgress);
   return { templates, portraits, missing };
 }
