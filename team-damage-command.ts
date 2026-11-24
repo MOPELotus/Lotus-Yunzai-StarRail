@@ -105,9 +105,9 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
       const result = await calculateTeamDamage(members, command.cycle, command.enemies, signal);
       await verify();
       const report = teamDamageReport(uid, command, team, result);
-      const files = await renderStarRailTeamDamage(report, theme.root, signal, verify, context.inlineImageByteLimit).catch(() => []);
+      const file = await renderStarRailTeamDamage(report, theme.root, signal, verify, context.inlineImageByteLimit).catch(() => undefined);
       await verify();
-      if (files.length) return files.map(file => ({ type: "image" as const, file }));
+      if (file) return [{ type: "image" as const, file }];
       return [
         `星铁队伍伤害 · UID ${uid} · 档案 ${profileId}`,
         report.summary.map(row => `${row.label} ${row.value}`).join(" · "),

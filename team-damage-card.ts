@@ -96,7 +96,8 @@ function face(ctx: Context, image: Image, x: number, y: number) {
   ctx.restore();
 }
 
-function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefined)[], details: boolean) {
+function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefined)[]) {
+  const details = report.turns.length > 0;
   const measure = new Canvas(1, 1).getContext("2d");
   const paints: Paint[] = [];
   const lineHeight = (size: number) => Math.round(size * 1.45);
@@ -121,7 +122,7 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
       const picture = index > 0 ? portraits[index - 1] : undefined;
       const cells = row.map((cell, column) => {
         const bold = !index || (rowHeaders && !column);
-        const art = column === 0 ? picture : undefined;
+        const art = column === 1 ? picture : undefined;
         const max = widths[column]! - 7 - (art ? 35 : 0);
         const phrases = (typeof cell === "string" ? [{ value: cell }] : cell).flatMap(
           ({ value, color = index ? white : gold, size: textSize = size }) =>
@@ -192,27 +193,25 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
     });
   }
 
-  if (!details) {
-    table(report.summary.map(row => row.label), [report.summary.map(row => row.value)]);
-    table(["角色", "等级 / 星魂", "光锥"], report.team.map(member => [
-      member.name, `Lv.${member.level} · ${member.rank} 魂`,
-      member.weaponRank ? [{ value: member.weapon }, { value: `Lv.${member.weaponLevel} · ${member.weaponRank} 叠影` }] : member.weapon,
-    ]), { portraits: faces });
-    table(["面板属性", ...report.team.map(member => member.name)], report.statNames.map((label, index) =>
-      [label, ...report.team.map(member => member.stats[index] ?? "")]), { size: 14, rowHeaders: true });
-    table(["角色", "面板来源"], report.team.map(member => [member.name, member.source]));
-    if (report.contribution.length) {
-      table(["伤害贡献", "伤害", "占比"], report.contribution.map(row => [row.name, row.value, row.share]));
-    }
-    if (report.timeline) note("起手顺序", [report.timeline], 17, false);
+  table(report.summary.map(row => row.label), [report.summary.map(row => row.value)]);
+  table(["#", "角色", "等级 / 星魂", "光锥"], report.team.map((member, index) => [
+    String(index + 1), member.name, `Lv.${member.level} · ${member.rank} 魂`,
+    member.weaponRank ? [{ value: member.weapon }, { value: `Lv.${member.weaponLevel} · ${member.weaponRank} 叠影` }] : member.weapon,
+  ]), { widths: [42, 220, 130, innerWidth - 392], portraits: faces });
+  table(["面板属性", ...report.team.map(member => member.name)], report.statNames.map((label, index) =>
+    [label, ...report.team.map(member => member.stats[index] ?? "")]), { size: 14, rowHeaders: true });
+  table(["角色", "面板来源"], report.team.map(member => [member.name, member.source]));
+  if (report.contribution.length) {
+    table(["伤害贡献", "伤害", "占比"], report.contribution.map(row => [row.name, row.value, row.share]));
   }
+  if (report.timeline) note("起手顺序", [report.timeline], 17, false);
   if (details) {
     table(["顺序", "关键行动（前 8 项）", "行动值"], report.turns.map((turn, index) => [
       String(index + 1), [{ value: turn.title }, { value: turn.lines[0] ?? "" },
         ...(turn.lines[1] ? [{ value: turn.lines[1], size: 14, color: gold }] : [])], String(turn.actionPoint),
     ]), { widths: [67, innerWidth - 160, 93] });
   }
-  if (report.warnings.length && (details || !report.turns.length)) note("模拟说明", report.warnings, 14, true);
+  if (report.warnings.length) note("模拟说明", report.warnings, 14, true);
 
   const footer = cursor;
   paints.push(ctx => {
@@ -235,25 +234,21 @@ export async function renderStarRailTeamDamage(report: TeamDamageReport, directo
     ...report.team.map(member => member.face ? image(root, fileURLToPath(member.face)) : Promise.resolve(undefined)),
   ]) : [];
   const [background, artwork, ...faces] = assets;
-  const result: Buffer[] = [];
-  for (const detailPage of report.turns.length ? [false, true] : [false]) {
-    const { height, paints } = renderLayout(report, faces, detailPage);
-    const tileHeight = background ? width * background.height / background.width : 0;
-    const center = tileHeight ? (height - tileHeight) / 2 : 0;
-    signal.throwIfAborted();
-    const { png, engine } = await renderStarRailCard(width, height, ctx => {
-      fill(ctx, "#26142a", 0, 0, width, height);
-      if (background && tileHeight > 0) {
-        for (let y = center - Math.ceil(center / tileHeight) * tileHeight; y < height; y += tileHeight) {
-          ctx.drawImage(background, 0, y, width, tileHeight);
-        }
+  const { height, paints } = renderLayout(report, faces);
+  const tileHeight = background ? width * background.height / background.width : 0;
+  const center = tileHeight ? (height - tileHeight) / 2 : 0;
+  signal.throwIfAborted();
+  const { png, engine } = await renderStarRailCard(width, height, ctx => {
+    fill(ctx, "#26142a", 0, 0, width, height);
+    if (background && tileHeight > 0) {
+      for (let y = center - Math.ceil(center / tileHeight) * tileHeight; y < height; y += tileHeight) {
+        ctx.drawImage(background, 0, y, width, tileHeight);
       }
-      if (artwork) ctx.drawImage(artwork, 0, -25, width, width * artwork.height / artwork.width);
-      paints.forEach(paint => paint(ctx));
-    }, { inlineImageByteLimit });
-    await verify();
-    console.log(`[渲染] 星铁队伍伤害 ${engine.renderer} ${engine.api} ${engine.device}`);
-    result.push(png);
-  }
-  return result;
+    }
+    if (artwork) ctx.drawImage(artwork, 0, -25, width, width * artwork.height / artwork.width);
+    paints.forEach(paint => paint(ctx));
+  }, { inlineImageByteLimit });
+  await verify();
+  console.log(`[渲染] 星铁队伍伤害 ${engine.renderer} ${engine.api} ${engine.device}`);
+  return png;
 }
