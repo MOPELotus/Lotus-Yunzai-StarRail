@@ -128,8 +128,7 @@ async function store(root: string, path: string, bytes: Buffer, signal?: AbortSi
   }
 }
 
-async function copyPortraits(donor: string, root: string, target: string, signal?: AbortSignal, onProgress?: ResourceProgressCallback) {
-  const original = join(donor, portraitsRoot);
+async function copyPortraits(original: string, root: string, target: string, signal?: AbortSignal, onProgress?: ResourceProgressCallback) {
   const index = await readLocal(join(original, "data.json"), 1024 * 1024, signal);
   if (!index) return 0;
   let data: Record<string, { readonly id?: unknown; readonly name?: unknown } | undefined>;
@@ -183,7 +182,9 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
     const [asset, genshin, size] = candidate;
     const output = join(target, asset);
     if (!(await entry(output))) {
-      const sources = [...backdropRoots.map(relative => join(donor, relative, asset)),
+      const sources = [join(builtinResourceDirectory("templates/starrail-challenge", checkout), asset),
+        join(builtinResourceDirectory("templates/starrail-challenge", source), asset),
+        ...backdropRoots.map(relative => join(donor, relative, asset)),
         join(donor, "plugins/genshin/resources", genshin)];
       for (const file of sources) {
         const bytes = await readLocal(file, size, signal);
@@ -218,6 +219,12 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
     if (!info?.isFile() || !info.size) missing.push(asset);
   }
   report("恢复本地角色头像");
-  const portraits = await copyPortraits(donor, root, target, signal, onProgress);
+  let portraits = 0;
+  const portraitSources = new Set([
+    builtinResourceDirectory("games/miao/meta-sr/character", checkout),
+    builtinResourceDirectory("games/miao/meta-sr/character", source),
+    join(donor, portraitsRoot),
+  ]);
+  for (const original of portraitSources) portraits += await copyPortraits(original, root, target, signal, onProgress);
   return { templates, portraits, missing };
 }

@@ -113,9 +113,23 @@ export async function prepareStarRailReincarnationTheme(root: URL, {
       continue;
     }
     const directory = name.startsWith("font/") ? flowerFolder : originalFolder;
-    const old = await file(legacy, join(legacy, directory, name), size, signal);
-    if (old?.length === size && createHash("sha256").update(old).digest("hex") === digest) {
-      if (await publish(target, output, old, signal)) installed++;
+    const sources = new Set([
+      join(builtinResourceDirectory("games/starrail-reincarnation", root), name),
+      join(builtinResourceDirectory("games/starrail-reincarnation", source), name),
+      join(legacy, assetRoot, name),
+      join(legacy, directory, name),
+    ]);
+    let local: Uint8Array | undefined;
+    for (const path of sources) {
+      const owner = path.startsWith(target + sep) ? target : legacy;
+      const candidate = await file(owner, path, size, signal);
+      if (candidate?.length === size && createHash("sha256").update(candidate).digest("hex") === digest) {
+        local = candidate;
+        break;
+      }
+    }
+    if (local) {
+      if (await publish(target, output, local, signal)) installed++;
     } else pending.push(entry);
   }
   const end = AbortSignal.timeout(12_000);
