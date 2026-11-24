@@ -199,7 +199,8 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     hasDisplayHistory);
   const gachaLink = createStarRailGachaLinkCommand(profiles, archive, signal);
   const service = createStarRailGachaSync(profiles, client, history);
-  const updateGacha = createGachaUpdater((qq, profileId) => service.sync(qq, profileId, { signal }));
+  const updateGacha = createGachaUpdater((qq, profileId, workflow?: AbortSignal) =>
+    service.sync(qq, profileId, { signal: workflow ? AbortSignal.any([signal, workflow]) : signal }));
 
   async function query(qq: string, { profileId, view, all }: NonNullable<ReturnType<typeof matchGachaQuery>>, recordArchive: boolean, context: Pick<MessageEvent, "inlineImageByteLimit" | "forward">) {
     if (!recordArchive && "special" in view && view.statistics) return "联动池和新手池请使用对应的记录指令。";
@@ -307,9 +308,9 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
   return {
     commands: {},
     panelRebuild: panel.rebuild,
-    async gachaUpdate(qq: string, profileId: number) {
+    async gachaUpdate(qq: string, profileId: number, notify?: () => unknown, _isDelegated?: boolean, workflow?: AbortSignal) {
       try {
-        const result = await updateGacha(qq, profileId);
+        const result = await updateGacha(qq, profileId, notify, workflow);
         return result && { uid: result.log.uid };
       } catch (error) {
         if (error instanceof StarRailGachaUpdateBusy) return undefined;
