@@ -394,7 +394,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           return "请从登录档案对应的 QQ 会话使用星铁挑战战绩。";
         }
         return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat,
-          context.adapter === "milky" ? context.inlineImageByteLimit : undefined);
+          context.adapter === "milky" ? context.inlineImageByteLimit : undefined, !!context.forward);
       }
       const personalRecordCommand = matchStarRailPersonalRecord(context.normalizedMessage);
       if (personalRecordCommand) return personalRecord(context, personalRecordCommand);

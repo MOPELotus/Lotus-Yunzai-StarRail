@@ -1,5 +1,5 @@
 import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
-import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
+import { GameRecordRequestError, HoyoRequestError, starRailChallengeRegion, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import characterNames from "./challenge-character-names.json";
 import { renderStarRailAbyss } from "./challenge-card.ts";
 import { makeChallengeText, normalizeStarRailChallenge, type ChallengeQuery } from "./challenge-model.ts";
@@ -9,16 +9,18 @@ export async function queryStarRailChallenge(
   qq: string, query: ChallengeQuery, profiles: ReturnType<typeof createProfileStore>,
   client: Pick<ReturnType<typeof createProfileHoyoClient>, "fetchStarRailChallenge">, signal: AbortSignal,
   isNapCat?: (signal: AbortSignal) => Promise<boolean>,
-  inlineImageByteLimit?: number,
+  inlineImageByteLimit?: number, canForward = true,
 ) {
   const { profileId } = query;
   try {
     const source = await profiles.requestSelectedContext(qq, profileId, "sr");
     const { records, revision } = await client.fetchStarRailChallenge(source, { ...query, signal });
+    const region = starRailChallengeRegion(source.role);
     const current = async () => {
       signal.throwIfAborted();
       const latest = await profiles.requestSelectedContext(qq, profileId, "sr").catch(() => undefined);
-      return latest !== undefined && latest.revision === revision && latest.role.uid === source.role.uid && latest.role.region === source.role.region;
+      return latest !== undefined && latest.revision === revision && latest.role.uid === source.role.uid &&
+        region !== undefined && starRailChallengeRegion(latest.role) === region;
     };
     if (!await current()) return "星铁档案已变更，请重新查询。";
     const { uid } = source.role;
@@ -38,17 +40,23 @@ export async function queryStarRailChallenge(
     }
 
     const peakHistory = query.period === "recent" && results.length === 1 && results[0]?.kind === "peak" ? results[0] : undefined;
-    let reply;
     if (peakHistory && peakHistory.peak.length > 3) {
-      const nodes: Array<Awaited<ReturnType<typeof render>>> = [`星铁往期异相仲裁 · UID ${uid} · ${peakHistory.peak.length} 期`];
-      for (let start = 0; start < peakHistory.peak.length; start += 3) {
-        signal.throwIfAborted();
-        nodes.push(await render([{ ...peakHistory, peak: peakHistory.peak.slice(start, start + 3) }]));
-      }
-      reply = { type: "forward" as const, nodes, batchSize: 1 };
-    } else {
-      reply = await render(results);
+      if (!canForward) return makeChallengeText(uid, results);
+      const history = peakHistory;
+      return {
+        type: "forward-image-batches" as const,
+        batches: (async function* () {
+          yield [`星铁往期异相仲裁 · UID ${uid} · ${history.peak.length} 期`];
+          for (let start = 0; start < history.peak.length && !signal.aborted; start += 3) {
+            yield [await render([{ ...history, peak: history.peak.slice(start, start + 3) }])];
+          }
+        })(),
+        async beforeSend() {
+          if (!await current()) throw new ProfileError("changed", "星铁档案已变更，请重新查询。");
+        },
+      };
     }
+    const reply = await render(results);
     if (!await current()) return "星铁档案已变更，请重新查询。";
     return reply;
   } catch (error) {
