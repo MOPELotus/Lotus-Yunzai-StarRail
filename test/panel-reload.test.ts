@@ -118,7 +118,7 @@ account:
     expect(await panel("42", parsePanelCommand("#星铁重载面板256")!)).toContain("1–255");
     expect(await panel("42", parsePanelCommand("#星铁重载面板2")!, { isDelegated: true })).toContain("本人");
     expect(await panel("42", parsePanelCommand("#星铁重载面板100000121 档案2")!)).toContain("绑定的星铁角色不一致");
-    expect(await panel("42", parsePanelCommand("#米游社星铁更新面板2")!)).toContain("请先登录 profile 2");
+    expect(await panel("42", parsePanelCommand("#米游社星铁更新面板2")!)).toContain("请先登录档案 2");
     await writeFile(join(directory, `${uid}.json`), "损坏的 JSON");
     expect(await panel("42", parsePanelCommand("#星铁重新加载面板2")!)).toContain("暂时无法重新加载");
     expect([requests, writes]).toEqual([0, 0]);

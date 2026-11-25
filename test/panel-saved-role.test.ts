@@ -32,7 +32,7 @@ account:
 
     expect(await panel("42", parsePanelCommand("*100000122星神★阿哈面板")!)).toContain("与所选档案当前绑定的星铁角色不一致");
     expect(await panel("42", parsePanelCommand("*100000121星神★阿哈面板 2")!)).toContain("与所选档案当前绑定的星铁角色不一致");
-    expect(await panel("42", parsePanelCommand("*更新面板2")!)).toContain("请先登录 profile 2");
+    expect(await panel("42", parsePanelCommand("*更新面板2")!)).toContain("请先登录档案 2");
     expect(requests).toBe(0);
     expect(writes).toBe(0);
   } finally {

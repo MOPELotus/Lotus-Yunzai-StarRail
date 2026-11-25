@@ -227,7 +227,7 @@ export function createStarRailPanel(
       } catch (error) {
         if (signal.aborted) return;
         if (error instanceof ProfileError) {
-          if (error.code === "missing" || error.code === "login-required") return `请先登录 profile ${profileId}。`;
+          if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
           if (error.code === "role-missing") return "仅允许删除当前登录档案已同步的星铁 UID。";
           if (error.code === "changed") return "星铁面板档案已变更，请重新确认。";
         }
@@ -340,7 +340,7 @@ export function createStarRailPanel(
           if (offer) return offer;
           throw result.error;
         }
-        if (result.status === "busy") return "此星铁角色面板正在更新，请稍后查询。";
+        if (result.status === "busy") return "此星铁角色面板正在更新。";
         if (result.status === "empty") return (await offerRecovery(uid)) ?? "米游社未返回星铁角色数据，原面板已保留。";
         snapshot = result.snapshot;
         updated = result.updated;
@@ -366,7 +366,7 @@ export function createStarRailPanel(
         if (!owner) return "档案的登录凭据与账号不一致，请重新登录。";
         traceOwner = owner;
         if (!snapshot?.avatars.length) return `请先使用 *更新面板${profileId === 1 ? "" : profileId} 获取本人星铁面板。`;
-        if (refreshing.has(key)) return "此星铁角色面板正在更新，请稍后查询。";
+        if (refreshing.has(key)) return "此星铁角色面板正在更新。";
         refreshing.add(key);
         try {
           await verify();
@@ -414,7 +414,7 @@ export function createStarRailPanel(
         }
         const target = showcaseTarget(bound, await readShowcaseServer());
         const refreshKey = `showcase:${key}`;
-        if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询，请稍后再试。";
+        if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询。";
         refreshing.add(refreshKey);
         try {
           const cached = publicFallback ? managedSnapshot(uid, await showcases.read(qq, uid), true) : undefined;
@@ -736,8 +736,8 @@ export function createStarRailPanel(
       if (signal.aborted) return;
       if (error instanceof ProfileError) {
         if (error.code === "changed") return "星铁面板档案已变更，请重新查询。";
-        if (error.code === "missing" || error.code === "login-required") return `请先登录 profile ${profileId}。`;
-        if (error.code === "role-missing") return `profile ${profileId} 没有同步星铁 UID。`;
+        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
+        if (error.code === "role-missing") return `档案 ${profileId} 没有同步星铁 UID。`;
       }
       if (error instanceof ShowcaseError) return error.message;
       if (error instanceof GameRecordRequestError) return error.message;

@@ -51,8 +51,8 @@ test("导出面板读取所选本人档案，保留旧角色文件结构、跳�
     const normal = parsePanelCommand("#星铁导出面板 档案2")!;
     expect(normal).toEqual({ type: "export", name: "", profileId: 2, share: false });
     expect(await panel("42", normal, group)).toContain("请私聊");
-    expect(await panel("42", parsePanelCommand("*导出面板")!, privateContext)).toContain("请先登录 profile 1");
-    expect(await panel("43", normal, privateContext)).toContain("请先登录 profile 2");
+    expect(await panel("42", parsePanelCommand("*导出面板")!, privateContext)).toContain("请先登录档案 1");
+    expect(await panel("43", normal, privateContext)).toContain("请先登录档案 2");
     expect(await panel("42", normal, { ...privateContext, isDelegated: true })).toContain("私聊");
     expect(await panel("42", { ...normal, profileId: 256 }, privateContext)).toContain("1–255");
     expect(files).toBeEmpty();

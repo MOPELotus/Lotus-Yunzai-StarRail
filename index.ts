@@ -218,7 +218,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         }
         snapshot = await history.readLegacy(qq, uid);
         if (snapshot === null) {
-          return `profile ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
+          return `档案 ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
         }
       }
       const themeDirectory = starRailGachaThemeDirectory();
@@ -297,8 +297,8 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     } catch (error) {
       if (signal.aborted) return;
       if (error instanceof ProfileError) {
-        if (error.code === "missing") return `请先登录 profile ${profileId}。`;
-        if (error.code === "role-missing") return `profile ${profileId} 没有同步星铁 UID。`;
+        if (error.code === "missing") return `请先登录档案 ${profileId}。`;
+        if (error.code === "role-missing") return `档案 ${profileId} 没有同步星铁 UID。`;
       }
       if (error instanceof StarRailGachaArchiveError) return error.message;
       return "星铁抽卡记录读取失败，请检查本地历史文件。";
@@ -432,8 +432,8 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       if (view) return query(qq, view, recordArchive, context);
       try {
         const result = await updateGacha(qq, profileId, () =>
-          context.reply(`正在为 profile ${profileId} 补齐官方范围内的星铁五星与垫抽记录。`));
-        if (!result) return "该档案的星铁抽卡记录正在更新，请稍后再试。";
+          context.reply(`正在更新星铁抽卡记录（档案 ${profileId}）。`));
+        if (!result) return "该档案的星铁抽卡记录正在更新。";
         try {
           const { png } = await renderStarRailGachaResult(result);
           return { type: "image" as const, file: png };
@@ -445,9 +445,9 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         if (error instanceof StarRailGachaUpdateBusy) return error.message;
         if (error instanceof ProfileError) {
           if (error.code === "missing" || error.code === "login-required") {
-            return `请先登录 profile ${profileId}。`;
+            return `请先登录档案 ${profileId}。`;
           }
-          if (error.code === "role-missing") return `profile ${profileId} 没有同步星铁 UID。`;
+          if (error.code === "role-missing") return `档案 ${profileId} 没有同步星铁 UID。`;
         }
         const limited = error instanceof GameRecordRequestError && error.reason === "rate-limited";
         const reason = limited ? "rate-limited"

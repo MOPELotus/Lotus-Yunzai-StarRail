@@ -7,7 +7,6 @@ type GachaCardResult = Pick<GachaSyncResult, "pools"> & {
 };
 
 const title = "星铁抽卡记录";
-const defaultMessage = "已通过官方小程序接口更新五星和抽数；重复更新会按记录 ID 合并，不会叠加。";
 const failureMessages = {
   "rate-limited": "访问过于频繁，请稍后再试。",
   "profile-changed": "更新星铁抽卡历史时档案已变更，请重新发起请求。",
@@ -31,7 +30,7 @@ interface GachaCardFailure {
 }
 
 export function renderStarRailGachaResult({ log, pools }: GachaCardResult, options: StatusCardOptions = {}) {
-  const lead = `QQ ${log.qq} · Profile ${log.profileId} · UID ${log.uid}\n${defaultMessage}`;
+  const lead = `QQ ${log.qq} · 档案 ${log.profileId} · UID ${log.uid}`;
   const visiblePools = pools.filter(({ total, totalDraws }) => total || totalDraws);
   const contents = visiblePools.length ? visiblePools.map(({ name, total, added, totalDraws, pity }) =>
     `${name}：五星 ${total}（新增 ${added}）· 已抽 ${totalDraws} · 当前垫 ${pity}`) : ["记录：当前没有可用抽卡数据"];
@@ -41,9 +40,8 @@ export function renderStarRailGachaResult({ log, pools }: GachaCardResult, optio
 export function renderStarRailGachaFailure(
   { qq, profileId, reason = "request-failed", at = new Date() }: GachaCardFailure, options: StatusCardOptions = {},
 ) {
-  const lead = `QQ ${qq} · Profile ${profileId}\n${failureMessages[reason]}`;
+  const lead = `QQ ${qq} · 档案 ${profileId}\n${failureMessages[reason]}`;
   return renderStatusCard(title, lead, [
-    "阶段：profile Cookie / 星铁官方活动接口",
-    `建议：${failureAdvice[reason]}`,
+    failureAdvice[reason],
   ], at, options);
 }
