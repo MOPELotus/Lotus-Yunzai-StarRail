@@ -184,7 +184,7 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
         write(`× ${growthCount(item.total)}`, item.x + 55, item.y + 39, 16, resultColor);
       }
     }
-    write("Lotus-Yunzai · StarRail", 275, bottom + 18, 12, "#fff", "center");
+    write("Lotus-Yunzai · StarRail", 275, bottom + 18, 12, "#000", "center");
   }
   return renderStarRailCard(width, bottom + 35, paint, renderOptions);
 }

@@ -1,3 +1,4 @@
+import { brandTextColor } from "@lotus-yunzai/skia/brand-color";
 import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { fileURLToPath } from "node:url";
 import { Canvas, FontLibrary, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
@@ -19,6 +20,7 @@ function label(ctx: Context, value: string, x: number, y: number, size: number,
   ctx.textBaseline = "middle";
   ctx.textAlign = align;
   ctx.fillStyle = color;
+  if (value.includes("Lotus-Yunzai")) ctx.fillStyle = brandTextColor(ctx, value, x, y, maxWidth);
   ctx.fillText(value, x, y, maxWidth);
 }
 
