@@ -452,7 +452,10 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         const limited = error instanceof GameRecordRequestError && error.reason === "rate-limited";
         const reason = limited ? "rate-limited"
           : (error instanceof ProfileError && error.code === "changed") ||
-            (error instanceof HoyoRequestError && error.code === "profile-changed") ? "profile-changed" : "request-failed";
+            (error instanceof HoyoRequestError && error.code === "profile-changed") ? "profile-changed"
+          : error instanceof HoyoRequestError && error.code === "transport" ? "network-failed"
+          : error instanceof HoyoRequestError && error.status !== undefined && error.status >= 500 && error.status <= 599
+            ? "service-unavailable" : "request-failed";
         try {
           const { png } = await renderStarRailGachaFailure({ qq, profileId, reason });
           return { type: "image" as const, file: png };

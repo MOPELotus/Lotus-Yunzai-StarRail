@@ -8,18 +8,14 @@ type GachaCardResult = Pick<GachaSyncResult, "pools"> & {
 
 const title = "星铁抽卡记录";
 const failureMessages = {
-  "rate-limited": "访问过于频繁，请稍后再试。",
-  "profile-changed": "更新星铁抽卡历史时档案已变更，请重新发起请求。",
+  "rate-limited": "访问过于频繁。",
+  "network-failed": "网络连接失败。",
+  "service-unavailable": "官方服务暂时不可用。",
+  "profile-changed": "档案已变更，请重新更新抽卡记录。",
   "request-failed": "星铁抽卡记录更新失败。",
 } as const;
-const failureAdvice = {
-  "rate-limited": "已有记录仍可查询，稍后再更新。",
-  "profile-changed": "确认当前档案和星铁 UID 后重新发起。",
-  "request-failed": "检查档案登录状态与星铁 UID。",
-} as const;
-
 export function starRailGachaFailureText(reason: keyof typeof failureMessages) {
-  return reason === "request-failed" ? `${failureMessages[reason]}${failureAdvice[reason]}` : failureMessages[reason];
+  return failureMessages[reason];
 }
 
 interface GachaCardFailure {
@@ -41,7 +37,5 @@ export function renderStarRailGachaFailure(
   { qq, profileId, reason = "request-failed", at = new Date() }: GachaCardFailure, options: StatusCardOptions = {},
 ) {
   const lead = `QQ ${qq} · 档案 ${profileId}\n${failureMessages[reason]}`;
-  return renderStatusCard(title, lead, [
-    failureAdvice[reason],
-  ], at, options);
+  return renderStatusCard(title, lead, [], at, options);
 }
