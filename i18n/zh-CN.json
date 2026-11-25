@@ -5,879 +5,879 @@
   "description": "星铁",
   "sections": {
     "account-report-renderer": {
-      "description": "星铁：账号",
+      "description": "星铁账号报告与统计卡片渲染",
       "source": "plugins/starrail/account-report-renderer.ts"
     },
     "challenge": {
-      "description": "星铁",
+      "description": "星铁挑战战绩查询与错误处理",
       "source": "plugins/starrail/challenge.ts"
     },
     "challenge-card": {
-      "description": "星铁：图片卡片",
+      "description": "星铁挑战战绩图片卡片渲染",
       "source": "plugins/starrail/challenge-card.ts"
     },
     "challenge-model": {
-      "description": "星铁",
+      "description": "星铁挑战指令解析、数据标准化与文本摘要生成",
       "source": "plugins/starrail/challenge-model.ts"
     },
     "challenge-theme": {
-      "description": "星铁",
+      "description": "星铁挑战主题资源与头像检查恢复",
       "source": "plugins/starrail/challenge-theme.ts"
     },
     "custom-rank": {
-      "description": "星铁",
+      "description": "全服排行公开面板渲染",
       "source": "plugins/starrail/custom-rank.ts"
     },
     "gacha-detail": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡详情模型构建与分页",
       "source": "plugins/starrail/gacha-detail.ts"
     },
     "gacha-display": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡显示数据转换与校验",
       "source": "plugins/starrail/gacha-display.ts"
     },
     "gacha-files": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡记录 UIGF/SRGF 文件导入与导出命令处理",
       "source": "plugins/starrail/gacha-files.ts"
     },
     "gacha-history": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡历史快照校验与旧版抽卡记录合并",
       "source": "plugins/starrail/gacha-history.ts"
     },
     "gacha-link-command": {
-      "description": "星铁：抽卡记录 · 命令",
+      "description": "星铁官方抽卡链接录入交互命令",
       "source": "plugins/starrail/gacha-link-command.ts"
     },
     "gacha-link-source": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁官方抽卡链接解析与分页拉取",
       "source": "plugins/starrail/gacha-link-source.ts"
     },
     "gacha-pool-info": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁历史卡池与复刻信息查询",
       "source": "plugins/starrail/gacha-pool-info.ts"
     },
     "gacha-record-archive": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁逐抽档案读写、旧档迁移与校验",
       "source": "plugins/starrail/gacha-record-archive.ts"
     },
     "gacha-record-detail": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡分页详情数据构建",
       "source": "plugins/starrail/gacha-record-detail.ts"
     },
     "gacha-record-source": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁 UIGF 抽卡记录源解析转换",
       "source": "plugins/starrail/gacha-record-source.ts"
     },
     "gacha-record-special": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡五星分布与出金指标统计",
       "source": "plugins/starrail/gacha-record-special.ts"
     },
     "gacha-record-version": {
-      "description": "星铁：抽卡记录",
+      "description": "按版本期次对星铁抽卡记录进行分期统计与分页处理",
       "source": "plugins/starrail/gacha-record-version.ts"
     },
     "gacha-result-card": {
-      "description": "星铁：抽卡记录 · 图片卡片",
+      "description": "渲染星铁抽卡记录同步结果及各类失败状态的提示卡片",
       "source": "plugins/starrail/gacha-result-card.ts"
     },
     "gacha-special": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁各卡池抽卡汇总展示构建与输入格式校验",
       "source": "plugins/starrail/gacha-special.ts"
     },
     "gacha-special-card": {
-      "description": "星铁：抽卡记录 · 图片卡片",
+      "description": "构建并渲染星铁专项抽卡统计的图片卡片，展示出金间隔、UP情况及保底等指标",
       "source": "plugins/starrail/gacha-special-card.ts"
     },
     "gacha-store": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡历史本地档案存储及旧目录记录校验",
       "source": "plugins/starrail/gacha-store.ts"
     },
     "gacha-sync": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡记录同步拉取、并发锁控制与档案一致性校验",
       "source": "plugins/starrail/gacha-sync.ts"
     },
     "gacha-uigf": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁 UIGF/SRGF 抽卡记录文件校验、导入与导出",
       "source": "plugins/starrail/gacha-uigf.ts"
     },
     "gacha-version": {
-      "description": "星铁：抽卡记录",
+      "description": "星铁抽卡版本期次统计构建与校验",
       "source": "plugins/starrail/gacha-version.ts"
     },
     "grid-fight-card": {
-      "description": "星铁：图片卡片",
+      "description": "星铁货币战争战绩图片卡片渲染",
       "source": "plugins/starrail/grid-fight-card.ts"
     },
     "grid-fight-command": {
-      "description": "星铁：命令",
+      "description": "星铁货币战争战绩查询指令处理",
       "source": "plugins/starrail/grid-fight-command.ts"
     },
     "grid-fight-model": {
-      "description": "星铁",
+      "description": "星铁货币战争战绩数据建模与文本摘要生成",
       "source": "plugins/starrail/grid-fight-model.ts"
     },
     "group-relic-rank": {
-      "description": "星铁：群管理",
+      "description": "群聊星铁遗器与伤害排行查询及档案登记逻辑",
       "source": "plugins/starrail/group-relic-rank.ts"
     },
     "group-relic-rank-card": {
-      "description": "星铁：群管理 · 图片卡片",
+      "description": "群聊及全服遗器排行图片卡片与覆盖率文案渲染",
       "source": "plugins/starrail/group-relic-rank-card.ts"
     },
     "growth.card": {
-      "description": "星铁：图片卡片",
+      "description": "角色养成计算结果卡片与文本摘要渲染",
       "source": "plugins/starrail/growth/card.ts"
     },
     "growth.command": {
-      "description": "星铁：命令",
+      "description": "星铁角色养成计算命令解析与执行",
       "source": "plugins/starrail/growth/command.ts"
     },
     "import-independent-gacha-cli": {
-      "description": "星铁：抽卡记录",
+      "description": "独立旧档星铁抽卡记录导出为 UIGF 文件的命令行工具",
       "source": "plugins/starrail/import-independent-gacha-cli.ts"
     },
     "index": {
-      "description": "星铁",
+      "description": "星铁插件主入口，处理抽卡记录查询、面板展示及各类指令路由匹配。",
       "source": "plugins/starrail/index.ts"
     },
     "ledger-command": {
-      "description": "星铁：命令",
+      "description": "星铁个人资产流水（星琼、梦华、体力、遗器等）查询命令处理。",
       "source": "plugins/starrail/ledger-command.ts"
     },
     "monthly-archive": {
-      "description": "星铁：月历",
+      "description": "星铁开拓月历本地 JSON 存档的校验与读写管理。",
       "source": "plugins/starrail/monthly-archive.ts"
     },
     "monthly-card": {
-      "description": "星铁：月历 · 图片卡片",
+      "description": "星铁开拓月历卡片渲染参数构建与纯文本格式化输出。",
       "source": "plugins/starrail/monthly-card.ts"
     },
     "monthly-command": {
-      "description": "星铁：月历 · 命令",
+      "description": "星铁开拓月历月度收入查询、年度统计及批量存档任务命令处理。",
       "source": "plugins/starrail/monthly-command.ts"
     },
     "monthly-period": {
-      "description": "星铁：月历",
+      "description": "星铁月历月份与统计周期解析",
       "source": "plugins/starrail/monthly-period.ts"
     },
     "monthly-statistics": {
-      "description": "星铁：月历",
+      "description": "星铁月历星琼统计文本生成",
       "source": "plugins/starrail/monthly-statistics.ts"
     },
     "online-command": {
-      "description": "星铁：命令",
+      "description": "星铁在线时长估算查询命令处理",
       "source": "plugins/starrail/online-command.ts"
     },
     "online-model": {
-      "description": "星铁",
+      "description": "星铁在线时长统计模型与热力图数据构建",
       "source": "plugins/starrail/online-model.ts"
     },
     "panel": {
-      "description": "星铁：面板",
+      "description": "星铁角色面板查询、更新、公开展板回退、行迹刷新、练度统计、换装试算、导出与删除模块",
       "source": "plugins/starrail/panel.ts"
     },
     "panel-attributes": {
-      "description": "星铁：面板",
+      "description": "星铁角色面板属性计算与等级试算",
       "source": "plugins/starrail/panel-attributes.ts"
     },
     "panel-card": {
-      "description": "星铁：面板 · 图片卡片",
+      "description": "组装角色面板、遗器评分及面板列表卡片的渲染模型与属性标题",
       "source": "plugins/starrail/panel-card.ts"
     },
     "panel-cone-preview": {
-      "description": "星铁：面板",
+      "description": "构建临时替换光锥后的角色面板预览数据及提示标签",
       "source": "plugins/starrail/panel-cone-preview.ts"
     },
     "panel-damage-card": {
-      "description": "星铁：面板 · 图片卡片",
+      "description": "绘制角色伤害计算、词条替换对比及计算条件卡片图片",
       "source": "plugins/starrail/panel-damage-card.ts"
     },
     "panel-damage-rules.characters.acheron": {
-      "description": "星铁：面板",
+      "description": "定义角色“黄泉”的伤害计算条目与行迹/星魂增益规则",
       "source": "plugins/starrail/panel-damage-rules/characters/acheron.ts"
     },
     "panel-damage-rules.characters.aglaea": {
-      "description": "星铁：面板",
+      "description": "角色「阿格莱雅」面板伤害条目及行迹、星魂增益计算规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/aglaea.ts"
     },
     "panel-damage-rules.characters.aha": {
-      "description": "星铁：面板",
+      "description": "角色「阿哈」面板伤害条目、欢愉机制及增益/负债计算规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/aha.ts"
     },
     "panel-damage-rules.characters.anaxa": {
-      "description": "星铁：面板",
+      "description": "角色「那刻夏」面板伤害条目及行迹、星魂增益计算规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/anaxa.ts"
     },
     "panel-damage-rules.characters.archer": {
-      "description": "星铁：面板",
+      "description": "角色「Archer」面板伤害条目及行迹、星魂增益计算规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/archer.ts"
     },
     "panel-damage-rules.characters.argenti": {
-      "description": "星铁：面板",
+      "description": "定义角色银枝的面板伤害条目（普攻、战技、终结技及强化终结技）与行迹、天赋、星魂增益规则。",
       "source": "plugins/starrail/panel-damage-rules/characters/argenti.ts"
     },
     "panel-damage-rules.characters.arlan": {
-      "description": "星铁：面板",
+      "description": "定义角色阿兰的面板伤害条目（普攻、战技、终结技主副目标）及天赋与星魂增益规则。",
       "source": "plugins/starrail/panel-damage-rules/characters/arlan.ts"
     },
     "panel-damage-rules.characters.ashveil": {
-      "description": "星铁：面板",
+      "description": "定义角色不死途的面板伤害条目（含【饲饵】额外伤害、强化天赋追击）及行迹、星魂增益规则。",
       "source": "plugins/starrail/panel-damage-rules/characters/ashveil.ts"
     },
     "panel-damage-rules.characters.asta": {
-      "description": "星铁：面板",
+      "description": "定义角色艾丝妲的面板伤害条目、全队加攻/加速辅助指标以及行迹与蓄能增益规则。",
       "source": "plugins/starrail/panel-damage-rules/characters/asta.ts"
     },
     "panel-damage-rules.characters.aventurine": {
-      "description": "星铁：面板",
+      "description": "星铁角色砂金面板伤害与护盾计算规则及增益文案",
       "source": "plugins/starrail/panel-damage-rules/characters/aventurine.ts"
     },
     "panel-damage-rules.characters.aventurine-elation": {
-      "description": "星铁：面板",
+      "description": "定义角色砂金•戏浪的面板伤害条目（含欢愉伤害与阿哈时刻）及行迹、笑点、星魂增益规则。",
       "source": "plugins/starrail/panel-damage-rules/characters/aventurine-elation.ts"
     },
     "panel-damage-rules.characters.bailu": {
-      "description": "星铁：面板",
+      "description": "星铁角色白露面板伤害与治疗量计算规则及增益文案",
       "source": "plugins/starrail/panel-damage-rules/characters/bailu.ts"
     },
     "panel-damage-rules.characters.black-swan": {
-      "description": "星铁：面板",
+      "description": "星铁角色黑天鹅面板伤害与持续伤害计算规则及增益文案",
       "source": "plugins/starrail/panel-damage-rules/characters/black-swan.ts"
     },
     "panel-damage-rules.characters.blade": {
-      "description": "星铁：面板",
+      "description": "星铁角色刃面板伤害计算规则及增益文案",
       "source": "plugins/starrail/panel-damage-rules/characters/blade.ts"
     },
     "panel-damage-rules.characters.blade-enhanced": {
-      "description": "星铁：面板",
+      "description": "星铁角色刃（强化版）面板伤害计算规则及增益文案",
       "source": "plugins/starrail/panel-damage-rules/characters/blade-enhanced.ts"
     },
     "panel-damage-rules.characters.boothill": {
-      "description": "星铁：面板",
+      "description": "波提欧面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/boothill.ts"
     },
     "panel-damage-rules.characters.bronya": {
-      "description": "星铁：面板",
+      "description": "布洛妮娅面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/bronya.ts"
     },
     "panel-damage-rules.characters.castorice": {
-      "description": "星铁：面板",
+      "description": "遐蝶面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/castorice.ts"
     },
     "panel-damage-rules.characters.cerydra": {
-      "description": "星铁：面板",
+      "description": "刻律德菈面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/cerydra.ts"
     },
     "panel-damage-rules.characters.cipher": {
-      "description": "星铁：面板",
+      "description": "星铁：赛飞儿面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/cipher.ts"
     },
     "panel-damage-rules.characters.clara": {
-      "description": "星铁：面板",
+      "description": "星铁：克拉拉面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/clara.ts"
     },
     "panel-damage-rules.characters.cyrene": {
-      "description": "星铁：面板",
+      "description": "星铁：昔涟面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/cyrene.ts"
     },
     "panel-damage-rules.characters.dahlia": {
-      "description": "星铁：面板",
+      "description": "星铁：大丽花面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/dahlia.ts"
     },
     "panel-damage-rules.characters.dan-heng": {
-      "description": "星铁：面板",
+      "description": "星铁：丹恒面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/dan-heng.ts"
     },
     "panel-damage-rules.characters.danheng-permansor": {
-      "description": "星铁：面板",
+      "description": "丹恒·腾荒角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/danheng-permansor.ts"
     },
     "panel-damage-rules.characters.destruction-trailblazer": {
-      "description": "星铁：面板",
+      "description": "毁灭命途开拓者角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/destruction-trailblazer.ts"
     },
     "panel-damage-rules.characters.dr-ratio": {
-      "description": "星铁：面板",
+      "description": "真理医生角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/dr-ratio.ts"
     },
     "panel-damage-rules.characters.elation-trailblazer": {
-      "description": "星铁：面板",
+      "description": "欢愉命途开拓者角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/elation-trailblazer.ts"
     },
     "panel-damage-rules.characters.evanescia": {
-      "description": "星铁：面板",
+      "description": "绯英角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/evanescia.ts"
     },
     "panel-damage-rules.characters.evernight": {
-      "description": "星铁：面板",
+      "description": "角色长夜月面板伤害计算与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/evernight.ts"
     },
     "panel-damage-rules.characters.feixiao": {
-      "description": "星铁：面板",
+      "description": "角色飞霄面板伤害计算与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/feixiao.ts"
     },
     "panel-damage-rules.characters.firefly": {
-      "description": "星铁：面板",
+      "description": "角色流萤面板伤害计算与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/firefly.ts"
     },
     "panel-damage-rules.characters.firefly-enhanced": {
-      "description": "星铁：面板",
+      "description": "角色流萤（强化形态）面板伤害计算与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/firefly-enhanced.ts"
     },
     "panel-damage-rules.characters.fu-xuan": {
-      "description": "星铁：面板",
+      "description": "角色“符玄”面板伤害、辅助增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/fu-xuan.ts"
     },
     "panel-damage-rules.characters.fugue": {
-      "description": "星铁：面板",
+      "description": "角色“忘归人”面板伤害、击破计算与增益规则",
       "source": "plugins/starrail/panel-damage-rules/characters/fugue.ts"
     },
     "panel-damage-rules.characters.gallagher": {
-      "description": "星铁：面板",
+      "description": "角色“加拉赫”面板伤害、治疗计算与增益规则",
       "source": "plugins/starrail/panel-damage-rules/characters/gallagher.ts"
     },
     "panel-damage-rules.characters.gepard": {
-      "description": "星铁：面板",
+      "description": "角色“杰帕德”面板伤害、护盾计算与增益规则",
       "source": "plugins/starrail/panel-damage-rules/characters/gepard.ts"
     },
     "panel-damage-rules.characters.gilgamesh": {
-      "description": "星铁：面板",
+      "description": "角色“吉尔伽美什”面板伤害计算与增益规则",
       "source": "plugins/starrail/panel-damage-rules/characters/gilgamesh.ts"
     },
     "panel-damage-rules.characters.guinaifen": {
-      "description": "星铁：面板",
+      "description": "角色桂乃芬的面板伤害与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/guinaifen.ts"
     },
     "panel-damage-rules.characters.hanya": {
-      "description": "星铁：面板",
+      "description": "角色寒鸦的面板伤害与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/hanya.ts"
     },
     "panel-damage-rules.characters.harmony-trailblazer": {
-      "description": "星铁：面板",
+      "description": "角色同谐开拓者的面板伤害与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/harmony-trailblazer.ts"
     },
     "panel-damage-rules.characters.herta": {
-      "description": "星铁：面板",
+      "description": "角色黑塔的面板伤害与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/herta.ts"
     },
     "panel-damage-rules.characters.himeko": {
-      "description": "星铁：面板",
+      "description": "角色姬子的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/himeko.ts"
     },
     "panel-damage-rules.characters.himeko-nova": {
-      "description": "星铁：面板",
+      "description": "角色姬子·启行的面板伤害与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/himeko-nova.ts"
     },
     "panel-damage-rules.characters.hook": {
-      "description": "星铁：面板",
+      "description": "角色虎克的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/hook.ts"
     },
     "panel-damage-rules.characters.huohuo": {
-      "description": "星铁：面板",
+      "description": "角色藿藿的面板伤害与治疗计算规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/huohuo.ts"
     },
     "panel-damage-rules.characters.hyacine": {
-      "description": "星铁：面板",
+      "description": "角色风堇的面板伤害与治疗计算规则及增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/hyacine.ts"
     },
     "panel-damage-rules.characters.hysilens": {
-      "description": "星铁：面板",
+      "description": "角色海瑟音的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/hysilens.ts"
     },
     "panel-damage-rules.characters.imbibitor-lunae": {
-      "description": "星铁：面板",
+      "description": "角色“丹恒•饮月”的面板伤害计算规则与增益配置（含强化普攻、奇缘追击伤害及增益效果）",
       "source": "plugins/starrail/panel-damage-rules/characters/imbibitor-lunae.ts"
     },
     "panel-damage-rules.characters.jade": {
-      "description": "星铁：面板",
+      "description": "角色“翡翠”的面板伤害计算规则与增益配置（含各技能伤害条目及天赋、星魂增益效果）",
       "source": "plugins/starrail/panel-damage-rules/characters/jade.ts"
     },
     "panel-damage-rules.characters.jiaoqiu": {
-      "description": "星铁：面板",
+      "description": "角色“椒丘”的面板伤害计算规则与增益配置（含各技能伤害条目、增益效果及作者署名）",
       "source": "plugins/starrail/panel-damage-rules/characters/jiaoqiu.ts"
     },
     "panel-damage-rules.characters.jing-yuan": {
-      "description": "星铁：面板",
+      "description": "角色“景元”的面板伤害计算规则与增益配置（含常规及奇缘星魂强化神君伤害与增益效果）",
       "source": "plugins/starrail/panel-damage-rules/characters/jing-yuan.ts"
     },
     "panel-damage-rules.characters.jingliu": {
-      "description": "星铁：面板",
+      "description": "崩坏：星穹铁道角色「镜流」面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/jingliu.ts"
     },
     "panel-damage-rules.characters.jingliu-enhanced": {
-      "description": "星铁：面板",
+      "description": "角色“镜流（加强版）”的面板伤害计算规则与增益配置（含常规及转魄状态技能伤害条目与增益效果）",
       "source": "plugins/starrail/panel-damage-rules/characters/jingliu-enhanced.ts"
     },
     "panel-damage-rules.characters.kafka": {
-      "description": "星铁：面板",
+      "description": "崩坏：星穹铁道角色「卡芙卡」面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/kafka.ts"
     },
     "panel-damage-rules.characters.kafka-enhanced": {
-      "description": "星铁：面板",
+      "description": "崩坏：星穹铁道加强版角色「卡芙卡」面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/kafka-enhanced.ts"
     },
     "panel-damage-rules.characters.lingsha": {
-      "description": "星铁：面板",
+      "description": "崩坏：星穹铁道角色「灵砂」面板伤害、治疗与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/lingsha.ts"
     },
     "panel-damage-rules.characters.luka": {
-      "description": "星铁：面板",
+      "description": "角色「卢卡」的面板伤害计算条目文案",
       "source": "plugins/starrail/panel-damage-rules/characters/luka.ts"
     },
     "panel-damage-rules.characters.luocha": {
-      "description": "星铁：面板",
+      "description": "角色「罗刹」的面板伤害、治疗、护盾计算条目与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/luocha.ts"
     },
     "panel-damage-rules.characters.lynx": {
-      "description": "星铁：面板",
+      "description": "角色「玲可」的面板伤害、治疗及生命上限加成计算条目与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/lynx.ts"
     },
     "panel-damage-rules.characters.march-hunt": {
-      "description": "星铁：面板",
+      "description": "角色「三月七·巡猎」的面板伤害计算条目、增益规则与作者署名文案",
       "source": "plugins/starrail/panel-damage-rules/characters/march-hunt.ts"
     },
     "panel-damage-rules.characters.march-preservation": {
-      "description": "星铁：面板",
+      "description": "角色「三月七·存护」的面板伤害与护盾计算条目及增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/march-preservation.ts"
     },
     "panel-damage-rules.characters.misha": {
-      "description": "星铁：面板",
+      "description": "角色「米沙」的面板伤害计算条目与增益规则文案",
       "source": "plugins/starrail/panel-damage-rules/characters/misha.ts"
     },
     "panel-damage-rules.characters.mortenax-blade": {
-      "description": "星铁：面板",
+      "description": "角色「千冶·刃」的面板伤害计算条目、增益规则与作者署名文案",
       "source": "plugins/starrail/panel-damage-rules/characters/mortenax-blade.ts"
     },
     "panel-damage-rules.characters.moze": {
-      "description": "星铁：面板",
+      "description": "角色貊泽的面板伤害与增益规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/moze.ts"
     },
     "panel-damage-rules.characters.mydei": {
-      "description": "星铁：面板",
+      "description": "角色万敌的面板伤害与增益规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/mydei.ts"
     },
     "panel-damage-rules.characters.natasha": {
-      "description": "星铁：面板",
+      "description": "角色娜塔莎的面板治疗、伤害与增益规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/natasha.ts"
     },
     "panel-damage-rules.characters.pearl": {
-      "description": "星铁：面板",
+      "description": "角色真珠的面板治疗与增益规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/pearl.ts"
     },
     "panel-damage-rules.characters.pela": {
-      "description": "星铁：面板",
+      "description": "佩拉角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/pela.ts"
     },
     "panel-damage-rules.characters.phainon": {
-      "description": "星铁：面板",
+      "description": "白厄角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/phainon.ts"
     },
     "panel-damage-rules.characters.preservation-trailblazer": {
-      "description": "星铁：面板",
+      "description": "存护开拓者角色面板伤害与护盾计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/preservation-trailblazer.ts"
     },
     "panel-damage-rules.characters.qingque": {
-      "description": "星铁：面板",
+      "description": "青雀角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/qingque.ts"
     },
     "panel-damage-rules.characters.robin": {
-      "description": "星铁：面板",
+      "description": "知更鸟角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/robin.ts"
     },
     "panel-damage-rules.characters.robin-dahlia": {
-      "description": "星铁：面板",
+      "description": "知更鸟•晴歌角色面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/robin-dahlia.ts"
     },
     "panel-damage-rules.characters.ruan-mei": {
-      "description": "星铁：面板",
+      "description": "角色阮·梅的面板伤害计算条目与增益规则定义",
       "source": "plugins/starrail/panel-damage-rules/characters/ruan-mei.ts"
     },
     "panel-damage-rules.characters.saber": {
-      "description": "星铁：面板",
+      "description": "角色Saber的面板伤害计算条目与增益规则定义",
       "source": "plugins/starrail/panel-damage-rules/characters/saber.ts"
     },
     "panel-damage-rules.characters.sampo": {
-      "description": "星铁：面板",
+      "description": "角色桑博的面板伤害计算条目与增益规则定义",
       "source": "plugins/starrail/panel-damage-rules/characters/sampo.ts"
     },
     "panel-damage-rules.characters.seele": {
-      "description": "星铁：面板",
+      "description": "角色“希儿”面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/seele.ts"
     },
     "panel-damage-rules.characters.seele-enhanced": {
-      "description": "星铁：面板",
+      "description": "角色“希儿（加强版）”面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/seele-enhanced.ts"
     },
     "panel-damage-rules.characters.serval": {
-      "description": "星铁：面板",
+      "description": "角色“希露瓦”面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/serval.ts"
     },
     "panel-damage-rules.characters.silver-wolf": {
-      "description": "星铁：面板",
+      "description": "角色“银狼”面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/silver-wolf.ts"
     },
     "panel-damage-rules.characters.silver-wolf-elation": {
-      "description": "星铁：面板",
+      "description": "角色“银狼（欢愉）”面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/silver-wolf-elation.ts"
     },
     "panel-damage-rules.characters.silver-wolf-enhanced": {
-      "description": "星铁：面板",
+      "description": "角色“银狼（加强版）”面板伤害与增益计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/silver-wolf-enhanced.ts"
     },
     "panel-damage-rules.characters.sparkle": {
-      "description": "星铁：面板",
+      "description": "角色「花火」的面板伤害与增益效果计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/sparkle.ts"
     },
     "panel-damage-rules.characters.sparxie": {
-      "description": "星铁：面板",
+      "description": "角色「火花」的面板伤害与增益效果计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/sparxie.ts"
     },
     "panel-damage-rules.characters.sunday": {
-      "description": "星铁：面板",
+      "description": "角色「星期日」的面板增益效果计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/sunday.ts"
     },
     "panel-damage-rules.characters.sushang": {
-      "description": "星铁：面板",
+      "description": "角色「素裳」的面板伤害与增益效果计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/sushang.ts"
     },
     "panel-damage-rules.characters.the-herta": {
-      "description": "星铁：面板",
+      "description": "角色「大黑塔」的面板伤害与增益效果计算规则",
       "source": "plugins/starrail/panel-damage-rules/characters/the-herta.ts"
     },
     "panel-damage-rules.characters.tingyun": {
-      "description": "星铁：面板",
+      "description": "角色“停云”的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/tingyun.ts"
     },
     "panel-damage-rules.characters.tohsaka-rin": {
-      "description": "星铁：面板",
+      "description": "角色“远坂凛”的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/tohsaka-rin.ts"
     },
     "panel-damage-rules.characters.topaz": {
-      "description": "星铁：面板",
+      "description": "角色“托帕&账账”的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/topaz.ts"
     },
     "panel-damage-rules.characters.tribbie": {
-      "description": "星铁：面板",
+      "description": "角色“缇宝”的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/tribbie.ts"
     },
     "panel-damage-rules.characters.welt": {
-      "description": "星铁：面板",
+      "description": "角色瓦尔特的面板伤害详情与增益计算规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/welt.ts"
     },
     "panel-damage-rules.characters.welt-enhanced": {
-      "description": "星铁：面板",
+      "description": "角色“瓦尔特（强化）”的面板伤害计算规则与增益配置",
       "source": "plugins/starrail/panel-damage-rules/characters/welt-enhanced.ts"
     },
     "panel-damage-rules.characters.xueyi": {
-      "description": "星铁：面板",
+      "description": "角色雪衣的面板伤害详情与增益计算规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/xueyi.ts"
     },
     "panel-damage-rules.characters.yanqing": {
-      "description": "星铁：面板",
+      "description": "角色彦卿的面板伤害详情与增益计算规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/yanqing.ts"
     },
     "panel-damage-rules.characters.yao-guang": {
-      "description": "星铁：面板",
+      "description": "角色爻光的面板伤害详情与增益计算规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/yao-guang.ts"
     },
     "panel-damage-rules.characters.yukong": {
-      "description": "星铁：面板",
+      "description": "角色驭空的面板伤害详情、辅助加成与增益计算规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/yukong.ts"
     },
     "panel-damage-rules.characters.yunli": {
-      "description": "星铁：面板",
+      "description": "角色云璃的技能伤害与增益规则配置",
       "source": "plugins/starrail/panel-damage-rules/characters/yunli.ts"
     },
     "panel-damage-rules.DmgAttr": {
-      "description": "星铁：面板",
+      "description": "伤害属性与元素反应加成计算",
       "source": "plugins/starrail/panel-damage-rules/DmgAttr.ts"
     },
     "panel-damage-rules.DmgCalcMeta": {
-      "description": "星铁：面板",
+      "description": "伤害计算元数据及各类反应、击破伤害类型定义",
       "source": "plugins/starrail/panel-damage-rules/DmgCalcMeta.ts"
     },
     "panel-damage-rules.relic-attributes": {
-      "description": "星铁：面板",
+      "description": "定义星穹铁道遗器副词条属性名称与评分计算规则",
       "source": "plugins/starrail/panel-damage-rules/relic-attributes.ts"
     },
     "panel-damage-rules.relics": {
-      "description": "星铁：面板",
+      "description": "定义星穹铁道遗器套装效果的伤害计算增益规则与描述",
       "source": "plugins/starrail/panel-damage-rules/relics.ts"
     },
     "panel-damage-rules.weapons.abundance": {
-      "description": "星铁：面板",
+      "description": "丰饶命途光锥面板伤害计算规则标题文案",
       "source": "plugins/starrail/panel-damage-rules/weapons/abundance.ts"
     },
     "panel-damage-rules.weapons.destruction": {
-      "description": "星铁：面板",
+      "description": "毁灭命途光锥面板伤害计算规则标题文案",
       "source": "plugins/starrail/panel-damage-rules/weapons/destruction.ts"
     },
     "panel-damage-rules.weapons.elation": {
-      "description": "星铁：面板",
+      "description": "欢愉命途光锥面板伤害计算规则标题文案",
       "source": "plugins/starrail/panel-damage-rules/weapons/elation.ts"
     },
     "panel-damage-rules.weapons.erudition": {
-      "description": "星铁：面板",
+      "description": "智识命途光锥的面板伤害计算增益规则与条件描述",
       "source": "plugins/starrail/panel-damage-rules/weapons/erudition.ts"
     },
     "panel-damage-rules.weapons.harmony": {
-      "description": "星铁：面板",
+      "description": "同谐命途光锥的面板伤害计算增益规则与条件描述",
       "source": "plugins/starrail/panel-damage-rules/weapons/harmony.ts"
     },
     "panel-damage-rules.weapons.hunt": {
-      "description": "星铁：面板",
+      "description": "巡猎命途光锥的面板伤害计算增益规则与条件描述",
       "source": "plugins/starrail/panel-damage-rules/weapons/hunt.ts"
     },
     "panel-damage-rules.weapons.nihility": {
-      "description": "星铁：面板",
+      "description": "虚无命途光锥的面板伤害试算规则与减益、增伤说明",
       "source": "plugins/starrail/panel-damage-rules/weapons/nihility.ts"
     },
     "panel-damage-rules.weapons.preservation": {
-      "description": "星铁：面板",
+      "description": "存护命途光锥的面板伤害试算规则与增益说明",
       "source": "plugins/starrail/panel-damage-rules/weapons/preservation.ts"
     },
     "panel-damage-rules.weapons.remembrance": {
-      "description": "星铁：面板",
+      "description": "记忆命途光锥的面板伤害试算规则与忆灵增益说明",
       "source": "plugins/starrail/panel-damage-rules/weapons/remembrance.ts"
     },
     "panel-detail-skia": {
-      "description": "星铁：面板",
+      "description": "使用Skia绘制角色面板详情图，包含属性标签、遗器词条简称及伤害试算表文案",
       "source": "plugins/starrail/panel-detail-skia.ts"
     },
     "panel-discard": {
-      "description": "星铁：面板",
+      "description": "角色面板存档管理与丢弃记录",
       "source": "plugins/starrail/panel-discard.ts"
     },
     "panel-eidolon": {
-      "description": "星铁：面板",
+      "description": "角色面板临时星魂切换处理",
       "source": "plugins/starrail/panel-eidolon.ts"
     },
     "panel-equipment": {
-      "description": "星铁：面板",
+      "description": "临时更换光锥叠影与跨角色借用装备部位",
       "source": "plugins/starrail/panel-equipment.ts"
     },
     "panel-file": {
-      "description": "星铁：面板",
+      "description": "面板数据文件导出及格式名称标识",
       "source": "plugins/starrail/panel-file.ts"
     },
     "panel-legacy": {
-      "description": "星铁：面板",
+      "description": "旧版星铁面板档案文件的读取与完整性校验",
       "source": "plugins/starrail/panel-legacy.ts"
     },
     "panel-list-skia": {
-      "description": "星铁：面板",
+      "description": "已保存角色面板列表卡片的图像渲染",
       "source": "plugins/starrail/panel-list-skia.ts"
     },
     "panel-model": {
-      "description": "星铁：面板",
+      "description": "面板数据规范化、旧档案解析与元素属性映射",
       "source": "plugins/starrail/panel-model.ts"
     },
     "panel-original": {
-      "description": "星铁：面板",
+      "description": "面板原图回复的权限、大小限制与撤回控制",
       "source": "plugins/starrail/panel-original.ts"
     },
     "panel-portrait": {
-      "description": "星铁：面板",
+      "description": "角色立绘资源路径与旧图库名称映射解析",
       "source": "plugins/starrail/panel-portrait.ts"
     },
     "panel-practice-skia": {
-      "description": "星铁：面板",
+      "description": "角色面板练度统计表格卡片的图像渲染",
       "source": "plugins/starrail/panel-practice-skia.ts"
     },
     "panel-relic-set": {
-      "description": "星铁：面板",
+      "description": "面板临时替换遗器套装组合及校验逻辑",
       "source": "plugins/starrail/panel-relic-set.ts"
     },
     "panel-relic-skia": {
-      "description": "星铁：面板",
+      "description": "遗器评分权重、部位上限与规则说明卡片的图像渲染",
       "source": "plugins/starrail/panel-relic-skia.ts"
     },
     "panel-showcase": {
-      "description": "星铁：面板 · 角色展柜",
+      "description": "星铁公开展板服务：拉取并规范化公开角色展板数据",
       "source": "plugins/starrail/panel-showcase.ts"
     },
     "panel-showcase-command": {
-      "description": "星铁：面板 · 角色展柜 · 命令",
+      "description": "星铁公开展板命令：管理不同区服的公开面板来源配置",
       "source": "plugins/starrail/panel-showcase-command.ts"
     },
     "panel-showcase-config": {
-      "description": "星铁：面板 · 角色展柜 · 配置",
+      "description": "星铁公开展板配置：读取与校验展板服务选项",
       "source": "plugins/starrail/panel-showcase-config.ts"
     },
     "panel-signed-export": {
-      "description": "星铁：面板",
+      "description": "星铁签名面板导出：校验 UID 签名并发送本地旧面板文件",
       "source": "plugins/starrail/panel-signed-export.ts"
     },
     "panel-skill-preview": {
-      "description": "星铁：面板",
+      "description": "星铁技能试算：生成临时技能等级预览数据",
       "source": "plugins/starrail/panel-skill-preview.ts"
     },
     "panel-trace-preview": {
-      "description": "星铁：面板",
+      "description": "星铁行迹试算：生成临时满行迹预览数据",
       "source": "plugins/starrail/panel-trace-preview.ts"
     },
     "panel-trace-refresh": {
-      "description": "星铁：面板",
+      "description": "星铁行迹档案：读取与校验角色行迹等级记录",
       "source": "plugins/starrail/panel-trace-refresh.ts"
     },
     "panel-transfer": {
-      "description": "星铁：面板",
+      "description": "星铁面板迁移：校验账号归属并转移或合并面板档案",
       "source": "plugins/starrail/panel-transfer.ts"
     },
     "personal-record": {
-      "description": "星铁",
+      "description": "星铁个人战绩名片数据解析与查询模块",
       "source": "plugins/starrail/personal-record.ts"
     },
     "personal-record-card": {
-      "description": "星铁：图片卡片",
+      "description": "星铁个人战绩名片图片卡片渲染模块",
       "source": "plugins/starrail/personal-record-card.ts"
     },
     "personal-roster-card": {
-      "description": "星铁：图片卡片",
+      "description": "绘制个人角色名册与行迹统计图片卡片",
       "source": "plugins/starrail/personal-roster-card.ts"
     },
     "personal-roster-command": {
-      "description": "星铁：命令",
+      "description": "处理个人角色名册与行迹统计查询命令",
       "source": "plugins/starrail/personal-roster-command.ts"
     },
     "personal-roster-model": {
-      "description": "星铁",
+      "description": "构建个人角色名册与行迹统计数据模型",
       "source": "plugins/starrail/personal-roster-model.ts"
     },
     "rank-statistics": {
-      "description": "星铁",
+      "description": "生成角色练度排名趋势统计结果",
       "source": "plugins/starrail/rank-statistics.ts"
     },
     "relic-score": {
-      "description": "星铁",
+      "description": "遗器词条属性规则定义与角色专属评分权重配置",
       "source": "plugins/starrail/relic-score.ts"
     },
     "render-card": {
-      "description": "星铁：图片渲染 · 图片卡片",
+      "description": "角色面板图卡图片渲染与输出大小限制校验",
       "source": "plugins/starrail/render-card.ts"
     },
     "rogue-card": {
-      "description": "星铁：图片卡片",
+      "description": "宇宙战绩卡片图像绘制、命途雷达图渲染与文本摘要生成",
       "source": "plugins/starrail/rogue-card.ts"
     },
     "rogue-command": {
-      "description": "星铁：命令",
+      "description": "模拟宇宙与差分宇宙战绩私聊查询命令校验、请求与错误提示",
       "source": "plugins/starrail/rogue-command.ts"
     },
     "rogue-model": {
-      "description": "星铁",
+      "description": "模拟宇宙、寰宇蝗灾与差分宇宙战绩卡片数据模型组装",
       "source": "plugins/starrail/rogue-model.ts"
     },
     "simulation.admin": {
-      "description": "星铁",
+      "description": "解析并管理模拟跃迁的全局规则、卡池名称与每日票数限额配置",
       "source": "plugins/starrail/simulation/admin.ts"
     },
     "simulation.card": {
-      "description": "星铁：图片卡片",
+      "description": "渲染模拟跃迁结果卡片与转生身份卡片图像",
       "source": "plugins/starrail/simulation/card.ts"
     },
     "simulation.commands": {
-      "description": "星铁：命令",
+      "description": "处理模拟跃迁、转生、星轨票查询、帮助与管理指令分发",
       "source": "plugins/starrail/simulation/commands.ts"
     },
     "simulation.import-legacy-cli": {
-      "description": "星铁",
+      "description": "星铁旧模拟跃迁数据迁移命令行工具",
       "source": "plugins/starrail/simulation/import-legacy-cli.ts"
     },
     "simulation.independent-settings": {
-      "description": "星铁：设置",
+      "description": "独立星铁模拟跃迁规则配置与存储",
       "source": "plugins/starrail/simulation/independent-settings.ts"
     },
     "simulation.independent-state": {
-      "description": "星铁",
+      "description": "独立星铁模拟跃迁状态管理与抽卡执行",
       "source": "plugins/starrail/simulation/independent-state.ts"
     },
     "simulation.legacy-import": {
-      "description": "星铁",
+      "description": "星铁旧模拟跃迁 Valkey 数据导入与校验",
       "source": "plugins/starrail/simulation/legacy-import.ts"
     },
     "simulation.personal-pools": {
-      "description": "星铁",
+      "description": "星铁个人自定义跃迁卡池解析与读取",
       "source": "plugins/starrail/simulation/personal-pools.ts"
     },
     "simulation.pools": {
-      "description": "星铁",
+      "description": "星铁模拟跃迁卡池定义与排期管理",
       "source": "plugins/starrail/simulation/pools.ts"
     },
     "simulation.reincarnation": {
-      "description": "星铁",
+      "description": "星铁转生模拟中的星神、命途等身份数据定义",
       "source": "plugins/starrail/simulation/reincarnation.ts"
     },
     "simulation.reincarnation-theme": {
-      "description": "星铁",
+      "description": "星铁转生模拟主题资源的检查与下载准备",
       "source": "plugins/starrail/simulation/reincarnation-theme.ts"
     },
     "simulation.settings": {
-      "description": "星铁：设置",
+      "description": "校验并解析星铁模拟跃迁（抽卡）的各项配置规则与卡池参数",
       "source": "plugins/starrail/simulation/settings.ts"
     },
     "simulation.store": {
-      "description": "星铁",
+      "description": "管理星铁模拟跃迁账户存档的格式校验、持久化读写与转生锁文件操作",
       "source": "plugins/starrail/simulation/store.ts"
     },
     "team-damage-card": {
-      "description": "星铁：图片卡片",
+      "description": "渲染星铁队伍伤害计算结果的图像卡片，包含阵容、面板属性、伤害贡献与行动过程等表格内容",
       "source": "plugins/starrail/team-damage-card.ts"
     },
     "team-damage-command": {
-      "description": "星铁：命令",
+      "description": "崩坏：星穹铁道队伍伤害查询指令处理与报告生成",
       "source": "plugins/starrail/team-damage-command.ts"
     },
     "team-damage-model": {
-      "description": "星铁",
+      "description": "崩坏：星穹铁道队伍角色别名解析与编队校验",
       "source": "plugins/starrail/team-damage-model.ts"
     },
     "team-damage-runtime": {
-      "description": "星铁：运行环境",
+      "description": "崩坏：星穹铁道队伍伤害计算子进程调度与结果校验",
       "source": "plugins/starrail/team-damage-runtime.ts"
     },
     "team-engine.native.compile.encounter": {
-      "description": "星铁",
+      "description": "队伍配置、角色遗器光锥与关卡战斗编译器",
       "source": "plugins/starrail/team-engine/native/compile/encounter.ts"
     },
     "team-engine.native.compile.library": {
-      "description": "星铁",
+      "description": "角色、光锥、遗器与命途模板库加载",
       "source": "plugins/starrail/team-engine/native/compile/library.ts"
     },
     "team-engine.native.mechanics.context": {
-      "description": "星铁",
+      "description": "战斗机制表达式求值、随机绑定与目标选取上下文",
       "source": "plugins/starrail/team-engine/native/mechanics/context.ts"
     },
     "team-engine.native.mechanics.effects": {
-      "description": "星铁",
+      "description": "战斗机制效果执行器（伤害、状态、召唤、削韧与行动触发）",
       "source": "plugins/starrail/team-engine/native/mechanics/effects.ts"
     },
     "team-engine.native.mechanics.events": {
-      "description": "星铁",
+      "description": "战斗事件分发、校验与重入深度控制模块",
       "source": "plugins/starrail/team-engine/native/mechanics/events.ts"
     },
     "team-engine.native.mechanics.index": {
-      "description": "星铁",
+      "description": "战斗机制上下文装配与击破、属性公式调度模块",
       "source": "plugins/starrail/team-engine/native/mechanics/index.ts"
     },
     "team-engine.native.mechanics.modifiers": {
-      "description": "星铁",
+      "description": "战斗状态（增益、减益与持续伤害）施加与面板修饰计算模块",
       "source": "plugins/starrail/team-engine/native/mechanics/modifiers.ts"
     },
     "team-engine.native.mechanics.resources": {
-      "description": "星铁",
+      "description": "战斗资源（能量、战技点等）增减与溢出结算模块",
       "source": "plugins/starrail/team-engine/native/mechanics/resources.ts"
     },
     "team-engine.native.runner.timeline": {
-      "description": "星铁",
+      "description": "战斗模拟时间轴与行动记录生成",
       "source": "plugins/starrail/team-engine/native/runner/timeline.ts"
     },
     "team-engine.native.worker-build": {
-      "description": "星铁",
+      "description": "队伍伤害模拟配置与角色面板构建",
       "source": "plugins/starrail/team-engine/native/worker-build.ts"
     },
     "team-owned-panel": {
-      "description": "星铁：面板",
+      "description": "角色持有面板与遗器数据解析",
       "source": "plugins/starrail/team-owned-panel.ts"
     }
   },
@@ -994,9 +994,9 @@
     "challenge-theme.text_d065206883": "主题已处理 {value1}",
     "challenge-theme.text_fa7ea2af73": "恢复本地角色头像",
     "challenge.text_1b3721abe9": "星铁档案已变更，请重新查询。",
-    "challenge.text_1ba90781fc": "profile {profileId} 没有同步星铁 UID。",
+    "challenge.text_1ba90781fc": "档案 {profileId} 没有同步星铁 UID。",
     "challenge.text_390789ffec": "星铁挑战战绩查询失败，请稍后重试。",
-    "challenge.text_3caf242584": "请先登录 profile {profileId}。",
+    "challenge.text_3caf242584": "请先登录档案 {profileId}。",
     "challenge.text_7e455c400b": "星铁战绩未公开或暂无可查询的记录。",
     "challenge.text_9b8b41464d": "星铁往期异相仲裁 · UID {uid} · {length} 期",
     "challenge.text_c7cc58eb23": "星铁战绩 Cookie 未能续期，请确认当前档案登录状态后重试。",
@@ -1160,7 +1160,7 @@
     "gacha-record-archive.text_ed7d2aec24": "没有找到指定 QQ 和 UID 的新版星铁逐抽档案副本。",
     "gacha-record-archive.text_f1c0a168d8": "星铁逐抽档案合并冲突。",
     "gacha-record-archive.text_f46025d0da": "无法读取星铁旧逐抽档案。",
-    "gacha-record-archive.text_fd6f9cc2c5": "星铁旧逐抽档案的根须为实际目录。",
+    "gacha-record-archive.text_fd6f9cc2c5": "星铁旧逐抽档案的根目录须为实际目录。",
     "gacha-record-archive.text_fe29cd3b99": "无法确认星铁旧逐抽档案的服务器时区，请使用带时区的 UIGF 文件。",
     "gacha-record-detail.text_03b8727e80": "星铁抽卡卡池没有对应的详情模板。",
     "gacha-record-detail.text_4108a73b14": "星铁抽卡显示页码超出范围。",
@@ -1376,7 +1376,7 @@
     "group-relic-rank-card.text_7420dc5ff6": "本群主动登记并仍绑定的 UID，使用本轮读到的公开展板。",
     "group-relic-rank-card.text_7527b41911": "双暴排名",
     "group-relic-rank-card.text_7a6335b379": "记忆",
-    "group-relic-rank-card.text_8239a4e7ae": "双爆副词条",
+    "group-relic-rank-card.text_8239a4e7ae": "双暴副词条",
     "group-relic-rank-card.text_8f16cda3b9": "精{affix}",
     "group-relic-rank-card.text_94c51e5cd1": "加权有效词条排名",
     "group-relic-rank-card.text_976ffc8799": "按遗器的双暴词条计算，包含暴击主词条。",
@@ -1656,7 +1656,7 @@
     "panel-damage-rules.characters.aha.text_f4790d805d": "{punchline}好活终结技·对单全弹射",
     "panel-damage-rules.characters.anaxa.text_08cd8017cf": "冰翼",
     "panel-damage-rules.characters.anaxa.text_14c2df0a0f": "那刻夏1魂：施放战技击中敌方目标时，使目标防御力降低[enemyDef]%",
-    "panel-damage-rules.characters.anaxa.text_2713c4761d": "那刻夏4魂：施放战技时，攻击力最多提高[atkPct]% ",
+    "panel-damage-rules.characters.anaxa.text_2713c4761d": "那刻夏4魂：施放战技时，攻击力最多提高[atkPct]%",
     "panel-damage-rules.characters.anaxa.text_2f49424ff1": "那刻夏2魂：敌方目标入场时，使其全属性抗性降低[kx]%",
     "panel-damage-rules.characters.anaxa.text_3993998d7f": "战技单次伤害（5个敌方目标）",
     "panel-damage-rules.characters.anaxa.text_4d4a8aec8c": "行迹-质性的嬗变：敌方目标拥有7个不同属性的弱点时，那刻夏对其造成的伤害无视[ignore]%的防御力",
@@ -1665,7 +1665,7 @@
     "panel-damage-rules.characters.anaxa.text_7459091160": "战技单次伤害（1个敌方目标）",
     "panel-damage-rules.characters.anaxa.text_a5278532ca": "那刻夏战技：施放时场上有1个可攻击的敌方目标，本次战技造成的伤害提高[dmg]%",
     "panel-damage-rules.characters.anaxa.text_a900baa1d0": "普攻伤害",
-    "panel-damage-rules.characters.anaxa.text_b2b839e6b1": "那刻夏6命：那刻夏造成的伤害为原伤害的130%。行迹【必要的留白】的2种效果都会直接触发，不再依赖我方队伍中「智识」命途角色的数量（这里补充效果1——那刻夏的暴击伤害提高[cdmg]%）",
+    "panel-damage-rules.characters.anaxa.text_b2b839e6b1": "那刻夏6魂：那刻夏造成的伤害为原伤害的130%。行迹【必要的留白】的2种效果都会直接触发，不再依赖我方队伍中「智识」命途角色的数量（这里补充效果1——那刻夏的暴击伤害提高[cdmg]%）",
     "panel-damage-rules.characters.anaxa.text_b6a5fc7f30": "终结技伤害",
     "panel-damage-rules.characters.anaxa.text_c5ed59cee9": "行迹-必要的留白：我方队伍中有2名「智识」命途角色时，我方全体造成的伤害提高[dmg]%",
     "panel-damage-rules.characters.archer.text_08cd8017cf": "冰翼",
@@ -1676,9 +1676,9 @@
     "panel-damage-rules.characters.archer.text_a900baa1d0": "普攻伤害",
     "panel-damage-rules.characters.archer.text_b6a5fc7f30": "终结技伤害",
     "panel-damage-rules.characters.archer.text_de6842a3c3": "天赋追加攻击伤害",
-    "panel-damage-rules.characters.archer.text_f87542bdeb": "Archer 2魂：施放终结技时，使敌方目标的量子属性的抗性降低[kx]%",
+    "panel-damage-rules.characters.archer.text_f87542bdeb": "Archer 2魂：施放终结技时，使敌方目标的量子属性抗性降低[kx]%",
     "panel-damage-rules.characters.argenti.text_3d13b9be64": "强化终结技总伤害",
-    "panel-damage-rules.characters.argenti.text_4c3859a4e0": "行迹-勇气：对当前生命百分比小于等于50%的敌人目标造成的伤害提高[dmg]%",
+    "panel-damage-rules.characters.argenti.text_4c3859a4e0": "行迹-勇气：对当前生命百分比小于等于50%的敌方目标造成的伤害提高[dmg]%",
     "panel-damage-rules.characters.argenti.text_7ab5e702a6": "银枝2命：释放终结技命中3名及以上敌人时，攻击力提高[atkPct]%",
     "panel-damage-rules.characters.argenti.text_8155ca6262": "银枝1命：[_count]层【升格】提升暴击伤害[cdmg]%",
     "panel-damage-rules.characters.argenti.text_97f8059600": "银枝6命：释放终结技时，无视敌方目标[ignore]%的防御力",
@@ -1704,8 +1704,8 @@
     "panel-damage-rules.characters.ashveil.text_adb84949c3": "不死途4魂：不死途释放终结技时，攻击力提高[atkPct]%",
     "panel-damage-rules.characters.ashveil.text_aef3538851": "战技伤害",
     "panel-damage-rules.characters.ashveil.text_b6a5fc7f30": "终结技伤害",
-    "panel-damage-rules.characters.ashveil.text_ca2f30c9b1": "不死途1魂：小于等于50%的敌方目标受到的伤害提高[enemydmgPct]%",
-    "panel-damage-rules.characters.ashveil.text_d36df9d21c": "影肢：不死途追加攻击造成的伤害额外提高[tCdmg]%。",
+    "panel-damage-rules.characters.ashveil.text_ca2f30c9b1": "不死途1魂：当前生命百分比小于等于50%的敌方目标受到的伤害提高[enemydmgPct]%",
+    "panel-damage-rules.characters.ashveil.text_d36df9d21c": "影肢：不死途追加攻击造成的伤害额外提高[tCdmg]%",
     "panel-damage-rules.characters.asta.text_80b8a95958": "蓄能5层全队加攻",
     "panel-damage-rules.characters.asta.text_81e17219e7": "蓄能5层：攻击力提高[atkPct]%",
     "panel-damage-rules.characters.asta.text_8d06038abe": "普攻灼烧持续伤害",
@@ -1716,14 +1716,14 @@
     "panel-damage-rules.characters.aventurine-elation.text_18bd8f1066": "砂金•戏浪6魂：砂金•戏浪造成的欢愉伤害增笑[merrymakes]%",
     "panel-damage-rules.characters.aventurine-elation.text_1ff95fd08f": "战技欢愉伤害",
     "panel-damage-rules.characters.aventurine-elation.text_27f945ccf3": "行迹-极乐派对：速度大于等于140时，使自身欢愉度提高30%，之后每超过1点速度使自身欢愉度额外提高1%，最多计入200点超出的速度",
-    "panel-damage-rules.characters.aventurine-elation.text_76c960e299": "笑点计算：计算笑点用",
-    "panel-damage-rules.characters.aventurine-elation.text_7d2d5012cf": "大招欢愉伤害",
+    "panel-damage-rules.characters.aventurine-elation.text_76c960e299": "笑点计算：用于计算笑点",
+    "panel-damage-rules.characters.aventurine-elation.text_7d2d5012cf": "终结技欢愉伤害",
     "panel-damage-rules.characters.aventurine-elation.text_8c519708d2": "行迹-纵享惊涛：队伍中存在1名其他「欢愉」命途角色时，我方全体欢愉度提高20%，砂金•戏浪额外提高80%",
     "panel-damage-rules.characters.aventurine-elation.text_9a6c2d3283": "天赋欢愉技伤害",
     "panel-damage-rules.characters.aventurine-elation.text_a900baa1d0": "普攻伤害",
     "panel-damage-rules.characters.aventurine-elation.text_aef3538851": "战技伤害",
     "panel-damage-rules.characters.aventurine-elation.text_c27c817a0f": "砂金•戏浪1魂：全属性抗性穿透提高[kx]%",
-    "panel-damage-rules.characters.aventurine-elation.text_d57a7d9641": "大招伤害",
+    "panel-damage-rules.characters.aventurine-elation.text_d57a7d9641": "终结技伤害",
     "panel-damage-rules.characters.aventurine-elation.text_ea797c1656": "行迹-旧梦淘金：暴击伤害提高48%，队友施放普攻、战技、追加攻击或终结技后，我方全体暴击伤害额外提高48%",
     "panel-damage-rules.characters.aventurine-elation.text_f721e5df21": "砂金•戏浪4魂：施放战技时，我方全体造成的伤害无视敌方目标[ignore]%的防御力",
     "panel-damage-rules.characters.aventurine-elation.text_fe5a3a6d9f": "阿哈时刻伤害",
@@ -1779,7 +1779,7 @@
     "panel-damage-rules.characters.blade.text_da52740a04": "强化普攻(单体)",
     "panel-damage-rules.characters.blade.text_e45a9cb4f5": "刃2命：处于【地狱变】状态时，暴击率提高15%",
     "panel-damage-rules.characters.boothill.text_1f3955e8d4": "三层口袋·击破伤害(10韧性怪)",
-    "panel-damage-rules.characters.boothill.text_2706684de8": "波提欧1命：造成伤害时无视地方目标[ignore]%的防御力",
+    "panel-damage-rules.characters.boothill.text_2706684de8": "波提欧1命：造成伤害时无视敌方目标[ignore]%的防御力",
     "panel-damage-rules.characters.boothill.text_271c1ed194": "两层口袋·最大击破伤害",
     "panel-damage-rules.characters.boothill.text_599c2e0696": "战技Buff：处于【绝命对峙】的敌方受到的伤害提高[enemydmg]%",
     "panel-damage-rules.characters.boothill.text_5da6ea551c": "强化普攻伤害",
@@ -1880,7 +1880,7 @@
     "panel-damage-rules.characters.danheng-permansor.text_2de6b9d615": "6魂-草木微尘皆入梦中：场上存在【同袍】时，敌方全体受到的伤害提高[enemydmg]%",
     "panel-damage-rules.characters.danheng-permansor.text_2f5c203ac1": "终结技护盾量",
     "panel-damage-rules.characters.danheng-permansor.text_369c810a4d": "终结技强化龙灵追击(同袍攻击:{comradeAtk}){value2}{value3}",
-    "panel-damage-rules.characters.danheng-permansor.text_82532557e5": "6命终结技【同袍】附加伤害(同袍攻击:{comradeAtk})",
+    "panel-damage-rules.characters.danheng-permansor.text_82532557e5": "6魂终结技【同袍】附加伤害(同袍攻击:{comradeAtk})",
     "panel-damage-rules.characters.danheng-permansor.text_9953377f67": "战技护盾量",
     "panel-damage-rules.characters.danheng-permansor.text_9eff916f17": "天赋龙灵护盾量",
     "panel-damage-rules.characters.danheng-permansor.text_a223a01491": "(2魂+)",
@@ -1897,9 +1897,9 @@
     "panel-damage-rules.characters.destruction-trailblazer.text_d84ee1cece": "终结技伤害·副目标",
     "panel-damage-rules.characters.destruction-trailblazer.text_ea65e79484": "天赋-牵制盗垒：攻击力提高[atkPct]%",
     "panel-damage-rules.characters.dr-ratio.text_3592a3c1a2": "3负面·追加攻击",
-    "panel-damage-rules.characters.dr-ratio.text_690e3f51a9": "真理2命：天赋的追加攻击额外造成[_atkPct]%的附加伤害",
+    "panel-damage-rules.characters.dr-ratio.text_690e3f51a9": "真理2魂：天赋的追加攻击额外造成[_atkPct]%的附加伤害",
     "panel-damage-rules.characters.dr-ratio.text_8381c734b5": "天赋-推理：目标持有[_count]个负面状态，真理医生造成伤害提高[dmg]%",
-    "panel-damage-rules.characters.dr-ratio.text_88aafb91c5": "真理6命：天赋的追加攻击造成伤害提高[tDmg]%",
+    "panel-damage-rules.characters.dr-ratio.text_88aafb91c5": "真理6魂：天赋的追加攻击造成伤害提高[tDmg]%",
     "panel-damage-rules.characters.dr-ratio.text_9174d7c623": "天赋-归纳：叠满[_count]层时，真理医生暴击率提高[cpct]%，暴击伤害提高[cdmg]%",
     "panel-damage-rules.characters.dr-ratio.text_a900baa1d0": "普攻伤害",
     "panel-damage-rules.characters.dr-ratio.text_aef3538851": "战技伤害",
@@ -1925,7 +1925,7 @@
     "panel-damage-rules.characters.evanescia.text_697c60e320": "战技千活伤害对三",
     "panel-damage-rules.characters.evanescia.text_76c960e299": "笑点计算：计算笑点用",
     "panel-damage-rules.characters.evanescia.text_7ad80046cc": "欧阳青瓜",
-    "panel-damage-rules.characters.evanescia.text_7e6d397d1e": "行迹-行裁断：狐狸老师】施放攻击时会额外对目标施加易伤，使其受到的伤害提高12%",
+    "panel-damage-rules.characters.evanescia.text_7e6d397d1e": "行迹-行裁断：【狐狸老师】施放攻击时会额外对目标施加易伤，使其受到的伤害提高12%",
     "panel-damage-rules.characters.evanescia.text_902f89d4bd": "80笑点欢愉技伤害",
     "panel-damage-rules.characters.evanescia.text_a2eff9d8f8": "天赋：绯英获得等同于暴击伤害20%的欢愉度",
     "panel-damage-rules.characters.evanescia.text_b68c66e5cf": "绯英2魂：暴击伤害提高36%",
@@ -1955,7 +1955,7 @@
     "panel-damage-rules.characters.feixiao.text_bb89d234bd": "Q最多造成伤害",
     "panel-damage-rules.characters.feixiao.text_d5b9be5dd8": "雷狩：发动天赋攻击时使自身造成的伤害提高[dmg]%",
     "panel-damage-rules.characters.feixiao.text_f07bf09266": "Q结束伤害",
-    "panel-damage-rules.characters.feixiao.text_f4afa9cd93": "飞霄6魂：终结技抗性穿透提高[qKx]%,天赋的追加攻击伤害同时视为终结技伤害，并且伤害提高[tPlus]",
+    "panel-damage-rules.characters.feixiao.text_f4afa9cd93": "飞霄6魂：终结技抗性穿透提高[qKx]%，天赋的追加攻击伤害同时视为终结技伤害，并且伤害提高[tPlus]",
     "panel-damage-rules.characters.firefly-enhanced.text_0882b21a9d": "强化战技伤害",
     "panel-damage-rules.characters.firefly-enhanced.text_161bfe9682": "终结技Buff：速度提高[speed]点，释放强化普攻和战技时弱点击破效率提高50%，使敌方受到的击破伤害提高[breakEnemydmg]%",
     "panel-damage-rules.characters.firefly-enhanced.text_3141c6002e": "流萤1魂：释放强化战技时无视目标[ignore]%的防御",
@@ -1975,7 +1975,7 @@
     "panel-damage-rules.characters.firefly.text_af48438fe4": "流萤4魂：终结技状态下，效果抵抗提高[effDef]%",
     "panel-damage-rules.characters.fu-xuan.text_022e6a0c08": "战技提高暴击率",
     "panel-damage-rules.characters.fu-xuan.text_027897638a": "战技Buff：生命上限提高[hpPlus]，暴击率提高[cpct]%",
-    "panel-damage-rules.characters.fu-xuan.text_051e203c2f": "符玄1命：暴击伤害提高[cdmg]%",
+    "panel-damage-rules.characters.fu-xuan.text_051e203c2f": "符玄1魂：暴击伤害提高[cdmg]%",
     "panel-damage-rules.characters.fu-xuan.text_062180fb29": "终结技生命回复量",
     "panel-damage-rules.characters.fu-xuan.text_3a9744806a": "符玄6命：终结技伤害提高[qPlus]",
     "panel-damage-rules.characters.fu-xuan.text_789e7606e1": "战技提高生命上限值",
@@ -2069,7 +2069,7 @@
     "panel-damage-rules.characters.himeko-nova.text_b240150234": "大招裁决模式",
     "panel-damage-rules.characters.himeko-nova.text_bb2d385d14": "同行协议：裁决：伤害提高[dmg]%，造成的终结技伤害额外提高[qDmg]%",
     "panel-damage-rules.characters.himeko-nova.text_cb5d4de5aa": "姬子启行6魂：火属性抗性穿透提高[kx]%，助战技造成的伤害提高[tDmg]%",
-    "panel-damage-rules.characters.himeko-nova.text_e4e996a877": "使用助战技提高全属性抗性穿透提高[kx]%、暴击伤害提高[cdmg]%",
+    "panel-damage-rules.characters.himeko-nova.text_e4e996a877": "使用助战技使全属性抗性穿透提高[kx]%、暴击伤害提高[cdmg]%",
     "panel-damage-rules.characters.himeko-nova.text_ea218442c1": "姬子启行2魂：终结技和助战技造成的伤害为原伤害的130%",
     "panel-damage-rules.characters.himeko-nova.text_f1587ca823": "【领航旗语】使我方全体造成的伤害提高[dmg]%",
     "panel-damage-rules.characters.himeko.text_1a92a0c830": "行迹-道标：生命值大于80%时提高暴击率15%",
@@ -2086,7 +2086,7 @@
     "panel-damage-rules.characters.hook.text_aa10a3aec3": "强化战技伤害·主目标",
     "panel-damage-rules.characters.hook.text_aef3538851": "战技伤害",
     "panel-damage-rules.characters.hook.text_b6a5fc7f30": "终结技伤害",
-    "panel-damage-rules.characters.hook.text_c12f1d066c": "虎克6命：对灼烧状态下的地方目标造成的伤害提高[dmg]%",
+    "panel-damage-rules.characters.hook.text_c12f1d066c": "虎克6命：对灼烧状态下的敌方目标造成的伤害提高[dmg]%",
     "panel-damage-rules.characters.hook.text_c4639706bb": "战技持续伤害",
     "panel-damage-rules.characters.huohuo.text_194bc6aa39": "天赋禳命生命回复",
     "panel-damage-rules.characters.huohuo.text_1f6c49662a": "战技生命回复·相邻目标",
@@ -2244,7 +2244,7 @@
     "panel-damage-rules.characters.lynx.text_624ae257d8": "玲可1命：为生命值百分比<=50%的目标提供治疗时，治疗量提高[heal]%",
     "panel-damage-rules.characters.lynx.text_789e7606e1": "战技提高生命上限值",
     "panel-damage-rules.characters.lynx.text_8f77dd693c": "天赋持续回复",
-    "panel-damage-rules.characters.lynx.text_996ce2e402": "玲可6命：战技提供的生命上限提高效果额外提高,提高[_hpPlus]",
+    "panel-damage-rules.characters.lynx.text_996ce2e402": "玲可6命：战技提供的生命上限提高效果额外提高，提高[_hpPlus]",
     "panel-damage-rules.characters.lynx.text_a900baa1d0": "普攻伤害",
     "panel-damage-rules.characters.lynx.text_daafe329e2": "终结技生命回复",
     "panel-damage-rules.characters.lynx.text_f9bc6007f7": "战技生命回复",
@@ -2471,7 +2471,7 @@
     "panel-damage-rules.characters.silver-wolf-enhanced.text_ae749d3fc4": "击破纠缠伤害(10韧性怪)",
     "panel-damage-rules.characters.silver-wolf-enhanced.text_aef3538851": "战技伤害",
     "panel-damage-rules.characters.silver-wolf-enhanced.text_b82434cffb": "天赋-缺陷：防御力降低[enemyDef]%",
-    "panel-damage-rules.characters.silver-wolf-enhanced.text_c994b94183": "战技：添加弱点降低单属性抗性20%，并降低全属性抗性[kx]%",
+    "panel-damage-rules.characters.silver-wolf-enhanced.text_c994b94183": "战技：添加弱点降低单属性抗性20%并降低全属性抗性，共降低抗性[kx]%",
     "panel-damage-rules.characters.silver-wolf-enhanced.text_d573c70961": "终结技+4命({qTargetCount}目标, {debuffCount}层Buff)",
     "panel-damage-rules.characters.silver-wolf.text_362d7177af": "银狼天赋：防御力缺陷降低敌方防御力[enemyDef]%",
     "panel-damage-rules.characters.silver-wolf.text_3b8451d221": "银狼战技：添加弱点降低对方对应属性抗性[kx]%",
@@ -2578,7 +2578,7 @@
     "panel-damage-rules.characters.welt-enhanced.text_fdb0d08ce6": "行迹-裁决：效果命中大于40%时，每超过10%，则攻击力提高20%，最多提高80%",
     "panel-damage-rules.characters.welt.text_28c7058974": "行迹-惩戒：施放终结技提高敌人受到伤害12%",
     "panel-damage-rules.characters.welt.text_81891586ea": "天赋附加伤害",
-    "panel-damage-rules.characters.welt.text_9a79766514": "行迹-裁决：弱点击破的敌方目标造成的伤害提高20%",
+    "panel-damage-rules.characters.welt.text_9a79766514": "行迹-裁决：对弱点击破的敌方目标造成的伤害提高20%",
     "panel-damage-rules.characters.welt.text_a900baa1d0": "普攻伤害",
     "panel-damage-rules.characters.welt.text_b6a5fc7f30": "终结技伤害",
     "panel-damage-rules.characters.welt.text_eb18acf178": "战技主目标伤害",
@@ -2596,7 +2596,7 @@
     "panel-damage-rules.characters.yanqing.text_3255f8ed04": "天赋追加攻击",
     "panel-damage-rules.characters.yanqing.text_44e173de4e": "彦卿4命：生命值大于80%时提高12%的冰抗穿透",
     "panel-damage-rules.characters.yanqing.text_81891586ea": "天赋附加伤害",
-    "panel-damage-rules.characters.yanqing.text_9aa46d3adf": "行迹-颂冰：攻击对冰属性弱点敌人额外造成等同于彦卿30%攻击力的冰属性附加伤害",
+    "panel-damage-rules.characters.yanqing.text_9aa46d3adf": "行迹-颂冰：攻击冰属性弱点敌人时，额外造成等同于彦卿30%攻击力的冰属性附加伤害",
     "panel-damage-rules.characters.yanqing.text_9b2e99c605": "行迹-轻吕：触发暴击时，速度提高10%",
     "panel-damage-rules.characters.yanqing.text_a900baa1d0": "普攻伤害",
     "panel-damage-rules.characters.yanqing.text_aef3538851": "战技伤害",
@@ -2606,7 +2606,7 @@
     "panel-damage-rules.characters.yao-guang.text_2d6b3271db": "爻光2魂：我方全体目标速度提高[speedPct]%，欢愉度额外提高[joy]%",
     "panel-damage-rules.characters.yao-guang.text_3720d6da8d": "爻光4魂：我方全体角色欢愉技造成的伤害为原伤害的150%",
     "panel-damage-rules.characters.yao-guang.text_62d370564f": "行迹-开屏有礼：提高欢愉度[joy]%",
-    "panel-damage-rules.characters.yao-guang.text_63518668fb": "80好活天赋欢愉伤害",
+    "panel-damage-rules.characters.yao-guang.text_63518668fb": "80笑点天赋欢愉伤害",
     "panel-damage-rules.characters.yao-guang.text_6b95de7a32": "终结技：抗性穿透提高[kx]%",
     "panel-damage-rules.characters.yao-guang.text_6c89882fba": "凶星低语：【凶星低语】状态下的敌方目标受到的伤害提高[enemydmg]%",
     "panel-damage-rules.characters.yao-guang.text_76c960e299": "笑点计算：计算笑点用",
@@ -2727,8 +2727,8 @@
     "panel-damage-rules.relics.text_dfee2e25b4": "对我方释放终结技时速度提高12%",
     "panel-damage-rules.relics.text_eea55f7d7a": "进场欢愉度达到40%，行动提前40%（不计入单次伤害倍率）",
     "panel-damage-rules.relics.text_f8fc895eb7": "装备者对我方释放终结技时，我方全体击破特攻提高[stance]%",
-    "panel-damage-rules.relics.text_fc1ac2cd61": "释放终结技后2回合，爆伤提高25%",
-    "panel-damage-rules.weapons.abundance.text_001da3ceb6": "提供治疗时，5层提供目标攻击力[atkPct]%",
+    "panel-damage-rules.relics.text_fc1ac2cd61": "释放终结技后2回合，暴击伤害提高25%",
+    "panel-damage-rules.weapons.abundance.text_001da3ceb6": "提供治疗时，5层使目标攻击力提高[atkPct]%",
     "panel-damage-rules.weapons.abundance.text_1db033064e": "释放战技时，治疗量提高[heal]%",
     "panel-damage-rules.weapons.abundance.text_4a66e9567a": "释放终结技后，速度提升[speed]",
     "panel-damage-rules.weapons.abundance.text_56fcdfbb3f": "终结技攻击敌方目标后，敌方目标受到的伤害提高[enemydmg]%，击破特攻达到150%时计入额外加成",
@@ -2742,17 +2742,17 @@
     "panel-damage-rules.weapons.destruction.text_1ad8f584cb": "4层Buff提高攻击力[atkPct]%，击破弱点后造成的伤害提高[dmg]%",
     "panel-damage-rules.weapons.destruction.text_413d605c19": "3层Buff使装备者下一次攻击造成的伤害提高[dmg]%，使该次攻击无视目标[ignore]%的防御力",
     "panel-damage-rules.weapons.destruction.text_4f1ad7148e": "造成伤害时无视目标[ignore]%的防御力",
-    "panel-damage-rules.weapons.destruction.text_584a904c3d": "对烧灼或裂伤状态的敌人伤害提高[dmg]%",
+    "panel-damage-rules.weapons.destruction.text_584a904c3d": "对灼烧或裂伤状态的敌人伤害提高[dmg]%",
     "panel-damage-rules.weapons.destruction.text_61be393cad": "按生命上限换算消耗，施放战技或终结技时，本次伤害提高[eDmg]%",
     "panel-damage-rules.weapons.destruction.text_6706092447": "按能量上限计算（最多360点），终结技伤害提高[qDmg]%，【王之娱乐】我方全体暴击伤害提高[cdmg]%",
-    "panel-damage-rules.weapons.destruction.text_6843ad053a": "对生命值大于50%的伤害提高[dmg]%",
+    "panel-damage-rules.weapons.destruction.text_6843ad053a": "对生命值大于50%的敌人伤害提高[dmg]%",
     "panel-damage-rules.weapons.destruction.text_69cd05cfd8": "3层Buff提高攻击力[atkPct]%",
     "panel-damage-rules.weapons.destruction.text_7620c7bd55": "普攻和战技伤害提高[aDmg]%",
     "panel-damage-rules.weapons.destruction.text_7f7e7d251d": "生命值大于80%时提高暴击率[cpct]%",
     "panel-damage-rules.weapons.destruction.text_84339d1226": "装备者施放终结技后，持有【烈阳】时，装备者造成的伤害提高[dmg]%",
     "panel-damage-rules.weapons.destruction.text_85c862053f": "2层Buff提高攻击力[atkPct]%，能量恢复效率提高[recharge]%",
     "panel-damage-rules.weapons.destruction.text_9baf52f181": "按单次受击或消耗超过25%生命上限计算，造成的伤害提高[dmg]%",
-    "panel-damage-rules.weapons.destruction.text_a9cf301f0d": "暴击率提高[cpct]%,战技伤害提高[eDmg]%,终结技伤害提高[qDmg]%",
+    "panel-damage-rules.weapons.destruction.text_a9cf301f0d": "暴击率提高[cpct]%，战技伤害提高[eDmg]%，终结技伤害提高[qDmg]%",
     "panel-damage-rules.weapons.destruction.text_b039dc7f75": "按施放终结技且能量上限至少300点计算，攻击力提高[atkPct]%",
     "panel-damage-rules.weapons.destruction.text_b47223a187": "对生命百分比高于角色的敌人的伤害提高[dmg]%",
     "panel-damage-rules.weapons.destruction.text_b8aad68229": "2层Buff使追加攻击造成的伤害提高[tDmg]%",
@@ -2768,7 +2768,7 @@
     "panel-damage-rules.weapons.elation.text_34854709cf": "无视对方防御力[ignore]%，欢愉度提升[joy]%",
     "panel-damage-rules.weapons.elation.text_4c7ba86e39": "施放欢愉技时，使敌方目标受到的伤害提高[enemydmg]%",
     "panel-damage-rules.weapons.elation.text_52dd94584d": "星神★阿哈在场，暴击伤害额外提高[cdmg]%",
-    "panel-damage-rules.weapons.elation.text_637893cfda": "【上上签】增加[cpct]%暴击率,增加[cdmg]%暴击伤害",
+    "panel-damage-rules.weapons.elation.text_637893cfda": "【上上签】增加[cpct]%暴击率，增加[cdmg]%暴击伤害",
     "panel-damage-rules.weapons.elation.text_6b9891255d": "敌方全体受到的伤害提高[enemydmg]%",
     "panel-damage-rules.weapons.elation.text_72b5aaf7be": "施放欢愉技期间无视目标[xeIgnore]%的防御力",
     "panel-damage-rules.weapons.elation.text_b062c61853": "队伍中的欢愉角色使暴击伤害提高[cdmg]%",
@@ -2776,17 +2776,17 @@
     "panel-damage-rules.weapons.erudition.text_252192ad3f": "终结技造成的伤害提高[qDmg]%",
     "panel-damage-rules.weapons.erudition.text_28649b96f0": "3层Buff下提高攻击力[atkPct]%",
     "panel-damage-rules.weapons.erudition.text_28a9fe191a": "3个敌方目标提高攻击力[atkPct]%，弱点击破时伤害提高[dmg]%",
-    "panel-damage-rules.weapons.erudition.text_2e6bbcd8c6": "消灭敌方目标后爆伤提高[cdmg]%",
-    "panel-damage-rules.weapons.erudition.text_3e24bb40c9": "根据装备者的能量上限提高伤害[qDmg]%",
+    "panel-damage-rules.weapons.erudition.text_2e6bbcd8c6": "消灭敌方目标后暴击伤害提高[cdmg]%",
+    "panel-damage-rules.weapons.erudition.text_3e24bb40c9": "根据装备者的能量上限提高终结技伤害[qDmg]%",
     "panel-damage-rules.weapons.erudition.text_44b4b477bb": "战技和终结技造成的伤害提高[eDmg]%",
     "panel-damage-rules.weapons.erudition.text_492b532b25": "命中至少2名具有对应弱点的敌人后，提高暴击伤害[cdmg]%",
     "panel-damage-rules.weapons.erudition.text_4fac1fcb44": "无视目标[ignore]%的防御力",
-    "panel-damage-rules.weapons.erudition.text_53344fa460": "装备者终结技造成的伤害提高[qDmg]%,追加攻击造成的伤害提高[tDmg]%",
+    "panel-damage-rules.weapons.erudition.text_53344fa460": "装备者终结技造成的伤害提高[qDmg]%，追加攻击造成的伤害提高[tDmg]%",
     "panel-damage-rules.weapons.erudition.text_624efbca71": "无视目标[ignore]%的防御力，战技伤害提高[eDmg]%",
     "panel-damage-rules.weapons.erudition.text_8961929fd6": "战技和终结技造成的伤害提高[eDmg]%，追加攻击造成的伤害提高[tDmg]%",
     "panel-damage-rules.weapons.erudition.text_8cf9a994d0": "按能量上限计算，最多计入160点，伤害提高[dmg]%",
     "panel-damage-rules.weapons.erudition.text_9ff070042c": "基于暴击伤害，追加攻击伤害提高[tDmg]%，终结技或追加攻击伤害无视[qIgnore]%防御",
-    "panel-damage-rules.weapons.erudition.text_a3a60ec2c0": "敌方目标当前生命值百分比小于等于50%追加伤害提高[tDmg]%",
+    "panel-damage-rules.weapons.erudition.text_a3a60ec2c0": "敌方目标当前生命值百分比小于等于50%时，追加伤害提高[tDmg]%",
     "panel-damage-rules.weapons.erudition.text_a5ae66ae03": "装备者对其造成的伤害提高[dmg]%，装备者使其防御力降低[enemyDef]%",
     "panel-damage-rules.weapons.erudition.text_aff73ef76c": "施放攻击击中五名敌方目标，使攻击力额外提高[atkPct]%，速度提升[speedPct]%",
     "panel-damage-rules.weapons.erudition.text_cd001069ef": "使装备者终结技造成的伤害提高[qDmg]%",
@@ -2805,9 +2805,9 @@
     "panel-damage-rules.weapons.harmony.text_9fc8b25d81": "进入战斗提高速度[speed]",
     "panel-damage-rules.weapons.harmony.text_bd68aaad42": "攻击Buff下提高攻击力[atkPct]%",
     "panel-damage-rules.weapons.hunt.text_085c1f0e24": "击破特攻达到150%时，速度提高[speedPct]%",
-    "panel-damage-rules.weapons.hunt.text_14986ec386": "消灭敌方目标后，攻击力[atkPct]%",
+    "panel-damage-rules.weapons.hunt.text_14986ec386": "消灭敌方目标后，攻击力提高[atkPct]%",
     "panel-damage-rules.weapons.hunt.text_1a88d23c52": "[_count]层Buff提高普攻与战技伤害[aDmg]%，终结技的暴击伤害[qCdmg]%",
-    "panel-damage-rules.weapons.hunt.text_216cbc2e73": "进入战斗提高速度[speedPct]%，伤害[dmg]%",
+    "panel-damage-rules.weapons.hunt.text_216cbc2e73": "进入战斗提高速度[speedPct]%，伤害提高[dmg]%",
     "panel-damage-rules.weapons.hunt.text_23f1ed6256": "4层Buff提升装备者暴击伤害[cdmg]%",
     "panel-damage-rules.weapons.hunt.text_25ce42bfda": "装备者战技和追加攻击造成的伤害提高[eDmg]%",
     "panel-damage-rules.weapons.hunt.text_35d8db34f3": "战斗开始时或施放4.0次追加攻击后攻击力提高[atkPct]%,敌方受到伤害提高[enemydmg]%",
@@ -3707,1261 +3707,1261 @@
   },
   "parameters": {
     "account-report-renderer.text_47c5c11c00": {
-      "type": "model.type"
+      "type": "记录资源类型名称"
     },
     "account-report-renderer.text_28f833178e": {
-      "page": "model.page"
+      "page": "当前页码"
     },
     "account-report-renderer.text_7d80867c35": {
-      "month": "model.month"
+      "month": "统计月份"
     },
     "account-report-renderer.text_394b6a9d19": {
-      "hcoin": "income.hcoin"
+      "hcoin": "星琼数量"
     },
     "account-report-renderer.text_4a913617c4": {
-      "railsPass": "income.railsPass"
+      "railsPass": "星轨通票与专票合计数量"
     },
     "account-report-renderer.text_783c14ed00": {
-      "level": "model.level"
+      "level": "开拓等级"
     },
     "account-report-renderer.text_ba7ed3278c": {
-      "year": "model.year"
+      "year": "统计年份"
     },
     "account-report-renderer.text_fa4962f757": {
-      "value1": "Number(key.slice(4))"
+      "value1": "月份数字"
     },
     "account-report-renderer.text_e4eb4cdadc": {
-      "wishes": "model.wishes"
+      "wishes": "等效抽卡次数"
     },
     "account-report-renderer.text_5696c221b2": {
-      "value1": "monthName(model.bestJade.key)"
+      "value1": "星琼最多月份名称"
     },
     "account-report-renderer.text_ba9b304b3e": {
-      "railsPass": "model.railsPass"
+      "railsPass": "星轨通票与专票合计数量"
     },
     "account-report-renderer.text_8fc43c4340": {
-      "label": "model.period.label",
-      "value2": "model.period.label.endsWith(\"年\") ? \"-\" : \"\""
+      "label": "统计时间范围名称",
+      "value2": "年份后缀连接符"
     },
     "account-report-renderer.text_65925a7049": {
-      "length": "model.months.length",
-      "value2": "model.period.last - model.period.first + 1"
+      "length": "已归档月份数",
+      "value2": "统计周期总月数"
     },
     "challenge-card.text_039da216ab": {
-      "value1": "i + 1"
+      "value1": "骑士关卡序号"
     },
     "challenge-card.text_5e30b11066": {
-      "score": "node.score"
+      "score": "节点挑战得分"
     },
     "challenge-card.text_cf73161826": {
-      "round": "node.round"
+      "round": "节点消耗轮次"
     },
     "challenge-card.text_2225a79161": {
-      "stars": "node.stars"
+      "stars": "节点获得星数"
     },
     "challenge-card.text_584f039ab2": {
-      "value1": "[\"一\", \"二\", \"三\"][index] || index + 1"
+      "value1": "队伍中文数字序号或编号"
     },
     "challenge-card.text_afd424e506": {
-      "value1": "index + 1"
+      "value1": "节点序号（从1开始）"
     },
     "challenge-card.text_6a973cfe36": {
-      "extraStars": "section.extraStars"
+      "extraStars": "额外获得的星数"
     },
     "challenge-card.text_c0985f1db5": {
-      "rank": "avatar.rank"
+      "rank": "角色星魂等级"
     },
     "challenge-model.text_74ec23c7dc": {
-      "id": "id"
+      "id": "角色数字ID"
     },
     "challenge-model.text_84fea9b648": {
-      "value1": "index + 1"
+      "value1": "节点序号（从1开始）"
     },
     "challenge-model.text_e582bdeb29": {
-      "value1": "index + 1"
+      "value1": "骑士关卡序号"
     },
     "challenge-model.text_31af0a4666": {
-      "value": "value"
+      "value": "获得的星数"
     },
     "challenge-model.text_c826a64644": {
-      "uid": "uid"
+      "uid": "玩家游戏UID"
     },
     "challenge-model.text_1232770238": {
-      "title": "record.title",
-      "value2": "present(record.bossStars)",
-      "value3": "present(record.mobStars)"
+      "title": "挑战期数或关卡标题",
+      "value2": "王棋挑战星数文本",
+      "value3": "骑士挑战星数文本"
     },
     "challenge-model.text_d7c0389bf3": {
-      "value1": "present(result.stars)",
-      "value2": "result.maxFloor ? ` · ${result.maxFloor}` : \"\""
+      "value1": "总星数文本",
+      "value2": "最高通关层数后缀（含分隔符）"
     },
     "challenge-theme.text_a7fe699ca9": {
-      "value1": "candidate[0]"
+      "value1": "模板资源文件名"
     },
     "challenge-theme.text_d065206883": {
-      "value1": "asset[0]"
+      "value1": "已下载的主题资源文件名"
     },
     "challenge.text_9b8b41464d": {
-      "uid": "uid",
-      "length": "history.peak.length"
+      "uid": "星铁角色 UID",
+      "length": "往期记录期数"
     },
     "challenge.text_3caf242584": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "challenge.text_1ba90781fc": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "gacha-files.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "用户档案编号"
     },
     "gacha-files.text_9d881700c6": {
-      "profileId": "profileId"
+      "profileId": "用户档案编号"
     },
     "gacha-files.text_22818ce802": {
-      "value1": "poolNames[pool]",
-      "received": "received",
-      "added": "added",
-      "total": "total"
+      "value1": "卡池名称",
+      "received": "读取记录数",
+      "added": "新增记录数",
+      "total": "合并后总记录数"
     },
     "gacha-files.text_14ebef0aba": {
-      "uid": "role.uid"
+      "uid": "星铁角色 UID"
     },
     "gacha-files.text_c682ba42fc": {
-      "value1": "profileId === 1 ? \"\" : profileId",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "value1": "用于查看命令的可选档案编号后缀",
+      "value2": "用于导出命令的可选档案编号后缀"
     },
     "gacha-files.text_05215407ac": {
-      "suffix": "suffix"
+      "suffix": "导出命令参数后缀"
     },
     "gacha-files.text_7078b9441c": {
-      "name": "file.name",
-      "length": "data.archive.records.length"
+      "name": "导出的文件名",
+      "length": "导出的逐抽记录条数"
     },
     "gacha-link-command.text_c6002c75a1": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "gacha-link-command.text_07944695f9": {
-      "profileId": "profileId"
+      "profileId": "用户档案编号"
     },
     "gacha-link-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "允许的最大档案编号"
     },
     "gacha-link-command.text_2f5bda5de9": {
-      "value1": "names[pool]",
-      "received": "received",
-      "added": "added",
-      "total": "total"
+      "value1": "卡池名称",
+      "received": "本次读取的记录条数",
+      "added": "本次新增的记录条数",
+      "total": "合并后的该卡池总记录条数"
     },
     "gacha-link-command.text_722e81ab36": {
-      "uid": "identity.role.uid"
+      "uid": "星铁角色 UID"
     },
     "gacha-link-command.text_6321d100a9": {
-      "suffix": "suffix"
+      "suffix": "用于查看命令的可选档案编号后缀"
     },
     "gacha-pool-info.text_236a3fcfdf": {
-      "days": "days"
+      "days": "未复刻天数"
     },
     "gacha-pool-info.text_3a8943e7ca": {
-      "item": "item"
+      "item": "查询的物品名称"
     },
     "gacha-pool-info.text_358d1b8102": {
-      "name": "name"
+      "name": "角色或武器名称"
     },
     "gacha-pool-info.text_d7693df1b7": {
-      "value1": "-after"
+      "value1": "距离最近一期卡池结束的天数"
     },
     "gacha-pool-info.text_3a82d6e00c": {
-      "before": "before"
+      "before": "距离开启天数"
     },
     "gacha-pool-info.text_d524130036": {
-      "after": "after"
+      "after": "距离结束天数"
     },
     "gacha-pool-info.text_cd98cf1512": {
-      "value1": "after ? `还有${after}天` : \"今天\""
+      "value1": "距离结束时间描述"
     },
     "gacha-pool-info.text_55b639ccd9": {
-      "version": "period.version",
-      "half": "period.half"
+      "version": "版本号",
+      "half": "上下半期"
     },
     "gacha-pool-info.text_a0169e92ef": {
-      "from": "period.from"
+      "from": "卡池开始时间"
     },
     "gacha-pool-info.text_7ed2671010": {
-      "to": "period.to"
+      "to": "卡池结束时间"
     },
     "gacha-pool-info.text_df9624fa97": {
-      "name": "name"
+      "name": "查询的角色或光锥名称"
     },
     "gacha-pool-info.text_cea61f8f9e": {
-      "version": "query.version",
-      "half": "query.half"
+      "version": "版本号",
+      "half": "上下半期"
     },
     "gacha-pool-info.text_006da0c482": {
-      "value1": "query.type === \"version\" ? `星铁${query.version}${query.half}` : query.type === \"collaboration\" ? \"星铁联动\" : query.item"
+      "value1": "查询目标名称"
     },
     "gacha-pool-info.text_cb974a6df3": {
-      "title": "title",
-      "from": "period.from",
-      "to": "period.to",
-      "value4": "names ? `\\n${names}` : \"\""
+      "title": "卡池标题",
+      "from": "开始时间",
+      "to": "结束时间",
+      "value4": "UP物品列表"
     },
     "gacha-record-source.text_00e57f566a": {
-      "item_id": "row.item_id"
+      "item_id": "物品 ID"
     },
     "gacha-result-card.text_e747eddef9": {
-      "qq": "log.qq",
-      "profileId": "log.profileId",
-      "uid": "log.uid"
+      "qq": "用户QQ号",
+      "profileId": "档案编号",
+      "uid": "游戏UID"
     },
     "gacha-result-card.text_baee777c76": {
-      "name": "name",
-      "total": "total",
-      "added": "added",
-      "totalDraws": "totalDraws",
-      "pity": "pity"
+      "name": "卡池名称",
+      "total": "五星总数",
+      "added": "本次新增五星数",
+      "totalDraws": "累计抽数",
+      "pity": "当前未出五星垫抽数"
     },
     "gacha-result-card.text_7a351db5c1": {
-      "qq": "qq",
-      "profileId": "profileId",
-      "value3": "failureMessages[reason]"
+      "qq": "用户QQ号",
+      "profileId": "档案编号",
+      "value3": "失败原因描述"
     },
     "grid-fight-card.text_1a99187c5a": {
-      "ordinal": "ordinal",
-      "historyCount": "model.historyCount"
+      "ordinal": "当前战绩序号",
+      "historyCount": "可查询的历史战绩总数"
     },
     "grid-fight-card.text_80d669cefe": {
-      "historyCount": "model.historyCount"
+      "historyCount": "可查询的历史战绩条数"
     },
     "grid-fight-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "允许的最大档案编号上限"
     },
     "grid-fight-command.text_eae9b72371": {
-      "gridFightHistoryMax": "gridFightHistoryMax"
+      "gridFightHistoryMax": "支持查询的最大战绩序号上限"
     },
     "grid-fight-command.text_e7e6459595": {
-      "index": "index"
+      "index": "请求的战绩序号"
     },
     "grid-fight-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "目标档案编号"
     },
     "grid-fight-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "目标档案编号"
     },
     "grid-fight-model.text_a39dde7482": {
-      "season": "season"
+      "season": "晋升等级数值"
     },
     "grid-fight-model.text_af17925f23": {
-      "value1": "model.index ? \" · 战绩回顾 \" + model.index : \"\"",
-      "uid": "model.uid"
+      "value1": "可选的战绩回顾及序号后缀",
+      "uid": "玩家UID"
     },
     "grid-fight-model.text_ea7e47e37a": {
-      "value1": "model.division.level === undefined ? \"\" : \"A\" + model.division.level + \" \"",
-      "value2": "model.division.name ?? missing"
+      "value1": "职级等级前缀（如 A1 ）或空字符串",
+      "value2": "职级名称或缺失占位符"
     },
     "grid-fight-model.text_910e05b6d0": {
-      "ordinal": "ordinal"
+      "ordinal": "战绩序号"
     },
     "grid-fight-model.text_f2cd4ae167": {
-      "value1": "row.health ?? missing",
-      "value2": "row.coin ?? missing",
-      "value3": "row.value ?? missing"
+      "value1": "小队剩余生命值",
+      "value2": "总金币经济",
+      "value3": "阵容总价值"
     },
     "grid-fight-model.text_f1b240541f": {
-      "value1": "artLabels(row.front, !!model.recent)"
+      "value1": "前台角色及装备列表文本"
     },
     "grid-fight-model.text_f986abe894": {
-      "value1": "artLabels(row.back, !!model.recent)"
+      "value1": "后台角色及装备列表文本"
     },
     "grid-fight-model.text_372183d526": {
-      "value1": "artLabels(row.traits)"
+      "value1": "羁绊名称列表文本"
     },
     "grid-fight-model.text_05cebdcca8": {
-      "value1": "artLabels(row.portals)"
+      "value1": "格式化后的投资环境名称列表文本"
     },
     "grid-fight-model.text_633ee35f35": {
-      "value1": "artLabels(row.augments)"
+      "value1": "投资策略名称列表文本"
     },
     "grid-fight-model.text_f0f06f53e4": {
-      "historyCount": "model.historyCount"
+      "historyCount": "可查询的历史战绩总条数"
     },
     "group-relic-rank-card.text_490e18dd65": {
-      "scored": "scored",
-      "registered": "registered"
+      "scored": "已计分的角色数量",
+      "registered": "群内已登记的账号总人数"
     },
     "group-relic-rank-card.text_d26a25f1b4": {
-      "notListed": "notListed"
+      "notListed": "未展示或词条不全的角色数量"
     },
     "group-relic-rank-card.text_4c3cf9a067": {
-      "failed": "failed"
+      "failed": "读取展板失败的数量"
     },
     "group-relic-rank-card.text_35cabeaebc": {
-      "maximum": "maximum"
+      "maximum": "允许的最大排行行数"
     },
     "group-relic-rank-card.text_9d9e52587d": {
-      "value1": "publicRanking ? \"自定义\" : \"\"",
-      "name": "name",
-      "value3": "relicRankLabels[metric]"
+      "value1": "公开榜前缀“自定义”或空字符串",
+      "name": "角色名称",
+      "value3": "排行指标名称"
     },
     "group-relic-rank-card.text_67ce28e000": {
-      "count": "publicRanking.count",
-      "length": "rows.length"
+      "count": "排行展示人数上限",
+      "length": "本次实际展示人数"
     },
     "group-relic-rank-card.text_8f16cda3b9": {
-      "affix": "affix"
+      "affix": "光锥叠影阶数"
     },
     "group-relic-rank.text_cf322d128c": {
-      "label": "label"
+      "label": "排行指标名称"
     },
     "group-relic-rank.text_6f4e3ec2df": {
-      "title": "title"
+      "title": "排行功能标题"
     },
     "group-relic-rank.text_d7a4339d20": {
-      "title": "title"
+      "title": "排行功能标题"
     },
     "group-relic-rank.text_b7556486cf": {
-      "length": "ranked.length"
+      "length": "参与排行的角色数量"
     },
     "group-relic-rank.text_41ca35f5b3": {
-      "name": "character.name",
-      "label": "label",
-      "summary": "summary"
+      "name": "角色名称",
+      "label": "排行指标名称",
+      "summary": "统计覆盖摘要"
     },
     "group-relic-rank.text_335f329c23": {
-      "name": "character.name",
-      "label": "label",
-      "uid": "uid",
-      "summary": "summary"
+      "name": "角色名称",
+      "label": "排行指标名称",
+      "uid": "玩家UID",
+      "summary": "统计覆盖摘要"
     },
     "group-relic-rank.text_18ae85a8bc": {
-      "heading": "heading"
+      "heading": "榜首标题摘要"
     },
     "group-relic-rank.text_cfae2312a8": {
-      "name": "character.name",
-      "label": "label",
-      "value3": "relicRankCoverageText(coverage)"
+      "name": "角色名称",
+      "label": "排行指标名称",
+      "value3": "统计覆盖摘要"
     },
     "group-relic-rank.text_697e854ea9": {
-      "name": "character.name",
-      "label": "label"
+      "name": "角色名称",
+      "label": "排行指标名称"
     },
     "group-relic-rank.text_d22746e735": {
-      "label": "label"
+      "label": "排行指标名称"
     },
     "growth.card.text_f4b7dedb23": {
-      "value1": "(value / 10_000).toFixed(1)"
+      "value1": "换算为万后的数值"
     },
     "growth.card.text_75ef056b7d": {
-      "uid": "model.uid"
+      "uid": "玩家UID"
     },
     "growth.card.text_c0985f1db5": {
-      "rank": "model.rank"
+      "rank": "角色星魂等级"
     },
     "growth.command.text_76720712c8": {
-      "profileId": "query.profileId"
+      "profileId": "档案编号"
     },
     "growth.command.text_c0d14d54a7": {
-      "profileId": "query.profileId"
+      "profileId": "档案编号"
     },
     "import-independent-gacha-cli.text_c1abe47be7": {
-      "count": "count"
+      "count": "导出的抽卡记录条数"
     },
     "index.text_9772199f71": {
-      "uid": "uid",
-      "summary": "summary",
-      "value3": "profileId === 1 ? \"\" : profileId"
+      "uid": "游戏 UID",
+      "summary": "本地已有记录类型摘要",
+      "value3": "档案编号后缀（档案1为空）"
     },
     "index.text_d8c3917605": {
-      "uid": "uid",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "uid": "角色 UID",
+      "value2": "档案编号后缀（主档案为空）"
     },
     "index.text_2ceb44ae2c": {
-      "profileId": "profileId",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "profileId": "档案编号",
+      "value2": "档案编号后缀（档案1为空）"
     },
     "index.text_ff6d96492f": {
-      "uid": "uid"
+      "uid": "角色 UID"
     },
     "index.text_acbebaddd8": {
-      "poolName": "first.model.poolName",
-      "count": "first.model.pageInfo?.count"
+      "poolName": "卡池类型或名称",
+      "count": "卡池期数"
     },
     "index.text_2eefd98a1a": {
-      "poolName": "first.model.poolName",
-      "fiveNum": "first.model.gacha.stat.fiveNum"
+      "poolName": "卡池名称",
+      "fiveNum": "五星数量"
     },
     "index.text_d17cfde3c6": {
-      "poolName": "first.model.poolName"
+      "poolName": "卡池名称"
     },
     "index.text_30a67bb7fc": {
-      "value1": "first.model.poolName === \"全部\" ? \"全部卡池\" : `${first.model.poolName}池`",
-      "fiveNum": "first.model.fiveNum"
+      "value1": "卡池范围描述",
+      "fiveNum": "五星数量"
     },
     "index.text_f87fdb63c4": {
-      "uid": "uid",
-      "title": "title",
-      "total": "total"
+      "uid": "角色 UID",
+      "title": "统计图表标题",
+      "total": "分页图片总数"
     },
     "index.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "index.text_9d881700c6": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "index.text_984739da33": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "index.text_268e82a103": {
-      "added": "result.added"
+      "added": "新增五星记录数"
     },
     "ledger-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "最大档案编号上限"
     },
     "ledger-command.text_390dd2bff8": {
-      "uid": "model.uid",
-      "type": "model.type",
-      "page": "page"
+      "uid": "角色 UID",
+      "type": "流水类型名称",
+      "page": "当前页码"
     },
     "ledger-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "ledger-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "monthly-card.text_7d80867c35": {
-      "month": "snapshot.month"
+      "month": "统计月份"
     },
     "monthly-card.text_3171e0b450": {
-      "label": "label",
-      "hcoin": "hcoin",
-      "railsPass": "railsPass"
+      "label": "统计周期标签",
+      "hcoin": "星琼获取数量",
+      "railsPass": "星轨通票与专票总获取数量"
     },
     "monthly-command.text_31a2142f9f": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "monthly-command.text_4c3c858fac": {
-      "profile": "profile",
-      "value2": "profile"
+      "profile": "档案编号后缀（主档案为空）",
+      "value2": "档案编号后缀（主档案为空）"
     },
     "monthly-command.text_5c43d7466d": {
-      "length": "targets.length"
+      "length": "待保存的角色数量"
     },
     "monthly-command.text_ab52560844": {
-      "completed": "completed",
-      "length": "targets.length",
-      "failed": "failed",
-      "written": "written"
+      "completed": "已完成角色数",
+      "length": "目标角色总数",
+      "failed": "未完成角色数",
+      "written": "已保存月份数"
     },
     "monthly-command.text_8629c635b1": {
-      "completed": "completed",
-      "length": "targets.length",
-      "written": "written"
+      "completed": "已完成角色数",
+      "length": "目标角色总数",
+      "written": "已保存月份数"
     },
     "monthly-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "最大档案编号上限"
     },
     "monthly-command.text_d7a29a9e20": {
-      "label": "selection.label"
+      "label": "统计时间范围标签"
     },
     "monthly-command.text_2928b2ba1b": {
-      "notice": "notice",
-      "value2": "shortcuts(profileId)"
+      "notice": "降级或缓存提示说明",
+      "value2": "快捷查询命令提示"
     },
     "monthly-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "monthly-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "monthly-period.text_cbed8520a4": {
-      "requested": "requested"
+      "requested": "请求的年份"
     },
     "monthly-statistics.text_c90ed3a63f": {
-      "label": "model.period.label",
-      "uid": "model.uid"
+      "label": "统计时间范围标签",
+      "uid": "角色UID"
     },
     "monthly-statistics.text_8f59f43d11": {
-      "length": "model.months.length",
-      "value2": "model.period.last - model.period.first + 1"
+      "length": "已归档月数",
+      "value2": "统计周期总月数"
     },
     "monthly-statistics.text_f6ff8efaf7": {
-      "hcoin": "model.hcoin",
-      "railsPass": "model.railsPass",
-      "wishes": "model.wishes"
+      "hcoin": "星琼总数",
+      "railsPass": "专票与通票总数",
+      "wishes": "折合抽数"
     },
     "monthly-statistics.text_1fb3dd6db7": {
-      "value1": "key.slice(0, 4)",
-      "value2": "Number(key.slice(4))",
-      "hcoin": "snapshot.monthly.hcoin",
-      "railsPass": "snapshot.monthly.railsPass",
-      "value5": "finalized ? \"\" : \"（未完整）\""
+      "value1": "年份",
+      "value2": "月份",
+      "hcoin": "星琼数量",
+      "railsPass": "专票与通票数量",
+      "value5": "未完整标记"
     },
     "online-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "最大档案编号"
     },
     "online-command.text_ba3b14c2ee": {
-      "uid": "model.uid"
+      "uid": "角色UID"
     },
     "online-command.text_223db1cc64": {
-      "date": "bar.date",
-      "hours": "bar.hours"
+      "date": "日期",
+      "hours": "在线小时数"
     },
     "online-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "online-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "online-model.text_fa4962f757": {
-      "value1": "date.getUTCMonth() + 1"
+      "value1": "月份"
     },
     "panel-attributes.text_a59bb0d92a": {
-      "name": "target.name"
+      "name": "角色名称"
     },
     "panel-attributes.text_ad4e78d938": {
-      "level": "level"
+      "level": "试算等级"
     },
     "panel-card.text_bb59489428": {
-      "length": "avatars.length"
+      "length": "成功获取的角色总数"
     },
     "panel-card.text_f6357e85b2": {
-      "id": "cone.id"
+      "id": "光锥ID"
     },
     "panel-card.text_b810a62afc": {
-      "value1": "showcaseProviderNames[snapshot.source]"
+      "value1": "公开展示柜数据源显示名称"
     },
     "panel-card.text_fa4b218e67": {
-      "slot": "part.slot"
+      "slot": "遗器槽位编号"
     },
     "panel-card.text_c37ee79113": {
-      "title": "title"
+      "title": "元素属性简称"
     },
     "panel-cone-preview.text_7ad1feebb7": {
-      "name": "target.name"
+      "name": "目标角色名称"
     },
     "panel-cone-preview.text_a2cbefb82f": {
-      "name": "cone.name",
-      "level": "cone.level",
-      "rank": "rank"
+      "name": "替换后的光锥名称",
+      "level": "沿用的光锥等级",
+      "rank": "计算后的光锥叠影阶数"
     },
     "panel-damage-card.text_5f69dbdac8": {
-      "metricLabel": "metricLabel",
-      "value2": "metricLabel"
+      "metricLabel": "当前基准指标名称",
+      "value2": "同指标名称，用作第二栏对照标题"
     },
     "panel-damage-card.text_850202337a": {
-      "name": "damage.name"
+      "name": "角色名称"
     },
     "panel-damage-card.text_8f95ea200f": {
-      "personalDamageEnemyLevel": "personalDamageEnemyLevel",
-      "selectedTitle": "selectedTitle"
+      "personalDamageEnemyLevel": "模拟敌方目标等级",
+      "selectedTitle": "当前选中的伤害条目或基准标题"
     },
     "panel-damage-rules.characters.aha.text_ce5905b800": {
-      "punchline": "params.punchline"
+      "punchline": "当前计入伤害计算的好活当赏点数"
     },
     "panel-damage-rules.characters.aha.text_8d925fea14": {
-      "punchline": "params.punchline"
+      "punchline": "当前计入伤害计算的好活当赏点数"
     },
     "panel-damage-rules.characters.aha.text_f4790d805d": {
-      "punchline": "params.punchline"
+      "punchline": "当前计入伤害计算的好活当赏点数"
     },
     "panel-damage-rules.characters.aha.text_d6774edb31": {
-      "punchline": "params.punchline"
+      "punchline": "当前计入伤害计算的笑点数量"
     },
     "panel-damage-rules.characters.aha.text_1d6c7d0a29": {
-      "punchline": "params.punchline",
-      "value2": "positive(params.ahaMomentDamage) ? '含队友记录' : '自身结算'"
+      "punchline": "当前计入伤害计算的笑点数量",
+      "value2": "阿哈时刻伤害结算方式标签（含队友记录或自身结算）"
     },
     "panel-damage-rules.characters.blade-enhanced.text_5277f770b4": {
-      "tTargetCount": "params.tTargetCount"
+      "tTargetCount": "天赋追加攻击命中的敌方目标数量"
     },
     "panel-damage-rules.characters.blade-enhanced.text_a50ec2c29f": {
-      "value1": "(params.lostHp as number) * 100"
+      "value1": "累计已损失生命值百分比（0~100）"
     },
     "panel-damage-rules.characters.blade-enhanced.text_35ed371280": {
-      "value1": "(params.lostHp as number) * 100"
+      "value1": "累计已损失生命值百分比（0~100）"
     },
     "panel-damage-rules.characters.blade-enhanced.text_1fcb69d6f8": {
-      "value1": "(params.lostHp as number) * 100"
+      "value1": "累计已损失生命值百分比（0~100）"
     },
     "panel-damage-rules.characters.blade-enhanced.text_f5acd50743": {
-      "c4stacks": "params.c4stacks"
+      "c4stacks": "4命生命上限加成叠加层数"
     },
     "panel-damage-rules.characters.blade-enhanced.text_fd9c8e3250": {
-      "tTargetCount": "params.tTargetCount"
+      "tTargetCount": "天赋追加攻击命中的敌方目标数量"
     },
     "panel-damage-rules.characters.cerydra.text_35aed71258": {
-      "avg": "avg"
+      "avg": "提升的攻击力数值"
     },
     "panel-damage-rules.characters.cyrene.text_5d7cbe2aa4": {
-      "value1": "getBounceCount(data)"
+      "value1": "弹射攻击段数"
     },
     "panel-damage-rules.characters.cyrene.text_4063530088": {
-      "value1": "getBounceCount(data)"
+      "value1": "弹射攻击段数"
     },
     "panel-damage-rules.characters.danheng-permansor.text_369c810a4d": {
-      "comradeAtk": "params.comradeAtk",
-      "value2": "cons >= 2 ? '(2魂+)' : ''",
-      "value3": "trees['103'] ? '(峥嵘)' : ''"
+      "comradeAtk": "同袍角色的攻击力数值",
+      "value2": "2魂及以上星魂状态的附加后缀标签",
+      "value3": "行迹「峥嵘」激活状态的附加后缀标签"
     },
     "panel-damage-rules.characters.danheng-permansor.text_82532557e5": {
-      "comradeAtk": "params.comradeAtk"
+      "comradeAtk": "同袍角色的攻击力数值"
     },
     "panel-damage-rules.characters.evernight.text_8c90af7095": {
-      "yizhi": "params.yizhi"
+      "yizhi": "当前忆质层数"
     },
     "panel-damage-rules.characters.evernight.text_f58d7a57a6": {
-      "yizhi": "params.yizhi"
+      "yizhi": "当前忆质层数"
     },
     "panel-damage-rules.characters.evernight.text_34172aa466": {
-      "yizhi": "params.yizhi"
+      "yizhi": "当前忆质层数"
     },
     "panel-damage-rules.characters.jingliu-enhanced.text_e764eef249": {
-      "moonlight": "params.moonlight"
+      "moonlight": "当前【月色】层数"
     },
     "panel-damage-rules.characters.jingliu-enhanced.text_8f2d6e6283": {
-      "moonlight": "params.moonlight"
+      "moonlight": "当前【月色】层数"
     },
     "panel-damage-rules.characters.jingliu-enhanced.text_70d90b3be0": {
-      "moonlight": "params.moonlight"
+      "moonlight": "当前【月色】层数"
     },
     "panel-damage-rules.characters.jingliu-enhanced.text_50acdfe512": {
-      "moonlight": "params.moonlight"
+      "moonlight": "当前【月色】层数"
     },
     "panel-damage-rules.characters.jingliu-enhanced.text_b6c9558f52": {
-      "moonlight": "params.moonlight"
+      "moonlight": "当前【月色】层数"
     },
     "panel-damage-rules.characters.jingliu-enhanced.text_1f3201be53": {
-      "moonlight": "params.moonlight"
+      "moonlight": "当前【月色】层数"
     },
     "panel-damage-rules.characters.silver-wolf-enhanced.text_84f7e33cda": {
-      "qTargetCount": "params.qTargetCount"
+      "qTargetCount": "终结技命中目标数"
     },
     "panel-damage-rules.characters.silver-wolf-enhanced.text_d573c70961": {
-      "qTargetCount": "params.qTargetCount",
-      "debuffCount": "params.debuffCount"
+      "qTargetCount": "终结技命中目标数",
+      "debuffCount": "敌方目标负面效果层数"
     },
     "panel-damage-rules.characters.silver-wolf-enhanced.text_a3bf4a2e85": {
-      "debuffCount": "params.debuffCount"
+      "debuffCount": "敌方目标负面效果层数"
     },
     "panel-detail-skia.text_70593aa83c": {
-      "cons": "data.cons"
+      "cons": "角色星魂等级"
     },
     "panel-detail-skia.text_f9124d8645": {
-      "dataSource": "data.dataSource"
+      "dataSource": "面板数据来源"
     },
     "panel-detail-skia.text_7853fdc62a": {
-      "level": "weapon.level",
-      "affix": "weapon.affix"
+      "level": "光锥等级",
+      "affix": "光锥叠影阶数"
     },
     "panel-detail-skia.text_8f5dcadbfa": {
-      "value1": "artisDetail.classTitle ?? \"\""
+      "value1": "遗器评分规则名称"
     },
     "panel-detail-skia.text_ee4b18328a": {
-      "abbr": "data.abbr"
+      "abbr": "角色简称"
     },
     "panel-detail-skia.text_37b08c3e12": {
-      "mark": "part.mark",
-      "markClass": "part.markClass"
+      "mark": "遗器评分",
+      "markClass": "遗器评级"
     },
     "panel-detail-skia.text_103a85f2c7": {
-      "abbr": "data.abbr"
+      "abbr": "角色简称或别名，用于拼接伤害详情查询指令"
     },
     "panel-detail-skia.text_b1cf75c193": {
-      "damageAuthor": "model.damageAuthor"
+      "damageAuthor": "伤害计算配置作者"
     },
     "panel-eidolon.text_07872403c5": {
-      "name": "target.name"
+      "name": "角色名称"
     },
     "panel-eidolon.text_36dbcd38ea": {
-      "rank": "rank"
+      "rank": "临时星魂等级"
     },
     "panel-equipment.text_2eb078623e": {
-      "name": "donor.name"
+      "name": "角色名称"
     },
     "panel-equipment.text_f784cba3dc": {
-      "name": "target.name",
-      "value2": "coneName || cone.id"
+      "name": "目标角色名称",
+      "value2": "当前装备的光锥名称或标识"
     },
     "panel-equipment.text_53b3113885": {
-      "value1": "coneName || cone.id",
-      "rank": "rank"
+      "value1": "光锥名称或ID",
+      "rank": "光锥叠影阶数"
     },
     "panel-equipment.text_26ee7e6252": {
-      "name": "donor.name"
+      "name": "角色名称"
     },
     "panel-equipment.text_9e60e8f30e": {
-      "name": "donor.name",
-      "value2": "partNames[slot]"
+      "name": "提供装备的角色名称",
+      "value2": "缺失记录的装备部位名称"
     },
     "panel-equipment.text_15d7d5da8e": {
-      "name": "donor.name",
-      "value2": "slots.map(slot => slot === allRelics ? \"全部遗器\" : partNames[slot]).join(\"、\")"
+      "name": "供装角色名称",
+      "value2": "替换的装备部位列表"
     },
     "panel-list-skia.text_4acdf7dc02": {
-      "value1": "model.chars[0]?.abbr ?? \"三月七\"",
-      "profileSuffix": "model.profileSuffix"
+      "value1": "示例角色简称或默认角色名",
+      "profileSuffix": "档案区分后缀"
     },
     "panel-list-skia.text_fcda3205c2": {
-      "profile": "model.updateTime.profile"
+      "profile": "面板数据的更新时间"
     },
     "panel-list-skia.text_bbdd2275bd": {
-      "servName": "model.servName"
+      "servName": "当前使用的面板更新服务名称"
     },
     "panel-practice-skia.text_eebb4bced5": {
-      "uid": "model.uid",
-      "total": "model.total"
+      "uid": "玩家账号 UID",
+      "total": "统计到的角色总数量"
     },
     "panel-practice-skia.text_94fd113221": {
-      "profile": "model.updateTime.profile"
+      "profile": "通过更新面板获取的更新时间"
     },
     "panel-practice-skia.text_f42ae69be1": {
-      "mys": "model.updateTime.mys"
+      "mys": "米游社数据的更新时间"
     },
     "panel-relic-set.text_47f91a7b0b": {
-      "name": "name"
+      "name": "缺失资料的遗器套装名称"
     },
     "panel-relic-set.text_5e07f3f7bd": {
-      "set": "set"
+      "set": "遗器套装名称"
     },
     "panel-relic-set.text_a7c782c51f": {
-      "name": "target.name"
+      "name": "目标角色名称"
     },
     "panel-relic-set.text_01149de494": {
-      "value1": "names.join(\"、\")"
+      "value1": "临时替换的遗器套装名称列表"
     },
     "panel-relic-skia.text_37b08c3e12": {
-      "mark": "part.mark",
-      "markClass": "part.markClass"
+      "mark": "单件遗器评分数值",
+      "markClass": "单件遗器评分等级"
     },
     "panel-relic-skia.text_b0e0ce719c": {
-      "mark": "part.mark"
+      "mark": "单件遗器最终得分"
     },
     "panel-relic-skia.text_acf83a0706": {
-      "name": "data.name",
-      "classTitle": "charCfg.classTitle"
+      "name": "角色名称",
+      "classTitle": "角色流派或评分规则名称"
     },
     "panel-relic-skia.text_70593aa83c": {
-      "cons": "data.cons"
+      "cons": "角色星魂数"
     },
     "panel-relic-skia.text_db409bb319": {
-      "classTitle": "charCfg.classTitle"
+      "classTitle": "角色流派或评分规则名称"
     },
     "panel-relic-skia.text_aed20330e7": {
-      "incomplete": "ranking.incomplete"
+      "incomplete": "词条数据不全的遗器数量"
     },
     "panel-showcase-command.text_924712b1f1": {
-      "value1": "sourceSummary(selected)",
-      "value2": "overridden() ? \"来源由部署环境变量指定。\" : usage"
+      "value1": "各区服当前的面板来源配置摘要",
+      "value2": "环境变量覆盖提示或指令用法说明"
     },
     "panel-showcase-command.text_cd9ab40147": {
-      "usage": "usage"
+      "usage": "切换面板 API 或来源的指令用法说明"
     },
     "panel-showcase-command.text_0899ad51c1": {
-      "value1": "sourceSummary(value)"
+      "value1": "各区服当前的面板来源配置摘要"
     },
     "panel-showcase.text_c4a7b73faf": {
-      "avatarId": "avatarId"
+      "avatarId": "角色 ID"
     },
     "panel-signed-export.text_dc49cf310a": {
-      "uid": "uid"
+      "uid": "星铁 UID"
     },
     "panel-signed-export.text_b3621679ed": {
-      "name": "name",
-      "format": "format"
+      "name": "导出文件名",
+      "format": "导出文件格式"
     },
     "panel-skill-preview.text_e8ca247cfb": {
-      "name": "target.name"
+      "name": "角色名称"
     },
     "panel-skill-preview.text_8159b42b98": {
-      "value1": "skills.map(skill => skill.level).join(\"/\")"
+      "value1": "技能等级列表"
     },
     "panel-trace-preview.text_7eaf23959f": {
-      "name": "target.name"
+      "name": "角色名称"
     },
     "panel.text_a50dfb8cb3": {
-      "title": "title",
-      "value2": "display(Math.round(row.critical), row.change?.critical)",
-      "average": "average"
+      "title": "伤害条目标题",
+      "value2": "暴击伤害数值及变化量文本",
+      "average": "期望伤害数值及变化量文本"
     },
     "panel.text_233849b139": {
-      "name": "avatar.name"
+      "name": "角色名称"
     },
     "panel.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "档案编号最大值"
     },
     "panel.text_b222031fca": {
-      "uid": "uid",
-      "profileId": "profileId"
+      "uid": "角色UID",
+      "profileId": "档案编号"
     },
     "panel.text_a63f150734": {
-      "uid": "uid"
+      "uid": "角色 UID"
     },
     "panel.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "panel.text_9786b04902": {
-      "profileId": "profileId",
-      "value2": "profileId"
+      "profileId": "档案编号",
+      "value2": "档案编号"
     },
     "panel.text_23c915b125": {
-      "value1": "profileId === 1 ? \"\" : profileId"
+      "value1": "档案序号后缀（首档为空）"
     },
     "panel.text_850303c8b2": {
-      "count": "count",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "count": "核对行迹的角色数量",
+      "value2": "档案编号后缀（默认档案 1 时为空）"
     },
     "panel.text_0254a3b80e": {
-      "name": "name"
+      "name": "角色名称"
     },
     "panel.text_c42026396b": {
-      "absent": "absent",
-      "value2": "showcaseProviderNames[target.provider]"
+      "absent": "本地面板缺失提示",
+      "value2": "公开展板数据源名称"
     },
     "panel.text_6073c50cbc": {
-      "value1": "profileId === 1 ? \"\" : profileId"
+      "value1": "档案编号后缀（默认档案 1 时为空）"
     },
     "panel.text_3bc476444f": {
-      "uid": "uid",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "uid": "角色 UID",
+      "value2": "档案编号后缀（默认档案 1 时为空）"
     },
     "panel.text_86eb29d272": {
-      "uid": "uid",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "uid": "角色 UID",
+      "value2": "档案编号后缀（默认档案 1 时为空）"
     },
     "panel.text_1d96613ea3": {
-      "unresolved": "unresolved"
+      "unresolved": "未确认基础等级的技能数量"
     },
     "panel.text_320e06fbd7": {
-      "name": "name",
-      "format": "format",
-      "retained": "retained"
+      "name": "导出文件名",
+      "format": "导出文件格式",
+      "retained": "保留字段提示"
     },
     "panel.text_0731389216": {
-      "uid": "uid"
+      "uid": "星铁 UID"
     },
     "panel.text_6e81d0d44a": {
-      "uid": "uid",
-      "total": "first.total"
+      "uid": "角色 UID",
+      "total": "统计的角色总数"
     },
     "panel.text_bcc3ac4d26": {
-      "profile": "model.updateTime.profile"
+      "profile": "面板档案更新时间"
     },
     "panel.text_5531563d2e": {
-      "mys": "model.updateTime.mys"
+      "mys": "米游社数据更新时间"
     },
     "panel.text_4f2fc3d385": {
-      "name": "row.weapon.name",
-      "value2": "row.weapon.level ?? \"—\"",
-      "value3": "row.weapon.affix ?? \"—\""
+      "name": "光锥名称",
+      "value2": "光锥等级（缺失时为 —）",
+      "value3": "光锥叠影等级（缺失时为 —）"
     },
     "panel.text_ef17e8101e": {
-      "mark": "row.rating.mark",
-      "markClass": "row.rating.markClass"
+      "mark": "遗器评分数值",
+      "markClass": "遗器评分等级"
     },
     "panel.text_26c0e139d9": {
-      "name": "row.name",
-      "value2": "row.level ?? \"—\"",
-      "value3": "row.cons ?? \"—\"",
-      "value4": "row.talent.map(skill => skill.level).join(\"/\")",
-      "value5": "weapon || \"光锥—\"",
-      "rating": "rating"
+      "name": "角色名称",
+      "value2": "角色等级",
+      "value3": "星魂等级",
+      "value4": "技能等级列表",
+      "value5": "光锥信息",
+      "rating": "遗器评分"
     },
     "panel.text_c31d4108d2": {
-      "uid": "uid"
+      "uid": "角色UID"
     },
     "panel.text_6c1dc5edcf": {
-      "avatar": "avatar",
-      "name": "name",
-      "mark": "mark",
-      "markClass": "markClass"
+      "avatar": "角色名称",
+      "name": "遗器名称",
+      "mark": "遗器评分",
+      "markClass": "遗器评分评级"
     },
     "panel.text_a886dd92b0": {
-      "name": "name",
-      "archiveSuffix": "archiveSuffix"
+      "name": "查询的角色名称",
+      "archiveSuffix": "档案编号后缀（含前导空格，默认档案 1 时为空）"
     },
     "panel.text_98292ec141": {
-      "name": "selected.name",
-      "personalDamageNames": "personalDamageNames"
+      "name": "角色名称",
+      "personalDamageNames": "已支持个人伤害计算的角色列表"
     },
     "panel.text_864b407dfd": {
-      "donor": "change.donor"
+      "donor": "换装来源角色名称"
     },
     "panel.text_5a5b29b174": {
-      "name": "temporary.name"
+      "name": "角色名称"
     },
     "panel.text_4d93fa2059": {
-      "name": "temporary.name"
+      "name": "角色名称"
     },
     "panel.text_d2b4db8bd7": {
-      "value1": "change.extraEidolon ? \"开启\" : \"关闭\""
+      "value1": "开关状态（开启/关闭）"
     },
     "panel.text_cf23424484": {
-      "name": "selected.name"
+      "name": "角色名称"
     },
     "panel.text_6d527e8cf8": {
-      "name": "selected.name",
-      "scenarioCount": "result.scenarioCount"
+      "name": "角色名称",
+      "scenarioCount": "支持的伤害场景数量"
     },
     "panel.text_4d0b4a563f": {
-      "name": "selected.name",
-      "scenarioCount": "result.scenarioCount",
-      "value3": "selected.name",
-      "archiveSuffix": "archiveSuffix"
+      "name": "角色名称",
+      "scenarioCount": "支持的伤害场景数量",
+      "value3": "角色名称（用于拼接指令）",
+      "archiveSuffix": "档案编号后缀（含前导空格，默认档案 1 时为空）"
     },
     "panel.text_4509cf2edb": {
-      "name": "selected.name",
-      "reason": "result.reason"
+      "name": "角色名称",
+      "reason": "伤害计算不可用的原因"
     },
     "panel.text_0f848475f4": {
-      "name": "selected.name",
-      "value2": "profileId === 1 ? \"\" : profileId"
+      "name": "角色名称",
+      "value2": "档案序号后缀（首档为空）"
     },
     "panel.text_456633c87c": {
-      "uid": "uid",
-      "length": "snapshot.avatars.length"
+      "uid": "角色 UID",
+      "length": "面板中的角色数量"
     },
     "panel.text_7d5d089c70": {
-      "uid": "uid",
-      "name": "selected.name",
-      "mark": "relicScore.mark",
-      "markClass": "relicScore.markClass"
+      "uid": "角色 UID",
+      "name": "角色名称",
+      "mark": "遗器总分",
+      "markClass": "遗器总评评级"
     },
     "panel.text_c0985f1db5": {
-      "rank": "selected.rank"
+      "rank": "星魂等级"
     },
     "panel.text_3b2f86a1cd": {
-      "value1": "showcaseProviderNames[snapshot.source]"
+      "value1": "公开展板数据源名称"
     },
     "panel.text_2dcd381edd": {
-      "uid": "uid",
-      "label": "label",
-      "length": "snapshot.avatars.length",
-      "value4": "snapshot.avatars.map(avatar => avatar.name).join(\"、\")"
+      "uid": "星铁 UID",
+      "label": "面板来源标签",
+      "length": "角色数量",
+      "value4": "角色名称列表"
     },
     "panel.text_8ed1a33fe9": {
-      "uid": "uid",
-      "length": "snapshot.avatars.length"
+      "uid": "角色 UID",
+      "length": "面板中的角色数量"
     },
     "panel.text_9d881700c6": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "personal-record-card.text_d6960d887e": {
-      "level": "character.level"
+      "level": "角色等级"
     },
     "personal-record.text_3f1fec81ff": {
-      "nickname": "record.nickname",
-      "region": "record.region",
-      "uid": "record.uid"
+      "nickname": "角色昵称",
+      "region": "服务器区服名称",
+      "uid": "角色UID"
     },
     "personal-record.text_2275384b53": {
-      "rank": "avatar.rank"
+      "rank": "星魂等级"
     },
     "personal-record.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "最大档案编号上限"
     },
     "personal-record.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "personal-record.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "personal-roster-card.text_14d694b692": {
-      "time": "model.time"
+      "time": "米游社数据更新时间"
     },
     "personal-roster-card.text_e315050697": {
-      "uid": "model.uid",
-      "length": "model.rows.length"
+      "uid": "用户UID",
+      "length": "角色数量"
     },
     "personal-roster-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "最大档案编号"
     },
     "personal-roster-command.text_1286aa6d5b": {
-      "uid": "model.uid",
-      "title": "title",
-      "length": "model.rows.length"
+      "uid": "用户UID",
+      "title": "查询标题",
+      "length": "角色数量"
     },
     "personal-roster-command.text_c0985f1db5": {
-      "rank": "row.rank"
+      "rank": "星魂等级"
     },
     "personal-roster-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "personal-roster-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "档案编号"
     },
     "rank-statistics.text_b7b9d7a810": {
-      "name": "character.name",
-      "title": "title",
-      "total": "total"
+      "name": "角色名称",
+      "title": "统计标题",
+      "total": "样本总数"
     },
     "relic-score.text_4508f32766": {
-      "abbr": "abbr"
+      "abbr": "角色简称"
     },
     "rogue-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "支持的最大档案编号上限"
     },
     "rogue-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "用户指定的档案编号"
     },
     "rogue-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "用户指定的档案编号"
     },
     "rogue-model.text_d3cd6d72e0": {
-      "value1": "blessings.reduce((sum, group) => sum + group.values.length, 0)"
+      "value1": "本次挑战获得的祝福总数"
     },
     "rogue-model.text_ca3ec9fa1d": {
-      "value1": "period === \"current\" ? \"本期\" : \"上期\""
+      "value1": "统计周期标识（本期或上期）"
     },
     "rogue-model.text_b111e364ef": {
-      "start": "start",
-      "end": "end"
+      "start": "统计周期开始日期",
+      "end": "统计周期结束日期"
     },
     "rogue-model.text_f8c831320a": {
-      "value1": "period === \"current\" ? \"本期\" : \"上期\""
+      "value1": "周期演算时间标识（本期或上期）"
     },
     "rogue-model.text_09e1c48812": {
-      "value1": "basic.finished_weekly ? \"已领取\" : \"未领取\""
+      "value1": "本周周期演算首通奖励的领取状态文本"
     },
     "rogue-model.text_8ec04588b4": {
-      "name": "name",
-      "index": "index",
-      "length": "records.length"
+      "name": "当前查询的模式名称",
+      "index": "查询的记录序号",
+      "length": "已有记录总条数"
     },
     "rogue-model.text_163bb0c946": {
-      "name": "name"
+      "name": "所查询玩法模式的名称"
     },
     "simulation.admin.text_e9d7324c5b": {
-      "min": "min",
-      "max": "max"
+      "min": "允许输入的最小整数",
+      "max": "允许输入的最大整数"
     },
     "simulation.admin.text_3f091e82a2": {
-      "value1": "switchText(settings.enabled)",
-      "value2": "switchText(settings.multiple)",
-      "value3": "switchText(settings.weeklyBonus)"
+      "value1": "模拟跃迁功能开关状态",
+      "value2": "多连抽功能开关状态",
+      "value3": "每周双黄功能开关状态"
     },
     "simulation.admin.text_f7fb1e0060": {
-      "value1": "settings.automaticPools ? \"自动同步\" : \"手工设置\"",
-      "reincarnationMinutes": "settings.reincarnationMinutes"
+      "value1": "卡池更新方式（自动同步或手工设置）",
+      "reincarnationMinutes": "星铁转生功能的冷却时间（分钟）"
     },
     "simulation.admin.text_c65eda7337": {
-      "characterFive": "rates.characterFive",
-      "characterFour": "rates.characterFour"
+      "characterFive": "角色池五星基础概率（万分比数值）",
+      "characterFour": "角色池四星基础概率（万分比数值）"
     },
     "simulation.admin.text_a19bd40fbc": {
-      "coneFive": "rates.coneFive",
-      "coneFour": "rates.coneFour"
+      "coneFive": "光锥池五星基础概率（万分比数值）",
+      "coneFour": "光锥池四星基础概率（万分比数值）"
     },
     "simulation.admin.text_23494e5361": {
-      "value1": "rates.featuredFive === null ? \"角色 50% · 光锥 75%\" : rates.featuredFive + \"%\""
+      "value1": "五星UP小保底概率说明文本或自定义百分比"
     },
     "simulation.admin.text_e903d5f1e2": {
-      "value1": "group ? \"本群\" : \"默认\"",
-      "special": "special",
-      "regular": "regular",
-      "recallSeconds": "recallSeconds"
+      "value1": "设置生效范围（本群或默认）",
+      "special": "每日发放的星轨专票数量",
+      "regular": "每日发放的星轨通票数量",
+      "recallSeconds": "消息自动撤回时间（秒）"
     },
     "simulation.card.text_708443e089": {
-      "pity": "pull.pity"
+      "pity": "本次出货所消耗的抽数"
     },
     "simulation.card.text_219915f320": {
-      "pity": "pity"
+      "pity": "当前卡池累计未出五星的抽数"
     },
     "simulation.commands.text_f5b84e0a3b": {
-      "pity": "pull.pity"
+      "pity": "保底抽数"
     },
     "simulation.commands.text_6489501219": {
-      "value1": "Math.ceil(remaining / 60_000)"
+      "value1": "距离下次可转生的剩余冷却分钟数"
     },
     "simulation.commands.text_9a19896b7b": {
-      "nickname": "nickname",
-      "name": "name",
-      "value3": "path ? ` · ${path}` : \"\""
+      "nickname": "用户昵称",
+      "name": "随机抽中的转生角色或星神名称",
+      "value3": "可选的命途后缀（含前导分隔符）"
     },
     "simulation.commands.text_104559d799": {
-      "title": "title",
-      "description": "description"
+      "title": "包含昵称、转生角色及命途的标题文本",
+      "description": "转生身份的详细描述文本"
     },
     "simulation.commands.text_e97c5c3c2a": {
-      "special": "balance.special",
-      "regular": "balance.regular"
+      "special": "当前剩余的星轨专票数量",
+      "regular": "当前剩余的星轨通票数量"
     },
     "simulation.commands.text_6366d63a0b": {
-      "five": "summary.five"
+      "five": "今日抽到的五星总数量"
     },
     "simulation.commands.text_155b5f569f": {
-      "name": "item.name",
-      "pity": "item.pity"
+      "name": "抽到的五星角色或光锥名称",
+      "pity": "获得该五星所消耗的抽数"
     },
     "simulation.commands.text_afd4475561": {
-      "value1": "summary.five >= 8 ? `${summary.five} 个` : summary.samples.map(item => `${item.name}（${item.pity} 抽）`).join(\"、\")"
+      "value1": "今日五星出货详情列表或总个数"
     },
     "simulation.commands.text_0db238d073": {
-      "value1": "total ?? 0"
+      "value1": "今日在当前类型卡池已抽取但未获得五星的总抽数"
     },
     "simulation.commands.text_af4db76fc4": {
-      "value1": "ticket === \"regular\" ? \"通票\" : \"专票\"",
-      "count": "draw.count",
-      "value3": "balance[ticket]"
+      "value1": "所需票种名称（通票或专票）",
+      "count": "本次跃迁需要消耗的票数",
+      "value3": "用户当前持有的该票种余额"
     },
     "simulation.commands.text_7af3a650d0": {
-      "week": "week"
+      "week": "本周累计获得的五星数量"
     },
     "simulation.commands.text_7d33c08deb": {
-      "special": "result.issued.special",
-      "regular": "result.issued.regular"
+      "special": "本次领取的星轨专票数量",
+      "regular": "本次领取的星轨通票数量"
     },
     "simulation.commands.text_f032fa644e": {
-      "title": "pool.title",
-      "count": "count",
-      "five": "five",
-      "four": "four",
-      "pity": "result.pity"
+      "title": "卡池标题",
+      "count": "抽卡次数",
+      "five": "五星数量",
+      "four": "四星数量",
+      "pity": "当前保底计数"
     },
     "simulation.independent-state.text_6959f557ff": {
-      "five": "selected.five"
+      "five": "五星数量"
     },
     "simulation.independent-state.text_d028f8c27e": {
-      "draws": "selected.draws",
-      "value2": "selected.five ? `有 ${selected.five} 个五星` : \"没有五星\""
+      "draws": "今日已抽次数",
+      "value2": "五星获取情况描述"
     },
     "simulation.pools.text_118c4f060a": {
-      "value1": "cone ? \"光锥\" : \"角色\""
+      "value1": "卡池类型（光锥或角色）"
     },
     "simulation.pools.text_3227effc77": {
-      "kind": "featuredFive.kind",
-      "fiveName": "fiveName"
+      "kind": "跃迁类型（角色或光锥）",
+      "fiveName": "五星UP名称"
     },
     "simulation.pools.text_ef39a35fd3": {
-      "kind": "featuredFive.kind",
-      "name": "featuredFive.name"
+      "kind": "UP五星类型",
+      "name": "UP五星名称"
     },
     "simulation.pools.text_47797015e8": {
-      "kind": "featuredFive.kind",
-      "name": "featuredFive.name"
+      "kind": "跃迁类型（角色或光锥）",
+      "name": "五星UP名称"
     },
     "simulation.reincarnation-theme.text_a7fe699ca9": {
-      "value1": "entry[0]"
+      "value1": "正在核对的主题资源文件名"
     },
     "simulation.reincarnation-theme.text_86955f2188": {
-      "name": "name"
+      "name": "已处理的主题资源文件名"
     },
     "team-damage-card.text_ff231c796d": {
-      "uid": "report.uid",
-      "profileId": "report.profileId"
+      "uid": "玩家游戏 UID",
+      "profileId": "当前选择的档案编号"
     },
     "team-damage-card.text_f5ea72c3e8": {
-      "level": "member.level",
-      "rank": "member.rank"
+      "level": "角色等级",
+      "rank": "角色星魂数"
     },
     "team-damage-card.text_daf934d5e8": {
-      "weaponLevel": "member.weaponLevel",
-      "weaponRank": "member.weaponRank"
+      "weaponLevel": "光锥等级",
+      "weaponRank": "光锥叠影阶数"
     },
     "team-damage-card.text_beddeb03cf": {
-      "engine": "report.engine"
+      "engine": "伤害模拟计算引擎名称"
     },
     "team-damage-card.text_e8e1e64d62": {
-      "renderer": "engine.renderer",
-      "api": "engine.api",
-      "device": "engine.device"
+      "renderer": "渲染器名称",
+      "api": "图形接口名称",
+      "device": "渲染设备名称"
     },
     "team-damage-command.text_6100756358": {
-      "enemies": "command.enemies"
+      "enemies": "模拟战斗的敌方目标数量"
     },
     "team-damage-command.text_68901e8078": {
-      "MAX_PROFILE_ID": "MAX_PROFILE_ID"
+      "MAX_PROFILE_ID": "支持的最大档案编号上限"
     },
     "team-damage-command.text_576f92da9a": {
-      "uid": "uid",
-      "profileId": "profileId"
+      "uid": "玩家游戏 UID",
+      "profileId": "当前选择的档案编号"
     },
     "team-damage-command.text_fbcb52baf5": {
-      "timeline": "report.timeline"
+      "timeline": "角色起手行动顺序文本"
     },
     "team-damage-command.text_dc2d9ae906": {
-      "note": "note"
+      "note": "模拟警告或补充说明文本"
     },
     "team-damage-command.text_84523086f8": {
-      "engine": "report.engine"
+      "engine": "伤害计算引擎名称"
     },
     "team-damage-command.text_76720712c8": {
-      "profileId": "profileId"
+      "profileId": "当前选择的档案编号"
     },
     "team-damage-command.text_c0d14d54a7": {
-      "profileId": "profileId"
+      "profileId": "用户档案编号"
     },
     "team-damage-model.text_2fa2f417ac": {
-      "trailblazer": "trailblazer"
+      "trailblazer": "开拓者命途名称"
     },
     "team-damage-model.text_79a225f323": {
-      "trailblazer": "trailblazer"
+      "trailblazer": "开拓者命途名称"
     },
     "team-damage-model.text_a919c4c33c": {
-      "trailblazer": "trailblazer",
-      "value2": "Number(role.item_id) % 2 ? \"男\" : \"女\""
+      "trailblazer": "开拓者命途名称",
+      "value2": "开拓者性别名称"
     },
     "team-damage-model.text_9d0092844b": {
-      "name": "name"
+      "name": "角色名称"
     },
     "team-damage-model.text_fba705dda0": {
-      "name": "name"
+      "name": "角色名称"
     },
     "team-damage-model.text_f324fffdc0": {
-      "name": "name"
+      "name": "角色名称"
     },
     "team-damage-model.text_924f0e9b32": {
-      "value1": "text(token, 30)"
+      "value1": "截断后的未识别角色名输入"
     },
     "team-damage-runtime.text_73ec85b03d": {
-      "id": "result.id"
+      "id": "缺少机制模板的角色ID"
     },
     "team-damage-runtime.text_4b07e89df3": {
-      "id": "result.id"
+      "id": "缺少数据的光锥ID"
     },
     "team-engine.native.compile.encounter.text_fbb7f7ac1a": {
-      "id": "id"
+      "id": "单位ID"
     },
     "team-engine.native.compile.encounter.text_83c30a430a": {
-      "id": "unit.id"
+      "id": "单位ID"
     },
     "team-engine.native.compile.encounter.text_c8afe67408": {
-      "owner": "owner",
-      "id": "id"
+      "owner": "所属单位ID",
+      "id": "资源ID"
     },
     "team-engine.native.compile.encounter.text_81c7c6d8ce": {
-      "coneId": "coneId"
+      "coneId": "光锥ID"
     },
     "team-engine.native.compile.encounter.text_2da1e5bf7d": {
-      "coneId": "coneId"
+      "coneId": "光锥ID"
     },
     "team-engine.native.compile.encounter.text_1a31398735": {
-      "coneId": "coneId",
-      "table": "table",
-      "index": "index"
+      "coneId": "光锥ID",
+      "table": "参数表名称",
+      "index": "表索引"
     },
     "team-engine.native.compile.encounter.text_eaa36c2473": {
-      "value1": "family === \"main\" ? \"主\" : \"副\"",
-      "key": "key"
+      "value1": "词条类别（主或副）",
+      "key": "词条键名"
     },
     "team-engine.native.compile.encounter.text_0bba70dbb2": {
-      "name": "name"
+      "name": "命途模块名称"
     },
     "team-engine.native.compile.encounter.text_f1ee810398": {
-      "count": "count"
+      "count": "机制概率判断数量"
     },
     "team-engine.native.compile.library.text_920ea61a07": {
-      "kind": "kind",
-      "id": "id",
-      "version": "version"
+      "kind": "模板类型",
+      "id": "模板ID",
+      "version": "模板版本"
     },
     "team-engine.native.compile.library.text_e794dcdb5a": {
-      "kind": "kind",
-      "id": "id"
+      "kind": "模板类型",
+      "id": "模板ID"
     },
     "team-engine.native.worker-build.text_6b92da1d32": {
-      "set": "set"
+      "set": "遗器套装标识"
     },
     "team-engine.native.worker-build.text_d1bdfdb47a": {
-      "id": "weapon.id"
+      "id": "光锥标识"
     }
   }
 }
