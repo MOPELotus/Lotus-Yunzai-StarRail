@@ -220,7 +220,7 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
     ctx.shadowColor = "#130d1b"; ctx.shadowBlur = 3 * scale; ctx.shadowOffsetY = scale;
     type(ctx, `计算引擎 · ${report.engine}`, width / 2, footer + 10, 14, gold);
     type(ctx, "固定假人与自动行动策略，数值仅供参考", width / 2, footer + 30, 14, gold);
-    type(ctx, "Lotus-Yunzai · StarRail", width / 2, footer + 50, 14, gold);
+    type(ctx, "Lotus-Yunzai · StarRail", width / 2, footer + 50, 14, "#fff");
     ctx.restore();
   });
   return { height: footer + 72, paints };

@@ -143,7 +143,7 @@ export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeSta
       for (const [index, line] of group.lines.entries()) label(ctx, line, 77, y + 12 + 23 * index, 17);
       y += group.lines.length * 23 + 7;
     }
-    label(ctx, model.cardBrand, width / 2, height - 35, 24, { color: "#8f8f8f", align: "center" });
+    label(ctx, model.cardBrand, width / 2, height - 35, 24, { color: "#fff", align: "center" });
   }, options);
 }
 
@@ -213,7 +213,7 @@ export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typ
     label(ctx, model.note, 400, footerY + 16, 16, { color: "#a45000", align: "center" });
     if (!model.complete) label(ctx, "已达到查询页数上限，仅显示本次读取的记录。", 400, footerY + 40, 16,
       { color: "#a45000", align: "center" });
-    label(ctx, model.cardBrand, 400, footerY + noteHeight + 32, 24, { align: "center" });
+    label(ctx, model.cardBrand, 400, footerY + noteHeight + 32, 24, { color: "#fff", align: "center" });
   }, options);
 }
 
@@ -338,6 +338,6 @@ export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStat
     label(ctx, "总计", cx, cy - 10, 14, { align: "center" });
     number(String(sum), cx, cy + 14, 34, "#263444");
     label(ctx, `已归档 ${model.months.length}/${model.period.last - model.period.first + 1} 个月 · Lotus-Yunzai`,
-      contentWidth / 2, height - 18, 13, { color: "#7994a7", align: "center" });
+      contentWidth / 2, height - 18, 13, { color: "#fff", align: "center" });
   }, options);
 }

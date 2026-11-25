@@ -290,7 +290,7 @@ export async function renderStarRailAbyss(data: ChallengeData, signal: AbortSign
     ctx.restore(); offset += layout.height
   }
   for (const [x, y, direction] of [[26, 26, 1], [734, 26, -1], [26, height - 26, 1], [734, height - 26, -1]] as const) line(x, y, direction * 22, GOLD)
-  line(44, offset + 6, 672); text("Lotus-Yunzai · 米游社", 44, offset + 27, 16, MUTED, 672, "center")
+  line(44, offset + 6, 672); text("Lotus-Yunzai · 米游社", 44, offset + 27, 16, "#fff", 672, "center")
   const png = await canvas.toBuffer("png", { filters: "auto" })
   signal.throwIfAborted()
   const engine = checkGpu()

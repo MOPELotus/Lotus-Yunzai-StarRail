@@ -290,7 +290,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
       }
     }
     if (!detail && model.historyCount > 0) text(`可查询 ${model.historyCount} 条战绩 · *币战战报1`, width / 2, footer + 9, 14, muted, "center");
-    text("Lotus-Yunzai · 米游社战绩", width / 2, footer + 37, 17, gold, "center");
+    text("Lotus-Yunzai · 米游社战绩", width / 2, footer + 37, 17, "#fff", "center");
   }, mode);
   if (nativeImageRasterScale() === 1) return render(4);
   const tooTall = grouped && height * 4 >= 30_680 && await checkNapCat?.();

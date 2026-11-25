@@ -173,7 +173,7 @@ export async function renderStarRailRogue(card: RogueCard, signal: AbortSignal, 
     write(card.name, width / 2, 47, 28, gold, "center", true, true);
     write(card.identity, width / 2, 77, 15, silver, "center", false, false, width - 74);
     for (const draw of drawings) draw(ctx, write);
-    write("Lotus-Yunzai  ·  星铁战绩", width / 2, height - 18, 13, silver, "center");
+    write("Lotus-Yunzai  ·  星铁战绩", width / 2, height - 18, 13, "#fff", "center");
   }
 
   const pngAt = (density: number) => renderPng(width * density, height * density, ctx => {
