@@ -70,7 +70,7 @@ test("在途撤权、断线和历史删除都阻止签名文件发送", async ()
   const t = await fixture();
   try {
     let checks = 0;
-    expect(await t.exportPanel({ ...t.input, authorize: async () => ++checks < 3 })).toContain("已过期");
+    expect(await t.exportPanel({ ...t.input, authorize: async () => ++checks < 3 })).toBe("角色所属档案或登录信息已变更，请重新操作。");
     checks = 0;
     expect(await t.exportPanel({ ...t.input, authorize: async () => {
       if (++checks === 2) await writeFile(t.ownFile, JSON.stringify(discardedStarRailPanel(uid, 20)));
@@ -94,11 +94,11 @@ test("签名要求明确 UID，拒绝错号、跨目录软链接和未授权读�
   try {
     let calls = 0;
     const authorize = async () => { calls++; return true; };
-    expect(await t.exportPanel({ ...t.input, uid: "../gs/1", authorize })).toContain("明确");
+    expect(await t.exportPanel({ ...t.input, uid: "../gs/1", authorize })).toBe("请输入当前登录档案内的星铁 UID。");
     expect(calls).toBe(0);
     await writeFile(t.legacyFile, JSON.stringify({ ...oldPanel, uid: "123456789" }));
     expect(await t.exportPanel(t.input)).toContain("导出失败");
-    expect(await t.exportPanel({ ...t.input, authorize: async () => false })).toContain("未通过");
+    expect(await t.exportPanel({ ...t.input, authorize: async () => false })).toBe("角色所属档案或登录信息已变更，请重新操作。");
     await truncate(t.legacyFile, 8 * 1024 * 1024 + 1);
     expect(await t.exportPanel(t.input)).toContain("导出失败");
     const another = join(t.root, "another-role.json");
