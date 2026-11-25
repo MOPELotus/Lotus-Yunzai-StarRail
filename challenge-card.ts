@@ -1,3 +1,4 @@
+import { withReadRetries } from "@lotus-yunzai/http";
 import { createReadStream, type ReadStream } from "node:fs";
 import { join } from "node:path";
 import { nativeImageRasterScale } from "@lotus-yunzai/skia";
@@ -5,6 +6,8 @@ import { Canvas, FontLibrary, loadImage, type CanvasGradient, type Image } from 
 import { loadStarRailChallengePortraits, type ChallengePortraitOptions } from "./challenge-portraits.ts";
 import { starRailChallengeThemeDirectory } from "./challenge-theme.ts";
 import type { ChallengeResult } from "./challenge-model.ts";
+
+const readArt = withReadRetries((url, init) => fetch(url, init));
 
 type ChallengeData = { uid?: string; results?: readonly ChallengeResult[] };
 type Floor = ChallengeResult["floors"][number];
@@ -74,7 +77,7 @@ async function image(src: string, local: boolean, signal: AbortSignal) {
     } else {
       const url = new URL(src)
       if (url.protocol !== "https:" || !allowedHosts.has(url.hostname) || url.username || url.password || url.port) return null
-      const response = await fetch(url, { redirect: "error", credentials: "omit", signal: deadline })
+      const response = await readArt(url, { redirect: "error", credentials: "omit", signal: deadline })
       stream = response.body
       if (!response.ok || response.redirected || Number(response.headers.get("Content-Length")) > imageLimit) return null
     }

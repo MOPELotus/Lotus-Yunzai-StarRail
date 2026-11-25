@@ -1,3 +1,4 @@
+import { withReadRetries } from "@lotus-yunzai/http";
 import { showcaseProviderNames } from "./panel-showcase.ts";
 import { readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
@@ -13,6 +14,8 @@ import rankAbbreviations from "./panel-theme/rank-abbreviations.json";
 import { isStarRailTalentUnlocks, object, officialArtHosts, recoverStarRailSkillLevel, starRailLegacySkillLevel, text, whole, type PanelAvatar, type PanelSnapshot } from "./panel-model.ts";
 import { isStarRailLocalPanelPhoto, panelPhotoHash, readStarRailLocalPanelPhoto, readStarRailPanelPortrait,
   type StarRailLocalPanelPhoto } from "./panel-portrait.ts";
+
+const readArt = withReadRetries((url, init) => fetch(url, init));
 
 const packagedTheme = fileURLToPath(new URL("./panel-theme/", import.meta.url));
 const aliases: Readonly<Record<string, string>> = alias;
@@ -177,7 +180,7 @@ async function remoteArt(source: string | undefined, signal: AbortSignal) {
   try {
     const url = portraitUrl(source);
     if (!url) return "";
-    response = await fetch(url, { redirect: "error", credentials: "omit", signal: deadline });
+    response = await readArt(url, { redirect: "error", credentials: "omit", signal: deadline });
     if (!response.ok || response.redirected || !response.body || Number(response.headers.get("Content-Length")) > maxImageBytes) return "";
     const chunks: Uint8Array[] = [];
     let size = 0;

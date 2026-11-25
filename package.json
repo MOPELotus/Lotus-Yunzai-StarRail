@@ -10,6 +10,7 @@
     "@lotus-yunzai/account": "workspace:*",
     "@lotus-yunzai/gacha": "workspace:*",
     "@lotus-yunzai/hoyo-client": "workspace:*",
+    "@lotus-yunzai/http": "workspace:*",
     "@lotus-yunzai/skia": "workspace:*",
     "@lotus-yunzai/storage": "workspace:*",
     "skia-canvas": "4.0.1"
