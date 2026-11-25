@@ -62,8 +62,8 @@ export async function queryStarRailChallenge(
   } catch (error) {
     if (signal.aborted) return;
     if (error instanceof ProfileError) {
-      if (error.code === "missing" || error.code === "login-required") return `[starrail] 请先登录 profile ${profileId}。`;
-      if (error.code === "role-missing") return `[starrail] profile ${profileId} 没有同步星铁 UID。`;
+      if (error.code === "missing" || error.code === "login-required") return `请先登录 profile ${profileId}。`;
+      if (error.code === "role-missing") return `profile ${profileId} 没有同步星铁 UID。`;
       if (error.code === "changed") return "星铁档案已变更，请重新查询。";
     }
     if (error instanceof GameRecordRequestError) return error.message;

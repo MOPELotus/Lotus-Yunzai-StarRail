@@ -42,8 +42,8 @@ function usesLegacyServerTime(input: unknown) {
 
 function describe(error: unknown, profileId: number) {
   if (error instanceof ProfileError) {
-    if (error.code === "missing") return `[starrail] 请先登录 profile ${profileId}。`;
-    if (error.code === "role-missing") return `[starrail] profile ${profileId} 没有同步星铁 UID。`;
+    if (error.code === "missing") return `请先登录 profile ${profileId}。`;
+    if (error.code === "role-missing") return `profile ${profileId} 没有同步星铁 UID。`;
     if (error.code === "changed") return "星铁档案角色已变化，请重新操作。";
   }
   if (error instanceof StarRailGachaArchiveError) return error.message;
