@@ -269,7 +269,8 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
           if ("equipment" in entity) drawMember(entity, 50, y, true);
           else {
             const quality = "quality" in entity ? entity.quality : undefined;
-            const background = kind === "strategy" ? strategyBackground(quality) : kind === "trait" ? traitBackground(quality) : undefined;
+            const background = kind === "strategy" ? strategyBackground(quality) : kind === "trait" ? traitBackground(quality)
+              : kind === "environment" ? "environment" : undefined;
             if (background) picture(ctx, media.fixed(background), 52, y, 64, 64);
             picture(ctx, media.get(entity.icon), 60, y + 8, 48, 48);
             if ("count" in entity && entity.count !== undefined) {

@@ -36,7 +36,7 @@ type Battle = {
   division: Division; mode?: string; rank?: string; time?: string;
   health?: number; coin?: number; value?: number; front: GridMember[]; back: GridMember[];
   traits: Item[]; portals: Item[]; augments: Item[];
-  damage: { entity: GridMember | Item | GridArt; kind: "role" | "trait" | "strategy" | undefined; amount: number; ratio: number; label: string }[];
+  damage: { entity: GridMember | Item | GridArt; kind: "role" | "trait" | "strategy" | "environment" | undefined; amount: number; ratio: number; label: string }[];
 };
 export type GridFightCard = {
   uid: string; season?: number; points?: number; pointsMax?: number;
@@ -78,7 +78,7 @@ function division(raw: unknown): Division {
 }
 
 function item(row: Row): Item {
-  return { id: key(row.trait_id ?? row.augment_id ?? row.id), name: text(row.trait_name ?? row.name),
+  return { id: key(row.trait_id ?? row.augment_id ?? row.portal_id ?? row.id), name: text(row.trait_name ?? row.name),
     icon: icons(row.icon), quality: num(row.quality, 9), count: num(row.trait_count, 99) };
 }
 
@@ -96,12 +96,19 @@ function battle(raw: Row, recent = false): Battle | undefined {
   const lineup = object(raw.lineup);
   if (!brief || !lineup) return;
   const equipmentLimit = recent ? 9 : 3;
-  const front = list(lineup.front_roles, 10).map(role => member(role, equipmentLimit));
-  const back = list(lineup.back_roles, 10).map(role => member(role, equipmentLimit));
+  const frontSources = list(lineup.front_roles, 10), backSources = list(lineup.back_roles, 10);
+  const front = frontSources.map(role => member(role, equipmentLimit));
+  const back = backSources.map(role => member(role, equipmentLimit));
   const traits = list(lineup.trait_list, 24).map(item);
   const portals = list(lineup.portal_list, 12).map(item);
   const augments = list(lineup.augment_list, 24).map(item);
   const rolesById = new Map([...front, ...back].map(role => [role.id, role] as const));
+  const roles = [...front, ...back];
+  [...frontSources, ...backSources].forEach((role, index) => {
+    const avatarId = key(role.avatar_id);
+    if (avatarId !== undefined && !rolesById.has(avatarId)) rolesById.set(avatarId, roles[index]!);
+  });
+  const portalsById = new Map(portals.map(portal => [portal.id, portal] as const));
   const traitsById = new Map(traits.map(trait => [trait.id, trait] as const));
   const augmentsById = new Map(augments.map(augment => [augment.id, augment] as const));
   const hits = list(lineup.damage_list, 80).flatMap(row => {
@@ -109,16 +116,18 @@ function battle(raw: Row, recent = false): Battle | undefined {
     if (amount === undefined) return [];
     const id = key(row.id);
     const kind: Battle["damage"][number]["kind"] = row.damage_type === "DamageTypeRole" ? "role"
-      : row.damage_type === "DamageTypeTrait" ? "trait" : row.damage_type === "DamageTypeAugment" ? "strategy" : undefined;
+      : row.damage_type === "DamageTypeTrait" ? "trait" : row.damage_type === "DamageTypeAugment" ? "strategy"
+      : row.damage_type === "DamageTypePortal" ? "environment" : undefined;
     const entity = id === undefined ? undefined : kind === "role" ? rolesById.get(id)
-      : kind === "trait" ? traitsById.get(id) : kind === "strategy" ? augmentsById.get(id) : undefined;
+      : kind === "trait" ? traitsById.get(id) : kind === "strategy" ? augmentsById.get(id)
+        : kind === "environment" ? portalsById.get(id) : undefined;
     return [{ amount, kind, entity: entity ?? { name: "未知伤害来源" } }];
   });
   if (!recent) hits.sort((left, right) => right.amount - left.amount);
   hits.splice(5);
   const peak = hits[0]?.amount ?? 0;
   const damage = hits.map(hit => ({ ...hit, ratio: peak > 0 ? hit.amount / peak : 0,
-    label: recent ? (Math.ceil(hit.amount) / 10_000).toFixed(2) + "万" : hit.amount >= 10_000 ? (hit.amount / 10_000).toFixed(1) + "万" : hit.amount.toFixed(0) }));
+    label: recent ? (Math.ceil(hit.amount) / 10_000).toFixed(2) + "万" : hit.amount >= 100_000_000 ? (hit.amount / 100_000_000).toFixed(1) + "亿" : hit.amount >= 10_000 ? (hit.amount / 10_000).toFixed(1) + "万" : hit.amount.toFixed(0) }));
   const rawMode = raw.archive_type ?? brief.archive_type;
   const mode = rawMode === "ArchiveTypeHard" ? "超频博弈"
     : recent ? "标准博弈" : rawMode === "ArchiveTypePromotion" || brief.is_promotion === true ? "快速博弈"

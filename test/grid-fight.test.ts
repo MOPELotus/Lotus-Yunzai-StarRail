@@ -161,3 +161,37 @@ test("only the unprefixed overview consults settings and every oversized record 
   expect(configReads).toBe(1);
   expect(requests).toBe(2);
 });
+
+
+test("upstream archive damage resolves avatar aliases and portal IDs without crossing entity types", () => {
+  const fixture = { ...record, lineup: {
+    front_roles: [{ role_id: "140802", avatar_id: "1408", name: "角色甲", icon: "https://fastcdn.mihoyo.com/role-a.png" }],
+    back_roles: [{ role_id: "1408", avatar_id: "1303", name: "角色乙" }],
+    trait_list: [{ trait_id: "2207", trait_name: "羁绊甲" }],
+    augment_list: [{ augment_id: "2207", name: "策略甲" }],
+    portal_list: [{ portal_id: "2207", name: "持续伤害概念股", icon: "https://fastcdn.mihoyo.com/portal.png" }],
+    damage_list: [
+      { id: "140802", damage: "13599683647.8", damage_type: "DamageTypeRole" },
+      { id: "1303", damage: "186368000.0", damage_type: "DamageTypeRole" },
+      { id: "2207", damage: "100000000.0", damage_type: "DamageTypePortal" },
+      { id: "2207", damage: "69888000.0", damage_type: "DamageTypeTrait" },
+      { id: "2207", damage: "10000.0", damage_type: "DamageTypeAugment" },
+    ],
+  } };
+  const model = makeGridFightCard(source.role.uid, brief, [fixture], 1);
+  expect(model.battle?.damage.map(hit => [hit.entity.name, hit.kind, hit.label])).toEqual([
+    ["角色甲", "role", "136.0亿"], ["角色乙", "role", "1.9亿"],
+    ["持续伤害概念股", "environment", "1.0亿"], ["羁绊甲", "trait", "6988.8万"], ["策略甲", "strategy", "1.0万"],
+  ]);
+  expect(model.battle?.damage[2]?.entity.icon).toBe("https://fastcdn.mihoyo.com/portal.png");
+  expect(gridFightText(model)).toContain("持续伤害概念股 1.0亿");
+  // A canonical role ID wins over another role's avatar alias.
+  const collision = makeGridFightCard(source.role.uid, brief, [{ ...fixture, lineup: { ...fixture.lineup,
+    damage_list: [{ id: "1408", damage: "1", damage_type: "DamageTypeRole" }],
+  } }], 1);
+  expect(collision.battle?.damage[0]?.entity.name).toBe("角色乙");
+  const alias = makeGridFightCard(source.role.uid, brief, [{ ...fixture, lineup: { ...fixture.lineup,
+    back_roles: [], damage_list: [{ id: "1408", damage: "1", damage_type: "DamageTypeRole" }],
+  } }], 1);
+  expect(alias.battle?.damage[0]?.entity.name).toBe("角色甲");
+});
