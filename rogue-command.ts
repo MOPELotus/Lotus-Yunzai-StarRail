@@ -5,12 +5,13 @@ import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yu
 import { HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { renderStarRailRogue, starRailRogueText } from "./rogue-card.ts";
 import { makeRogueCard, type RogueCard, type RogueQuery } from "./rogue-model.ts";
+import { ownOperationSession, type OwnOperationContext } from "../../lib/own-operation-session.ts";
 
 type Profiles = Pick<ReturnType<typeof createProfileStore>, "requestSelectedContext">;
 type Client = Pick<ReturnType<typeof createProfileHoyoClient>, "fetchStarRailRogue">;
 type Draw = (...args: Parameters<typeof renderStarRailRogue>) => Promise<{ png: Uint8Array }>;
 type Route = Parameters<Client["fetchStarRailRogue"]>[1];
-type RogueContext = {
+type RogueContext = OwnOperationContext & {
   readonly user_id?: number;
   readonly self_id?: number;
   readonly message_type?: string;
@@ -29,8 +30,9 @@ export function createStarRailRogueQuery(profiles: Profiles, client: Client, lif
   return async (context: RogueContext, request: RogueQuery) => {
     if (request.mode === "weekly-help") return $t("rogue-command.text_48739f1416");
     const user = context.user_id;
-    const credential = context.privateCredentialSignal;
-    if (!credential || context.message_type !== "private" || context.isDelegated ||
+    const groupSession = context.message_type === "group" ? ownOperationSession(context) : undefined;
+    const credential = groupSession?.signal ?? (context.message_type === "private" ? context.privateCredentialSignal : undefined);
+    if (!credential || context.isDelegated ||
         (context.at !== undefined && String(context.at) !== String(context.self_id)) ||
         typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) {
       return $t("rogue-command.text_ac507189b9");

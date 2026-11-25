@@ -761,7 +761,7 @@
       "source": "plugins/starrail/rogue-card.ts"
     },
     "rogue-command": {
-      "description": "模拟宇宙与差分宇宙战绩私聊查询命令校验、请求与错误提示",
+      "description": "本人模拟宇宙与差分宇宙战绩查询，支持群聊与好友私聊，校验档案、请求与错误提示",
       "source": "plugins/starrail/rogue-command.ts"
     },
     "rogue-model": {
@@ -3246,7 +3246,7 @@
     "rogue-command.text_645276e16e": "星铁档案已变更，请重新查询宇宙战绩。",
     "rogue-command.text_68901e8078": "档案编号须为 1–{MAX_PROFILE_ID}。",
     "rogue-command.text_76720712c8": "请先登录档案 {profileId}。",
-    "rogue-command.text_ac507189b9": "宇宙战绩只查询本人已绑定档案，请在机器人好友私聊使用。",
+    "rogue-command.text_ac507189b9": "宇宙战绩只查询本人已绑定档案，请在机器人好友私聊或群聊使用。",
     "rogue-command.text_c0d14d54a7": "档案 {profileId} 没有已同步的星铁角色。",
     "rogue-model.text_029974c481": "下载角色",
     "rogue-model.text_046ff0a915": "已展开方程",
