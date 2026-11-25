@@ -53,7 +53,7 @@ export async function readTheme(directory = Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_
     readJson(join(lists, "character", "data.json")), readJson(join(lists, "weapon", "data.json")),
     readJson(join(lists, "artifact", "data.json")), readJson(join(lists, "artifact", "meta.json")),
     Bun.file(join(root, "common", "common.css")).exists(),
-    readGameCharacterAliases("sr"),
+    readGameCharacterAliases("sr", undefined, { includePreset: true }),
     readPanelCommaGroup(),
   ]);
   const relicById = new Map<string, { name: string; abbr?: string; asset: readonly [string, string, string] }>();
