@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { builtinResourceDirectory } from "../../../lib/builtin-resources.ts";
 import { reportResourceProgress, type ResourceProgressCallback } from "../../../lib/resource-progress.ts";
 import { createHash } from "node:crypto";
@@ -31,7 +34,7 @@ async function publish(root: string, output: string, bytes: Uint8Array, signal?:
     await mkdir(directory, { mode: 0o700 }).catch((error: NodeJS.ErrnoException) => {
       if (error.code !== "EEXIST") throw error;
     });
-    if (!(await lstat(directory)).isDirectory() || await realpath(directory) !== directory) throw new Error("星铁转生主题目录无效。");
+    if (!(await lstat(directory)).isDirectory() || await realpath(directory) !== directory) throw new Error($t("simulation.reincarnation-theme.text_6189f7cd00"));
   }
   const temporary = await mkdtemp(join(directory, ".relife-asset-"));
   try {
@@ -93,14 +96,14 @@ export async function prepareStarRailReincarnationTheme(root: URL, {
   source = root, override, download, signal, onProgress,
 }: { readonly source?: URL; readonly override?: string; readonly download?: boolean | Download; readonly signal?: AbortSignal; readonly onProgress?: ResourceProgressCallback } = {}) {
   const report = (message: string, completed?: number, total?: number) => reportResourceProgress(onProgress, signal, "relife-theme", message, completed, total);
-  report("检查星铁转生主题");
+  report($t("simulation.reincarnation-theme.text_1cceb6cfa9"));
   if (override?.trim()) return { installed: 0, missing: [] as string[] };
   const [target, legacy] = await Promise.all([realpath(fileURLToPath(root)), realpath(fileURLToPath(source))]);
   const pending: Entry[] = [];
   const missing: string[] = [];
   let installed = 0;
   for (const [position, entry] of reincarnationOriginals.entries()) {
-    report(`核对 ${entry[0]}`, position, reincarnationOriginals.length);
+    report($t("simulation.reincarnation-theme.text_a7fe699ca9", { "value1": entry[0] }), position, reincarnationOriginals.length);
     signal?.throwIfAborted();
     const [name, size, digest] = entry;
     const output = join(target, assetRoot, name);
@@ -136,7 +139,7 @@ export async function prepareStarRailReincarnationTheme(root: URL, {
   const downloadSignal = signal ? AbortSignal.any([end, signal]) : end;
   for (let offset = 0; offset < pending.length; offset += 6) {
     const batch = pending.slice(offset, offset + 6);
-    report("准备缺失转生主题", offset, pending.length);
+    report($t("simulation.reincarnation-theme.text_3ad1b4334b"), offset, pending.length);
     const bytes = download ? await Promise.all(batch.map(entry =>
       downloadAsset(entry, typeof download === "function" ? download : fetch, downloadSignal))) : [];
     for (const [index, [name]] of batch.entries()) {
@@ -144,7 +147,7 @@ export async function prepareStarRailReincarnationTheme(root: URL, {
       const data = bytes[index];
       if (!data) missing.push(name);
       else if (await publish(target, join(target, assetRoot, name), data, signal)) installed++;
-      report(`已处理 ${name}`, offset + index + 1, pending.length);
+      report($t("simulation.reincarnation-theme.text_86955f2188", { "name": name }), offset + index + 1, pending.length);
     }
   }
   return { installed, missing };

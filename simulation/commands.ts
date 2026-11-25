@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { setTimeout as pause } from "node:timers/promises";
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { CommandReply } from "../../../lib/commands.ts";
@@ -17,7 +20,7 @@ const ticketCommand = /^#星铁(?:我的|领取|查询|查看)(?:星轨专|星�
 const oneBotForwardLimit = 96 * 1024 * 1024;
 const help = /^#星铁模拟(?:抽卡|跃迁)(?:帮助)?$/u;
 const reincarnation = /^#星铁转生$/u;
-const poolLabel = "(?:联动(?:角色|光锥|武器)?|(?:角色|光锥|武器)联动|角色|光锥|武器|常驻)池?";
+const poolLabel = $t("simulation.commands.text_1784c3c039");
 const independentDraw = /^#星铁(?:抽卡|十连)(?:角色|光锥|常驻|联动角色|联动光锥|联动)?$/u;
 const drawCommand = new RegExp(
   `^#星铁(?<before>${poolLabel})?(?<size>单抽|(?:[一二三四五六七八九]?十|百|10)[连抽卡奖]|抽[卡奖])(?<after>${poolLabel})?(?:池?(?<slot>[1-4]))?$`, "u",
@@ -31,7 +34,7 @@ export function parseWarpCommand(message: string) {
   const kind: WarpKind = label.includes("联动") ? (cone ? "collaboration-cone" : "collaboration-character")
     : label.startsWith("常驻") ? "standard" : cone ? "cone" : "character";
   if ((kind === "standard" || isCollaborationWarp(kind)) && slot) return;
-  const multiple = "一二三四五六七八九".indexOf(size[0]!) + 1;
+  const multiple = $t("simulation.commands.text_206a7b4bd9").indexOf(size[0]!) + 1;
   const count = size === "单抽" ? 1 : size.startsWith("百") ? 100 : (multiple || 1) * 10;
   return { kind, slot: Number(slot ?? 1), count };
 }
@@ -58,7 +61,7 @@ type Reply = string | { readonly type: "image"; readonly file: Uint8Array };
 type WarpResult = ({ readonly text: string; readonly summary?: string } |
   { readonly pulls: readonly WarpPull[]; readonly pity: number }) & { readonly issued?: WarpAllowance };
 function format(pull: WarpPull) {
-  return `${pull.order}. ${pull.rarity}★ ${pull.name}${pull.featured ? " UP" : ""}${pull.pity ? `（第 ${pull.pity} 抽）` : ""}`;
+  return `${pull.order}. ${pull.rarity}★ ${pull.name}${pull.featured ? " UP" : ""}${pull.pity ? $t("simulation.commands.text_f5b84e0a3b", { "pity": pull.pity }) : ""}`;
 }
 
 function recallResult(message: Reply, seconds: number): CommandReply {
@@ -92,18 +95,18 @@ export function createStarRailSimulation({
   return async (message: string, context: WarpContext): Promise<CommandReply | undefined> => {
     if (signal.aborted) return;
     if (help.test(message)) return [
-      "星铁模拟跃迁",
-      "*单抽、*十连、*百连 可模拟角色活动跃迁，末尾可加卡池编号。",
-      "*十连光锥、*十连常驻 可切换池；用 *我的星轨票 查询余量，每天北京时间 04:00 补满。用 *转生 抽取角色或星神。",
-      "*十连联动、*十连联动光锥 可模拟 Fate[UBW] 角色、光锥联动，保底各自累积。",
-      "模拟使用近似概率，与游戏内跃迁记录分开。",
+      $t("simulation.commands.text_739afb8575"),
+      $t("simulation.commands.text_d7bae78bff"),
+      $t("simulation.commands.text_645cd02395"),
+      $t("simulation.commands.text_eb8455783a"),
+      $t("simulation.commands.text_5f6c2e793d"),
     ].join("\n");
     const draw = parseWarpCommand(message);
     const administration = parseWarpAdministration(message);
     const relife = reincarnation.test(message);
     if (!draw && !administration && !relife && !ticketCommand.test(message)) return;
-    if (draw && context.isDelegated) return "请在自己的会话使用星铁模拟跃迁。";
-    if (!integer(context.user_id) || context.user_id === 0) return "请在 QQ 会话使用星铁模拟跃迁。";
+    if (draw && context.isDelegated) return $t("simulation.commands.text_a3c23d995a");
+    if (!integer(context.user_id) || context.user_id === 0) return $t("simulation.commands.text_0a66420010");
     const user = context.user_id;
     const qq = String(user);
     const group = integer(context.group_id) && context.group_id > 0 ? String(context.group_id) : undefined;
@@ -113,10 +116,10 @@ export function createStarRailSimulation({
     const day = warpDay(time);
     try {
       if (administration) {
-        if (!isOwner()) return "只有主人可以管理星铁模拟跃迁。";
+        if (!isOwner()) return $t("simulation.commands.text_90db1fee7c");
         return await runWarpAdministration(administration, { settings, group, random, verifyOwner: async () => {
           signal.throwIfAborted();
-          if (!isOwner()) throw new RangeError("当前会话的主人权限已变更。");
+          if (!isOwner()) throw new RangeError($t("simulation.commands.text_c09e0c00a9"));
         } });
       }
       const compatibility = independentDraw.test(message) ? await independentSettings.read() : undefined;
@@ -124,31 +127,31 @@ export function createStarRailSimulation({
       const rules = independent ? defaultWarpSettings() : await settings.read();
       signal.throwIfAborted();
       if (relife) {
-        if (context.isDelegated) return "请在自己的会话使用星铁转生。";
+        if (context.isDelegated) return $t("simulation.commands.text_05627312ed");
         const gate = await lockWarpReincarnation(directory, qq, lockFile);
         try {
           signal.throwIfAborted();
           const account = readWarpAccount(await archive.read(qq, "1"));
           const remaining = (account.reincarnatedUntil ?? 0) - now();
           if (!isOwner() && remaining > 0) {
-            return `转生冷却中，还需等待 ${Math.ceil(remaining / 60_000)} 分钟。`;
+            return $t("simulation.commands.text_6489501219", { "value1": Math.ceil(remaining / 60_000) });
           }
           const identityCatalog = await readIdentityCatalog();
           const { name, path, allegiance, description } = pickWarpIdentity(identityCatalog, random);
           const sender = context.sender?.nickname;
           const nickname = (typeof sender === "string"
-            ? [...sender.replace(/\p{Cc}/gu, "").trim()].slice(0, 32).join("") : "") || "开拓者";
+            ? [...sender.replace(/\p{Cc}/gu, "").trim()].slice(0, 32).join("") : "") || $t("simulation.commands.text_865ee04ffd");
           let png: Uint8Array;
           try {
             const avatar = await loadAvatar(qq, signal);
             signal.throwIfAborted();
             ({ png } = await renderReincarnation({ name, path, nickname, qq, allegiance, description, avatar,
               colors: identityCatalog.colors, inlineImageByteLimit: context.inlineImageByteLimit }));
-            if (!png.length) throw new Error("转生图片为空。");
+            if (!png.length) throw new Error($t("simulation.commands.text_43ffe857d2"));
           } catch {
             if (signal.aborted) return;
-            const title = `${nickname}，恭喜你转生成了 ${name}${path ? ` · ${path}` : ""}。`;
-            return description ? `${title}\n身份：${description}` : title;
+            const title = $t("simulation.commands.text_9a19896b7b", { "nickname": nickname, "name": name, "value3": path ? ` · ${path}` : "" });
+            return description ? $t("simulation.commands.text_104559d799", { "title": title, "description": description }) : title;
           }
           signal.throwIfAborted();
           const until = now() + rules.reincarnationMinutes * 60_000;
@@ -164,10 +167,10 @@ export function createStarRailSimulation({
         }
       }
       if (independent) {
-        if (group && independent.disabledGroups.includes(group)) return "本群已被禁用星铁抽卡功能。";
+        if (group && independent.disabledGroups.includes(group)) return $t("simulation.commands.text_f1a56d05d0");
         if (!(group ? independent.group : independent.private)) return;
-      } else if (!rules.enabled) return "星铁模拟跃迁功能已关闭。";
-      if (draw && draw.count > 10 && !rules.multiple) return "星铁模拟跃迁未开启多连抽。";
+      } else if (!rules.enabled) return $t("simulation.commands.text_79ba205298");
+      if (draw && draw.count > 10 && !rules.multiple) return $t("simulation.commands.text_75ac8d7e86");
       const allowance = readWarpAllowance(rules, group);
       if (independent) allowance.recallSeconds = independent.recallSeconds;
       const customNames = draw?.kind === "cone" ? rules.poolNames.coneFive : rules.poolNames.characterFive;
@@ -180,7 +183,7 @@ export function createStarRailSimulation({
         return undefined;
       }) : undefined;
       const pool = personal ?? (draw && (independent ? source : customWarpPool(draw.kind, draw.slot, source, rules)));
-      if (draw && !pool) return collaboration ? "暂未找到已收录的 Fate[UBW] 联动模拟卡池。" : "该编号当前没有已确认的活动跃迁卡池，可用 *十连常驻。";
+      if (draw && !pool) return collaboration ? $t("simulation.commands.text_d1ed574ed7") : $t("simulation.commands.text_80d0d003b9");
       const result: WarpResult = independent && pool
         ? await drawIndependent({ qq, group, time, now, pool, isOwner, rules: independent, random })
         : await archive.update<WarpResult>({ qq, uid: "1" }, async () => signal.throwIfAborted(), (raw) => {
@@ -189,7 +192,7 @@ export function createStarRailSimulation({
         if (issued) account.balance = { day, special: allowance.special, regular: allowance.regular };
         const balance = account.balance;
         if (!draw || !pool) {
-          const result = { text: `今日你还有 ${balance.special} 张星轨专票和 ${balance.regular} 张星轨通票。`,
+          const result = { text: $t("simulation.commands.text_e97c5c3c2a", { "special": balance.special, "regular": balance.regular }),
             issued: issued ? allowance : undefined };
           return issued ? { document: account, result } : { result };
         }
@@ -201,11 +204,11 @@ export function createStarRailSimulation({
           const collaborationToday = collaboration ? today?.collaboration?.[collaboration] : undefined;
           const summary = collaboration ? collaborationToday : today;
           const total = collaboration ? collaborationToday?.draws : pool.kind === "cone" ? today?.cone : today?.standardAndCharacter;
-          const recent = summary?.five ? `今日模拟五星 ${summary.five >= 8 ? `${summary.five} 个` : summary.samples.map(item => `${item.name}（${item.pity} 抽）`).join("、")}`
-            : `今日已累计 ${total ?? 0} 抽无五星`;
+          const recent = summary?.five ? $t("simulation.commands.text_afd4475561", { "value1": summary.five >= 8 ? $t("simulation.commands.text_6366d63a0b", { "five": summary.five }) : summary.samples.map(item => $t("simulation.commands.text_155b5f569f", { "name": item.name, "pity": item.pity })).join("、") })
+            : $t("simulation.commands.text_0db238d073", { "value1": total ?? 0 });
           const result = {
-            text: `你的${ticket === "regular" ? "通票" : "专票"}不足。需要 ${draw.count} 张，你还有 ${balance[ticket]} 张。`,
-            summary: draw.count > 1 ? `${recent}${week >= 2 ? ` · 本周 ${week} 个五星` : ""}` : undefined,
+            text: $t("simulation.commands.text_af4db76fc4", { "value1": ticket === "regular" ? $t("simulation.commands.text_84ea96c30c") : $t("simulation.commands.text_ef93976688"), "count": draw.count, "value3": balance[ticket] }),
+            summary: draw.count > 1 ? `${recent}${week >= 2 ? $t("simulation.commands.text_7af3a650d0", { "week": week }) : ""}` : undefined,
             issued: issued ? allowance : undefined,
           };
           return issued ? { document: account, result } : { result };
@@ -246,7 +249,7 @@ export function createStarRailSimulation({
       });
       if (signal.aborted) return;
       if (result.issued && context.reply) {
-        await context.reply(`今日成功领取 ${result.issued.special} 张专票和 ${result.issued.regular} 张通票。`);
+        await context.reply($t("simulation.commands.text_7d33c08deb", { "special": result.issued.special, "regular": result.issued.regular }));
         if (signal.aborted) return;
       }
       if ("text" in result) {
@@ -263,7 +266,7 @@ export function createStarRailSimulation({
       const shouldRetain = independent ? five >= 1
         : count === 10 ? five >= 1 || four >= 4 : count > 10 && (five >= 2 || four >= 25);
       const recallSeconds = shouldRetain ? 0 : allowance.recallSeconds;
-      const intro = `${pool.title} · 模拟 ${count} 抽 · ${five} 个五星 · ${four} 个四星 · 当前垫 ${result.pity} 抽`;
+      const intro = $t("simulation.commands.text_f032fa644e", { "title": pool.title, "count": count, "five": five, "four": four, "pity": result.pity });
       const sourceName = context.sender?.nickname;
       const nickname = typeof sourceName === "string" ? [...sourceName.replace(/\p{Cc}/gu, "").trim()].slice(0, 32).join("") : "";
       const nodes: Reply[] = [intro];
@@ -271,7 +274,7 @@ export function createStarRailSimulation({
         if (signal.aborted) return;
         const pulls = result.pulls.slice(start, start + 10);
         try {
-          const image = await render({ title: pool.title, nickname: nickname || "开拓者", pity: result.pity, pulls, page: start / 10 + 1,
+          const image = await render({ title: pool.title, nickname: nickname || $t("simulation.commands.text_865ee04ffd"), pity: result.pity, pulls, page: start / 10 + 1,
             pages: Math.ceil(result.pulls.length / 10), inlineImageByteLimit: context.inlineImageByteLimit });
           nodes.push({ type: "image", file: image.png });
         } catch {
@@ -303,7 +306,7 @@ export function createStarRailSimulation({
       return { type: "forward", nodes, ...recall };
     } catch (error) {
       if (administration && error instanceof RangeError && !signal.aborted) return error.message;
-      if (!signal.aborted) return "星铁模拟跃迁暂时无法完成，请检查活动卡池配置与模拟存档。";
+      if (!signal.aborted) return $t("simulation.commands.text_b23a6f1701");
     }
   };
 }

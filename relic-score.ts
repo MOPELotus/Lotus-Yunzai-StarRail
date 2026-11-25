@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Star Rail portion of miao-plugin's models/artis/{ArtisMark,ArtisMarkCfg}.js.
 // Licensed MIT. Original rules and assets are recorded in README.md.
 import baseStats from "./panel-theme/relic-character-base.json";
@@ -14,14 +17,14 @@ const characters: Readonly<Record<string, { hp: number; atk: number; def: number
 const presets: Readonly<Record<string, Weights>> = usefulAttr;
 
 const rules = {
-  atk: { title: "大攻击", value: 4.32 }, atkPlus: { title: "小攻击", value: 127 / 6, base: "atk" },
-  def: { title: "大防御", value: 5.4 }, defPlus: { title: "小防御", value: 127 / 6, base: "def" },
-  hp: { title: "大生命", value: 4.32 }, hpPlus: { title: "小生命", value: 254 / 6, base: "hp" },
-  speed: { title: "速度", value: 2.6, flat: true }, cpct: { title: "暴击率", value: 3.24 },
-  cdmg: { title: "暴击伤害", value: 6.48 }, recharge: { title: "充能效率", value: 3.11 },
-  dmg: { title: "伤害加成", value: 6.22 }, heal: { title: "治疗加成", value: 5.53 },
-  stance: { title: "击破特攻", value: 6.48 }, effPct: { title: "效果命中", value: 4.32 },
-  effDef: { title: "效果抵抗", value: 4.32 },
+  atk: { title: $t("relic-score.text_0d43934fdb"), value: 4.32 }, atkPlus: { title: $t("relic-score.text_5085a8d5b4"), value: 127 / 6, base: "atk" },
+  def: { title: $t("relic-score.text_aeed4dc439"), value: 5.4 }, defPlus: { title: $t("relic-score.text_5a0e2465ee"), value: 127 / 6, base: "def" },
+  hp: { title: $t("relic-score.text_dd1fad216f"), value: 4.32 }, hpPlus: { title: $t("relic-score.text_c2bb9b8f40"), value: 254 / 6, base: "hp" },
+  speed: { title: $t("relic-score.text_0e14d148b4"), value: 2.6, flat: true }, cpct: { title: $t("relic-score.text_d4b0baf955"), value: 3.24 },
+  cdmg: { title: $t("relic-score.text_15bccc3951"), value: 6.48 }, recharge: { title: $t("relic-score.text_4e061c7460"), value: 3.11 },
+  dmg: { title: $t("relic-score.text_4da2b666c4"), value: 6.22 }, heal: { title: $t("relic-score.text_6f2eca7102"), value: 5.53 },
+  stance: { title: $t("relic-score.text_13d58c9c3a"), value: 6.48 }, effPct: { title: $t("relic-score.text_84c7536950"), value: 4.32 },
+  effDef: { title: $t("relic-score.text_c9a7dcf1f7"), value: 4.32 },
 } as const;
 const attrRules: Readonly<Record<string, { title: string; value: number; base?: "hp" | "atk" | "def"; flat?: boolean }>> = rules;
 export const relicAttributeMap = Object.fromEntries(Object.entries(attrRules).map(([key, rule]) => [key, {
@@ -58,17 +61,17 @@ function makeConfig(avatar: PanelAvatar, { name, abbr, speed, base }: {
   if (!hp || !atk || !def) return;
   const baseAttr = { hp, atk, def };
   let weights: Weights = presets[name] || presets[avatar.name] || defaultWeight;
-  let title = `${abbr}-通用`;
+  let title = $t("relic-score.text_4508f32766", { "abbr": abbr });
   if (name === "椒丘" && avatar.rank === 6) {
-    title = "椒丘-满魂";
+    title = $t("relic-score.text_964ea2e81b");
     weights = { hp: 75, atk: 75, def: 75, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 100, effDef: 50, dmg: 100 };
   }
   if (name === "缇宝" && speed !== undefined && speed > 109) {
-    title = "缇宝-高速";
+    title = $t("relic-score.text_b68ba85efe");
     weights = { ...weights, speed: 100 };
   }
   if (name === "风堇" && avatar.rank === 6) {
-    title = "风堇-满魂";
+    title = $t("relic-score.text_f990fc693e");
     weights = { ...weights, cdmg: 100 };
   }
   const attrs: Record<string, WeightedAttribute> = {};

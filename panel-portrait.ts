@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { createHash, randomInt } from "node:crypto";
 import { constants } from "node:fs";
 import { open, readdir, realpath } from "node:fs/promises";
@@ -8,7 +11,7 @@ import characterNames from "./challenge-character-names.json";
 
 const names: Readonly<Record<string, string>> = characterNames;
 // The original role alias table identifies the older gallery name for this role.
-const legacyGalleryNames = new Map([["1511", "虚照"]]);
+const legacyGalleryNames = new Map([["1511", $t("panel-portrait.text_b4c7e8039e")]]);
 const extensions = [".webp", ".png", ".jpg", ".jpeg"];
 const maxBytes = 8 * 1024 * 1024;
 

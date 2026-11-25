@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff, Variables, Params, DamageFn } from "../types.ts";
 
 // punchline 是本次攻击实际计入的笑点/好活当赏，已包含光锥等来源。
@@ -43,28 +46,28 @@ export function debtState ({ cons, params }: Pick<Variables, "cons" | "params">)
 }
 
 export const details: DamageDetail[] = [{
-  title: ({ params }) => `${params.punchline}好活普攻伤害`,
+  title: ({ params }) => $t("panel-damage-rules.characters.aha.text_ce5905b800", { "punchline": params.punchline }),
   dmg: ({ talent }, dmg) => dmg(talent.a!['欢愉伤害']!, 'a', 'elation')
 }, {
-  title: ({ params }) => `${params.punchline}好活战技追加攻击·单目标（不含令使）`,
+  title: ({ params }) => $t("panel-damage-rules.characters.aha.text_8d925fea14", { "punchline": params.punchline }),
   // 令使追加的20%伤害使用队友属性，不冒用阿哈的暴击和欢愉度。
   dmg: ({ talent }, dmg) => dmg(talent.e!['追加攻击欢愉伤害']!, 'e', 'elation')
 }, {
-  title: ({ params }) => `${params.punchline}好活终结技·对单全弹射`,
+  title: ({ params }) => $t("panel-damage-rules.characters.aha.text_f4790d805d", { "punchline": params.punchline }),
   params: { ahaGlorious: true },
   dmg: ({ talent }, dmg) => dmg(talent.q!['全体欢愉伤害']! + talent.q!['单次弹射欢愉伤害']! * talent.q!['弹射次数']!, 'q', 'elation')
 }, {
-  title: ({ params }) => `${params.punchline}笑点欢愉技·单目标直伤`,
+  title: ({ params }) => $t("panel-damage-rules.characters.aha.text_d6774edb31", { "punchline": params.punchline }),
   dmg: ({ talent }, dmg) => dmg(talent.xe!['欢愉伤害']!, 'xe', 'elation')
 }, {
-  title: ({ params }) => `${params.punchline}笑点欢愉技·${positive(params.ahaMomentDamage) ? '含队友记录' : '自身结算'}·单目标`,
+  title: ({ params }) => $t("panel-damage-rules.characters.aha.text_1d6c7d0a29", { "punchline": params.punchline, "value2": positive(params.ahaMomentDamage) ? $t("panel-damage-rules.characters.aha.text_e09a76e584") : $t("panel-damage-rules.characters.aha.text_d1dec07af9") }),
   dmg: momentDamage
 }, {
-  title: '20笑点秘技额外回合·自身结算',
+  title: $t("panel-damage-rules.characters.aha.text_7fd3f8637d"),
   params: { punchline: 20, ahaGlorious: false, ahaTalentBuff: false },
   dmg: momentDamage
 }, {
-  title: '欢愉负债·目标当前生命流失',
+  title: $t("panel-damage-rules.characters.aha.text_3ee91ff50b"),
   check: ({ trees, params }) => trees['601'] && positive(params.enemyMaxHp) > 0 && Number.isFinite(params.enemyHpAfterHit),
   dmg: ds => ({ avg: debtState(ds).hpLoss })
 }]
@@ -73,29 +76,29 @@ export const defDmgIdx = 4
 export const mainAttr = 'speed,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '本次攻击计入[punchline]笑点/好活当赏',
+  title: $t("panel-damage-rules.characters.aha.text_753702f68a"),
   data: { punchline: ({ params }) => positive(params.punchline) }
 }, {
-  title: '与祂共演：触发天赋后，全队暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.aha.text_206e30ce64"),
   check: ({ params }) => params.ahaTalentBuff === true,
   data: { cdmg: ({ talent }) => talent.t!['全队暴击伤害提高']! * 100 }
 }, {
-  title: '欢愉万相：暴击率提高[cpct]%，无视[ignore]%防御力',
+  title: $t("panel-damage-rules.characters.aha.text_e1a66014d1"),
   check: ({ params }) => params.ahaGlorious === true,
   data: {
     cpct: ({ cons }) => cons >= 2 ? 20 : 12,
     ignore: ({ cons }) => cons >= 2 ? 60 : 30
   }
 }, {
-  title: '一魂：全队欢愉伤害增笑[merrymakes]%',
+  title: $t("panel-damage-rules.characters.aha.text_02f2b45e57"),
   cons: 1,
   data: { merrymakes: 15 }
 }, {
-  title: '四魂：额外计入队友共[punchline]点好活当赏',
+  title: $t("panel-damage-rules.characters.aha.text_2dc5f83ef8"),
   cons: 4,
   data: { punchline: ({ params }) => positive(params.teammateBanger) }
 }, {
-  title: '盒中蕴藏的世界：速度达到125/150时，欢愉度提高[joy]%',
+  title: $t("panel-damage-rules.characters.aha.text_3bca7389e8"),
   tree: 3,
   sort: 9,
   data: { joy: ({ attr, calc }) => calc(attr.speed!) >= 150 ? 150 : calc(attr.speed!) >= 125 ? 120 : 0 }

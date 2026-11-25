@@ -1,21 +1,24 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '10层神君单体伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_a172bb7309"),
   check: ({ cons, exCons }) => !exCons && cons < 6,
   dmgKey: 't',
   dmg: ({ talent }, dmg) => dmg(talent.t!['技能伤害']! * 10, 't')
 }, {
-  title: '10层神君单体伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_a172bb7309"),
   check: ({ cons, exCons }) => !exCons && cons >= 6,
   dmgKey: 't',
   dmg: ({ talent }, { dynamic }) => {
@@ -30,12 +33,12 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '30层神君单体伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_43bd06e435"),
   check: ({ cons, exCons }) => !!exCons && cons < 6,
   dmgKey: 't',
   dmg: ({ talent }, dmg) => dmg(talent.t!['技能伤害']! * 30, 't')
 }, {
-  title: '30层神君单体伤害',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_43bd06e435"),
   check: ({ cons, exCons }) => !!exCons && cons >= 6,
   dmgKey: 't',
   dmg: ({ talent }, { dynamic }) => {
@@ -56,7 +59,7 @@ export const defDmgKey = 't'
 export const mainAttr = 'atk,cpct,cdmg,speed'
 
 export const buffs: Buff[] = [{
-  title: '景元2命：神君行动后，普攻战技及终结技的伤害提高20%',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_ffd5cc340d"),
   cons: 2,
   data: {
     aDmg: 20,
@@ -64,22 +67,22 @@ export const buffs: Buff[] = [{
     qDmg: 20
   }
 }, {
-  title: '景元6命：神君会使目标陷入易伤状态，使伤害提高12%，最多3层',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_41ca74d201"),
   cons: 6
 }, {
-  title: '奇缘星魂-万钧入盏，风静灯明：强化状态下，景元造成的伤害提高240%',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_a579f67aea"),
   check: ({ exCons }) => !!exCons,
   data: {
     dmg: 240
   }
 }, {
-  title: '行迹-破阵：攻击段数大于等于6段，则其下回合的暴击伤害提高25%',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_42bb041d5c"),
   tree: 1,
   data: {
     tCdmg: 25
   }
 }, {
-  title: '行迹-遣将：施放战技后，暴击率提升10%',
+  title: $t("panel-damage-rules.characters.jing-yuan.text_976c23f1de"),
   tree: 3,
   data: {
     cpct: 10

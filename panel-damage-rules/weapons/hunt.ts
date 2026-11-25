@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DynamicIndex, StaticIndex, WeaponRules } from "../types.ts";
 
 export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRules {
@@ -6,7 +9,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'cpct'),
       (tables) => {
         return {
-          title: '[_count]层Buff提高普攻与战技伤害[aDmg]%，终结技的暴击伤害[qCdmg]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_1a88d23c52"),
           data: {
             _count: ({ attr, calc }) => Math.min(6, Math.floor((calc(attr.speed!) - 100) / 10)) + '',
             aDmg: ({ attr, calc }) => Math.min(6, Math.floor((calc(attr.speed!) - 100) / 10)) * tables[2]!,
@@ -17,21 +20,21 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       }],
     唯有沉默: [
       staticIdx(1, 'atkPct'),
-      keyIdx('场上目标小于等于2时，暴击率提高[cpct]%', 'cpct', 2)
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_488f7a5ee1"), 'cpct', 2)
     ],
     如泥酣眠: [
       staticIdx(1, 'cdmg')
     ],
     星海巡航: [
       staticIdx(1, 'cpct'),
-      keyIdx('对生命值小于50%的敌人暴击率提高[cpct]%，消灭敌方目标后，攻击力提高[atkPct]%', { cpct: 2, atkPct: 3 })
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_64dbf7b203"), { cpct: 2, atkPct: 3 })
     ],
     春水初生: [
-      keyIdx('进入战斗提高速度[speedPct]%，伤害[dmg]%', { speedPct: 1, dmg: 2 })
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_216cbc2e73"), { speedPct: 1, dmg: 2 })
     ],
     '点个关注吧！': [(tables) => {
       return {
-        title: '满能量提高普攻和战技伤害[aDmg]%',
+        title: $t("panel-damage-rules.weapons.hunt.text_8fe566a3fc"),
         data: {
           aDmg: tables[1]! * 2,
           eDmg: tables[1]! * 2
@@ -39,14 +42,14 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       }
     }],
     相抗: [
-      keyIdx('消灭敌方目标后，速度提高[speedPct]%', 'speedPct', 1)
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_4a4b5e95bd"), 'speedPct', 1)
     ],
     离弦: [
-      keyIdx('消灭敌方目标后，攻击力[atkPct]%', 'atkPct', 1)
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_14986ec386"), 'atkPct', 1)
     ],
     论剑: [(tables) => {
       return {
-        title: '连续击中5次同一个目标，伤害提高[dmg]%',
+        title: $t("panel-damage-rules.weapons.hunt.text_67e511cccf"),
         data: {
           dmg: tables[1]! * 5
         }
@@ -56,14 +59,14 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'cpct')
     ],
     锋镝: [
-      keyIdx('战斗开始时暴击率提高[cpct]%', 'cpct', 1)
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_53ab8f3f1c"), 'cpct', 1)
     ],
     '烦恼着，幸福着': [
       staticIdx(1, 'cpct'),
-      keyIdx('追加攻击造成的伤害提高[tDmg]%', 'tDmg', 2),
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_6719170fb7"), 'tDmg', 2),
       (tables) => {
         return {
-          title: '2层Buff时，造成的暴击伤害提高[cdmg]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_f104d7f840"),
           data: {
             cdmg: tables[3]! * 2
           }
@@ -74,19 +77,19 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'cdmg'),
       (tables) => {
         return {
-          title: '3层Buff提升装备者暴击伤害[cdmg]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_fd37f648d2"),
           data: {
             cdmg: tables[2]! * 3
           }
         }
       },
-      keyIdx('释放终结技后，造成伤害提高[dmg]%，追加攻击无视目标防御力[tIgnore]%', { dmg: 3, tIgnore: 4 })
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_b65e1fa66f"), { dmg: 3, tIgnore: 4 })
     ],
     最后的赢家: [
       staticIdx(1, 'atkPct'),
       (tables) => {
         return {
-          title: '4层Buff提升装备者暴击伤害[cdmg]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_23f1ed6256"),
           data: {
             cdmg: tables[2]! * 4
           }
@@ -95,10 +98,10 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     驶向第二次生命: [
       staticIdx(1, 'stance'),
-      keyIdx('造成的击破伤害无视目标[breakIgnore]%的防御力', 'breakIgnore', 2),
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_ba2e740985"), 'breakIgnore', 2),
       (tables) => {
         return {
-          title: '击破特攻达到150%时，速度提高[speedPct]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_085c1f0e24"),
           check: ({ attr }) => attr.stance! >= 150,
           data: {
             speedPct: tables[3]!
@@ -110,7 +113,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'stance'),
       (tables) => {
         return {
-          title: '进入战斗或造成击破伤害后，速度提高[speedPct]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_b184d894dd"),
           data: {
             speedPct: tables[2]!
           }
@@ -121,7 +124,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'cpct'),
       (tables) => {
         return {
-          title: '2层Buff使装备者造成的终结技伤害无视目标[qIgnore]%防御力',
+          title: $t("panel-damage-rules.weapons.hunt.text_e19a6449f8"),
           data: {
             qIgnore: tables[2]! * 2
           }
@@ -132,7 +135,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'cpct'),
       (tables) => {
         return {
-          title: '我方战技点上限至少为6，且已施放四次战技时，攻击力提高[atkPct]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_a880f4bf37"),
           data: {
             atkPct: tables[2]! + tables[3]! * 4
           }
@@ -141,17 +144,17 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     于那终点再见: [
       staticIdx(1, "cdmg"),
-      keyIdx("装备者战技和追加攻击造成的伤害提高[eDmg]%", { eDmg: 2, tDmg: 2 })
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_25ce42bfda"), { eDmg: 2, tDmg: 2 })
     ],
     一场谎言的终幕: [
       staticIdx(1, "cpct"),
-      keyIdx("战斗开始时或施放4.0次追加攻击后攻击力提高[atkPct]%,敌方受到伤害提高[enemydmg]%", { atkPct: 2, enemydmg: 3 })
+      keyIdx($t("panel-damage-rules.weapons.hunt.text_35d8db34f3"), { atkPct: 2, enemydmg: 3 })
     ],
     向着地平线的终点: [
       staticIdx(1, "atkPct"),
       (tables) => {
         return {
-          title: '追加攻击效果达10层时，暴击伤害提高[cdmg]%',
+          title: $t("panel-damage-rules.weapons.hunt.text_552d670b03"),
           data: {
             cdmg: tables[2]! * 10
           }

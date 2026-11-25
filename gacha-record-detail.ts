@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { gachaProbabilityFor, type GachaDisplaySettings } from "@lotus-yunzai/gacha/display-settings";
 import { applyGachaGuarantees, gachaLuckFor } from "@lotus-yunzai/gacha";
 import { detailPools, type StarRailGachaDetailModel, type StarRailGachaDetailPool } from "./gacha-detail.ts";
@@ -32,12 +35,12 @@ function newest(a: StarRailRecordDraw, b: StarRailRecordDraw): number {
 export function buildStarRailRecordDetail({
   uid, draws, face, pool = "GachaType_AvatarUp", resolvePool, display, maxRows = display?.detailRows ?? 30, page, now = new Date(),
 }: StarRailRecordDetailOptions): StarRailGachaDetailModel | undefined {
-  if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError("星铁抽卡显示 UID 无效。");
+  if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError($t("gacha-record-detail.text_7a9a5a67d7"));
   if (!Number.isSafeInteger(maxRows) || maxRows < 0 || (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
-    throw new RangeError("星铁抽卡显示分页参数无效。");
+    throw new RangeError($t("gacha-record-detail.text_e356344050"));
   }
   const model = detailPools[pool];
-  if (!model) throw new TypeError("星铁抽卡卡池没有对应的详情模板。");
+  if (!model) throw new TypeError($t("gacha-record-detail.text_03b8727e80"));
   const selected = draws.filter((draw) => draw.pool === String(model.legacy)).sort(newest);
   const allNum = selected.length;
   if (!allNum) return;
@@ -114,7 +117,7 @@ export function buildStarRailRecordDetail({
     wai, isvalidNum, weaponNum: 0, weaponFourNum,
     upYs: !upNum ? "" : upYs >= 10_000 ? `${(upYs / 10_000).toFixed(2)}w` : upYs.toFixed(0),
   };
-  let maxFour: Gacha["maxFour"] = { name: "无", count: 0 };
+  let maxFour: Gacha["maxFour"] = { name: $t("gacha-record-detail.text_484d556139"), count: 0 };
   for (const item of Object.values(items)) {
     if (item.star === 4 && item.count !== undefined && item.count > maxFour.count) {
       maxFour = { ...item, count: item.count };
@@ -122,13 +125,13 @@ export function buildStarRailRecordDetail({
   }
 
   const pages = maxRows ? Math.max(1, Math.ceil(fiveNum / maxRows)) : 1;
-  if (page !== undefined && page > pages) throw new RangeError("星铁抽卡显示页码超出范围。");
+  if (page !== undefined && page > pages) throw new RangeError($t("gacha-record-detail.text_4108a73b14"));
   const from = maxRows ? ((page ?? 1) - 1) * maxRows : 0;
   const to = maxRows ? Math.min(fiveNum, from + maxRows) : fiveNum;
   const pageInfo = page !== undefined && pages > 1 ? { page, total: pages, from: from + 1, to, count: fiveNum } : undefined;
   const firstPagePity: FiveStar[] = [];
   if (!from && pity) {
-    items[pityItem] = { name: "已抽", abbr: "已抽", star: 5, img: "gacha/imgs/no-avatar.webp" };
+    items[pityItem] = { name: $t("gacha-record-detail.text_95b727161e"), abbr: $t("gacha-record-detail.text_95b727161e"), star: 5, img: "gacha/imgs/no-avatar.webp" };
     firstPagePity.push({ id: pityItem, date: dateAt(now.valueOf()), isUp: true, count: pity,
       ...(!fiveNum ? { countAtLeast: true } : {}) });
   }

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // HSR Nous bus and hook dispatch, adapted from the MIT-licensed pinned engine.
 import type { CompiledHook } from "../compile/types.ts";
 import type { RuleValues } from "../rules/rulebook.ts";
@@ -62,12 +65,12 @@ export type TriggerOrder = Readonly<Record<string, readonly string[]>>;
 
 export function validateEvent(event: string, payload: EventPayload, waterfall: boolean): void {
   if (waterfallEvents.has(event) !== waterfall) {
-    throw new TypeError(event + (waterfall ? " 是只读战斗事件" : " 须逐个结算事件处理者"));
+    throw new TypeError(event + (waterfall ? $t("team-engine.native.mechanics.events.text_58fa0edfdb") : $t("team-engine.native.mechanics.events.text_6410af9b6a")));
   }
   const known = payloadFields.get(event);
   if (!known) return;
   for (const key of Object.keys(payload)) {
-    if (!known.has(key) && !(waterfall && key === "cancel")) throw new TypeError(event + " 不支持字段 " + key);
+    if (!known.has(key) && !(waterfall && key === "cancel")) throw new TypeError(event + $t("team-engine.native.mechanics.events.text_387b27adf7") + key);
   }
 }
 
@@ -143,7 +146,7 @@ export class HookDispatch<Actor extends { readonly alive: boolean }> {
         const update = this.host.effect(hook, actor, current, true);
         if (!update) continue;
         for (const key of Object.keys(update)) {
-          if (key !== "amount" && key !== "cancel") throw new TypeError(event + " 不能修改字段 " + key);
+          if (key !== "amount" && key !== "cancel") throw new TypeError(event + $t("team-engine.native.mechanics.events.text_08b44ce782") + key);
         }
         Object.assign(current, update);
         if (current.cancel) break;
@@ -164,12 +167,12 @@ export class HookDispatch<Actor extends { readonly alive: boolean }> {
   }
 
   #dispatch<Result>(event: string, run: () => Result): Result {
-    if (this.#depth >= 128) throw new Error(event + " 的事件重入超过 128 层");
+    if (this.#depth >= 128) throw new Error(event + $t("team-engine.native.mechanics.events.text_02a5ef8817"));
     ++this.#depth;
     try {
       if (this.#depth > 20 && !this.#warned) {
         this.#warned = true;
-        this.host.warn(event + " 的事件重入超过 20 层");
+        this.host.warn(event + $t("team-engine.native.mechanics.events.text_b1ee5e79ca"));
       }
       return run();
     } finally {

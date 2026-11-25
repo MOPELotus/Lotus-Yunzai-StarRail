@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readPanelTrialDisplay, trialDamageTitleLines } from "../../lib/panel-trial-display.ts";
 import { fileURLToPath } from "node:url";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequestContext } from "@lotus-yunzai/account";
@@ -53,7 +56,7 @@ function panelDamageText(damage: StarRailPersonalDamage, commaGroup?: number) {
     if (row.average === undefined) return `${title} · ${row.note}`;
     const average = display(row.percentage ?? row.display ?? Math.round(row.average), row.change?.average);
     if (row.critical === undefined) return `${title} · ${personalDamageMetricLabel[row.metric]} ${average}`;
-    return `${title} · 暴击 ${display(Math.round(row.critical), row.change?.critical)} · 期望 ${average}`;
+    return $t("panel.text_a50dfb8cb3", { "title": title, "value2": display(Math.round(row.critical), row.change?.critical), "average": average });
   });
 }
 
@@ -66,14 +69,14 @@ export function managedSnapshot(uid: string, raw: unknown, showcase = false, all
       !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || (!allowEmpty && !stored.avatars.length && !panelDiscardedAt(raw)) ||
       stored.avatars.length > 256 || stored.avatars.some(row => !object(row) || !readId(row.id) || typeof row.name !== "string" ||
         !Array.isArray(row.skills) || !Array.isArray(row.traces) || !Array.isArray(row.stars) || !Array.isArray(row.stats) || !Array.isArray(row.relics))) {
-    throw new Error("星铁面板档案无效。");
+    throw new Error($t("panel.text_b864dec361"));
   }
   return stored as unknown as PanelSnapshot;
 }
 
 export function createStarRailPersonalPanelReader(lock: AcquireRoleArchiveLock, archiveDirectory?: string) {
   const store = createStarRailPanelArchive(lock, archiveDirectory);
-  const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
+  const traces = createRoleJsonArchive(traceDirectory, lock, { subject: $t("panel.text_86266aa7b7"), lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   return async (qq: string, uid: string, owner?: StarRailTraceOwner) => {
     const saved = await store.read(qq, uid);
     const managed = managedSnapshot(uid, saved, false, true);
@@ -97,8 +100,8 @@ export function createStarRailPanel(
   { qFace = true } = {},
 ) {
   const store = createStarRailPanelArchive(lock, archiveDirectory);
-  const showcases = createRoleJsonArchive(showcaseArchiveDirectory, lock, { subject: "星铁公开展板", lockSuffix: "showcase", maxBytes, rejectNull: true });
-  const traces = createRoleJsonArchive(traceDirectory, lock, { subject: "星铁行迹", lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
+  const showcases = createRoleJsonArchive(showcaseArchiveDirectory, lock, { subject: $t("panel.text_2d34c03b5f"), lockSuffix: "showcase", maxBytes, rejectNull: true });
+  const traces = createRoleJsonArchive(traceDirectory, lock, { subject: $t("panel.text_86266aa7b7"), lockSuffix: "traces", maxBytes: 128 * 1024, rejectNull: true });
   const originals = createStarRailPanelOriginals(profiles, signal, { storage: {
     async get(key) { return globalThis.redis?.get(key); },
     async set(key, value, seconds) { return globalThis.redis?.set(key, value, { EX: seconds }); },
@@ -122,17 +125,17 @@ export function createStarRailPanel(
         if (signal.aborted) return;
         if (!avatar) continue;
         const model = await makePanelDetailCard(snapshot, avatar, theme, signal, {
-          localOnly: true, sourceLabel: "极限面板", allowCustomizedSample: sampleFile !== undefined, builtInPortraitOnly,
+          localOnly: true, sourceLabel: $t("panel.text_bda8dd0ff5"), allowCustomizedSample: sampleFile !== undefined, builtInPortraitOnly,
         });
         if (signal.aborted) return;
         const card = await renderStarRailPanelDetail(model, theme.root, "auto", inlineImageByteLimit).catch(() => undefined);
         if (signal.aborted) return;
-        return card ? { type: "image" as const, file: card.png } : `星铁极限面板 · ${avatar.name}\n图片暂时无法生成。`;
+        return card ? { type: "image" as const, file: card.png } : $t("panel.text_233849b139", { "name": avatar.name });
       }
-      if (available) return "星铁极限面板样例档没有这个角色。";
-      return unreadable ? "星铁极限面板样例档暂时无法读取。" : "当前没有安装星铁极限面板样例档。";
+      if (available) return $t("panel.text_d5393570b4");
+      return unreadable ? $t("panel.text_b498b4fa98") : $t("panel.text_f02e3564f6");
     } catch {
-      if (!signal.aborted) return "星铁极限面板样例档暂时无法读取。";
+      if (!signal.aborted) return $t("panel.text_b498b4fa98");
     }
   }
 
@@ -173,7 +176,7 @@ export function createStarRailPanel(
     const selected = await profiles.savedRole(qq, profileId, "sr");
     const account = await profiles.requestContext(qq, profileId, "sr");
     const owner = selected.uid === uid && starRailTraceOwner(account, selected);
-    if (!owner) throw new ProfileError("changed", "星铁面板档案已变更。");
+    if (!owner) throw new ProfileError("changed", $t("panel.text_c2e478daea"));
     const discardedAt = panelDiscardedAt(await store.read(qq, uid));
     let revision = account.revision;
     const result = await refreshPanel(account, async (updatedRevision) => {
@@ -184,12 +187,12 @@ export function createStarRailPanel(
       const selection = await profiles.savedRole(qq, profileId, "sr");
       if (latest.revision !== revision || !matchesStarRailTraceOwner(owner, starRailTraceOwner(latest, selection)) ||
           panelDiscardedAt(await store.read(qq, uid)) !== discardedAt) {
-        throw new ProfileError("changed", "星铁面板档案已变更。");
+        throw new ProfileError("changed", $t("panel.text_c2e478daea"));
       }
       active.throwIfAborted();
       verifyAuthority();
     }, discardedAt, active);
-    if (result.status === "empty") throw new Error("米游社未返回星铁角色数据。");
+    if (result.status === "empty") throw new Error($t("panel.text_7d81550030"));
     return result.status === "ready" && result.updated;
   };
 
@@ -201,49 +204,49 @@ export function createStarRailPanel(
     const { type, profileId, name } = command;
     if (type === "extreme") return queryExtremePanel(name, context?.inlineImageByteLimit, await starRailUsesBuiltInPortrait(context));
     const uploadFile = context?.uploadFile;
-    if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+    if (profileId < 1 || profileId > MAX_PROFILE_ID) return $t("panel.text_68901e8078", { "MAX_PROFILE_ID": MAX_PROFILE_ID });
     if (type === "discard") {
       if (context?.isDelegated || context?.user_id?.toString() !== qq ||
-          (context.message_type !== "private" && context.message_type !== "group")) return "请在本人 QQ 会话删除星铁面板。";
+          (context.message_type !== "private" && context.message_type !== "group")) return $t("panel.text_5df4b85862");
       const target = "uid" in command ? command.uid : undefined;
       try {
         const source = await profiles.requestContext(qq, profileId, "sr", target);
         const owner = starRailTraceOwner(source, source.role);
-        if (!owner) return "档案的登录凭据与账号不一致，请重新登录。";
+        if (!owner) return $t("panel.text_dbd093cee6");
         const { uid } = owner;
         if (!target) {
-          return `你确认要删除面板数据吗？请回复 *删除面板${uid} 档案${profileId} 以删除面板数据。`;
+          return $t("panel.text_b222031fca", { "uid": uid, "profileId": profileId });
         }
-        if (target !== uid) return "仅允许删除当前登录档案已同步的星铁 UID。";
+        if (target !== uid) return $t("panel.text_8800069a32");
         await store.update({ qq, uid }, async () => {
           signal.throwIfAborted();
           const latest = await profiles.requestContext(qq, profileId, "sr", uid).catch(() => undefined);
           if (latest?.revision !== source.revision || !latest || !matchesStarRailTraceOwner(owner, starRailTraceOwner(latest, latest.role))) {
-            throw new ProfileError("changed", "星铁面板档案已变更。");
+            throw new ProfileError("changed", $t("panel.text_c2e478daea"));
           }
           signal.throwIfAborted();
         }, current => ({ document: discardedStarRailPanel(uid, Math.max(Date.now(), panelDiscardedAt(current) + 1)), result: undefined }));
-        return `已删除 UID ${uid} 的星铁面板，旧面板和遗器排行登记已失效。`;
+        return $t("panel.text_a63f150734", { "uid": uid });
       } catch (error) {
         if (signal.aborted) return;
         if (error instanceof ProfileError) {
-          if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-          if (error.code === "role-missing") return "仅允许删除当前登录档案已同步的星铁 UID。";
-          if (error.code === "changed") return "星铁面板档案已变更，请重新确认。";
+          if (error.code === "missing" || error.code === "login-required") return $t("panel.text_76720712c8", { "profileId": profileId });
+          if (error.code === "role-missing") return $t("panel.text_8800069a32");
+          if (error.code === "changed") return $t("panel.text_d571a6c08b");
         }
-        return "星铁面板暂时无法删除，请稍后重试。";
+        return $t("panel.text_443fba56e5");
       }
     }
-    if (type === "refresh-traces" && context?.isDelegated) return "请在本人 QQ 会话刷新星铁角色行迹。";
-    if ((type === "reload" || type === "showcase") && context?.isDelegated) return "请在本人 QQ 会话重新加载或查询星铁公开展板。";
+    if (type === "refresh-traces" && context?.isDelegated) return $t("panel.text_66515e6b90");
+    if ((type === "reload" || type === "showcase") && context?.isDelegated) return $t("panel.text_75d2c1bcc8");
     if (type === "export") {
       const group = context?.message_type === "group";
       if (group && !command.share) {
-        return `请私聊发送【*导出面板${profileId}】。如确认将本人面板发到本群，请发送【*强制导出面板${profileId}】。`;
+        return $t("panel.text_9786b04902", { "profileId": profileId, "value2": profileId });
       }
       if (context?.isDelegated || (context?.message_type !== "private" && (!group || !context.group_id || !context.self_id ||
-          (context.adapter !== undefined && context.adapter !== "onebot" && context.adapter !== "milky")))) return "请在绑定网关的私聊会话中导出星铁面板。";
-      if (!uploadFile) return "当前会话不支持发送星铁面板文件。";
+          (context.adapter !== undefined && context.adapter !== "onebot" && context.adapter !== "milky")))) return $t("panel.text_9040b03d92");
+      if (!uploadFile) return $t("panel.text_f141e670ab");
     }
     const recover = type === "update" && context?.message_type === "private" && !context.isDelegated &&
       context.user_id?.toString() === qq ? context.offerLegacyPanelRecovery : undefined;
@@ -269,7 +272,7 @@ export function createStarRailPanel(
             signal.throwIfAborted();
             await verify();
             if (refreshing.has(`${qq}:${uid}`) || await legacySnapshot(uid)) {
-              throw new ProfileError("changed", "星铁面板档案已变更。");
+              throw new ProfileError("changed", $t("panel.text_c2e478daea"));
             }
           }, current => current === null ? {
             document: { ...legacy, updatedAt, avatars },
@@ -292,14 +295,14 @@ export function createStarRailPanel(
           if (error instanceof ProfileError && (error.code === "missing" || error.code === "role-missing")) throw account;
           throw error;
         });
-        if (explicitUid && command.uid !== selected.uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
+        if (explicitUid && command.uid !== selected.uid) return $t("panel.text_370919db22");
         const offer = await offerRecovery(selected.uid);
         if (offer) return offer;
         throw account;
       }
       const role = account?.role ?? await profiles.savedRole(qq, profileId, "sr");
       const { uid } = role;
-      if (explicitUid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
+      if (explicitUid && command.uid !== uid) return $t("panel.text_370919db22");
       const namedPanel = (type === "detail" || type === "damage" || type === "relics") && !("equipment" in command);
       const allowEmptyPanel = namedPanel || type === "list" || type === "reload" || type === "practice";
       const groupPanel = type === "relics" || (type === "detail" && !explicitUid && !("equipment" in command));
@@ -328,7 +331,7 @@ export function createStarRailPanel(
             latestRole.gameBiz !== role.gameBiz || (traceOwner && (!latestAccount || !selectedRole ||
               !matchesStarRailTraceOwner(traceOwner, starRailTraceOwner(latestAccount, selectedRole)))) ||
             panelDiscardedAt(await store.read(qq, uid)) !== discardedAt) {
-          throw new ProfileError("changed", "星铁面板档案已变更，请重新查询。");
+          throw new ProfileError("changed", $t("panel.text_7a535890ba"));
         }
         fallbackSession?.throwIfAborted();
       }
@@ -340,8 +343,8 @@ export function createStarRailPanel(
           if (offer) return offer;
           throw result.error;
         }
-        if (result.status === "busy") return "此星铁角色面板正在更新。";
-        if (result.status === "empty") return (await offerRecovery(uid)) ?? "米游社未返回星铁角色数据，原面板已保留。";
+        if (result.status === "busy") return $t("panel.text_60c0cd6d32");
+        if (result.status === "empty") return (await offerRecovery(uid)) ?? $t("panel.text_7ff1f509d2");
         snapshot = result.snapshot;
         updated = result.updated;
       } else if (type !== "showcase") {
@@ -360,13 +363,13 @@ export function createStarRailPanel(
       if (type === "refresh-traces" && account) {
         const selectedRole = await profiles.savedRole(qq, profileId, "sr");
         if (selectedRole.uid !== uid || selectedRole.region !== role.region || selectedRole.gameBiz !== role.gameBiz) {
-          return "所选档案当前绑定的星铁角色无法核验。";
+          return $t("panel.text_3580284441");
         }
         const owner = starRailTraceOwner(account, selectedRole);
-        if (!owner) return "档案的登录凭据与账号不一致，请重新登录。";
+        if (!owner) return $t("panel.text_dbd093cee6");
         traceOwner = owner;
-        if (!snapshot?.avatars.length) return `请先使用 *更新面板${profileId === 1 ? "" : profileId} 获取本人星铁面板。`;
-        if (refreshing.has(key)) return "此星铁角色面板正在更新。";
+        if (!snapshot?.avatars.length) return $t("panel.text_23c915b125", { "value1": profileId === 1 ? "" : profileId });
+        if (refreshing.has(key)) return $t("panel.text_60c0cd6d32");
         refreshing.add(key);
         try {
           await verify();
@@ -376,7 +379,7 @@ export function createStarRailPanel(
           await verify();
           const incoming = confirmedStarRailTraces(snapshot, result.avatars, started);
           const entries = Object.entries(incoming);
-          if (!entries.length) return "米游社未返回可核对的角色技能等级，已保留原行迹。";
+          if (!entries.length) return $t("panel.text_1ad426dcce");
           const avatarIds = new Set(snapshot.avatars.map(avatar => avatar.id));
           const count = await traces.update({ qq, uid }, verify, current => {
             const records = Object.fromEntries(Object.entries(readStarRailTraceArchive(owner, current))
@@ -390,8 +393,8 @@ export function createStarRailPanel(
             return saved ? { document: { version: 2, owner, records }, result: saved } : { result: 0 };
           });
           await verify();
-          if (!count) return "此档案已有更新的星铁角色行迹，原存档已保留。";
-          return `星铁角色行迹刷新成功，共核对 ${count} 位角色的普攻、战技、终结技和天赋。可用 *角色名详情${profileId === 1 ? "" : profileId} 查看。`;
+          if (!count) return $t("panel.text_d10b2b8bd5");
+          return $t("panel.text_850303c8b2", { "count": count, "value2": profileId === 1 ? "" : profileId });
         } finally {
           refreshing.delete(key);
         }
@@ -410,11 +413,11 @@ export function createStarRailPanel(
         await verify();
         const bound = await profiles.savedRole(qq, profileId, "sr");
         if (bound.uid !== uid || bound.region !== role.region || bound.gameBiz !== role.gameBiz) {
-          return "所选档案当前绑定的星铁角色无法核验。";
+          return $t("panel.text_3580284441");
         }
         const target = showcaseTarget(bound, await readShowcaseServer());
         const refreshKey = `showcase:${key}`;
-        if (refreshing.has(refreshKey)) return "此星铁公开展板正在查询。";
+        if (refreshing.has(refreshKey)) return $t("panel.text_8ec0abf712");
         refreshing.add(refreshKey);
         try {
           const cached = publicFallback ? managedSnapshot(uid, await showcases.read(qq, uid), true) : undefined;
@@ -426,12 +429,12 @@ export function createStarRailPanel(
           } else {
             await verify();
             if (publicFallback) {
-              const absent = namedPanel ? `本地暂无「${name}」的星铁面板` : "本地暂无星铁面板";
-              const notice = `${absent}，正在向 ${showcaseProviderNames[target.provider]} 查询此绑定 UID 的公开展板。`;
+              const absent = namedPanel ? $t("panel.text_0254a3b80e", { "name": name }) : $t("panel.text_f50d1fce13");
+              const notice = $t("panel.text_c42026396b", { "absent": absent, "value2": showcaseProviderNames[target.provider] });
               let confirmed = false;
               const accepted = await Promise.resolve().then(() =>
                 context?.reply?.(notice, false, { onDelivered() { confirmed = true; } })).catch(() => false);
-              if (accepted !== true || !confirmed) return `通知发送失败，已取消公开展板回退。可使用 *展板更新面板${profileId === 1 ? "" : profileId} 主动查询。`;
+              if (accepted !== true || !confirmed) return $t("panel.text_6073c50cbc", { "value1": profileId === 1 ? "" : profileId });
             }
             await verify();
             const next = await fetchStarRailShowcase(target, showcaseSignal, undefined, started);
@@ -456,10 +459,10 @@ export function createStarRailPanel(
         if (type === "reload" || publicFallback) await verify();
         if (type === "relic-list" || type === "practice") {
           await verify();
-          if (type === "practice") return `UID ${uid} 暂无星铁角色数据，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
-          return "请先获取角色面板数据后再查看遗器列表。";
+          if (type === "practice") return $t("panel.text_3bc476444f", { "uid": uid, "value2": profileId === 1 ? "" : profileId });
+          return $t("panel.text_17cdb4af42");
         }
-        return `UID ${uid} 暂无星铁角色面板，请先使用 *更新面板${profileId === 1 ? "" : profileId}。`;
+        return $t("panel.text_86eb29d272", { "uid": uid, "value2": profileId === 1 ? "" : profileId });
       }
       if (registerList && observedAt !== undefined && groupRank && context?.user_id?.toString() === qq &&
           snapshot.avatars.some(avatar => !["customize", "change", "share"].includes(avatar.legacy?.source ?? ""))) {
@@ -492,30 +495,30 @@ export function createStarRailPanel(
         const { name, bytes, format, unresolved } = panelExportFile(snapshot, legacy, talentCons);
         await verify();
         const outcome = await uploadFile({ name, bytes }).catch(() => "unknown");
-        if (outcome === "rejected") return "星铁面板文件发送失败，请检查网关的文件发送功能。";
-        if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
-        const retained = unresolved ? `旧格式有 ${unresolved} 项技能无法确认基础等级，已保留原档对应字段。` : "";
-        return `已导出 ${name}（${format}）。${retained}`;
+        if (outcome === "rejected") return $t("panel.text_4314bb01b9");
+        if (outcome !== "confirmed") return $t("panel.text_f9bbf47236");
+        const retained = unresolved ? $t("panel.text_1d96613ea3", { "unresolved": unresolved }) : "";
+        return $t("panel.text_320e06fbd7", { "name": name, "format": format, "retained": retained });
       }
       const theme = preloadedTheme ?? await readTheme();
       if (type === "practice") {
         const models = await makePanelPracticeCards(snapshot, theme, signal, command.rarity, legacy);
         await verify();
-        if (!models.length) return `UID ${uid} 暂无符合筛选条件的星铁角色。`;
+        if (!models.length) return $t("panel.text_0731389216", { "uid": uid });
         const first = models[0]!;
-        const title = `UID ${uid} · 面板练度统计 · 共 ${first.total} 名角色`;
+        const title = $t("panel.text_6e81d0d44a", { "uid": uid, "total": first.total });
         const nodes = [];
         for (const model of models) {
           const files = await renderStarRailPanelPractice(model, theme.root).then(card => [card.png]).catch(() => false as const);
           await verify();
           if (files && files.length) nodes.push(...files.map(file => ({ type: "image" as const, file })));
           else {
-            const updateTimes = [model.updateTime.profile && `更新面板 ${model.updateTime.profile}`,
-              model.updateTime.mys && `米游社 ${model.updateTime.mys}`].filter(Boolean).join(" · ");
+            const updateTimes = [model.updateTime.profile && $t("panel.text_bcc3ac4d26", { "profile": model.updateTime.profile }),
+              model.updateTime.mys && $t("panel.text_5531563d2e", { "mys": model.updateTime.mys })].filter(Boolean).join(" · ");
             nodes.push([title, ...model.avatars.map(row => {
-              const weapon = row.weapon && `${row.weapon.name} Lv.${row.weapon.level ?? "—"} 叠影 ${row.weapon.affix ?? "—"}`;
-              const rating = row.rating ? `遗器 ${row.rating.mark} ${row.rating.markClass}` : "遗器暂无面板数据";
-              return `${row.name} · Lv.${row.level ?? "—"} · ${row.cons ?? "—"} 魂 · A/E/Q/T ${row.talent.map(skill => skill.level).join("/")} · ${weapon || "光锥—"} · ${rating}`;
+              const weapon = row.weapon && $t("panel.text_4f2fc3d385", { "name": row.weapon.name, "value2": row.weapon.level ?? "—", "value3": row.weapon.affix ?? "—" });
+              const rating = row.rating ? $t("panel.text_ef17e8101e", { "mark": row.rating.mark, "markClass": row.rating.markClass }) : $t("panel.text_e0ad3b6f5e");
+              return $t("panel.text_26c0e139d9", { "name": row.name, "value2": row.level ?? "—", "value3": row.cons ?? "—", "value4": row.talent.map(skill => skill.level).join("/"), "value5": weapon || $t("panel.text_089a418766"), "rating": rating });
             }), ...(updateTimes ? [updateTimes] : [])].join("\n"));
           }
         }
@@ -524,16 +527,16 @@ export function createStarRailPanel(
       if (type === "relic-list") {
         const model = await makePanelRelicListCard(snapshot, theme, signal, explicitUid);
         await verify();
-        if (!model.eligible) return "请先获取角色面板数据后再查看遗器列表。";
-        if (!model.artis.length) return "当前面板没有符合旧版词条筛选条件的遗器。";
-        const title = `UID ${uid} · 遗器列表`;
+        if (!model.eligible) return $t("panel.text_17cdb4af42");
+        if (!model.artis.length) return $t("panel.text_0941d92863");
+        const title = $t("panel.text_c31d4108d2", { "uid": uid });
         const files = await renderStarRailRelicList(model, theme.root).then(card => [card.png]).catch(() => false as const);
         await verify();
         if (files && files.length) {
           const images = files.map(file => ({ type: "image" as const, file }));
           return images.length === 1 ? images[0] : { type: "forward" as const, nodes: [title, ...images] };
         }
-        return [title, ...model.artis.map(({ avatar, name, mark, markClass }) => `${avatar} · ${name} · ${mark} 分 · ${markClass}`)].join("\n");
+        return [title, ...model.artis.map(({ avatar, name, mark, markClass }) => $t("panel.text_6c1dc5edcf", { "avatar": avatar, "name": name, "mark": mark, "markClass": markClass }))].join("\n");
       }
       let selected: PanelAvatar | undefined;
       const skillPreview = "equipment" in command && "skillLevels" in command.equipment;
@@ -543,9 +546,9 @@ export function createStarRailPanel(
       if (type === "damage" || type === "detail" || type === "relics") {
         selected = findPanelAvatar(snapshot.avatars, name, theme);
         await verify();
-        if (!selected) return `当前星铁面板中没有「${name}」，请用 *面板${archiveSuffix} 查看列表。`;
+        if (!selected) return $t("panel.text_a886dd92b0", { "name": name, "archiveSuffix": archiveSuffix });
         if (type === "damage" && !hasPersonalDamage(selected.id)) {
-          return `「${selected.name}」的星铁个人伤害规则尚未接入。当前支持${personalDamageNames}。`;
+          return $t("panel.text_98292ec141", { "name": selected.name, "personalDamageNames": personalDamageNames });
         }
         if ("equipment" in command) {
           const change = command.equipment;
@@ -554,7 +557,7 @@ export function createStarRailPanel(
           const labels: string[] = [];
           if ("donor" in change) {
             const donor = findPanelAvatar(snapshot.avatars, change.donor, theme);
-            if (!donor) return `当前星铁面板中没有换装来源「${change.donor}」。`;
+            if (!donor) return $t("panel.text_864b407dfd", { "donor": change.donor });
             const replacement = replacePanelEquipment(temporary, donor, change.slots);
             if ("error" in replacement) return replacement.error;
             temporary = replacement.avatar;
@@ -569,10 +572,10 @@ export function createStarRailPanel(
             const named = object(theme.weapons[change.namedCone]);
             const previous = temporary.cone && object(theme.weapons[temporary.cone.id]);
             const coneName = text(named?.name), coneStar = whole(named?.star, 5);
-            if (!coneName || !coneStar) return "本地主题缺少指定光锥资料。";
+            if (!coneName || !coneStar) return $t("panel.text_7d478364e0");
             const originalMetadata = await readPanelDamageMetadata(temporary, theme);
             await verify();
-            if (!originalMetadata || !temporary.level) return `「${temporary.name}」缺少可确认的当前光锥和角色属性资料。`;
+            if (!originalMetadata || !temporary.level) return $t("panel.text_5a5b29b174", { "name": temporary.name });
             const current = changePanelLevel(temporary, temporary.level, originalMetadata);
             if ("error" in current) return current.error;
             const replacement = changePanelNamedCone(current.avatar, { id: change.namedCone, name: coneName, star: coneStar }, whole(previous?.star, 5));
@@ -610,9 +613,9 @@ export function createStarRailPanel(
             labels.unshift(replacement.label);
           }
           if (change.extraEidolon !== undefined) {
-            if (!["1204", "1213", "1308"].includes(temporary.id)) return `「${temporary.name}」暂无奇缘星魂资料。`;
+            if (!["1204", "1213", "1308"].includes(temporary.id)) return $t("panel.text_4d93fa2059", { "name": temporary.name });
             temporary = { ...temporary, exCons: change.extraEidolon };
-            labels.push(`临时奇缘星魂 · ${change.extraEidolon ? "开启" : "关闭"}`);
+            labels.push($t("panel.text_d2b4db8bd7", { "value1": change.extraEidolon ? $t("panel.text_8da97ddda9") : $t("panel.text_3fd47edce4") }));
           }
           if ("fullTraces" in change) {
             const replacement = changePanelFullTraces(temporary, equipmentMetadata?.character.tree);
@@ -634,7 +637,7 @@ export function createStarRailPanel(
           }
           const equipmentRows = equipmentMetadata && calculateEquipmentAttributeRows(temporary, equipmentMetadata, promotion);
           await verify();
-          if (!equipmentRows) return `「${selected.name}」临时面板无法复算，缺少角色、光锥或遗器的完整数据。`;
+          if (!equipmentRows) return $t("panel.text_cf23424484", { "name": selected.name });
           equipmentLabel = labels.join(" · ");
           if (type !== "relics" && equipmentMetadata && hasPersonalDamage(selected.id)) {
             const display = await readPanelTrialDisplay(configRoot);
@@ -655,14 +658,14 @@ export function createStarRailPanel(
       if (type === "damage" && selected) {
         const metadata = previewDamage ? undefined : await readPanelDamageMetadata(selected, theme);
         const result = previewDamage ?? (metadata ? readStarRailPersonalDamage(selected, metadata, "scenario" in command ? command.scenario : undefined)
-          : { reason: "角色或光锥主题数据不齐", scenarioCount: undefined });
+          : { reason: $t("panel.text_e603df242d"), scenarioCount: undefined });
         await verify();
         if (result.scenarioCount !== undefined) {
           return equipmentLabel
-            ? `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，请调整原试算指令中的伤害序号。`
-            : `${selected.name}在当前星魂下支持 ${result.scenarioCount} 个伤害场景，可用 *${selected.name}伤害${archiveSuffix} 查看编号。`;
+            ? $t("panel.text_6d527e8cf8", { "name": selected.name, "scenarioCount": result.scenarioCount })
+            : $t("panel.text_4d0b4a563f", { "name": selected.name, "scenarioCount": result.scenarioCount, "value3": selected.name, "archiveSuffix": archiveSuffix });
         }
-        if (!result.damage) return `${selected.name}伤害计算暂不可用。${result.reason}。`;
+        if (!result.damage) return $t("panel.text_4509cf2edb", { "name": selected.name, "reason": result.reason });
         const damage = equipmentLabel ? { ...result.damage, buffs: [equipmentLabel, ...result.damage.buffs] } : result.damage;
         const card = await renderStarRailPersonalDamage(damage, theme.root, selected.id, context?.inlineImageByteLimit, theme.commaGroup, builtInPortraitOnly)
           .catch(() => undefined);
@@ -676,7 +679,7 @@ export function createStarRailPanel(
         if (type === "relics") {
           const relics = await makePanelRelicCard(snapshot, selected, theme, signal, builtInPortraitOnly);
           await verify();
-          if (!relics) return `「${selected.name}」暂无可评分的遗器，可用 *更新面板${profileId === 1 ? "" : profileId} 补齐面板。`;
+          if (!relics) return $t("panel.text_0f848475f4", { "name": selected.name, "value2": profileId === 1 ? "" : profileId });
           models = [relics];
           relicScore = relics.artisDetail;
         } else {
@@ -697,17 +700,17 @@ export function createStarRailPanel(
         const result = await native.then(card => [card.png]).catch(() => false as const);
         if (!result) {
           await verify();
-          if (type === "update") return `UID ${uid} 星铁面板已更新，共 ${snapshot.avatars.length} 位角色。图片暂时无法生成。`;
+          if (type === "update") return $t("panel.text_456633c87c", { "uid": uid, "length": snapshot.avatars.length });
           if (selected) {
-            if (type === "relics" && relicScore) return `UID ${uid} · ${selected.name} · 遗器总分 ${relicScore.mark} · ${relicScore.markClass}`;
-            const visible = [selected.name, selected.level && `Lv.${selected.level}`, selected.rank !== undefined && `${selected.rank}魂`,
+            if (type === "relics" && relicScore) return $t("panel.text_7d5d089c70", { "uid": uid, "name": selected.name, "mark": relicScore.mark, "markClass": relicScore.markClass });
+            const visible = [selected.name, selected.level && `Lv.${selected.level}`, selected.rank !== undefined && $t("panel.text_c0985f1db5", { "rank": selected.rank }),
               selected.cone?.name, ...selected.relics.map(relic => relic.name)].filter(Boolean).join(" · ");
             const damage = previewDamage?.damage;
             return [`UID ${uid}`, equipmentLabel, visible, ...(damage ? panelDamageText(damage, theme.commaGroup) : [])].filter(Boolean).join("\n");
           }
           const label = snapshot.source === "miyoushe" || snapshot.source === "legacy"
-            ? "星铁面板" : `星铁公开展板 · ${showcaseProviderNames[snapshot.source]}`;
-          return `UID ${uid} ${label} · ${snapshot.avatars.length} 位角色\n${snapshot.avatars.map(avatar => avatar.name).join("、")}`;
+            ? $t("panel.text_6ce5363a7d") : $t("panel.text_3b2f86a1cd", { "value1": showcaseProviderNames[snapshot.source] });
+          return $t("panel.text_2dcd381edd", { "uid": uid, "label": label, "length": snapshot.avatars.length, "value4": snapshot.avatars.map(avatar => avatar.name).join("、") });
         }
         images.push(...result.map(file => ({ type: "image" as const, file })));
       }
@@ -731,26 +734,26 @@ export function createStarRailPanel(
         }
         return images[0];
       }
-      if (images.length) return { type: "forward" as const, nodes: [`UID ${uid} · ${snapshot.avatars.length} 位角色`, ...images] };
+      if (images.length) return { type: "forward" as const, nodes: [$t("panel.text_8ed1a33fe9", { "uid": uid, "length": snapshot.avatars.length }), ...images] };
     } catch (error) {
       if (signal.aborted) return;
       if (error instanceof ProfileError) {
-        if (error.code === "changed") return "星铁面板档案已变更，请重新查询。";
-        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有同步星铁 UID。`;
+        if (error.code === "changed") return $t("panel.text_7a535890ba");
+        if (error.code === "missing" || error.code === "login-required") return $t("panel.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("panel.text_9d881700c6", { "profileId": profileId });
       }
       if (error instanceof ShowcaseError) return error.message;
       if (error instanceof GameRecordRequestError) return error.message;
       if (error instanceof HoyoRequestError) {
-        if (error.code === "profile-changed") return "星铁面板档案已变更，请重新查询。";
-        if (error.code === "refresh") return "星铁面板 Cookie 未能续期，请确认当前档案登录状态。";
-        if (error.code === "invalid-input") return "星铁面板更新需使用档案中已同步的国服星铁角色。";
-        if (error.retcode === 10102) return "米游社面板未公开或当前档案没有绑定该角色，原面板已保留。";
+        if (error.code === "profile-changed") return $t("panel.text_7a535890ba");
+        if (error.code === "refresh") return $t("panel.text_9275e26edc");
+        if (error.code === "invalid-input") return $t("panel.text_acbd9db535");
+        if (error.retcode === 10102) return $t("panel.text_5acf8a0b19");
       }
-      if (type === "export") return "星铁面板导出失败，请检查本地面板档案。";
-      if (type === "reload") return "星铁面板暂时无法重新加载，请检查本地面板档案。";
-      if (type === "refresh-traces") return "星铁角色行迹暂时无法刷新，已保留原行迹。";
-      return "星铁面板暂时无法读取或更新，请稍后重试。";
+      if (type === "export") return $t("panel.text_b0e37846b0");
+      if (type === "reload") return $t("panel.text_81c284a720");
+      if (type === "refresh-traces") return $t("panel.text_ac0d28c4a2");
+      return $t("panel.text_cf37ad09d6");
     }
   }
   return Object.assign(query, { rebuild, original: originals.reply });

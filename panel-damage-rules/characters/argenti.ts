@@ -1,17 +1,20 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.argenti.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.argenti.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.argenti.text_b6a5fc7f30"),
   params: { q: true },
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '强化终结技总伤害',
+  title: $t("panel-damage-rules.characters.argenti.text_3d13b9be64"),
   params: { q: true },
   dmg: ({ talent }, dmg) => {
     const td = talent.q2!['技能伤害']! + talent.q2!['额外随机伤害']! * 6
@@ -23,36 +26,36 @@ export const defDmgIdx = 3
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-勇气：对当前生命百分比小于等于50%的敌人目标造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.argenti.text_4c3859a4e0"),
   trees: 2,
   data: {
     dmg: 15
   }
 }, {
-  title: '天赋-崇高的客体：[_count]层【升格】提升暴击率[cpct]%',
+  title: $t("panel-damage-rules.characters.argenti.text_bbfc73f7a9"),
   data: {
     _count: ({ cons }) => cons < 4 ? 10 : 12,
     cpct: ({ cons }) => cons < 4 ? 25 : 30
   }
 }, {
-  title: '银枝1命：[_count]层【升格】提升暴击伤害[cdmg]%',
+  title: $t("panel-damage-rules.characters.argenti.text_8155ca6262"),
   cons: 1,
   data: {
     _count: ({ cons }) => cons < 4 ? 10 : 12,
     cdmg: ({ cons }) => cons < 4 ? 40 : 48
   }
 }, {
-  title: '银枝2命：释放终结技命中3名及以上敌人时，攻击力提高[atkPct]%',
+  title: $t("panel-damage-rules.characters.argenti.text_7ab5e702a6"),
   cons: 2,
   check: ({ params }) => params.q === true,
   data: {
     atkPct: 40
   }
 }, {
-  title: '银枝4命：天赋【升格】可叠加上限提高至12层',
+  title: $t("panel-damage-rules.characters.argenti.text_d31b831e7d"),
   cons: 4
 }, {
-  title: '银枝6命：释放终结技时，无视敌方目标[ignore]%的防御力',
+  title: $t("panel-damage-rules.characters.argenti.text_97f8059600"),
   cons: 6,
   check: ({ params }) => params.q === true,
   data: {

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { join } from "node:path";
 import { normalizeStarRailMonthly, type StarRailMonthlySnapshot } from "@lotus-yunzai/hoyo-client";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
@@ -22,7 +25,7 @@ export function starRailMonthlyMonth(key: string) {
   return /^20\d{2}(?:0[1-9]|1[0-2])$/u.test(key) && key >= "202304";
 }
 
-function invalid(): never { throw new Error("星铁月历存档内容或归属无效。"); }
+function invalid(): never { throw new Error($t("monthly-archive.text_55f7bb8632")); }
 
 function object(raw: unknown) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) invalid();
@@ -73,7 +76,7 @@ function ordered(months: Map<string, StarRailArchivedMonth>) {
 const maxBytes = 4 * 1024 * 1024;
 export function createStarRailMonthlyArchive(directory: string, legacyDirectories: readonly string[], lockFile: AcquireRoleArchiveLock) {
   const files = createRoleJsonArchive(directory, lockFile, {
-    subject: "星铁月历存档", lockSuffix: "starrail-monthly", maxBytes, rejectNull: true,
+    subject: $t("monthly-archive.text_f2678d5992"), lockSuffix: "starrail-monthly", maxBytes, rejectNull: true,
   });
   return {
     async read(identity: StarRailMonthlyIdentity) {

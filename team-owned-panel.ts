@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readLegacyRelicAttributes, readManagedRelicAttributes } from "./panel-attributes.ts";
 import { id, whole, type PanelAvatar } from "./panel-model.ts";
 import relicValues from "./panel-theme/relic-values.json";
@@ -50,7 +53,7 @@ function readRelics(avatar: PanelAvatar, warnings: string[]) {
   return avatar.relics.flatMap(part => {
     const indexed = /^[3-6]([13]\d{2})([1-6])$/u.exec(part.id);
     if (!indexed || Number(indexed[2]) !== part.slot || slots.has(part.slot)) {
-      warnings.push("有遗器套装编号无法确认");
+      warnings.push($t("team-owned-panel.text_ddd419d368"));
       return [];
     }
     slots.add(part.slot);
@@ -72,7 +75,7 @@ function readRelics(avatar: PanelAvatar, warnings: string[]) {
     const sub = decoded ? decoded.sub.map(row => normalized(row.key, row.value, true)) : part.subs.map(measured);
     const subs: Record<string, number> = {};
     for (const entry of sub) if (entry) recordStat(subs, entry.key, entry.value);
-    if (!main) warnings.push("有遗器词条无法读取");
+    if (!main) warnings.push($t("team-owned-panel.text_75b3b48fe0"));
     return [{ slot: part.slot, set: indexed[1]!, main, subs }];
   });
 }
@@ -117,7 +120,7 @@ export function projectTeamOwnedPanel(avatar: PanelAvatar, stats = avatar.stats,
       skills[key] = original ? { level: original, effective: false } : { level: value, effective: !avatar.legacy || skill.effective === true };
     }
   }
-  if (["basic", "skill", "ult", "talent"].some(key => !Object.hasOwn(skills, key))) warnings.push("缺失技能等级沿用公开配装");
+  if (["basic", "skill", "ult", "talent"].some(key => !Object.hasOwn(skills, key))) warnings.push($t("team-owned-panel.text_43d1a6a46a"));
   const relics = readRelics(avatar, warnings);
   if (!Object.keys(final).length && !relics.length && !Object.keys(skills).length && !weapon) return;
   const conePanelEffects: Record<string, number> | undefined = staticCone && {};

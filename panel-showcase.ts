@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readStarRailExtraEidolon } from "./panel-model.ts";
 import type { GameRole } from "@lotus-yunzai/account";
 import { normalizeStarRailRegion } from "./region.ts";
@@ -36,20 +39,20 @@ export function showcaseTarget(role: Role, config = "0") {
   const regionIndex = region === "prod_gf_cn" ? 0 : region === "prod_qd_cn" ? 1 : 2;
   const biz = regionIndex === 2 ? "hkrpg_global" : "hkrpg_cn";
   if (!region || (role.region && normalizeStarRailRegion(role.region) !== region) || (role.gameBiz && role.gameBiz !== biz)) {
-    throw new ShowcaseError("所选星铁档案的 UID 与区服不一致，无法查询公开展板。");
+    throw new ShowcaseError($t("panel-showcase.text_3b527fc569"));
   }
   const choice = /^[0-4]{1,3}$/u.test(config) ? config[regionIndex] ?? config[0]! : "";
   const provider = showcaseServerCode(choice);
-  if (choice === "1") throw new ShowcaseError("旧私有 Token 服务不能用于公开展板，请选择公开展板来源。");
-  if (!provider) throw new ShowcaseError("当前区服未配置可用的公开星铁展板来源。");
+  if (choice === "1") throw new ShowcaseError($t("panel-showcase.text_d1c8eb0a33"));
+  if (!provider) throw new ShowcaseError($t("panel-showcase.text_ba5795a8d5"));
   return { uid, region, provider };
 }
 
 async function responseJson(response: Response) {
-  if (!response.body) throw new ShowcaseError("公开星铁展板返回了空响应。");
+  if (!response.body) throw new ShowcaseError($t("panel-showcase.text_0c978e0112"));
   if (Number(response.headers.get("content-length")) > maxBytes) {
     await response.body.cancel().catch(() => undefined);
-    throw new ShowcaseError("公开星铁展板响应超过大小限制。");
+    throw new ShowcaseError($t("panel-showcase.text_e88ef73c7b"));
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -59,7 +62,7 @@ async function responseJson(response: Response) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > maxBytes) throw new ShowcaseError("公开星铁展板响应超过大小限制。");
+      if (size > maxBytes) throw new ShowcaseError($t("panel-showcase.text_e88ef73c7b"));
       content += decoder.decode(value, { stream: true });
     }
     return JSON.parse(content + decoder.decode()) as unknown;
@@ -71,7 +74,7 @@ async function responseJson(response: Response) {
 
 function listed(value: unknown, max: number) {
   if (value === undefined || value === null) return [];
-  if (!Array.isArray(value) || value.length > max) throw new ShowcaseError("公开星铁展板返回的数据格式不正确。");
+  if (!Array.isArray(value) || value.length > max) throw new ShowcaseError($t("panel-showcase.text_4f6a42de0f"));
   return value;
 }
 
@@ -80,7 +83,7 @@ function normalizeRelics(value: unknown, avocado: boolean) {
   for (const raw of listed(value, 6)) {
     const row = object(raw);
     const item = id(avocado ? row?.id : row?.tid), slot = whole(row?.type, 6);
-    if (!item || !slot || Object.hasOwn(relics, slot)) throw new ShowcaseError("公开星铁展板返回了无效的遗器。");
+    if (!item || !slot || Object.hasOwn(relics, slot)) throw new ShowcaseError($t("panel-showcase.text_0113a4a48f"));
     const attrIds = listed(avocado ? row?.sub_affix_id : row?.subAffixList, 4).flatMap(raw => {
       const sub = object(raw);
       const affix = id(avocado ? sub?.id : sub?.affixId), count = whole(sub?.cnt, 20), step = Number(sub?.step ?? 0);
@@ -95,7 +98,7 @@ function normalizeRelics(value: unknown, avocado: boolean) {
 function normalizeAvatar(input: unknown, provider: ShowcaseProvider) {
   const row = object(input);
   const original = id(row?.avatarId ?? row?.AvatarID), level = whole(row?.level ?? row?.Level, 80);
-  if (!row || !/^[1-9]\d{3}$/u.test(original) || !level) throw new ShowcaseError("公开星铁展板返回了无效的角色。");
+  if (!row || !/^[1-9]\d{3}$/u.test(original) || !level) throw new ShowcaseError($t("panel-showcase.text_a44b2217ef"));
   const avatarId = canonicalStarRailPanelCharacter(original, whole(row.enhancedId, 1) === 1);
   const avocado = provider === "avocado";
   const source = provider === "mihomo" ? "homo" : provider === "enka" ? "EnkaHSR" : "avocado.wiki";
@@ -112,7 +115,7 @@ function normalizeAvatar(input: unknown, provider: ShowcaseProvider) {
   }
   const equip = object(row.equipment);
   const equipId = id(avocado ? equip?.id : equip?.tid);
-  return { original, id: avatarId, name: `角色 ${avatarId}`, _source: source, level, promote: whole(row.promotion, 6), cons: whole(row.rank, 6) ?? 0, exCons: readStarRailExtraEidolon(row, original),
+  return { original, id: avatarId, name: $t("panel-showcase.text_c4a7b73faf", { "avatarId": avatarId }), _source: source, level, promote: whole(row.promotion, 6), cons: whole(row.rank, 6) ?? 0, exCons: readStarRailExtraEidolon(row, original),
     weapon: equipId ? { id: equipId, level: whole(equip?.level, 80), promote: whole(equip?.promotion, 6), affix: whole(equip?.rank, 5) } : undefined,
     talent, trees: skillRows.length ? trees : undefined, artis: normalizeRelics(avocado ? row.relics : row.relicList, avocado) };
 }
@@ -121,10 +124,10 @@ function normalizeShowcase(input: unknown, { uid, region, provider }: ReturnType
   const root = object(input), avocado = provider === "avocado";
   const profile = object(avocado ? root?.playerDetailInfo : root?.detailInfo);
   const claimed = [root?.uid, profile?.uid].filter(value => value !== undefined);
-  if (!profile) throw new ShowcaseError("公开星铁展板没有可用角色资料，请检查游戏内展板设置。", true);
+  if (!profile) throw new ShowcaseError($t("panel-showcase.text_d96b3bfb80"), true);
   const regions = [root?.region, profile.region, root?.server, profile.server];
   if (!claimed.length || claimed.some(value => id(value) !== uid) || regions.some(value => value !== undefined && normalizeStarRailRegion(value) !== region)) {
-    throw new ShowcaseError("公开星铁展板的 UID 或区服不匹配，未保存响应。");
+    throw new ShowcaseError($t("panel-showcase.text_eda86548e9"));
   }
   const assist = avocado ? (profile.assistAvatar ? [profile.assistAvatar] : [])
     : provider === "enka" && profile.assistAvatarDetail ? [profile.assistAvatarDetail] : listed(profile.assistAvatarList, 12);
@@ -136,7 +139,7 @@ function normalizeShowcase(input: unknown, { uid, region, provider }: ReturnType
   }
   const avatars = Object.fromEntries([...display.values()].map(row => [row.id, row]));
   const snapshot = readLegacyPanel(uid, { uid, avatars });
-  if (!snapshot.avatars.length) throw new ShowcaseError("公开星铁展板没有展示角色，请检查游戏内展板设置。", true);
+  if (!snapshot.avatars.length) throw new ShowcaseError($t("panel-showcase.text_fbf3ad7e7f"), true);
   return { ...snapshot, source: provider, updatedAt: started.toISOString(), showcaseTtl: Math.max(60, whole(root?.ttl, 86_400) ?? 60) };
 }
 
@@ -150,13 +153,13 @@ export async function fetchStarRailShowcase(target: ReturnType<typeof showcaseTa
     });
     if (!response.ok || response.redirected) {
       await response.body?.cancel().catch(() => undefined);
-      if (response.status === 429) throw new ShowcaseError("公开星铁展板请求过于频繁，请稍后再试。");
-      if (response.status === 404) throw new ShowcaseError("公开星铁展板未找到此角色，请检查游戏内展板设置。", true);
-      throw new ShowcaseError("公开星铁展板暂时无法连接。");
+      if (response.status === 429) throw new ShowcaseError($t("panel-showcase.text_7f4ad197e7"));
+      if (response.status === 404) throw new ShowcaseError($t("panel-showcase.text_41c3a4793b"), true);
+      throw new ShowcaseError($t("panel-showcase.text_ce645452a0"));
     }
     return normalizeShowcase(await responseJson(response), target, started);
   } catch (error) {
     if (signal.aborted || error instanceof ShowcaseError) throw error;
-    throw new ShowcaseError("公开星铁展板暂时无法读取。");
+    throw new ShowcaseError($t("panel-showcase.text_9adcf00329"));
   }
 }

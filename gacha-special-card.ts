@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { fileURLToPath } from "node:url";
 import { renderGachaSpecialCard, type GachaSpecialCardOptions, type GachaSpecialMetric } from "@lotus-yunzai/skia/genshin-gacha-special";
@@ -12,12 +15,12 @@ function metrics(pool: Pool): readonly (readonly GachaSpecialMetric[])[] {
   const intervals = pool.fiveLog.flatMap(({ num }) => num === undefined ? [] : [num]);
   const extremesKnown = pool.shownNum === pool.fiveNum && intervals.length > 0;
   return [
-    [["未出五星", pool.pity, "抽"], ["五星", pool.fiveNum, "个"],
-      [pool.knownIntervals === pool.fiveNum ? "五星平均" : "已知五星平均", pool.fiveAvg, "抽"],
-      ["已知UP", pool.upNum, "个"], ["最长已知间隔", extremesKnown ? Math.max(...intervals) : undefined, "抽"]],
-    [["已知出金间隔", pool.knownIntervals, "条"], ["未归属抽数", pool.unknownDraws, "抽"],
-      ["已知非UP", pool.notUpNum, "个"], ["UP未记录", pool.unknownUpNum, "个"],
-      ["最短已知间隔", extremesKnown ? Math.min(...intervals) : undefined, "抽"]],
+    [[$t("gacha-special-card.text_8ac5c1b37e"), pool.pity, $t("gacha-special-card.text_7364d39606")], [$t("gacha-special-card.text_789a6953ec"), pool.fiveNum, $t("gacha-special-card.text_3a116815bc")],
+      [pool.knownIntervals === pool.fiveNum ? $t("gacha-special-card.text_0ca64e208f") : $t("gacha-special-card.text_9ecfe0f922"), pool.fiveAvg, $t("gacha-special-card.text_7364d39606")],
+      [$t("gacha-special-card.text_bc312785ec"), pool.upNum, $t("gacha-special-card.text_3a116815bc")], [$t("gacha-special-card.text_2bdfa501ab"), extremesKnown ? Math.max(...intervals) : undefined, $t("gacha-special-card.text_7364d39606")]],
+    [[$t("gacha-special-card.text_269b9bef9c"), pool.knownIntervals, $t("gacha-special-card.text_f004f1d84c")], [$t("gacha-special-card.text_eef15e9a83"), pool.unknownDraws, $t("gacha-special-card.text_7364d39606")],
+      [$t("gacha-special-card.text_5384f7f10c"), pool.notUpNum, $t("gacha-special-card.text_3a116815bc")], [$t("gacha-special-card.text_3a1484234f"), pool.unknownUpNum, $t("gacha-special-card.text_3a116815bc")],
+      [$t("gacha-special-card.text_faee43fcf4"), extremesKnown ? Math.min(...intervals) : undefined, $t("gacha-special-card.text_7364d39606")]],
   ];
 }
 

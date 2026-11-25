@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { StarRailGachaSchedulePeriod } from "./gacha-version.ts";
 import type { StarRailUigfArchive, StarRailUigfPool } from "./gacha-uigf.ts";
 
@@ -28,7 +31,7 @@ export function starRailRecordDraws(archive: StarRailUigfArchive, resolveItem: S
   const zone = Math.round(archive.timezone * 60) * 60_000;
   const draws = archive.records.map((row): StarRailRecordDraw => {
     const metadata = resolveItem(row.item_id);
-    const name = row.name || `物品 ${row.item_id}`;
+    const name = row.name || $t("gacha-record-source.text_00e57f566a", { "item_id": row.item_id });
     return {
       id: row.id, gachaId: row.gacha_id, pool: row.gacha_type,
       at: Date.parse(`${row.time.replace(" ", "T")}Z`) - zone,

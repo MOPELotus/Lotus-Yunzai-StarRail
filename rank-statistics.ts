@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { characterAliasKey, readGameCharacterAliases } from "../../lib/game-character-aliases.ts";
 import { fetchRankStats, queryPublicDamageRank, rankPercentiles } from "../../lib/rank-statistics.ts";
 import { renderDamageRankStatsCard } from "../../packages/skia/rank-stats-card.ts";
@@ -52,7 +55,7 @@ export async function queryStarRailRankStats(message: string, signal: AbortSigna
   } catch {
     if (!signal.aborted) {
       const { title, total, scores } = result.stats;
-      return [`${character.name} · 排名趋势 · ${title} · ${total} 个样本`,
+      return [$t("rank-statistics.text_b7b9d7a810", { "name": character.name, "title": title, "total": total }),
         ...scores.map((damage, index) => `TOP ${rankPercentiles[index]}% · ${damage}`)].join("\n");
     }
   }

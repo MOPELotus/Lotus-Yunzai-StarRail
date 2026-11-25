@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // HSR Nous resource ledger, adapted from the MIT-licensed pinned engine.
 import type { ActorState, BattleState } from "../combat/index.ts";
 import { number } from "../compile/library.ts";
@@ -57,7 +60,7 @@ export class ResourceBook {
   }
 
   gain(actor: ActorState, id: string, requested: number, sourceId = "", fromBank = false): number {
-    if (!Number.isFinite(requested)) throw new TypeError(id + " 的资源改变量不是有限数值");
+    if (!Number.isFinite(requested)) throw new TypeError(id + $t("team-engine.native.mechanics.resources.text_870a0b518b"));
     if (id === "punchline") {
       const previous = this.host.state.punchline;
       const current = Math.max(0, previous + requested);

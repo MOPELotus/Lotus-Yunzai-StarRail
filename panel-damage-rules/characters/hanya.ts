@@ -1,15 +1,18 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 import { Format } from '../format.ts'
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.hanya.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.hanya.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '终结技提高单体速度',
+  title: $t("panel-damage-rules.characters.hanya.text_fc2b5de6d3"),
   dmg: ({ talent }) => {
     return {
       avg: Format.percent(talent.q!['速度提升']!),
@@ -17,7 +20,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技单体速度加成比例',
+  title: $t("panel-damage-rules.characters.hanya.text_c9a4ad6ba8"),
   dmg: ({ talent }) => {
     return {
       avg: Format.percent(talent.q!['速度提升']!),
@@ -25,7 +28,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '天赋提高AEQ伤害',
+  title: $t("panel-damage-rules.characters.hanya.text_be212d5675"),
   dmg: ({ talent, cons }) => {
     let extraTd = cons < 6 ? 0 : 0.1
     return {
@@ -39,7 +42,7 @@ export const defDmgIdx = 1
 export const mainAttr = 'atk,cpct,cdmg,dmg'
 
 export const buffs: Buff[] = [{
-  title: '天赋-罚恶：对战技标记的敌人造成的普攻、战技、终结技伤害提高[_dmg]%',
+  title: $t("panel-damage-rules.characters.hanya.text_ec509f775e"),
   data: {
     _dmg: ({ talent }) => talent.t!['伤害提高']! * 100,
     aDmg: ({ talent }) => talent.t!['伤害提高']! * 100,
@@ -47,13 +50,13 @@ export const buffs: Buff[] = [{
     qDmg: ({ talent }) => talent.t!['伤害提高']! * 100
   }
 }, {
-  title: '寒鸦2命：释放战技后，速度提高[speedPct]%',
+  title: $t("panel-damage-rules.characters.hanya.text_1a1a3fb9aa"),
   cons: 2,
   data: {
     speedPct: 20
   }
 }, {
-  title: '寒鸦6命：天赋的伤害提高效果额外提高[_dmg]%',
+  title: $t("panel-damage-rules.characters.hanya.text_ec3cfea7a4"),
   cons: 6,
   data: {
     _dmg: 10,

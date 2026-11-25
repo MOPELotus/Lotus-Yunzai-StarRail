@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { TeamSimulationMember } from "../../team-damage-runtime.ts";
 import type { TeamOwnedPanel } from "../../team-owned-panel.ts";
 import defaults from "../defaults.json";
@@ -81,7 +84,7 @@ async function makeOwned(member: TeamSimulationMember, template: RuleValues, pan
     const skill = skills[key];
     if (!skill) continue;
     const level = saved.level - (saved.effective ? levelBonus[skill] ?? 0 : 0);
-    if (level < 1) notices.push("有技能等级与已解锁星魂不一致，使用模板等级");
+    if (level < 1) notices.push($t("team-engine.native.worker-build.text_ca84e6988f"));
     else skillLevels[skill] = level;
   }
 
@@ -93,7 +96,7 @@ async function makeOwned(member: TeamSimulationMember, template: RuleValues, pan
       await library.read("relics", set);
     } catch (error) {
       if (!(error instanceof MissingTemplate)) throw error;
-      notices.push(`遗器套装 ${set} 尚无机制模板，保留该部件词条`);
+      notices.push($t("team-engine.native.worker-build.text_6b92da1d32", { "set": set }));
       set = undefined;
     }
     const subs: Record<string, number> = {};
@@ -117,7 +120,7 @@ async function makeOwned(member: TeamSimulationMember, template: RuleValues, pan
       model = await library.read("light_cones", weapon.id);
     } catch (error) {
       if (!(error instanceof MissingTemplate)) throw error;
-      notices.push(`光锥 ${weapon.id} 尚无机制模板，只使用面板可核对的白值`);
+      notices.push($t("team-engine.native.worker-build.text_d1bdfdb47a", { "id": weapon.id }));
       if (!hasWhite(panel.base, primary.slice(0, 3))) throw error;
     }
     if (model) {
@@ -127,13 +130,13 @@ async function makeOwned(member: TeamSimulationMember, template: RuleValues, pan
       cone = { id: weapon.id, rank: weapon.rank, active, base };
     }
     if ((weapon.level ?? 80) < 80 && !weapon.base && !hasWhite(panel.base, primary.slice(0, 3))) {
-      notices.push("缺少低等级光锥白值，沿用引擎模板的基础属性");
+      notices.push($t("team-engine.native.worker-build.text_3d874a47c9"));
     }
   }
   if (panel.conePanelEffects === undefined && weapon) {
-    notices.push("未核对光锥常驻面板词条，采用实际装备计算");
+    notices.push($t("team-engine.native.worker-build.text_750d8f1705"));
   } else {
-    if (Object.keys(whiteStats).length < 4 && panel.level < 80) notices.push("未核对低等级白值，使用引擎的属性模板");
+    if (Object.keys(whiteStats).length < 4 && panel.level < 80) notices.push($t("team-engine.native.worker-build.text_dc56937bb8"));
     calibrations.set(member.id, { stats: panel.stats, conePanelEffects: panel.conePanelEffects ?? {} });
   }
   return { id: member.id, version: member.version, level: panel.level, rank: panel.rank,
@@ -145,13 +148,13 @@ export async function compileWorkerBuild(request: WorkerBuildRequest,
   const { roles, cycle, enemies } = request;
   if (!Array.isArray(roles) || roles.length < 1 || roles.length > 4 ||
       !Number.isInteger(cycle) || cycle < 1 || cycle > 20 || ![1, 3, 5].includes(enemies)) {
-    throw new TypeError("无效队伤请求");
+    throw new TypeError($t("team-engine.native.worker-build.text_9c5db5a8cd"));
   }
   const team: ActorBuild[] = [];
   const notices: string[] = [];
   const panelCalibration = new Map<string, PanelCalibration>();
   for (const member of roles) {
-    if (!/^[1-9][0-9]{3}$/.test(member.id)) throw new TypeError("无效角色标识");
+    if (!/^[1-9][0-9]{3}$/.test(member.id)) throw new TypeError($t("team-engine.native.worker-build.text_cca8105d45"));
     const template = await library.read("characters", member.id, member.version);
     team.push(member.panel ? await makeOwned(member, template, member.panel, notices, panelCalibration, library)
       : makeDefaults(member, template));
@@ -159,11 +162,11 @@ export async function compileWorkerBuild(request: WorkerBuildRequest,
   const { modes } = await getRulebook();
   const mode = "forgotten_hall";
   const cycleRule = modes[mode];
-  if (!cycleRule) throw new TypeError("缺少忘却之庭轮次配置");
+  if (!cycleRule) throw new TypeError($t("team-engine.native.worker-build.text_1a1f501f99"));
   const stage = { id: "lotus_team_simulation", mode,
     maxActionValue: cycleRule.first_cycle_av + cycleRule.subsequent_cycle_av * (cycle - 1),
     enemies: Array.from({ length: enemies }, (_, index) => ({
-      template: "sandbag", id: "enemy_" + (index + 1), name: "假人 " + (index + 1),
+      template: "sandbag", id: "enemy_" + (index + 1), name: $t("team-engine.native.worker-build.text_a8d4a879de") + (index + 1),
     })),
   };
   return { encounter: await compileEncounter({ team, stage }, library), panelCalibration, notices };

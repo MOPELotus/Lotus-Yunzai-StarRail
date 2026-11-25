@@ -1,9 +1,12 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail } from "../types.ts";
 
 import { Format } from '../format.ts'
 
 export const details: DamageDetail[] = [{
-  title: '战技提高目标伤害（无召唤物）',
+  title: $t("panel-damage-rules.characters.sunday.text_8093f31f6c"),
   dmg: ({ talent, attr, cons }) => {
     return {
       avg: Format.percent(talent.e!['造成的伤害提高']!),
@@ -11,7 +14,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技提高目标伤害（有召唤物）',
+  title: $t("panel-damage-rules.characters.sunday.text_f2bc62a677"),
   dmg: ({ talent, attr, cons }) => {
     return {
       avg: Format.percent(talent.e!['造成的伤害提高']! * (1 + talent.e!['增伤额外提高']!)),
@@ -19,7 +22,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技提高目标暴击率',
+  title: $t("panel-damage-rules.characters.sunday.text_7c801fc5f7"),
   dmg: ({ talent, attr, cons }) => {
     return {
       avg: Format.percent(talent.t!['暴击率提高']! * (cons >= 6 ? 3 : 1)),
@@ -27,7 +30,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技提高暴击伤害',
+  title: $t("panel-damage-rules.characters.sunday.text_328c861aa3"),
   dmg: ({ talent, attr, cons }) => {
     return {
       avg: Format.percent(talent.q!['爆伤提高·百分比']! * attr.cdmg! / 100 + talent.q!['爆伤提高·固定值']!),
@@ -39,4 +42,4 @@ export const details: DamageDetail[] = [{
 export const defDmgIdx = 3
 export const mainAttr = 'atk,cpct,cdmg'
 
-export const createdBy = '五里徘徊'
+export const createdBy = $t("panel-damage-rules.characters.sunday.text_12dc7e3fa4")

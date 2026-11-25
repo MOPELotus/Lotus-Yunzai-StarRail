@@ -1,64 +1,67 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
-export const createdBy = '催更'
+export const createdBy = $t("panel-damage-rules.characters.cerydra.text_645a5284b2")
 export const mainAttr = 'atk,cdmg,speed'
 export const defDmgIdx = 2
 
 export const details: DamageDetail[] = [{
-  title: '【声明】',
+  title: $t("panel-damage-rules.characters.cerydra.text_6d230c9e61"),
   dmg: () => {
-    return { note: '本计算中,刻律德菈无【军功】buff' }
+    return { note: $t("panel-damage-rules.characters.cerydra.text_0497285012") }
   }
 }, {
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.cerydra.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!,'a')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.cerydra.text_b6a5fc7f30"),
   dmgKey: 'MARK',
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!,'q')
 }, {
-  title: '天赋附加伤害',
+  title: $t("panel-damage-rules.characters.cerydra.text_81891586ea"),
   dmg: ({ talent }, dmg) => dmg(talent.t!['附加伤害']!,'t')
 }, {
-  title: '【军功】角色攻击力提升',
+  title: $t("panel-damage-rules.characters.cerydra.text_46b15dda2a"),
   dmg: ({ talent, calc, attr }) => {
     const avg = Math.floor(calc(attr.atk!) * talent.t!['攻击力']!)
-    return { avg, display: `${avg}点`, metric: 'support' }
+    return { avg, display: $t("panel-damage-rules.characters.cerydra.text_35aed71258", { "avg": avg }), metric: 'support' }
   }
 },]
 
 export const buffs: Buff[] = [{
-  title: '额外能力-来者：刻律德菈的攻击力大于2000时,每超过100点攻击力可使自身暴击伤害提高18%,最多提高360%,已提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.cerydra.text_117bb6f67f"),
   tree: 1,
   data: {
     cdmg: ({ calc, attr }) => 18 * Math.min(Math.floor(Math.max(calc(attr.atk!) - 2000, 0) / 100), 20),
     }
 }, {
-  title: '额外能力-见者：刻律德菈的暴击率提高[cpct]%。当刻律德菈的充能小于上限时，持有【军功】的角色施放终结技时使刻律德菈获得1点充能，该效果单场战斗中可以触发1次。',
+  title: $t("panel-damage-rules.characters.cerydra.text_f829fd3f75"),
   tree: 2,
   data: {
     cpct: 100,
   }
 }, {
-  title: '额外能力-征服者：施放战技时，使自身和持有【军功】的队友速度提高[speedPlus]点，持续3回合。持有【军功】的角色施放普攻或战技时，为刻律德菈恢复5点能量。',
+  title: $t("panel-damage-rules.characters.cerydra.text_59220d5351"),
   tree: 3,
   data: {
     speedPlus: 20,
   }
 }, {
-  title: '刻律德菈2魂：持有【军功】的角色造成的伤害提高40%。场上存在持有【军功】的队友时，刻律德菈造成的伤害提高[dmg]%。',
+  title: $t("panel-damage-rules.characters.cerydra.text_6281fb6184"),
   cons: 2,
   data: {
     dmg: 160,
   }
 }, {
-  title: '刻律德菈4魂：终结技的伤害倍率提高[qPct]%。',
+  title: $t("panel-damage-rules.characters.cerydra.text_0819c7145b"),
   cons: 4,
   data: {
     qPct: 240,
   }
 }, {
-  title: '刻律德菈6魂：持有【军功】的角色全属性抗性穿透提高20%，且【军功】触发的附加伤害倍率提高[tPct]%。场上存在持有【军功】的队友时，刻律德菈全属性抗性穿透提高[kx]%。',
+  title: $t("panel-damage-rules.characters.cerydra.text_5428e24caf"),
   cons: 6,
   data: {
     tPct: 300,

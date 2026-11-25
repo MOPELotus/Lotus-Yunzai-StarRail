@@ -1,26 +1,29 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '【雨过天晴】状态普攻伤害',
+  title: $t("panel-damage-rules.characters.hyacine.text_9b219881d5"),
   params: { AfterRain: true },
   dmg: ({ talent, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.a!['技能伤害']!, 'a')
 }, {
-  title: '【雨过天晴】状态战技生命回复量',
+  title: $t("panel-damage-rules.characters.hyacine.text_0c4e5596f6"),
   params: { AfterRain: true },
   dmg: ({ talent, attr, calc }, { heal }) => heal(calc(attr.hp!) * talent.e!['治疗·百分比生命']! + talent.e!['治疗·固定值']!)
 }, {
-  title: '首次终结技生命回复量',
+  title: $t("panel-damage-rules.characters.hyacine.text_c34fe22f02"),
   dmg: ({ talent, attr, calc }, { heal }) => heal(calc(attr.hp!) * talent.q!['治疗·百分比生命']! + talent.q!['治疗·固定值']!)
 }, {
-  title: '【雨过天晴】状态忆灵天赋生命回复量',
+  title: $t("panel-damage-rules.characters.hyacine.text_7be48f3624"),
   params: { AfterRain: true },
   dmg: ({ talent, attr, calc }, { heal }) => heal(calc(attr.hp!) * talent.mt!['治疗·百分比生命']! * 2 + talent.mt!['治疗·固定值']! * 2)
 }, {
-  title: '【雨过天晴】状态1魂额外条件回复量',
+  title: $t("panel-damage-rules.characters.hyacine.text_713ea250eb"),
   params: { AfterRain: true },
   dmg: ({ talent, attr, calc }, { heal }) => heal(calc(attr.hp!) * 0.08)
 }, {
-  title: '忆灵技对单伤害-我方6目标-无烧血C',
+  title: $t("panel-damage-rules.characters.hyacine.text_3cb6ccd030"),
   params: { AfterRain: true , ServantDmg: true},
   dmg: ({ talent, attr, cons, calc }, { heal, basic }) => {
     let dmg = 0
@@ -63,7 +66,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '忆灵技对单伤害-我方7目标-有烧血C',
+  title: $t("panel-damage-rules.characters.hyacine.text_0adbb3a32b"),
   params: { AfterRain: true , ServantDmg: true },
   dmg: ({ talent, attr, cons, calc }, { heal, basic }) => {
     let dmg = 0
@@ -106,7 +109,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '【雨过天晴】状态战技回复遐蝶新蕊百分点',
+  title: $t("panel-damage-rules.characters.hyacine.text_4afe963acd"),
   params: { AfterRain: true },
   dmg: ({ talent, attr, calc }, { heal }) => {
     let perHeal = heal(calc(attr.hp!) * talent.e!['治疗·百分比生命']! + talent.e!['治疗·固定值']!)
@@ -129,7 +132,7 @@ export const defDmgIdx = 5
 
 export const buffs: Buff[] = [{
   check: ({ params }) => params.AfterRain === true,
-  title: '风堇终结技：处于【雨过天晴】状态时，风堇生命上限提高[hpPlus]点。',
+  title: $t("panel-damage-rules.characters.hyacine.text_50e33b1947"),
   data: {
     hpPlus: ({ talent, attr, cons }) => {
       let num = cons > 0 ? 0.5 : 0
@@ -138,19 +141,19 @@ export const buffs: Buff[] = [{
   }
 }, {
   check: ({ params }) => params.ServantDmg === true,
-  title: '风堇天赋：风堇或小伊卡提供治疗时，小伊卡造成的伤害提高 [_dmmgup]% ，最多可叠加 3 层至 [dmg]%。',
+  title: $t("panel-damage-rules.characters.hyacine.text_6953dc4449"),
   data: {
     dmg: ({ talent }) => talent.t!['伤害提高']! * 100 * 3,
     _dmmgup: ({talent}) => talent.t!['伤害提高']! * 100
   }
 }, {
-  title: '行迹-阴云莞尔：风堇和小伊卡的暴击率提高[cpct]%。',
+  title: $t("panel-damage-rules.characters.hyacine.text_2cb4a19821"),
   tree: 1,
   data: {
     cpct: 100
   }
 }, {
-  title: '行迹-暴风停歇：风堇的速度大于200时，她与小伊卡的生命上限提高[hpPct]%，之后每超出1点速度，治疗量提高[heal]%。暴击伤害额外提高[cdmg]%（4魂效果）',
+  title: $t("panel-damage-rules.characters.hyacine.text_4f155f7201"),
   tree: 3,
   sort: 9,
   check: ({ attr, calc }) => calc(attr.speed!) > 200,
@@ -160,20 +163,20 @@ export const buffs: Buff[] = [{
     cdmg: ({ cons, attr, calc }) => cons > 3 ? (calc(attr.speed!) - 200) * 2 : 0
   }
 }, {
-  title: "风堇1魂：风堇处于【雨过天晴】状态时，我方全体目标生命上限额外提高50%",
+  title: $t("panel-damage-rules.characters.hyacine.text_d2984b2edd"),
   cons: 1
 }, {
-  title: '风堇2魂：我方目标生命值降低时，速度提高[speedPct]%。',
+  title: $t("panel-damage-rules.characters.hyacine.text_a5b6bcd0a8"),
   cons: 2,
   data: {
     speedPct: 30
   }
 }, {
-  title: '风堇6魂：我方全体目标的全属性抗性穿透提高[kx]%。',
+  title: $t("panel-damage-rules.characters.hyacine.text_1230a5be69"),
   cons: 6,
   data: {
     kx: 20
   }
 }]
 
-export const createdBy = '冰翼 & 77惨惨77'
+export const createdBy = $t("panel-damage-rules.characters.hyacine.text_8a82a515b6")

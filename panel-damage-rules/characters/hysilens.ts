@@ -1,19 +1,22 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
-export const createdBy = "77惨惨77"
+export const createdBy = $t("panel-damage-rules.characters.hysilens.text_e1b743d657")
 export const defDmgIdx = 3
 export const mainAttr = "atk,speed,effPct"
 export const details: DamageDetail[] = [{
-  title: "普攻伤害",
+  title: $t("panel-damage-rules.characters.hysilens.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!["技能伤害"]!, "a"),
 }, {
-  title: "战技伤害",
+  title: $t("panel-damage-rules.characters.hysilens.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!["技能伤害"]!, "e"),
 }, {
-  title: "终结技直伤",
+  title: $t("panel-damage-rules.characters.hysilens.text_d2f095bfae"),
   dmg: ({ talent }, dmg) => dmg(talent.q!["技能伤害"]!, "q"),
 }, {
-  title: "常态dot(结界下保守)",
+  title: $t("panel-damage-rules.characters.hysilens.text_9d3a13d4bd"),
   params: { isDot: true },
   dmg: ({ talent, attr, cons, calc }, { basic }) => {
     let other = basic((cons>0 ? 6 : 3) * talent.t!['持续伤害']! * calc(attr.atk!),'dot','skillDot',{ dynamicDmg: -attr.staticAttr!.dmg!.plus })
@@ -24,7 +27,7 @@ export const details: DamageDetail[] = [{
   },
 }, {
   check: ({ trees }) => trees['102'] === true,
-  title: "终结技引爆伤害(保守)",
+  title: $t("panel-damage-rules.characters.hysilens.text_93eb1d6cef"),
   params: { isDot: true, Ultimate: true },
   dmg: ({ talent, attr, cons, calc }, { basic }) => {
     let other = basic((cons>0 ? 6 : 3) * talent.t!['持续伤害']! * calc(attr.atk!),'dot','skillDot',{ dynamicDmg: -attr.staticAttr!.dmg!.plus })
@@ -36,43 +39,43 @@ export const details: DamageDetail[] = [{
 },]
 export const buffs: Buff[] = [{
   check: ({ attr, calc }) => calc(attr.effPct!) > 75,
-  title: "卡芙卡额外能力-折磨：效果命中大于75%时, 攻击力提高[atkPct]%",
+  title: $t("panel-damage-rules.characters.hysilens.text_159336835c"),
   data: {
     atkPct: 100,
   },
 }, {
-  title: "战技：有100%的基础概率使敌方全体受到的伤害提高[Enemydmg]%，持续3回合",
+  title: $t("panel-damage-rules.characters.hysilens.text_39bfe80331"),
   data: {
     Enemydmg: ({ talent }) => talent.e!["受到的伤害提高"]! * 100,
   },
 }, {
-  title: "结界：使敌方目标攻击力降低15%，防御力降低[enemyDef]%",
+  title: $t("panel-damage-rules.characters.hysilens.text_64f648d78c"),
   data: {
     enemyDef: ({ talent }) => talent.q!["防御力降低"]! * 100,
   },
 }, {
   check: ({ params }) => params.Ultimate === true,
-  title: "额外能力-盛会的泡沫：海瑟音施放终结技时按照原伤害150%的比例引爆所有的持续伤害。",
+  title: $t("panel-damage-rules.characters.hysilens.text_3d59082451"),
   tree: 2,
 }, {
-  title: "额外能力-珍珠的琴弦：若海瑟音的效果命中高于60%，每超过10%可使自身造成的伤害提高15%，已提高[dmg]%。",
+  title: $t("panel-damage-rules.characters.hysilens.text_84aaeda8e1"),
   tree: 3,
   data: {
     dmg: ({ attr, calc }) => Math.floor(Math.max(0, calc(attr.effPct!)-60)/10) * 15,
   },
 }, {
-  title: "海瑟音1魂：在场时，我方目标造成的持续伤害为原伤害的116%, 天赋dot数量翻倍",
+  title: $t("panel-damage-rules.characters.hysilens.text_638fd2b286"),
   cons: 1,
   data: {
     multi: 16,
   },
 }, {
-  title: "海瑟音4魂：结界持续期间，使敌方全体全属性抗性降低20%。",
+  title: $t("panel-damage-rules.characters.hysilens.text_adfdfd4c6c"),
   cons: 4,
   data: {
     kx: 20,
   },
 }, {
-  title: "海瑟音6魂：结界持续期间，每回合开始时或我方目标单次攻击后，触发海瑟音物理持续伤害效果的次数上限提高至12次，且造成的伤害倍率提高20%。",
+  title: $t("panel-damage-rules.characters.hysilens.text_14259621b9"),
   cons: 6,
 },]

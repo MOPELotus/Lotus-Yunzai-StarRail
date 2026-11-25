@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // HSR Nous build/actor/stage compilation, adapted from the MIT-licensed pinned engine.
 import { getRulebook, type RuleValues } from "../rules/rulebook.ts";
 import { bindRuleExpression, compileTemplateExpressions, effectiveSkillLevels, ExpressionCompiler, skillParameterTables,
@@ -57,18 +60,18 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     };
     return entries(raw).flatMap((hook, index) => {
       if (hook.trigger_limit == null) return [hookModel(hook)];
-      if (hook.event === "on_battle_start") throw new TypeError(source + " 的开战事件不支持触发次数限制");
+      if (hook.event === "on_battle_start") throw new TypeError(source + $t("team-engine.native.compile.encounter.text_9eeccfaa82"));
       let count = 1, window = "per_turn", resetOn: string | undefined;
       for (const [key, value] of Object.entries(map(hook.trigger_limit))) {
         if (key === "count") count = Number(value);
         else if (key === "reset_on") resetOn = string(value);
         else {
-          if (!Object.hasOwn(resetEvents, key)) throw new TypeError(source + " 的触发次数重置时机不正确");
+          if (!Object.hasOwn(resetEvents, key)) throw new TypeError(source + $t("team-engine.native.compile.encounter.text_f86d605b6e"));
           window = key;
           count = value == null ? 1 : Number(value);
         }
       }
-      if (!Number.isInteger(count) || count < 1) throw new TypeError(source + " 的触发次数须为正整数");
+      if (!Number.isInteger(count) || count < 1) throw new TypeError(source + $t("team-engine.native.compile.encounter.text_1d2b3b6500"));
       const hash = new Bun.CryptoHasher("md5").update(ownerId + "/" + source + "/" + index).digest("hex");
       const id = "_tl_" + hash.slice(0, 10);
       declarations[id] = mechanic({ max: count, current: 0, overflow_mode: "none" }, context);
@@ -102,18 +105,18 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     for (const [id, value] of Object.entries(map(raw.custom_resources))) {
       const data = map(value);
       if (id === "energy" || (data.max !== undefined && data.max !== "inf" && typeof data.max !== "number")) {
-        throw new TypeError(source + " 的资源 " + id + " 声明不正确");
+        throw new TypeError(source + $t("team-engine.native.compile.encounter.text_390cd4d8cf") + id + $t("team-engine.native.compile.encounter.text_5498465824"));
       }
       const spec = { ...data, max: data.max ?? "inf", current: data.current ?? 0,
         overflow_mode: data.overflow_mode ?? "none" };
       if (spec.overflow_mode === "bank") {
         if (typeof data.bank_max !== "number" || typeof data.bank_refund !== "string") {
-          throw new TypeError(source + " 的溢出资源 " + id + " 未声明返还上限或时机");
+          throw new TypeError(source + $t("team-engine.native.compile.encounter.text_040f5f1188") + id + $t("team-engine.native.compile.encounter.text_be338e0c99"));
         }
         declarations[id + "_bank"] = mechanic({ max: data.bank_max, current: 0, overflow_mode: "none" }, context);
         refundHooks.push(...makeHooks([{ event: data.bank_refund === "after_ultimate" ? "on_ultimate" : data.bank_refund,
           effects: [{ effect_type: "refund_bank", resource_id: id }] }], ownerId, source + "/bank", context));
-      } else if (spec.overflow_mode !== "none") throw new TypeError(source + " 的资源溢出规则不正确");
+      } else if (spec.overflow_mode !== "none") throw new TypeError(source + $t("team-engine.native.compile.encounter.text_5d81c0b0c5"));
       declarations[id] = mechanic(spec, context);
     }
     return { declarations, refundHooks };
@@ -127,7 +130,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
       ...numeric(base), def_: number(base.def) };
     delete (stats as Record<string, number>).def;
     if (!Number.isInteger(level) || level < 1 || (party === "player" && level > 80) || (kind !== "summon" && stats.spd <= 0)) {
-      throw new TypeError(`单位 ${id} 的等级或速度不正确`);
+      throw new TypeError($t("team-engine.native.compile.encounter.text_fbb7f7ac1a", { "id": id }));
     }
     const source = "actor/" + id;
     const { declarations, refundHooks } = resources(raw, context, id, source);
@@ -160,13 +163,13 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     };
   }
   function register(unit: CompiledActor, isSummon = false) {
-    if (actionsByActor.has(unit.id)) throw new TypeError(`重复单位 ${unit.id}`);
+    if (actionsByActor.has(unit.id)) throw new TypeError($t("team-engine.native.compile.encounter.text_83c30a430a", { "id": unit.id }));
     actionsByActor.set(unit.id, unit.actions);
     if (isSummon) summons.set(unit.id, unit);
   }
   function addResources(target: Record<string, Mechanic>, source: Record<string, Mechanic>, owner: string) {
     for (const [id, declaration] of Object.entries(source)) {
-      if (Object.hasOwn(target, id)) throw new TypeError(`单位 ${owner} 重复声明资源 ${id}`);
+      if (Object.hasOwn(target, id)) throw new TypeError($t("team-engine.native.compile.encounter.text_c8afe67408", { "owner": owner, "id": id }));
       target[id] = declaration;
     }
   }
@@ -183,7 +186,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     if (member.cone) {
       const { id: coneId, rank: superimposition, active } = member.cone;
       if (!Number.isInteger(superimposition) || superimposition < 1 || superimposition > 5) {
-        throw new TypeError(`光锥 ${coneId} 的叠影等级不正确`);
+        throw new TypeError($t("team-engine.native.compile.encounter.text_81c7c6d8ce", { "coneId": coneId }));
       }
       const cone = active ? await library.read("light_cones", coneId) : {};
       const white = member.cone.base ?? numeric(cone.base_stats);
@@ -193,14 +196,14 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
       const tables = map(cone.lookup_tables);
       for (const declaration of strings(cone.variable_bindings)) {
         const assignment = /^\s*self\.(\w+)\s*=\s*(.+?)\s*$/.exec(declaration);
-        if (!assignment) throw new TypeError(`光锥 ${coneId} 的技能绑定不正确`);
+        if (!assignment) throw new TypeError($t("team-engine.native.compile.encounter.text_2da1e5bf7d", { "coneId": coneId }));
         const name = assignment[1]!, source = assignment[2]!;
         params[name] = expr.evaluate<number>(expr.compile(source, binding, "formula"), {
           context: { build: { light_cone: { superimposition } } },
           functions: { lookup_table: (table: string, { index }: { index: number }) => {
             const values = tables[table];
             const value: unknown = Array.isArray(values) ? values[Math.trunc(index)] : undefined;
-            if (typeof value !== "number") throw new TypeError(`光锥 ${coneId} 的参数 ${table}[${index}] 不存在`);
+            if (typeof value !== "number") throw new TypeError($t("team-engine.native.compile.encounter.text_1a31398735", { "coneId": coneId, "table": table, "index": index }));
             return value;
           } },
         });
@@ -216,7 +219,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     const sets = new Map<string, number>();
     const affix = (key: string, family: "main" | "sub", override?: number) => {
       const base = rules.relicAffixes[family]?.[key];
-      if (base === undefined) throw new TypeError(`未知遗器${family === "main" ? "主" : "副"}词条 ${key}`);
+      if (base === undefined) throw new TypeError($t("team-engine.native.compile.encounter.text_eaa36c2473", { "value1": family === "main" ? $t("team-engine.native.compile.encounter.text_9e32fa2b4f") : $t("team-engine.native.compile.encounter.text_79e5dcf869"), "key": key }));
       add(affixes, elementalAffixes.has(key) ? "dmg_" + key.slice(0, -4) : key, override ?? base);
     };
     for (const relic of member.relics ?? []) {
@@ -224,7 +227,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
       if (relic.main) affix(relic.main, "main", relic.mainValue);
       for (const [key, value] of Object.entries(relic.subs ?? {})) affix(key, "sub", value);
     }
-    appendStats(modifiers, "RELIC_" + id, "遗器词条", affixes);
+    appendStats(modifiers, "RELIC_" + id, $t("team-engine.native.compile.encounter.text_9114c43bcb"), affixes);
     for (const [setId, count] of sets) {
       if (count < 2) continue;
       const set = await library.read("relics", setId);
@@ -240,7 +243,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
       }
     }
     appendCaveats(raw, id, "characters/" + id);
-    appendStats(modifiers, "TRACE_" + id, "行迹", raw.trace_stat_effects);
+    appendStats(modifiers, "TRACE_" + id, $t("team-engine.native.compile.encounter.text_f852e2fa16"), raw.trace_stat_effects);
     addResources(allResources, { ...unit.resources }, id);
     allHooks.push(...unit.hooks);
     const children = Object.entries(map(raw.summons)).map(([summonId, definition]) => {
@@ -259,7 +262,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     if (state.stat_effects !== undefined) {
       const stats = Object.fromEntries(Object.entries(map(state.stat_effects)).map(([key, value]) => {
         const bound = typeof value === "string" ? Number(bindRuleExpression(value, context)) : value;
-        if (typeof bound !== "number" || !Number.isFinite(bound)) throw new TypeError(id + " 的形态属性 " + key + " 须为有限数值");
+        if (typeof bound !== "number" || !Number.isFinite(bound)) throw new TypeError(id + $t("team-engine.native.compile.encounter.text_6cbccac7c6") + key + $t("team-engine.native.compile.encounter.text_6e2ef963ba"));
         return [key, bound];
       }));
       state = { ...state, stat_effects: stats };
@@ -281,7 +284,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
         number(model.level, 80), 0, binding);
     });
     const owner = units[0];
-    if (!owner) throw new TypeError(`命途模块 ${name} 没有定义单位`);
+    if (!owner) throw new TypeError($t("team-engine.native.compile.encounter.text_0bba70dbb2", { "name": name }));
     const { declarations, refundHooks } = resources(raw, binding, owner.id, name);
     const systemHooks = [...refundHooks, ...makeHooks(raw.hooks, owner.id, name, binding, declarations)];
     for (const unit of units) {
@@ -312,7 +315,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
     enemies.push(enemy);
   }
   if (!Number.isFinite(build.stage.maxActionValue) || build.stage.maxActionValue <= 0) {
-    throw new TypeError("关卡行动值上限必须为正数");
+    throw new TypeError($t("team-engine.native.compile.encounter.text_8cc9015e49"));
   }
   const approximate = new Map<string, number>();
   for (const hook of hooks) {
@@ -322,7 +325,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
   }
   for (const [owner, count] of [...approximate].sort(([a], [b]) => a.localeCompare(b))) {
     caveats.push({ actor: owner, source: "compiler", level: "approx", mechanism: "mechanic_chance",
-      text: `涉及 ${count} 个机制概率判断，期望模式将达到 50% 的概率判为触发` });
+      text: $t("team-engine.native.compile.encounter.text_f1ee810398", { "count": count }) });
   }
   const actionRules = (build.actionRules ?? defaultPolicy).map(raw => {
     const model = mechanic(raw);
@@ -330,7 +333,7 @@ export async function compileEncounter(build: EncounterBuild, library: TemplateL
       condition: model.expressions.get("condition") };
   }).sort((a, b) => b.priority - a.priority);
   const cycle = rules.modes[build.stage.mode];
-  if (!cycle) throw new TypeError("未知关卡模式 " + build.stage.mode);
+  if (!cycle) throw new TypeError($t("team-engine.native.compile.encounter.text_45f86c98d8") + build.stage.mode);
   const stage = { ...build.stage, terminationMode: "fixed_av" as const, enemies, cycle };
   return { team, stage, systemActors, summons, actionsByActor, hooks,
     policy: { mode: "rule_based", ultimateTiming: "after_action", actionRules, enemyRules }, caveats, rules, expr };

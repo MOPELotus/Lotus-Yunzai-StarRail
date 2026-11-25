@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const mainAttr = 'hp,cpct,cdmg,dmg'
@@ -9,20 +12,20 @@ export const defParams = {
 
 export const buffs: Buff[] = [
   {
-    title: '天赋-今夜与我同行：生命降低时，暴击伤害提高[cdmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_1ebe1bc401"),
     data: {
       cdmg: ({ talent }) => talent.t!['暴伤提高']! * 100
     }
   },
   {
-    title: '忆灵天赋-孤独，浮游，漆黑：在场时，长夜月与忆灵造成的伤害提高[dmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_c2818ded75"),
     data: {
       dmg: ({ talent }) => talent.mt!['造成的伤害提高']! * 100
     }
   },
   {
     check: ({ params }) => params.isZhiAn,
-    title: '终结技-【至暗之谜】：敌方受到伤害提高[enemydmg]%，自身与忆灵伤害提高[dmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_5c96dc4968"),
     data: {
       enemydmg: ({ talent }) => talent.q!['受到的伤害提高']! * 100,
       dmg: ({ talent }) => talent.q!['造成的伤害提高']! * 100
@@ -30,14 +33,14 @@ export const buffs: Buff[] = [
   },
   {
     check: ({ params }) => params.skillActive,
-    title: '战技-白昼悄然离去：我方忆灵暴击伤害提高[meCdmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_7e4a0ce20a"),
     data: {
       meCdmg: ({ calc, attr, talent }) => calc(attr.cdmg!) * talent.e!['忆灵暴伤提高']!
     }
   },
   {
     tree: 1,
-    title: '行迹-天黑黑，月寂寂：暴击率提高[cpct]%，施放技能时暴击伤害提高[cdmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_fa1a7f988b"),
     data: {
       cpct: 35,
       cdmg: 15
@@ -46,7 +49,7 @@ export const buffs: Buff[] = [
   {
     tree: 3,
     check: ({ params }) => params.skillActive,
-    title: '行迹-天亮了，雨落了([_memoryCount]记忆)：战技额外使忆灵暴击伤害提高[meCdmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_ba251a1710"),
     data: {
       _memoryCount: ({ params }) => params.memoryCount || 1,
       meCdmg: ({ params }) => {
@@ -57,7 +60,7 @@ export const buffs: Buff[] = [
   },
   {
     cons: 1,
-    title: '1魂-睡吧，长夜有所梦([_enemyCount]敌人)：我方忆灵造成的伤害提高[meDmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_aa08f6bfad"),
     data: {
       _enemyCount: ({ params }) => params.enemyCount || 1,
       meDmg: ({ params }) => {
@@ -68,14 +71,14 @@ export const buffs: Buff[] = [
   },
   {
     cons: 2,
-    title: '2魂-听，沉眠中的呓语：暴击伤害提高[cdmg]%',
+    title: $t("panel-damage-rules.characters.evernight.text_92a346e6e1"),
     data: {
       cdmg: 40
     }
   },
   {
     cons: 6,
-    title: '6魂-就这样，一直：我方全体全属性抗性穿透提高[kx]%',
+    title: $t("panel-damage-rules.characters.evernight.text_0616970a16"),
     data: {
       kx: 20
     }
@@ -84,14 +87,14 @@ export const buffs: Buff[] = [
 
 export const details: DamageDetail[] = [
   {
-    title: '普攻伤害',
+    title: $t("panel-damage-rules.characters.evernight.text_a900baa1d0"),
     dmg: ({ calc, attr, talent }, dmg) => {
       const basicDmg = calc(attr.hp!) * talent.a!['技能伤害']!
       return dmg.basic(basicDmg, 'a')
     }
   },
   {
-    title: ({ params }) => `忆灵技-追忆蹁跹如雨(${params.yizhi}层忆质)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.evernight.text_8c90af7095", { "yizhi": params.yizhi }),
     params: { yizhi: 16 },
     dmg: ({ calc, attr, talent, params }, dmg) => {
       const yilingHP = calc(attr.hp!) * 0.5
@@ -102,7 +105,7 @@ export const details: DamageDetail[] = [
     }
   },
   {
-    title: '终结技-忆灵伤害',
+    title: $t("panel-damage-rules.characters.evernight.text_7fda18c60f"),
     params: { isZhiAn: true, skillActive: true },
     dmg: ({ calc, attr, talent }, dmg) => {
       const yilingHP = calc(attr.hp!) * 0.5
@@ -111,7 +114,7 @@ export const details: DamageDetail[] = [
     }
   },
   {
-    title: ({ params }) => `忆灵技-迷梦流失如露(${params.yizhi}层忆质)-主目标`,
+    title: ({ params }) => $t("panel-damage-rules.characters.evernight.text_f58d7a57a6", { "yizhi": params.yizhi }),
     dmgKey: 'me',
     params: { yizhi: 16, isZhiAn: true, skillActive: true },
     dmg: ({ calc, attr, talent, params }, dmg) => {
@@ -122,7 +125,7 @@ export const details: DamageDetail[] = [
     }
   },
   {
-    title: ({ params }) => `忆灵技-迷梦流失如露(${params.yizhi}层忆质)-其他目标`,
+    title: ({ params }) => $t("panel-damage-rules.characters.evernight.text_34172aa466", { "yizhi": params.yizhi }),
     params: { yizhi: 16, isZhiAn: true, skillActive: true },
     dmg: ({ calc, attr, talent, params }, dmg) => {
       const yilingHP = calc(attr.hp!) * 0.5

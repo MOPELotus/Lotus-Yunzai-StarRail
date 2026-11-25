@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { join } from "node:path";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { integer, warpStateDirectory } from "./store.ts";
@@ -30,7 +33,7 @@ export const defaultWarpSettings = (): WarpSettings => ({
 });
 
 function invalid(): never {
-  throw new TypeError("星铁模拟跃迁设置无效。");
+  throw new TypeError($t("simulation.settings.text_5a6df74945"));
 }
 
 function record(raw: unknown): Record<string, unknown> {
@@ -86,7 +89,7 @@ export function parseWarpSettings(raw: unknown): WarpSettings {
 const id = { qq: "1", uid: "1" } as const;
 export function createWarpSettingsStore(lock: AcquireRoleArchiveLock, directory = warpStateDirectory()) {
   const archive = createRoleJsonArchive(join(directory, "settings"), lock, {
-    subject: "星铁模拟跃迁设置", lockSuffix: "warp-settings", maxBytes: 512 * 1024, rejectNull: true,
+    subject: $t("simulation.settings.text_071b2e76e9"), lockSuffix: "warp-settings", maxBytes: 512 * 1024, rejectNull: true,
   });
   const decode = (raw: unknown) => raw === null ? defaultWarpSettings() : parseWarpSettings(raw);
   return {

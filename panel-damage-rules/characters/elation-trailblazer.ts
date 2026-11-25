@@ -1,10 +1,13 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技对单80好活伤害',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_6486461627"),
   params: { punchline: 80 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -13,7 +16,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技对三80好活伤害',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_98cf6d7a0c"),
   params: { punchline: 80 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -22,7 +25,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技对单900好活伤害',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_b9ea3b8ed2"),
   params: { punchline: 900 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -31,7 +34,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技对三900好活伤害',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_55a32c5ccb"),
   params: { punchline: 900 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -40,7 +43,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '50笑点欢愉技伤害',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_1ec1aa0dbe"),
   params: { punchline: 50 },
   dmg: ({ talent }, dmg) => dmg(talent.xe!['技能单体伤害']! + talent.xe!['技能均分伤害']!, 'xe', 'elation')
 }]
@@ -49,34 +52,34 @@ export const defDmgIdx = 1
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-快哉快哉：若开拓者的攻击力高于1000点，每超过200点攻击力可使自身欢愉度提高10%，最多提高60%',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_c502953ea7"),
   tree: 1,
   data: {
     joy: ({ attr }) => Math.min(Math.trunc((attr.atk! - 1000) / 200 * 10), 60)
   }
 }, {
-  title: '行迹-跟你爆了：自身暴击率提高[cpct]%',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_48c38bbc30"),
   tree: 2,
   data: {
     cpct: 15
   }
 }, {
-  title: '笑点计算：计算笑点用',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_76c960e299"),
   data: {
     punchline: ({ params }) => params.punchline
   }
 }, {
-  title: '4魂：施放欢愉技时，使敌方目标受到的伤害提高[enemydmg]%',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_5b56798f58"),
   cons: 4,
   data: {
     enemydmg: 10
   }
 }, {
-  title: '6魂：使自身暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.elation-trailblazer.text_1de192ec93"),
   cons: 6,
   data: {
     cdmg: 100
   }
 }]
 
-export const createdBy = '欧阳青瓜'
+export const createdBy = $t("panel-damage-rules.characters.elation-trailblazer.text_7ad80046cc")

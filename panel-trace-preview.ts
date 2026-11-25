@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // ProfileChange.js supplies these short IDs, resolved by Avatar.setTrees in the fixed MIT source.
 import { object, type PanelAvatar } from "./panel-model.ts";
 
@@ -18,7 +21,7 @@ export function changePanelFullTraces(
     traits.set(match[2]!, key);
   }
   if (!prefix || attributeIds.some(id => !traits.has(id))) {
-    return { error: `「${target.name}」满行迹试算缺少角色行迹资料。` };
+    return { error: $t("panel-trace-preview.text_7eaf23959f", { "name": target.name }) };
   }
   for (const id of abilityIds) traits.set(id, prefix + id);
   const existing = new Map(target.traces.map(trace => [trace.id, trace]));
@@ -26,5 +29,5 @@ export function changePanelFullTraces(
     const id = traits.get(short) ?? short;
     return { name: "", icon: "", ...existing.get(id), id, active: true };
   });
-  return { avatar: { ...target, traces, stats: [] }, label: "临时行迹 · 满行迹" };
+  return { avatar: { ...target, traces, stats: [] }, label: $t("panel-trace-preview.text_c05221e150") };
 }

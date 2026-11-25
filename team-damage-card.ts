@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { miaoTemplateFont } from "../../lib/game-template-fonts.ts";
 import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
@@ -110,8 +113,8 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
   paints.push(ctx => {
     ctx.save();
     ctx.shadowColor = "#130d1b"; ctx.shadowBlur = 3 * scale; ctx.shadowOffsetY = scale;
-    type(ctx, "星铁队伍伤害" + (details ? " · 行动过程" : ""), width / 2, 65, 32, gold, true);
-    type(ctx, `UID ${report.uid} · 档案 ${report.profileId}`, width / 2, 104, 17, white);
+    type(ctx, $t("team-damage-card.text_c3763b82b8") + (details ? $t("team-damage-card.text_1d73e4d964") : ""), width / 2, 65, 32, gold, true);
+    type(ctx, $t("team-damage-card.text_ff231c796d", { "uid": report.uid, "profileId": report.profileId }), width / 2, 104, 17, white);
     ctx.restore();
   });
   let cursor = 135;
@@ -195,32 +198,32 @@ function renderLayout(report: TeamDamageReport, faces: readonly (Image | undefin
   }
 
   table(report.summary.map(row => row.label), [report.summary.map(row => row.value)]);
-  table(["#", "角色", "等级 / 星魂", "光锥"], report.team.map((member, index) => [
-    String(index + 1), member.name, `Lv.${member.level} · ${member.rank} 魂`,
-    member.weaponRank ? [{ value: member.weapon }, { value: `Lv.${member.weaponLevel} · ${member.weaponRank} 叠影` }] : member.weapon,
+  table(["#", $t("team-damage-card.text_c47b54e84e"), $t("team-damage-card.text_b812679bc4"), $t("team-damage-card.text_e733238b28")], report.team.map((member, index) => [
+    String(index + 1), member.name, $t("team-damage-card.text_f5ea72c3e8", { "level": member.level, "rank": member.rank }),
+    member.weaponRank ? [{ value: member.weapon }, { value: $t("team-damage-card.text_daf934d5e8", { "weaponLevel": member.weaponLevel, "weaponRank": member.weaponRank }) }] : member.weapon,
   ]), { widths: [42, 220, 130, innerWidth - 392], portraits: faces });
-  table(["面板属性", ...report.team.map(member => member.name)], report.statNames.map((label, index) =>
+  table([$t("team-damage-card.text_40f5aab11c"), ...report.team.map(member => member.name)], report.statNames.map((label, index) =>
     [label, ...report.team.map(member => member.stats[index] ?? "")]), { size: 14, rowHeaders: true });
-  table(["角色", "面板来源"], report.team.map(member => [member.name, member.source]));
+  table([$t("team-damage-card.text_c47b54e84e"), $t("team-damage-card.text_65e8d26a80")], report.team.map(member => [member.name, member.source]));
   if (report.contribution.length) {
-    table(["伤害贡献", "伤害", "占比"], report.contribution.map(row => [row.name, row.value, row.share]));
+    table([$t("team-damage-card.text_9970928ac0"), $t("team-damage-card.text_30e1196888"), $t("team-damage-card.text_cc87b27b64")], report.contribution.map(row => [row.name, row.value, row.share]));
   }
-  if (report.timeline) note("起手顺序", [report.timeline], 17, false);
+  if (report.timeline) note($t("team-damage-card.text_c3950f7606"), [report.timeline], 17, false);
   if (details) {
-    table(["顺序", "关键行动（前 8 项）", "行动值"], report.turns.map((turn, index) => [
+    table([$t("team-damage-card.text_9249ca6c2a"), $t("team-damage-card.text_a810ef131a"), $t("team-damage-card.text_92f41376c1")], report.turns.map((turn, index) => [
       String(index + 1), [{ value: turn.title }, { value: turn.lines[0] ?? "" },
         ...(turn.lines[1] ? [{ value: turn.lines[1], size: 14, color: gold }] : [])], String(turn.actionPoint),
     ]), { widths: [67, innerWidth - 160, 93] });
   }
-  if (report.warnings.length) note("模拟说明", report.warnings, 14, true);
+  if (report.warnings.length) note($t("team-damage-card.text_69f1450732"), report.warnings, 14, true);
 
   const footer = cursor;
   paints.push(ctx => {
     ctx.save();
     ctx.shadowColor = "#130d1b"; ctx.shadowBlur = 3 * scale; ctx.shadowOffsetY = scale;
-    type(ctx, `计算引擎 · ${report.engine}`, width / 2, footer + 10, 14, gold);
-    type(ctx, "固定假人与自动行动策略，数值仅供参考", width / 2, footer + 30, 14, gold);
-    type(ctx, "Lotus-Yunzai · StarRail", width / 2, footer + 50, 14, "#fff");
+    type(ctx, $t("team-damage-card.text_beddeb03cf", { "engine": report.engine }), width / 2, footer + 10, 14, gold);
+    type(ctx, $t("team-damage-card.text_aed1e51df2"), width / 2, footer + 30, 14, gold);
+    type(ctx, $t("team-damage-card.text_00dfd4ad2c"), width / 2, footer + 50, 14, "#fff");
     ctx.restore();
   });
   return { height: footer + 72, paints };
@@ -250,6 +253,6 @@ export async function renderStarRailTeamDamage(report: TeamDamageReport, directo
     paints.forEach(paint => paint(ctx));
   }, { inlineImageByteLimit });
   await verify();
-  console.log(`[渲染] 星铁队伍伤害 ${engine.renderer} ${engine.api} ${engine.device}`);
+  console.log($t("team-damage-card.text_e8e1e64d62", { "renderer": engine.renderer, "api": engine.api, "device": engine.device }));
   return png;
 }

@@ -1,10 +1,13 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Adapted from Lotus-ReFactor services/starRailChallenge/service.js and
 // core/render/starrail-abyss.js. Source and asset details are in README.md.
 import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { StarRailChallengeKind, StarRailChallengeOptions, StarRailChallengePeriod } from "@lotus-yunzai/hoyo-client";
 
 const words = /^(?:#星铁|\*)(往期|上期|本期|最新|当期)?(简易)?(深渊|忘却之庭|忘却|混沌回忆|混沌|虚构叙事|虚构|末日幻影|末日|异相仲裁|异乡|异相|异向|仲裁)\s*([1-9]\d{0,2})?$/u;
-const labels = { hall: "混沌回忆", story: "虚构叙事", boss: "末日幻影", peak: "异相仲裁" } as const;
+const labels = { hall: $t("challenge-model.text_59977c7f79"), story: $t("challenge-model.text_d66b949b63"), boss: $t("challenge-model.text_8dae72d970"), peak: $t("challenge-model.text_fdc6c58c58") } as const;
 const aliases: Record<string, StarRailChallengeKind> = {
   忘却之庭: "hall", 忘却: "hall", 混沌回忆: "hall", 混沌: "hall",
   虚构叙事: "story", 虚构: "story", 末日幻影: "boss", 末日: "boss",
@@ -88,7 +91,7 @@ function periodText(begin: unknown, end: unknown) {
 function avatar(row: Json, names: NameLookup) {
   const id = number(row.id ?? row.avatar_id);
   return {
-    id, name: text(row.name_mi18n) || text(row.name) || names(String(id)) || (id ? `角色 ${id}` : ""),
+    id, name: text(row.name_mi18n) || text(row.name) || names(String(id)) || (id ? $t("challenge-model.text_74ec23c7dc", { "id": id }) : ""),
     icon: text(row.icon, 2048), rarity: number(row.rarity, 5), rank: number(row.rank, 6), level: number(row.level, 100),
   };
 }
@@ -107,9 +110,9 @@ function node(row: Json | undefined, label: string, names: NameLookup) {
 
 function floor(row: Json, names: NameLookup) {
   if (row.is_fast === true) return;
-  const nodes = ["node_1", "node_2", "node_3"].flatMap((key, index) => node(object(row[key]), `节点${index + 1}`, names) ?? []);
+  const nodes = ["node_1", "node_2", "node_3"].flatMap((key, index) => node(object(row[key]), $t("challenge-model.text_84fea9b648", { "value1": index + 1 }), names) ?? []);
   const value = {
-    mazeId: number(row.maze_id), title: text(row.name) || text(row.floor) || "关卡",
+    mazeId: number(row.maze_id), title: text(row.name) || text(row.floor) || $t("challenge-model.text_ff534801b8"),
     score: number(row.score), stars: number(row.star_num, 4), round: number(row.round_num), tierce: row.is_tierce === true, nodes,
   };
   if (value.score !== "" || value.stars !== "" || value.round !== "" || nodes.length) return value;
@@ -131,11 +134,11 @@ function peakRecord(row: Json, names: NameLookup, summaryBattleNum: NumberOrBlan
   const mobs = items(row.mob_records);
   const battleNum = number(row.battle_num);
   return {
-    title: [text(group?.game_version), text(group?.name_mi18n) || "异相仲裁"].filter(Boolean).join(" "),
+    title: [text(group?.game_version), text(group?.name_mi18n) || $t("challenge-model.text_fdc6c58c58")].filter(Boolean).join(" "),
     period: periodText(group?.begin_time, group?.end_time), ended: group?.status === "End", bossStars: number(row.boss_stars),
     mobStars: number(row.mob_stars), battleNum: battleNum === "" ? summaryBattleNum : battleNum,
     boss: boss && {
-      ...peakFight(boss, names), title: text(bossInfo?.name_mi18n) || "王棋关卡",
+      ...peakFight(boss, names), title: text(bossInfo?.name_mi18n) || $t("challenge-model.text_eb437ddad0"),
       icon: text(bossInfo?.icon, 2048), hard: boss.hard_mode === true,
     },
     mobs: items(row.mob_infos).slice(0, 3).map((info, index) => {
@@ -143,7 +146,7 @@ function peakRecord(row: Json, names: NameLookup, summaryBattleNum: NumberOrBlan
       const record = (id === "" ? undefined : mobs.find(mob => number(mob.maze_id) === id)) ?? mobs[index] ?? {};
       return {
         ...peakFight(record, names),
-        title: [text(info.name), text(info.monster_name)].filter(Boolean).join(" · ") || `骑士关卡 ${index + 1}`,
+        title: [text(info.name), text(info.monster_name)].filter(Boolean).join(" · ") || $t("challenge-model.text_e582bdeb29", { "value1": index + 1 }),
         icon: text(info.monster_icon, 2048), fast: record.is_fast === true,
       };
     }),
@@ -165,7 +168,7 @@ function toResult({ kind, schedule, simple, data }: ChallengeRecord, query: Chal
   const peak = query.period === "recent" ? peakRows
     : [query.period === "last" ? previous : peakRows[0]].filter((value): value is Json => Boolean(value));
   const summaryBattleNum = number(object(data.challenge_peak_best_record_brief)?.total_battle_num);
-  const periodLabel = query.period === "last" ? "上期记录" : query.period === "recent" && kind === "peak" ? "往期记录" : "本期记录";
+  const periodLabel = query.period === "last" ? $t("challenge-model.text_76ad936906") : query.period === "recent" && kind === "peak" ? $t("challenge-model.text_d804b36cc9") : $t("challenge-model.text_ad7d0caa30");
   return {
     kind, label: labels[kind], periodLabel, simple, startedAt: timestamp(begin), endsAt: timestamp(end),
     period: periodText(begin, end), stars: number(data.star_num ?? data.total_star), extraStars: number(data.extra_star_num),
@@ -188,11 +191,11 @@ export function normalizeStarRailChallenge(records: readonly ChallengeRecord[], 
 export type ChallengeResult = ReturnType<typeof normalizeStarRailChallenge>[number];
 
 export function makeChallengeText(uid: string, results: readonly ChallengeResult[]) {
-  const present = (value: NumberOrBlank) => value === "" ? "暂无" : `${value} 星`;
-  return [`星铁挑战战绩 · UID ${uid}`, ...results.flatMap(result => [
-    `${result.label}${result.simple ? "（简易）" : ""}${result.period ? ` · ${result.period}` : ""}`,
+  const present = (value: NumberOrBlank) => value === "" ? $t("challenge-model.text_b336a174cd") : $t("challenge-model.text_31af0a4666", { "value": value });
+  return [$t("challenge-model.text_c826a64644", { "uid": uid }), ...results.flatMap(result => [
+    `${result.label}${result.simple ? $t("challenge-model.text_71348487cd") : ""}${result.period ? ` · ${result.period}` : ""}`,
     ...(result.kind === "peak" ? result.peak.length
-      ? result.peak.map(record => `${record.title} · 王棋 ${present(record.bossStars)} · 骑士 ${present(record.mobStars)}`)
-      : ["暂无挑战记录"] : [`总星数 ${present(result.stars)}${result.maxFloor ? ` · ${result.maxFloor}` : ""}`]),
+      ? result.peak.map(record => $t("challenge-model.text_1232770238", { "title": record.title, "value2": present(record.bossStars), "value3": present(record.mobStars) }))
+      : [$t("challenge-model.text_e56e895cf1")] : [$t("challenge-model.text_d7c0389bf3", { "value1": present(result.stars), "value2": result.maxFloor ? ` · ${result.maxFloor}` : "" })]),
   ])].join("\n");
 }

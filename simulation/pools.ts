@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readFile, stat } from "node:fs/promises";
 import { readStarRailGachaSchedule } from "../gacha-schedule.ts";
 import { readStarRailGachaCatalog, starRailGachaThemeDirectory } from "../gacha-detail-source.ts";
@@ -41,21 +44,21 @@ const fourCones = cones(4, ["一场术后对话", "晚安与睡颜", "余生的�
   "谐乐静默之后", "芳华待灼", "黑夜如影随行", "梦的蒙太奇", "天才们的问候", "多流汗，少流泪", "胜利只在朝夕间"]);
 const three = cones(3, ["天倾", "乐圮", "俱殁", "锋镝", "离弦", "相抗", "智库", "灵钥", "睿见", "齐颂", "轮契", "调和", "幽邃", "渊环", "匿影", "琥珀", "戍御", "开疆", "物穰", "嘉果", "蕃息"]);
 const standard: WarpPool = {
-  kind: "standard", title: "群星跃迁", featuredFour: [],
+  kind: "standard", title: $t("simulation.pools.text_673a78ca8d"), featuredFour: [],
   otherFive: [...standardCharacters, ...standardCones], otherFour: [...fourCharacters, ...fourCones], three,
 };
 
 // The independent simulator combined each kind of Fate collaboration banner into one local pool.
 const fateWarps = [
-  { startsAt: Date.parse("2025-07-11T12:00:00+08:00"), characters: ["Saber", "Archer"], cones: ["没有回报的加冕", "理想燃烧的地狱"] },
-  { startsAt: Date.parse("2026-07-24T12:00:00+08:00"), characters: ["远坂凛", "吉尔伽美什"], cones: ["星火悄然闪耀", "所见即我"] },
+  { startsAt: Date.parse("2025-07-11T12:00:00+08:00"), characters: ["Saber", "Archer"], cones: [$t("simulation.pools.text_2045afcf6d"), $t("simulation.pools.text_a3005ad0ea")] },
+  { startsAt: Date.parse("2026-07-24T12:00:00+08:00"), characters: [$t("simulation.pools.text_043f19c4e6"), $t("simulation.pools.text_6dc9fe7660")], cones: [$t("simulation.pools.text_b0c2d83185"), $t("simulation.pools.text_62d9e186f7")] },
 ];
 
 function collaborationPool(kind: CollaborationWarpKind, time: number): WarpPool | undefined {
   const editions = fateWarps.filter(({ startsAt }) => time >= startsAt);
   if (!editions.length) return;
   const cone = kind === "collaboration-cone";
-  return { kind, title: `Fate[UBW] ${cone ? "光锥" : "角色"}联动跃迁`,
+  return { kind, title: $t("simulation.pools.text_118c4f060a", { "value1": cone ? "光锥" : "角色" }),
     featuredFivePool: editions.flatMap(edition => cone ? cones(5, edition.cones) : characters(5, edition.characters)),
     featuredFour: [], otherFive: cone ? standardCones : standardCharacters, otherFour: standard.otherFour, three };
 }
@@ -71,16 +74,16 @@ interface Banner {
 }
 
 const phaseOneFour = {
-  characters4: ["艾丝妲", "玲可", "驭空"],
-  cones4: ["宇宙市场趋势", "天才们的休憩", "黑夜如影随行"],
+  characters4: [$t("simulation.pools.text_364a25dddc"), $t("simulation.pools.text_98312068dc"), $t("simulation.pools.text_edc825860f")],
+  cones4: [$t("simulation.pools.text_a2aa5d4891"), $t("simulation.pools.text_2046de1dee"), $t("simulation.pools.text_ee465bd3e7")],
 };
 const start = "2026-11-11T11:00:00+08:00";
 const rerunEnd = "2026-12-02T12:00:00+08:00";
 const builtIn: readonly Banner[] = [
-  { ...phaseOneFour, slot: 1, start, end: "2026-12-22T15:00:00+08:00", character: "星神★阿哈", cone: "当第一声『阿哈』响起" },
-  { ...phaseOneFour, slot: 2, start, end: rerunEnd, character: "银狼LV.999", cone: "欢迎来到银河城" },
-  { ...phaseOneFour, slot: 3, start, end: rerunEnd, character: "火花", cone: "花花世界迷人眼" },
-  { ...phaseOneFour, slot: 4, start, end: rerunEnd, character: "爻光", cone: "当她决定看见" },
+  { ...phaseOneFour, slot: 1, start, end: "2026-12-22T15:00:00+08:00", character: $t("simulation.pools.text_b07fcdcffb"), cone: $t("simulation.pools.text_d3640b19e0") },
+  { ...phaseOneFour, slot: 2, start, end: rerunEnd, character: $t("simulation.pools.text_9e8cd31678"), cone: $t("simulation.pools.text_ac54764660") },
+  { ...phaseOneFour, slot: 3, start, end: rerunEnd, character: $t("simulation.pools.text_9f62cd8bb7"), cone: $t("simulation.pools.text_fc080f5ab4") },
+  { ...phaseOneFour, slot: 4, start, end: rerunEnd, character: $t("simulation.pools.text_accccf3cc5"), cone: $t("simulation.pools.text_a12225f546") },
 ];
 
 function list(value: unknown): value is string[] {
@@ -108,7 +111,7 @@ export function customWarpPool(kind: WarpKind, slot: number, pool: WarpPool | un
   if (!fiveName) return;
   const featuredFive = build(5, [fiveName])[0]!;
   const featuredFour = fourNames ? build(4, fourNames) : pool?.featuredFour ?? [];
-  return { kind, title: `${featuredFive.kind}自定义活动跃迁 · ${fiveName}`, featuredFive, featuredFour, three,
+  return { kind, title: $t("simulation.pools.text_3227effc77", { "kind": featuredFive.kind, "fiveName": fiveName }), featuredFive, featuredFour, three,
     otherFive: (isCone ? standardCones : standardCharacters).filter(item => item.name !== fiveName),
     otherFour: standard.otherFour.filter(item => !featuredFour.some(featured => featured.kind === item.kind && featured.name === item.name)),
   };
@@ -126,7 +129,7 @@ export function personalWarpPool(kind: WarpKind, slot: number, phase: LegacyPers
   const otherFive = (isCone ? standardCones : standardCharacters).filter(item => !names.includes(item.name));
   if (!otherFive.length) return;
   return {
-    kind, title: `${featuredFive.kind}个人活动跃迁 · ${featuredFive.name}`, featuredFive, featuredFivePool, featuredFour, otherFive, three,
+    kind, title: $t("simulation.pools.text_ef39a35fd3", { "kind": featuredFive.kind, "name": featuredFive.name }), featuredFive, featuredFivePool, featuredFour, otherFive, three,
     otherFour: standard.otherFour.filter(item => !featuredFour.some(featured => featured.kind === item.kind && featured.name === item.name)),
   };
 }
@@ -162,9 +165,9 @@ export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS
     let banners = builtIn;
     if (file) {
       const info = await stat(file);
-      if (!info.isFile() || info.size > 128 * 1024) throw new TypeError("跃迁活动卡池配置无效。");
+      if (!info.isFile() || info.size > 128 * 1024) throw new TypeError($t("simulation.pools.text_54be6f00f3"));
       const body: unknown = JSON.parse(await readFile(file, "utf8"));
-      if (!Array.isArray(body) || body.length > 128 || !body.every(isBanner)) throw new TypeError("跃迁活动卡池配置无效。");
+      if (!Array.isArray(body) || body.length > 128 || !body.every(isBanner)) throw new TypeError($t("simulation.pools.text_54be6f00f3"));
       banners = body;
     } else if (time < knownFrom || time >= knownUntil) {
       const periods = await readStarRailGachaSchedule(theme());
@@ -175,7 +178,7 @@ export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS
       }));
     }
     const active = banners.filter((row) => row.slot === slot && Date.parse(row.start) <= time && time < Date.parse(row.end));
-    if (active.length > 1) throw new TypeError("同一跃迁卡池编号的活动时间重叠。");
+    if (active.length > 1) throw new TypeError($t("simulation.pools.text_925e962e8b"));
     const banner = active[0];
     if (!banner) return;
     const isCone = kind === "cone";
@@ -183,7 +186,7 @@ export function createWarpPoolSource(file = Bun.env.LOTUS_STAR_RAIL_WARP_BANNERS
     const featuredFour = isCone ? cones(4, banner.cones4) : characters(4, banner.characters4);
     const isFeatured = (item: WarpItem) => featuredFour.some((rateUp) => rateUp.kind === item.kind && rateUp.name === item.name);
     return {
-      kind, title: `${featuredFive.kind}活动跃迁 · ${featuredFive.name}`, featuredFive, featuredFour, three,
+      kind, title: $t("simulation.pools.text_47797015e8", { "kind": featuredFive.kind, "name": featuredFive.name }), featuredFive, featuredFour, three,
       otherFive: (isCone ? standardCones : standardCharacters).filter((item) => item.name !== featuredFive.name),
       otherFour: standard.otherFour.filter((item) => !isFeatured(item)),
     };

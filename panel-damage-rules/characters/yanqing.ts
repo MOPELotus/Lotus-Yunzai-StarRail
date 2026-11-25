@@ -1,19 +1,22 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.yanqing.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.yanqing.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '天赋追加攻击',
+  title: $t("panel-damage-rules.characters.yanqing.text_3255f8ed04"),
   dmg: ({ talent }, dmg) => dmg(talent.t!['追加攻击']!, 't')
 }, {
-  title: '天赋附加伤害',
+  title: $t("panel-damage-rules.characters.yanqing.text_81891586ea"),
   dmg: ({ talent }, dmg) => dmg(talent.t!['回合附加伤害']!, 't')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.yanqing.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }]
 
@@ -21,31 +24,31 @@ export const defDmgIdx = 4
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '彦卿天赋：智剑连心提高[cpct]%暴击率和[cdmg]%爆伤',
+  title: $t("panel-damage-rules.characters.yanqing.text_11f04f8f51"),
   data: {
     cpct: ({ talent }) => talent.t!['暴击率提高']! * 100,
     cdmg: ({ talent }) => talent.t!['爆伤提高']! * 100
   }
 }, {
-  title: '终结技：释放终结技提高60%暴击率，智剑连心提高爆伤[qCdmg]%',
+  title: $t("panel-damage-rules.characters.yanqing.text_b316380e44"),
   data: {
     qCpct: 60,
     qCdmg: ({ talent }) => talent.q!['暴伤提高']! * 100
   }
 }, {
-  title: '彦卿4命：生命值大于80%时提高12%的冰抗穿透',
+  title: $t("panel-damage-rules.characters.yanqing.text_44e173de4e"),
   cons: 4,
   data: {
     kx: 12
   }
 }, {
-  title: '行迹-轻吕：触发暴击时，速度提高10%',
+  title: $t("panel-damage-rules.characters.yanqing.text_9b2e99c605"),
   tree: 3,
   data: {
     speedPct: 10
   }
 }, {
-  title: '行迹-颂冰：攻击对冰属性弱点敌人额外造成等同于彦卿30%攻击力的冰属性附加伤害',
+  title: $t("panel-damage-rules.characters.yanqing.text_9aa46d3adf"),
   tree: 1,
   data: {
     aPlus: ({ calc, attr }) => calc(attr.atk!) * 0.3,

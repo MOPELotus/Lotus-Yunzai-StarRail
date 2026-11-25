@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { fileURLToPath } from "node:url";
 import { loadOfficialArtwork } from "@lotus-yunzai/account";
 import { nativeImageRasterScale, renderPng } from "@lotus-yunzai/skia";
@@ -17,8 +20,8 @@ const theme = {
   tourn: { background: "rogue-background.png", heading: "tourn-header.webp", hue: true, icon: undefined },
 };
 const paths = [
-  ["丰饶", 0, -112], ["巡猎", 93, -74], ["毁灭", 132, 2], ["欢愉", 92, 71],
-  ["存护", -90, 71], ["记忆", -128, 2], ["虚无", -91, -74],
+  [$t("rogue-card.text_18db236249"), 0, -112], [$t("rogue-card.text_89ae343575"), 93, -74], [$t("rogue-card.text_85a5719200"), 132, 2], [$t("rogue-card.text_17f4b35418"), 92, 71],
+  [$t("rogue-card.text_d55d4d5989"), -90, 71], [$t("rogue-card.text_7a6335b379"), -128, 2], [$t("rogue-card.text_135fd7b0a1"), -91, -74],
 ] as const;
 
 async function readImage(name: string) {
@@ -135,7 +138,7 @@ export async function renderStarRailRogue(card: RogueCard, signal: AbortSignal, 
     y += 9;
   }
   const height = Math.max(210, y + 39);
-  if (height > rogueLogicalHeightLimit) throw new Error("星铁宇宙战绩卡超出单张渲染长度。");
+  if (height > rogueLogicalHeightLimit) throw new Error($t("rogue-card.text_c339909fdd"));
 
   const [background, heading, bytes, marker, locustRadar] = await Promise.all([
     readImage(layout.background), readImage(layout.heading), loadOfficialArtwork([...icons], { signal, transport }),
@@ -173,7 +176,7 @@ export async function renderStarRailRogue(card: RogueCard, signal: AbortSignal, 
     write(card.name, width / 2, 47, 28, gold, "center", true, true);
     write(card.identity, width / 2, 77, 15, silver, "center", false, false, width - 74);
     for (const draw of drawings) draw(ctx, write);
-    write("Lotus-Yunzai  ·  星铁战绩", width / 2, height - 18, 13, "#fff", "center");
+    write($t("rogue-card.text_cd4924c07a"), width / 2, height - 18, 13, "#fff", "center");
   }
 
   const pngAt = (density: number) => renderPng(width * density, height * density, ctx => {
@@ -186,7 +189,7 @@ export async function renderStarRailRogue(card: RogueCard, signal: AbortSignal, 
     const half = await pngAt(2);
     if (half.png.byteLength <= inlineImageByteLimit) return half;
   }
-  throw new Error("星铁宇宙战绩卡超出当前会话图片大小限制。");
+  throw new Error($t("rogue-card.text_376f6d4f1f"));
 }
 
 export function starRailRogueText(card: RogueCard) {

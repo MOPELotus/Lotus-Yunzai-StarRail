@@ -1,16 +1,19 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_aef3538851"),
   dmg: ({ talent, cons }, dmg) => {
     let count = cons >= 1 ? 6 : 5
     return dmg(talent.e!['技能伤害']! * count, 'e')
   }
 }, {
-  title: '战技+引爆Dot伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_25b29f823f"),
   check: ({ cons }) => cons >= 4,
   dmg: ({ talent, cons }, dmg) => {
     let eDmg = dmg(talent.e!['技能伤害']! * 6, 'e')
@@ -22,10 +25,10 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '天赋5层风化持续伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_6f104bba52"),
   dmg: ({ talent, cons }, dmg) => {
     let plusDot = cons >= 6 ? 0.15 : 0
     return dmg((talent.t!['回合开始受到伤害']! + plusDot) * 5, 'dot', 'skillDot')
@@ -36,16 +39,16 @@ export const defDmgIdx = 4
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '桑博1命：施放战技时，对敌方随机单体额外造成一次伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_9dbc21d0bf"),
   cons: 1
 }, {
-  title: '桑博4命：战技击中风化层数大于等于5层的目标时，立即产生相当于原风化伤害8%的伤害',
+  title: $t("panel-damage-rules.characters.sampo.text_46a15b38ca"),
   cons: 4
 }, {
-  title: '桑博6命：天赋施加的风化状态伤害倍率提高15%',
+  title: $t("panel-damage-rules.characters.sampo.text_f93fdda0ad"),
   cons: 6
 }, {
-  title: '惊喜礼盒：Q后使敌方目标受到的持续伤害提高[dotEnemydmg]%',
+  title: $t("panel-damage-rules.characters.sampo.text_1c7ba57ec5"),
   data: {
     dotEnemydmg: 30
   }

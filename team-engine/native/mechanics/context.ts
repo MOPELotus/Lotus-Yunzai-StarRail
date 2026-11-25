@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // HSR Nous hook namespaces and target algebra, adapted from the MIT-licensed pinned engine.
 import { ActorState, isEnemy } from "../combat/index.ts";
 import { map, number, string, strings } from "../compile/library.ts";
@@ -53,13 +56,13 @@ export class HookContext {
 
   bindRoll(key: string, scale = 1): number {
     const frame = this.#rollFrames.at(-1);
-    if (!frame) throw new Error("概率绑定须在行动结算中");
+    if (!frame) throw new Error($t("team-engine.native.mechanics.context.text_4e44e53f2b"));
     if (!frame.has(key)) frame.set(key, scale * (this.runner.mode === "roll" ? this.rng() : 0.49999999999999994));
     return frame.get(key)!;
   }
 
   rng = (): number => {
-    if (!this.runner.rng) throw new Error("战斗未提供随机源");
+    if (!this.runner.rng) throw new Error($t("team-engine.native.mechanics.context.text_a36109e420"));
     return this.runner.rng();
   };
 
@@ -132,7 +135,7 @@ export class HookContext {
     const actor = (ref: unknown) => this.actor(ref);
     const participants = [...this.runner.state.actors.values()];
     const sides = (faction: unknown, alive: boolean) => {
-      if (!["all", "ally", "enemy"].includes(String(faction))) throw new TypeError("战斗队伍筛选条件不正确");
+      if (!["all", "ally", "enemy"].includes(String(faction))) throw new TypeError($t("team-engine.native.mechanics.context.text_62e529876d"));
       return participants.filter(unit => (!alive || live(unit)) &&
         (faction === "all" || isEnemy(unit.actor) === (faction === "enemy")));
     };
@@ -232,12 +235,12 @@ export class HookContext {
         const id = string(key);
         if (!readonlyRoll) {
           const frame = this.#rollFrames.at(-1);
-          if (!frame) throw new Error("随机表达式须在行动结算中");
+          if (!frame) throw new Error($t("team-engine.native.mechanics.context.text_c356eabdd2"));
           if (!frame.has(id)) frame.set(id, this.rng());
           return frame.get(id)!;
         }
         const value = this.#rollFrames.at(-1)?.get(id);
-        if (value === undefined) throw new Error("条件表达式没有已绑定的随机值");
+        if (value === undefined) throw new Error($t("team-engine.native.mechanics.context.text_06012aa576"));
         return value;
       },
       count_team: (path: unknown = "", group: unknown = "") => {
@@ -293,14 +296,14 @@ export class HookContext {
     if (pool === "allies") return this.runner.actors(side).filter(allies);
     if (pool === "enemies") return this.runner.actors(side === "enemy" ? "player" : "enemy").filter(enemies);
     if (pool === "all") return [...this.#pool("allies", owner, payload), ...this.#pool("enemies", owner, payload)];
-    throw new TypeError("未知战斗选取范围 " + string(pool));
+    throw new TypeError($t("team-engine.native.mechanics.context.text_9a11081357") + string(pool));
   }
 
   targets(selector: unknown, owner: ActorState, payload: EventPayload, panelOf: PanelOf = actor => this.modifiers.panelOf(actor)): ActorState[] {
     const spec = typeof selector === "string"
       ? selector.startsWith("$event.") || selector === "$level" ? { pool: selector } : aliases[selector]
       : map(selector);
-    if (!spec) throw new TypeError("未知战斗选取方式 " + string(selector));
+    if (!spec) throw new TypeError($t("team-engine.native.mechanics.context.text_c430057cd6") + string(selector));
     let choices = this.#pool(spec.pool ?? "enemies", owner, payload);
     if (selector === "other_allies") choices = choices.filter(target => target !== owner);
     const candidate = (target: ActorState) => ({ it: this.#namespace(target, panelOf, true),
@@ -323,7 +326,7 @@ export class HookContext {
     const rawTake = spec.take ?? "all";
     const take = rawTake === "all" ? choices.length : typeof rawTake === "number" ? rawTake
       : this.evaluate(this.expression(rawTake, owner), owner, payload, { panelOf });
-    if (typeof take !== "number" || !Number.isInteger(take) || take < 0) throw new TypeError("选取数量须为非负整数");
+    if (typeof take !== "number" || !Number.isInteger(take) || take < 0) throw new TypeError($t("team-engine.native.mechanics.context.text_cc74897054"));
     if (spec.mode === "random" && this.runner.mode === "roll" && take < choices.length) {
       const sampled: ActorState[] = [];
       while (sampled.length < take) sampled.push(choices.splice(Math.floor(this.rng() * choices.length), 1)[0]!);

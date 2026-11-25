@@ -1,7 +1,10 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '战技千活伤害对三',
+  title: $t("panel-damage-rules.characters.evanescia.text_697c60e320"),
   params: { punchline: 1000 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -10,7 +13,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技千活伤害对单',
+  title: $t("panel-damage-rules.characters.evanescia.text_325d0f2f67"),
   params: { punchline: 1000 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -21,7 +24,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技千活伤害对三',
+  title: $t("panel-damage-rules.characters.evanescia.text_58c6702b5b"),
   params: { punchline: 1000 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -32,7 +35,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '狐狸老师50笑点对单',
+  title: $t("panel-damage-rules.characters.evanescia.text_03178e1b9e"),
   params: { punchline: 50 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -41,7 +44,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '狐狸老师50笑点对三',
+  title: $t("panel-damage-rules.characters.evanescia.text_1d26acfc68"),
   params: { punchline: 50 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -50,7 +53,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '80笑点欢愉技伤害',
+  title: $t("panel-damage-rules.characters.evanescia.text_902f89d4bd"),
   params: { punchline: 80 },
   dmg: ({ talent }, dmg) => dmg(talent.xe!['技能伤害']!, 'xe', 'elation')
 }]
@@ -59,51 +62,51 @@ export const defDmgIdx = 2
 export const mainAttr = 'atk,cpct,cdmg,recharge'
 
 export const buffs: Buff[] = [{
-  title: '天赋：绯英获得等同于暴击伤害20%的欢愉度',
+  title: $t("panel-damage-rules.characters.evanescia.text_a2eff9d8f8"),
   data: {
     joy: ({ attr }) => attr.cdmg! * 0.2
   }
 }, {
-  title: '行迹-瞰众乐：绯英的暴击率提高30%',
+  title: $t("panel-damage-rules.characters.evanescia.text_c322aa53c9"),
   tree: 1,
   data: {
     cpct: 30
   }
 }, {
-  title: '行迹-行裁断：狐狸老师】施放攻击时会额外对目标施加易伤，使其受到的伤害提高12%',
+  title: $t("panel-damage-rules.characters.evanescia.text_7e6d397d1e"),
   tree: 1,
   data: {
     enemydmg: 12
   }
 }, {
-  title: '笑点计算：计算笑点用',
+  title: $t("panel-damage-rules.characters.evanescia.text_76c960e299"),
   data: {
     punchline: ({ params }) => params.punchline
   }
 }, {
-  title: '绯英1魂：全属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.evanescia.text_5f826686dd"),
   cons: 1,
   data: {
     kx: 20
   }
 }, {
-  title: '绯英2魂：暴击伤害提高36%',
+  title: $t("panel-damage-rules.characters.evanescia.text_b68c66e5cf"),
   cons: 2,
   data: {
     cdmg: 36
   }
 }, {
-  title: '绯英4魂：绯英造成的伤害无视敌方目标[ignore]%的防御力',
+  title: $t("panel-damage-rules.characters.evanescia.text_fcafcb0932"),
   cons: 4,
   data: {
     ignore: 15
   }
 }, {
-  title: '绯英6魂：绯英造成的欢愉伤害增笑15%，每持有100点【好活当赏】额外增笑2%，最高计入1000点',
+  title: $t("panel-damage-rules.characters.evanescia.text_b6d948aa23"),
   cons: 6,
   data: {
     merrymakes: 35
   }
 }]
 
-export const createdBy = '欧阳青瓜'
+export const createdBy = $t("panel-damage-rules.characters.evanescia.text_7ad80046cc")

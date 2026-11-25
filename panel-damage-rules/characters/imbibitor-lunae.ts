@@ -1,7 +1,10 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_a900baa1d0"),
   dmg: ({ talent, cons }, dmg) => {
     // 2段伤害，比例3:7
     let dynamicDmg = cons >= 1 ? talent.t!['伤害提高']! * 100 * 2 : talent.t!['伤害提高']! * 100
@@ -14,7 +17,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '1级强普伤害',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_886f3909eb"),
   dmg: ({ talent, cons }, dmg) => {
     // 3段伤害，比例33:33:34
     let dynamicDmg = cons >= 1 ? talent.t!['伤害提高']! * 100 * 2 : talent.t!['伤害提高']! * 100
@@ -28,7 +31,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '2级强普伤害(扩散)',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_f3e5d5715f"),
   dmg: ({ talent, cons }, dmg) => {
     // 主目标5段伤害，比例20:20:20:20:20
     // 副目标2段伤害，比例50:50
@@ -49,7 +52,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '3级强普伤害(扩散)',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_c14afb8a18"),
   params: { level3A: true },
   dmg: ({ talent, cons }, dmg) => {
     // 主目标7段伤害，前六段比例14.2，最后一段14.8
@@ -77,7 +80,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害(扩散)',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_a8b5ec058a"),
   dmg: ({ talent, cons }, dmg) => {
     // 3段伤害，比例3:3:4
     let dynamicDmg = cons >= 1 ? talent.t!['伤害提高']! * 100 * 2 : talent.t!['伤害提高']! * 100
@@ -95,7 +98,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '奇缘追击伤害(全体)',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_b7aac5e6a9"),
   check: ({ exCons }) => !!exCons,
   dmg: ({ cons }, dmg) => {
     // 6段攻击全体500%攻击力，视为普攻伤害
@@ -107,36 +110,36 @@ export const defDmgIdx = 3
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '奇缘星魂-沧溟间，月落潮平：自身造成的伤害提高240%',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_fca9c14564"),
   check: ({ exCons }) => !!exCons,
   data: {
     dmg: 240
   }
 }, {
-  title: '行迹-起蛰：对拥有虚数属性弱点的敌人造成伤害时，暴击伤害提高24%',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_4572426354"),
   tree: 3,
   data: {
     cdmg: 24
   }
 }, {
-  title: '天赋-亢心：丹恒•饮月施放每段攻击后获得1层【亢心】，使自身造成的伤害提高[_dmg]%，该效果可以叠加6层，持续至自身回合结束。',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_ac27de7c10"),
   check: ({ cons }) => cons < 1,
   data: {
     _dmg: ({ talent }) => talent.t!['伤害提高']! * 100
   }
 }, {
-  title: '天赋-亢心：丹恒•饮月施放每段攻击后获得1层【亢心】，使自身造成的伤害提高[_dmg]%，该效果可以叠加10层，持续至自身回合结束。',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_c3b87e243b"),
   cons: 1,
   data: {
     _dmg: ({ talent }) => talent.t!['伤害提高']! * 100
   }
 }, {
-  title: '叱咤：施放2级或3级强化普攻时，从第4段攻击开始，每段攻击前获得一层叱咤，使暴击伤害提高[_cdmg]%，最多叠加4层',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_c61c373e67"),
   data: {
     _cdmg: ({ talent }) => talent.e!['暴击伤害提高']! * 100
   }
 }, {
-  title: '饮月6命：满Buff时使3级强普的虚数属性抗性穿透提高60%',
+  title: $t("panel-damage-rules.characters.imbibitor-lunae.text_fad66efe0b"),
   cons: 6,
   check: ({ params }) => params.level3A === true,
   data: {

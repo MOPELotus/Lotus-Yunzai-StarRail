@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { genshinTemplateFont } from "../../../lib/game-template-fonts.ts";
 import { builtinResourceDirectory } from "../../../lib/builtin-resources.ts";
 import { resolve } from "node:path";
@@ -20,11 +23,11 @@ type Options = StarRailCardOptions & {
   readonly transport?: NonNullable<Parameters<typeof loadOfficialArtwork>[1]>["transport"];
 };
 const groups = [
-  ["角色消耗", "avatar_consume"], ["行迹消耗", "skill_consume"], ["光锥消耗", "equipment_consume"],
+  [$t("growth.card.text_95ba9691ec"), "avatar_consume"], [$t("growth.card.text_8b1f839136"), "skill_consume"], [$t("growth.card.text_b642419a53"), "equipment_consume"],
 ] as const;
 
 export function growthCount(value: number) {
-  return value > 10_000 ? `${(value / 10_000).toFixed(1)} 万` : String(value);
+  return value > 10_000 ? $t("growth.card.text_f4b7dedb23", { "value1": (value / 10_000).toFixed(1) }) : String(value);
 }
 
 export function starRailGrowthText(model: StarRailGrowthSnapshot) {
@@ -32,8 +35,8 @@ export function starRailGrowthText(model: StarRailGrowthSnapshot) {
     row ? [`${row.name}  ${row.current} → ${row.target}`] : []);
   const materials = groups.flatMap(([name, key]) => model.materials[key].length ? [name,
     ...model.materials[key].map(item => `${item.name} × ${growthCount(item.total)}`)] : []);
-  return [`角色养成计算 · UID ${model.uid}`, ...(model.owned ? [] : ["未拥有该角色，按 Lv.1 计算。"]),
-    ...scales, ...(materials.length ? materials : ["已达到目标，无需额外材料。"])].join("\n");
+  return [$t("growth.card.text_75ef056b7d", { "uid": model.uid }), ...(model.owned ? [] : [$t("growth.card.text_9b6dc2edd0")]),
+    ...scales, ...(materials.length ? materials : [$t("growth.card.text_7e19f2afae")])].join("\n");
 }
 
 async function loadRowTexture(directory: string) {
@@ -104,7 +107,7 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
     entries.push({ name, top, rows: display });
   }
   const bottom = entries.length ? end + 4 : end + 43;
-  if (bottom > 7_800) throw new Error("星铁养成卡超出单张图片容量。");
+  if (bottom > 7_800) throw new Error($t("growth.card.text_fce93eb5d5"));
   const image = (url?: string) => url ? images.get(url) : undefined;
 
   const face = [font, genshinTemplateFont()].filter(Boolean).join(", ");
@@ -124,7 +127,7 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
     };
     fill(ctx, "#ffffff", 0, 0, width, bottom + 35);
     fill(ctx, titleColor, 15, 25, 163, 28, 7);
-    write("角色养成计算", 21, 40, 20, "#ffffff");
+    write($t("growth.card.text_4c727f443a"), 21, 40, 20, "#ffffff");
     fill(ctx, titleColor, 366, 25, 169, 28, 7);
     write("UID", 376, 40, 20, "#ffffff");
     write(model.uid, 527, 40, 20, "#ffffff", "right");
@@ -145,9 +148,9 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
     }
     if (model.rank) {
       fill(ctx, model.rank > 4 ? "#ff5722" : model.rank > 2 ? "#45b97c" : "#62a8ea", 28, 78, 35, 20, 5);
-      write(`${model.rank}魂`, 45, 88, 13, "#ffffff", "center");
+      write($t("growth.card.text_c0985f1db5", { "rank": model.rank }), 45, 88, 13, "#ffffff", "center");
     }
-    if (!model.owned) write("未拥有该角色，按 Lv.1 计算", 130, 165, 12, resultColor);
+    if (!model.owned) write($t("growth.card.text_79998e8a00"), 130, 165, 12, resultColor);
     for (const [i, skill] of model.skills.entries()) {
       const y = 205 + 72 * i;
       line("#f1eee5", 15, y, 520, 66, 7);
@@ -173,7 +176,7 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
     }
     const top = 204 + 72 * model.skills.length;
     line("#f2eee6", 15, top, 520, bottom - top, 5);
-    if (!entries.length) write("已达到目标，无需额外材料", 275, end + 17, 22, resultColor, "center", true);
+    if (!entries.length) write($t("growth.card.text_00f2efc2ce"), 275, end + 17, 22, resultColor, "center", true);
     for (const group of entries) {
       write(group.name, 275, group.top + 12, 17, "#8c7770", "center", true);
       fill(ctx, "#d9d3c7", 30, group.top + 25, 490, 1);
@@ -184,7 +187,7 @@ export async function renderStarRailGrowth(model: StarRailGrowthSnapshot, signal
         write(`× ${growthCount(item.total)}`, item.x + 55, item.y + 39, 16, resultColor);
       }
     }
-    write("Lotus-Yunzai · StarRail", 275, bottom + 18, 12, "#000", "center");
+    write($t("growth.card.text_00dfd4ad2c"), 275, bottom + 18, 12, "#000", "center");
   }
   return renderStarRailCard(width, bottom + 35, paint, renderOptions);
 }

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { withReadRetries } from "@lotus-yunzai/http";
 import { showcaseProviderNames } from "./panel-showcase.ts";
 import { readFile, stat } from "node:fs/promises";
@@ -22,11 +25,11 @@ const aliases: Readonly<Record<string, string>> = alias;
 const shortNames: Readonly<Record<string, string>> = abbr;
 const normalizeName = (name: string) => name.normalize("NFKC").toLowerCase().replace(/[·・•\s]/gu, "");
 const statTitles: Readonly<Record<string, string>> = {
-  hp: "生命值", hpPlus: "生命值", hpPct: "生命值", atk: "攻击力", atkPlus: "攻击力", atkPct: "攻击力",
-  def: "防御力", defPlus: "防御力", defPct: "防御力", speed: "速度", cpct: "暴击率", cdmg: "暴击伤害",
-  recharge: "能量恢复效率", heal: "治疗量加成", effPct: "效果命中", effDef: "效果抵抗", stance: "击破特攻",
-  phy: "物理伤害提高", fire: "火伤害提高", ice: "冰伤害提高", elec: "雷伤害提高", wind: "风伤害提高",
-  quantum: "量子伤害提高", imaginary: "虚数伤害提高",
+  hp: $t("panel-card.text_1a256e6376"), hpPlus: $t("panel-card.text_1a256e6376"), hpPct: $t("panel-card.text_1a256e6376"), atk: $t("panel-card.text_b84ee11f4f"), atkPlus: $t("panel-card.text_b84ee11f4f"), atkPct: $t("panel-card.text_b84ee11f4f"),
+  def: $t("panel-card.text_1cb579e6ba"), defPlus: $t("panel-card.text_1cb579e6ba"), defPct: $t("panel-card.text_1cb579e6ba"), speed: $t("panel-card.text_0e14d148b4"), cpct: $t("panel-card.text_d4b0baf955"), cdmg: $t("panel-card.text_15bccc3951"),
+  recharge: $t("panel-card.text_162e0c5da1"), heal: $t("panel-card.text_f4530f3f9e"), effPct: $t("panel-card.text_84c7536950"), effDef: $t("panel-card.text_c9a7dcf1f7"), stance: $t("panel-card.text_13d58c9c3a"),
+  phy: $t("panel-card.text_ec809f076e"), fire: $t("panel-card.text_5a1d44347f"), ice: $t("panel-card.text_26651a5e70"), elec: $t("panel-card.text_7aebbc2e90"), wind: $t("panel-card.text_0449077989"),
+  quantum: $t("panel-card.text_f48b79bd70"), imaginary: $t("panel-card.text_d2bdbd97d9"),
 };
 const showcaseKeys = ["hp", "atk", "def", "speed", "cpct", "cdmg", "dmg", "stance", "effPct", "effDef", "heal", "joy"];
 type Metadata = Awaited<ReturnType<typeof readTheme>>;
@@ -225,7 +228,7 @@ function preparedModel<Fields extends Json>(theme: Metadata,
     _styles_path: cssFile(resolve(packagedTheme) + sep),
     _theme_path: theme.defaultStyle ? cssFile(theme.root + sep) : "",
     _res_path: "", game: "sr", elem: "sr", bodyClass: theme.defaultStyle ? "original-theme" : "",
-    cardBrand: "Lotus-Yunzai · StarRail", sys: { scale: "" },
+    cardBrand: $t("panel-card.text_00dfd4ad2c"), sys: { scale: "" },
     groupRank: false, allowRank: false, rankCfg: {}, imgType: "png" as const,
     viewport: { width: 960, height: 900 }, scale: 1,
     ...fields,
@@ -261,7 +264,7 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
     }
     pages.push(preparedModel(theme, "profile-list", {
       chars, uid: snapshot.uid, profileSuffix: profileId === 1 ? "" : profileId, hasNew: updated,
-      msg: updated ? `获取角色面板数据成功，共 ${avatars.length} 位角色` : "",
+      msg: updated ? $t("panel-card.text_bb59489428", { "length": avatars.length }) : "",
       updateTime: { profile: formatDate(snapshot.updatedAt) }, servName: fieldsSource(snapshot),
     }));
   }
@@ -314,7 +317,7 @@ export async function makePanelPracticeCards(snapshot: PanelSnapshot, theme: Met
     const coneName = gear?.name || text(cone?.name);
     const coneType = text(cone?.type) || avatar.path;
     const weapon = gear && {
-      name: text(cone?.abbr) || coneName || `光锥 ${gear.id}`,
+      name: text(cone?.abbr) || coneName || $t("panel-card.text_f6357e85b2", { "id": gear.id }),
       level: gear.level, star: whole(cone?.star, 5), affix: gear.rank,
       icon: await localArt(theme, ["weapon", coneType, coneName, "icon-s.webp"]),
     };
@@ -360,9 +363,9 @@ export async function makePanelPracticeCards(snapshot: PanelSnapshot, theme: Met
 }
 
 function fieldsSource(snapshot: PanelSnapshot) {
-  if (snapshot.source === "miyoushe") return "米游社";
-  if (snapshot.source === "legacy") return "本地面板档案";
-  return `公开展板 · ${showcaseProviderNames[snapshot.source]}`;
+  if (snapshot.source === "miyoushe") return $t("panel-card.text_6ca05b2485");
+  if (snapshot.source === "legacy") return $t("panel-card.text_2115cf9237");
+  return $t("panel-card.text_b810a62afc", { "value1": showcaseProviderNames[snapshot.source] });
 }
 
 function coneDetails(cone: PanelAvatar["cone"], metadata: Json, commaGroup?: number) {
@@ -417,7 +420,7 @@ function detailTime(value: string | undefined) {
 }
 
 const legacySources: Readonly<Record<string, string>> = {
-  mys: "米游社", mysPanelHSR: "米游社", mysPanel: "米游社", homo: "Mihomo",
+  mys: $t("panel-card.text_6ca05b2485"), mysPanelHSR: $t("panel-card.text_6ca05b2485"), mysPanel: $t("panel-card.text_6ca05b2485"), homo: "Mihomo",
   enka: "Enka.Network", EnkaHSR: "Enka.Network", "avocado.wiki": "avocado.wiki",
 };
 
@@ -471,10 +474,10 @@ export async function makePanelDetailCard(
   const artSignal = equipmentLabel || localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = await readPanelCharacter(name, theme);
-  const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
+  const element = avatar.element || text(character.elem ?? meta?.elem) || $t("panel-card.text_a454f17872");
   const path = text(meta?.weapon) || avatar.path;
   const cone = avatar.cone, weapon = cone && object(theme.weapons[cone.id]);
-  const weaponName = cone?.name || text(weapon?.name) || (cone ? `光锥 ${cone.id}` : "");
+  const weaponName = cone?.name || text(weapon?.name) || (cone ? $t("panel-card.text_f6357e85b2", { "id": cone.id }) : "");
   const weaponType = text(weapon?.type) || path;
   const weaponFolder = text(weapon?.name) || weaponName;
   const imgs: Record<string, string> = {};
@@ -518,7 +521,7 @@ export async function makePanelDetailCard(
     const local = theme.relicById.get(part.id);
     const scored = score?.artis[row.slot];
     artis.push({
-      abbr: local?.abbr, name: part.name || local?.name || `遗器 ${part.slot}`, level: part.level ?? "",
+      abbr: local?.abbr, name: part.name || local?.name || $t("panel-card.text_fa4b218e67", { "slot": part.slot }), level: part.level ?? "",
       img: (local && await localArt(theme, local.asset)) || await remoteArt(part.image, artSignal),
       mark: scored?.mark, markClass: scored?.markClass,
       main: scored?.main ?? part.main, attrs: scored?.attrs ?? part.subs.map(stat => ({ ...stat, upNum: stat.times })),
@@ -570,7 +573,7 @@ export async function makePanelDetailCard(
 export async function scorePanelAvatarRelics(avatar: PanelAvatar, theme: Metadata, characterData?: Json, allowCustomizedSample = false) {
   const { name, abbr, meta } = lookup(avatar, theme);
   const character = characterData ?? await readPanelCharacter(name, theme);
-  const element = avatar.element || text(character.elem ?? meta?.elem) || "物理";
+  const element = avatar.element || text(character.elem ?? meta?.elem) || $t("panel-card.text_a454f17872");
   let speed = avatar.stats.find(stat => stat.key === "speed")?.value;
   if (!speed && name === "缇宝" && avatar.legacy) {
     const gear = avatar.cone && object(theme.weapons[avatar.cone.id]);
@@ -661,7 +664,7 @@ const artisKeyTitle = { ...statTitles, ...Object.fromEntries(Object.entries(reli
 async function panelRelicArtwork(part: PanelAvatar["relics"][number], theme: Metadata, signal: AbortSignal, localOnly = false) {
   const local = theme.relicById.get(part.id);
   const img = (local && await localArt(theme, local.asset)) || (!localOnly ? await remoteArt(part.image, signal) : "");
-  return { name: part.name || local?.name || `遗器 ${part.slot}`, img };
+  return { name: part.name || local?.name || $t("panel-card.text_fa4b218e67", { "slot": part.slot }), img };
 }
 
 export async function makePanelRelicCard(snapshot: PanelSnapshot, avatar: PanelAvatar, theme: Metadata, signal: AbortSignal,
@@ -723,7 +726,7 @@ export async function makePanelRelicListCard(snapshot: PanelSnapshot, theme: Met
     })));
   }
   signal.throwIfAborted();
-  const originalTitles = Object.fromEntries(Object.entries(damageAttribute).map(([title, key]) => [key, `${title}伤加成`]));
+  const originalTitles = Object.fromEntries(Object.entries(damageAttribute).map(([title, key]) => [key, $t("panel-card.text_c37ee79113", { "title": title })]));
   return preparedModel(theme, "artis-list", { uid: snapshot.uid, eligible, artis,
     artisKeyTitle: { ...artisKeyTitle, ...originalTitles }, scale: 1.4 });
 }

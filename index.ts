@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readGachaDisplaySettings } from "../../lib/gacha-display-settings.ts";
 import { matchPanelTransferCommand, type PanelTransferAccess } from "../../lib/panel-transfer-command.ts";
 import type { LegacyPanelRecoveryOffer } from "../../lib/legacy-panel-recovery-flow.ts";
@@ -91,15 +94,15 @@ const legacyHistoryRoots = ["Lotus-Plugin", "Lotus-ReFactor"].flatMap(directory 
 const recordsRoot = fileURLToPath(new URL("../../data/starRailGachaRows/", import.meta.url));
 const legacyRecordsRoot = fileURLToPath(new URL("../../data/srJson/", import.meta.url));
 const help = [
-  "星铁抽卡记录",
-  "#登录列表 可查看档案，#同步角色 可同步星铁角色。",
-  "*更新抽卡记录 或 *更新跃迁 可更新国服小程序范围内的五星和垫抽汇总。",
-  "*抽卡记录、*光锥记录、*常驻记录、*新手记录、*角色联动记录、*光锥联动记录 可查看指定卡池。",
-  "*全部记录 可查看各池，*版本统计 可按活动卡池期次查看。",
-  "私聊 *导入记录 可接收 UIGF / SRGF 文件，*导出记录 可发送本地逐抽档案。",
-  "私聊 *抽卡链接 可录入本档案的官方跃迁链接，更新本地逐抽。",
-  "*逐抽记录、*逐抽版本统计、*逐抽全部记录 查看本地逐抽档案。*跃迁记录 查看本地逐抽总览。",
-  "末尾加档案编号可选档案，如 *抽卡记录2。单池可加「全部」查看各页，如 *角色全部记录2。",
+  $t("index.text_a5195432b4"),
+  $t("index.text_60f47bfb7a"),
+  $t("index.text_4faa61b59e"),
+  $t("index.text_0091326249"),
+  $t("index.text_6b9d5478c4"),
+  $t("index.text_ae09639572"),
+  $t("index.text_7bb7cdc628"),
+  $t("index.text_c6f8bed3e1"),
+  $t("index.text_1629f8ef03"),
 ].join("\n");
 
 type GachaView = { readonly detail: StarRailGachaDetailPool } | { readonly version: VersionPool }
@@ -143,7 +146,7 @@ function matchGachaCommand(input: string) {
   const matched = updateCommand.exec(message);
   const recordArchive = message.startsWith(recordPrefix);
   const suffix = recordArchive ? message.slice(recordPrefix.length) : "";
-  const queryMessage = recordArchive ? `#星铁${recordDefault.test(suffix) ? "抽卡" : ""}${suffix}` : message;
+  const queryMessage = recordArchive ? `#星铁${recordDefault.test(suffix) ? $t("index.text_02d44306fd") : ""}${suffix}` : message;
   const query = matched ? undefined : matchGachaQuery(queryMessage);
   const legacy = matched || query ? undefined : legacyGachaQuery(message);
   const view = query ?? legacy;
@@ -187,7 +190,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     if (!reply || reply[0] === null || reply[1] === -2) return;
     const [raw, expiresAt] = reply;
     if (typeof raw !== "string" || typeof expiresAt !== "number" || !Number.isSafeInteger(expiresAt) || expiresAt <= 0) {
-      throw new TypeError("独立星铁旧模拟键没有有效的过期时间。");
+      throw new TypeError($t("index.text_7ed61dbdcb"));
     }
     return { raw, expiresAt };
   } });
@@ -203,7 +206,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     service.sync(qq, profileId, { signal: workflow ? AbortSignal.any([signal, workflow]) : signal }));
 
   async function query(qq: string, { profileId, view, all }: NonNullable<ReturnType<typeof matchGachaQuery>>, recordArchive: boolean, context: Pick<MessageEvent, "inlineImageByteLimit" | "forward">) {
-    if (!recordArchive && "special" in view && view.statistics) return "联动池和新手池请使用对应的记录指令。";
+    if (!recordArchive && "special" in view && view.statistics) return $t("index.text_9a649c9544");
     try {
       const role = await profiles.savedRole(qq, profileId, "sr");
       const { uid, nickname } = role;
@@ -211,14 +214,14 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       const raw = snapshot === null ? await archive.read({ qq, uid }, { legacyTimezone: starRailLegacyArchiveTimezone(role) }) : undefined;
       if (raw?.status === "unavailable") {
         if (recordArchive) {
-          const summary = raw.reason === "mirror" ? "旧显示镜像" : await hasDisplayHistory(qq, uid) ? "显示用汇总记录" : "";
+          const summary = raw.reason === "mirror" ? $t("index.text_fc8b7031ff") : await hasDisplayHistory(qq, uid) ? $t("index.text_e96a0b780b") : "";
           return summary
-            ? `UID:${uid} 本地只有${summary}，请通过 *导入记录${profileId === 1 ? "" : profileId} 导入真实逐抽文件。`
-            : `UID:${uid} 本地暂无逐抽档案，可使用 *导入记录${profileId === 1 ? "" : profileId}。`;
+            ? $t("index.text_9772199f71", { "uid": uid, "summary": summary, "value3": profileId === 1 ? "" : profileId })
+            : $t("index.text_d8c3917605", { "uid": uid, "value2": profileId === 1 ? "" : profileId });
         }
         snapshot = await history.readLegacy(qq, uid);
         if (snapshot === null) {
-          return `档案 ${profileId} 暂无星铁抽卡记录，请先使用 *更新抽卡记录${profileId === 1 ? "" : profileId}。`;
+          return $t("index.text_2ceb44ae2c", { "profileId": profileId, "value2": profileId === 1 ? "" : profileId });
         }
       }
       const themeDirectory = starRailGachaThemeDirectory();
@@ -234,13 +237,13 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           ? gachaPortraitCharacter(catalog.characters.values(), (await readLegacyPlayerPortrait("sr", uid, signal).catch(() => undefined))?.face)
           : undefined);
       const [{ face, avatar }, resolveItem, schedule, draws] = await Promise.all([
-        readGachaPlayerArt(themeDirectory, "sr", nickname || "开拓者", character, role.avatar, signal, roleQFace),
+        readGachaPlayerArt(themeDirectory, "sr", nickname || $t("index.text_865ee04ffd"), character, role.avatar, signal, roleQFace),
         rawArchive ? undefined : readStarRailGachaItems(themeDirectory, catalog),
         rawArchive || !("special" in view) ? readStarRailGachaSchedule(themeDirectory) : [],
         rawArchive && readStarRailRecordItems(themeDirectory, catalog).then((resolver) => starRailRecordDraws(rawArchive, resolver)),
       ]);
       const shared = { uid, face, now: new Date() };
-      const options = { ...shared, history: snapshot, resolveItem, face: nickname ? face : { ...face, name: "旅行者" } };
+      const options = { ...shared, history: snapshot, resolveItem, face: nickname ? face : { ...face, name: $t("index.text_4bf6868aa0") } };
       const resolvePool = resolveStarRailDetailPool(schedule);
       const resolveRecordPool = draws && resolveStarRailRecordPool(schedule);
       const display = !("special" in view) ? await readGachaDisplaySettings(new URL("../../", import.meta.url)) : undefined;
@@ -270,20 +273,20 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         return model && { kind: "version" as const, model };
       }
       const first = buildPage(all ? 1 : undefined);
-      if (!first) return `UID:${uid} 本地暂无该卡池抽卡记录。`;
+      if (!first) return $t("index.text_ff6d96492f", { "uid": uid });
       try {
         const total = first.model.pageInfo?.total ?? 1;
-        const title = first.kind === "version" ? `${first.model.poolName}统计，共${first.model.pageInfo?.count}期卡池`
-          : first.kind === "detail" ? `${first.model.poolName}池抽卡记录，共${first.model.gacha.stat.fiveNum}条五星`
-          : `${first.model.poolName === "全部" ? "全部卡池" : `${first.model.poolName}池`}抽卡记录，共${first.model.fiveNum}条五星`;
+        const title = first.kind === "version" ? $t("index.text_acbebaddd8", { "poolName": first.model.poolName, "count": first.model.pageInfo?.count })
+          : first.kind === "detail" ? $t("index.text_2eefd98a1a", { "poolName": first.model.poolName, "fiveNum": first.model.gacha.stat.fiveNum })
+          : $t("index.text_30a67bb7fc", { "value1": first.model.poolName === "全部" ? $t("index.text_5017bac5a2") : $t("index.text_d17cfde3c6", { "poolName": first.model.poolName }), "fiveNum": first.model.fiveNum });
         return await gachaImageReply({
-          total, title: `UID:${uid} ${title}，分${total}张图`, signal,
+          total, title: $t("index.text_f87fdb63c4", { "uid": uid, "title": title, "total": total }), signal,
           inlineImageByteLimit: context.inlineImageByteLimit, forward: context.forward,
           async verifyRole() { return (await profiles.savedRole(qq, profileId, "sr").catch(() => undefined))?.uid === uid; },
-          changedRoleMessage: "星铁档案角色已变化，请重新查询。",
+          changedRoleMessage: $t("index.text_0026c8033d"),
           render(page, scale) {
             const result = page === 1 ? first : buildPage(page);
-            if (!result) throw new Error("星铁抽卡记录缺少分页。");
+            if (!result) throw new Error($t("index.text_7750ce8a1f"));
             const options = { themeDirectory, scale, avatar, qFace: roleQFace };
             return result.kind === "record-special" ? renderStarRailRecordSpecial(result.model, options)
               : result.kind === "special" ? renderStarRailGachaSpecial(result.model, options)
@@ -292,16 +295,16 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           },
         });
       } catch {
-        if (!signal.aborted) return "星铁抽卡记录已读取，原版详情图暂时无法生成。";
+        if (!signal.aborted) return $t("index.text_98defd792a");
       }
     } catch (error) {
       if (signal.aborted) return;
       if (error instanceof ProfileError) {
-        if (error.code === "missing") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有同步星铁 UID。`;
+        if (error.code === "missing") return $t("index.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("index.text_9d881700c6", { "profileId": profileId });
       }
       if (error instanceof StarRailGachaArchiveError) return error.message;
-      return "星铁抽卡记录读取失败，请检查本地历史文件。";
+      return $t("index.text_127ecc1fee");
     }
   }
 
@@ -319,31 +322,31 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     },
     async fallbackFeatures(context: StarRailGachaFileContext) {
       const message = context.normalizedMessage;
-      if (matchPanelTransferCommand(message)?.game === "sr") return ["[starrail] 角色面板"];
+      if (matchPanelTransferCommand(message)?.game === "sr") return [$t("index.text_75c12439eb")];
       const customRankCommand = matchArkRankCommand(message);
-      if (customRankCommand && (!customRankCommand.game || customRankCommand.game === "sr")) return ["[starrail] 角色面板"];
-      if (matchStarRailShowcaseSettings(message)) return ["[starrail] 角色面板"];
-      if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return ["[gacha] 抽卡记录"];
-      if (matchesWarpCommand(message)) return ["[starrail] 模拟跃迁"];
-      if (matchGameCharacterAliasCommand(message)?.game === "sr") return ["[starrail] 角色别名"];
-      if (matchStarRailMonthly(message)) return ["[starrail] 星琼月收入"];
-      if (matchStarRailLedger(message)) return ["[starrail] 个人资产流水"];
+      if (customRankCommand && (!customRankCommand.game || customRankCommand.game === "sr")) return [$t("index.text_75c12439eb")];
+      if (matchStarRailShowcaseSettings(message)) return [$t("index.text_75c12439eb")];
+      if (starRailLinkEntry.test(message) || isStarRailGachaLinkMessage(message)) return [$t("index.text_5f636b7036")];
+      if (matchesWarpCommand(message)) return [$t("index.text_7fe95f7b2a")];
+      if (matchGameCharacterAliasCommand(message)?.game === "sr") return [$t("index.text_80d2e191e6")];
+      if (matchStarRailMonthly(message)) return [$t("index.text_7ed92097f3")];
+      if (matchStarRailLedger(message)) return [$t("index.text_c0370c0de7")];
       if (matchStarRailPersonalRecord(message)) return [];
-      if (starRailOnlineCommand.test(message)) return ["[starrail] 在线时长"];
-      if (parseStarRailTeamDamage(message)) return ["[starrail] 队伍伤害"];
-      if (parseStarRailGridFight(message)) return ["[starrail] 货币战争"];
-      if (matchStarRailGrowth(message)) return ["[starrail] 养成计算"];
-      if (parseStarRailRogue(message)) return ["[starrail] 宇宙战绩"];
-      if (matchPublicDamageRank(message, "sr")) return ["[starrail] 角色面板"];
+      if (starRailOnlineCommand.test(message)) return [$t("index.text_2c17f3e357")];
+      if (parseStarRailTeamDamage(message)) return [$t("index.text_f3dedd9220")];
+      if (parseStarRailGridFight(message)) return [$t("index.text_4357158e81")];
+      if (matchStarRailGrowth(message)) return [$t("index.text_7701d9f818")];
+      if (parseStarRailRogue(message)) return [$t("index.text_f3ec7dfdd7")];
+      if (matchPublicDamageRank(message, "sr")) return [$t("index.text_75c12439eb")];
       const panelCommand = parsePanelCommand(message);
-      if (panelCommand?.type === "discard" || panelCommand?.type === "extreme") return ["[starrail] 角色面板"];
+      if (panelCommand?.type === "discard" || panelCommand?.type === "extreme") return [$t("index.text_75c12439eb")];
       const rank = await resolveStarRailRelicRank(message);
       if (rank) {
         groupRankMatches.set(context, rank);
-        return ["[starrail] 角色面板"];
+        return [$t("index.text_75c12439eb")];
       }
       if (parseChallengeQuery(message) || parseStarRailPersonalRoster(message) || (panelCommand && panelCommand.type !== "detail")) return [];
-      if (!panelCommand && (matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message))) return ["[gacha] 抽卡记录"];
+      if (!panelCommand && (matchesStarRailGachaFiles(context) || helpCommand.test(message) || matchGachaCommand(message))) return [$t("index.text_5f636b7036")];
       return [];
     },
     async fallback(_message: string, context: StarRailGachaFileContext & StarRailGroupRankContext &
@@ -368,7 +371,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       const sources = matchStarRailShowcaseSettings(context.normalizedMessage);
       if (sources) return runStarRailShowcaseSettings(sources, context, signal);
       const original = starRailOriginalCommand(context.normalizedMessage);
-      if (original) return await panel.original(context) ?? (original === "explicit" ? "请引用当前会话中本人查询的星铁角色面板。" : undefined);
+      if (original) return await panel.original(context) ?? (original === "explicit" ? $t("index.text_22f0fa691a") : undefined);
       const linked = await gachaLink(context);
       if (linked !== undefined) return linked;
       if (matchesWarpCommand(context.normalizedMessage)) return simulate(context.normalizedMessage, context);
@@ -392,7 +395,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       if (challenge) {
         const userId = context.user_id;
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
-          return "请从登录档案对应的 QQ 会话使用星铁挑战战绩。";
+          return $t("index.text_30e59aeb81");
         }
         return queryStarRailChallenge(String(userId), challenge, profiles, client, signal, context.isNapCat,
           context.adapter === "milky" ? context.inlineImageByteLimit : undefined, !!context.forward);
@@ -408,7 +411,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       if (panelCommand && (panelCommand.type !== "showcase" || !panelCommand.name || await resolveStarRailCharacter(panelCommand.name))) {
         const userId = context.user_id;
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
-          return "请从登录档案对应的 QQ 会话使用星铁面板。";
+          return $t("index.text_ebb89ab276");
         }
         return panel(String(userId), panelCommand, context);
       }
@@ -426,28 +429,28 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       const { profileId, query: view, recordArchive } = command;
       const { user_id } = context;
       if (typeof user_id !== "number" || !Number.isSafeInteger(user_id) || user_id < 1) {
-        return "请从登录档案对应的 QQ 会话使用星铁抽卡记录。";
+        return $t("index.text_044e9e1792");
       }
       const qq = String(user_id);
       if (view) return query(qq, view, recordArchive, context);
       try {
         const result = await updateGacha(qq, profileId, () =>
-          context.reply(`正在更新星铁抽卡记录（档案 ${profileId}）。`));
-        if (!result) return "该档案的星铁抽卡记录正在更新。";
+          context.reply($t("index.text_984739da33", { "profileId": profileId })));
+        if (!result) return $t("index.text_2862a02274");
         try {
           const { png } = await renderStarRailGachaResult(result);
           return { type: "image" as const, file: png };
         } catch {
-          return `星铁抽卡记录更新完成，新增 ${result.added} 条五星记录。`;
+          return $t("index.text_268e82a103", { "added": result.added });
         }
       } catch (error) {
         if (signal.aborted) return;
         if (error instanceof StarRailGachaUpdateBusy) return error.message;
         if (error instanceof ProfileError) {
           if (error.code === "missing" || error.code === "login-required") {
-            return `请先登录档案 ${profileId}。`;
+            return $t("index.text_76720712c8", { "profileId": profileId });
           }
-          if (error.code === "role-missing") return `档案 ${profileId} 没有同步星铁 UID。`;
+          if (error.code === "role-missing") return $t("index.text_9d881700c6", { "profileId": profileId });
         }
         const limited = error instanceof GameRecordRequestError && error.reason === "rate-limited";
         const reason = limited ? "rate-limited"

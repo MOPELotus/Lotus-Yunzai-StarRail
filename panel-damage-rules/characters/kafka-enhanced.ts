@@ -1,24 +1,27 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [
   {
-    title: "战技直伤(扩散)",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_8334b4e9d5"),
     dmg: ({ talent }, dmg) => dmg(talent.e!["技能伤害"]! + talent.e!["相邻目标伤害"]! * 2, "e")
   }, {
-    title: "追加攻击直伤",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_57b2091c36"),
     dmg: ({ talent }, dmg) => dmg(talent.t!["技能伤害"]!, "t")
   }, {
-    title: "终结技直伤",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_d2f095bfae"),
     dmg: ({ talent }, dmg) => dmg(talent.q!["技能伤害"]!, "q")
   }, {
-    title: "纯DOT伤害",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_1dec26eaa5"),
     params: { isDot: true },
     dmg: ({ talent, cons }, dmg) => {
       const plusDot = cons >= 6 ? 1.56 : 0
       return dmg(talent.q!["持续伤害"]! + plusDot, "dot", "skillDot")
     }
   }, {
-    title: "行迹·荆棘-追击引爆DOT",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_0860cc3ed4"),
     tree: 3,
     params: { isDot: true },
     dmg: ({ talent, cons }, dmg) => {
@@ -33,7 +36,7 @@ export const details: DamageDetail[] = [
       }
     }
   }, {
-    title: "战技引爆DOT(全)",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_171432b491"),
     params: { isDot: true },
     dmg: ({ talent, cons }, dmg) => {
       const eDmg = dmg(talent.e!["技能伤害"]! + talent.e!["相邻目标伤害"]! * 2, "e")
@@ -51,7 +54,7 @@ export const details: DamageDetail[] = [
       }
     }
   }, {
-    title: "终结技引爆DOT",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_5dba19487f"),
     params: { isDot: true },
     dmg: ({ talent, cons }, dmg) => {
       const qDmg = dmg(talent.q!["技能伤害"]!, "q")
@@ -71,24 +74,24 @@ export const defDmgIdx = 6
 
 export const buffs: Buff[] = [
   {
-    title: "行迹-荆棘：天赋追加攻击额外造成80%引爆伤害",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_dfffaa1b2e"),
     tree: 3
   }, {
-    title: "卡芙卡Pro1命：施放攻击时，使目标受到的持续伤害提高[dotEnemydmg]%",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_28d823a6eb"),
     cons: 1,
     check: ({ params }) => params.isDot === true,
     data: {
       dotEnemydmg: 30
     }
   }, {
-    title: "卡芙卡Pro2命：在场时，我方全体造成的持续伤害提高[dotDmg]%",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_d984187a00"),
     cons: 2,
     check: ({ params }) => params.isDot === true,
     data: {
       dotDmg: 33
     }
   }, {
-    title: "卡芙卡Pro6命：触电伤害倍率提高156%",
+    title: $t("panel-damage-rules.characters.kafka-enhanced.text_0ea3e285e2"),
     cons: 6
   }
 ]

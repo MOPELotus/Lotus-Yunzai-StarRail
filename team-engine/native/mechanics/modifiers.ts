@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // HSR Nous modifier lifecycle and panel arithmetic, adapted from the MIT-licensed pinned engine.
 import { dotSnapshot, hitChance, isEnemy, shieldValue, type ActorState, type CombatModifier,
   type EffectivePanel, type DamageOverTime, type DamageInput } from "../combat/index.ts";
@@ -137,7 +140,7 @@ export class ModifierBook {
             if (expression) conditionAdds.push([key, Number(this.host.evaluate(expression, holder, {}, { panelOf: snapshot }))]);
           }
         } catch (error) {
-          this.host.warn(status.name + " 的条件数值无法计算，跳过此条件效果，" + String(error));
+          this.host.warn(status.name + $t("team-engine.native.mechanics.modifiers.text_8b599a6441") + String(error));
         }
       }
     }
@@ -201,7 +204,7 @@ export class ModifierBook {
     const id = string(spec.modifier_id), type = string(spec.modifier_type, "buff");
     const sourceId = source?.actor.id ?? "";
     const name = string(spec.name, id);
-    if (!id) throw new TypeError("状态缺少标识");
+    if (!id) throw new TypeError($t("team-engine.native.mechanics.modifiers.text_dd4ccca820"));
     const controlKind = string(spec.control_kind);
     const kind = string(spec.debuff_kind, controlKind ? "control" : type);
     if (kind !== "buff") {
@@ -223,14 +226,14 @@ export class ModifierBook {
     const durationSpec = map(spec.duration);
     const anchor = (durationSpec.tick_on === "$modifier.source" ? "source_turn_end" :
       string(spec.tick_anchor, "owner_turn_end")) as ModifierAnchor;
-    if (!validAnchors.has(anchor)) throw new TypeError(name + " 的计时方式不正确");
+    if (!validAnchors.has(anchor)) throw new TypeError(name + $t("team-engine.native.mechanics.modifiers.text_ff77c8ab55"));
     const maxStacks = number(spec.max_stack, 99);
     const stackMode = string(spec.stack_mode, "refresh");
     const dotExpr = model.expressions.get("dot_ratio_expr");
     let dot: DamageOverTime | undefined;
     if (type === "dot") {
       const ratio = number(spec.dot_ratio), element = string(spec.dot_element);
-      if (!source || !element || (!dotExpr && ratio <= 0)) throw new TypeError(name + " 的持续伤害声明不完整");
+      if (!source || !element || (!dotExpr && ratio <= 0)) throw new TypeError(name + $t("team-engine.native.mechanics.modifiers.text_b1ce359c35"));
       dot = { id, element, ratio, source, sourceAtk: this.panelOf(source).stats.atk, snapshot: dotSnapshot(this.host.rulebook, source, target, element,
         dotExpr ? undefined : ratio, number(spec.dot_base_chance, 1), actor => this.panelOf(actor)) };
     }

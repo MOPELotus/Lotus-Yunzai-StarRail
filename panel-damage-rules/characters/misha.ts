@@ -1,23 +1,26 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.misha.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害·单体',
+  title: $t("panel-damage-rules.characters.misha.text_81d833c7dd"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['单体伤害']!, 'e')
 }, {
-  title: '战技伤害·相邻目标',
+  title: $t("panel-damage-rules.characters.misha.text_f647479cc6"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['相邻目标伤害']!, 'e')
 }, {
-  title: '终结技伤害·10段',
+  title: $t("panel-damage-rules.characters.misha.text_3f873c200d"),
   dmg: ({ talent, cons }, dmg) => {
     let extraTd = cons >= 4 ? 0.06 : 0
     let td = (talent.q!['每段攻击伤害']! + extraTd) * 10
     return dmg(td, 'q')
   }
 }, {
-  title: '终结技伤害·15段',
+  title: $t("panel-damage-rules.characters.misha.text_994c65133d"),
   check: ({ cons }) => cons >= 1,
   dmg: ({ talent, cons }, dmg) => {
     let extraTd = cons >= 4 ? 0.06 : 0
@@ -30,28 +33,28 @@ export const mainAttr = 'atk,cpct,cdmg,dmg'
 export const defDmgIdx = 3
 
 export const buffs: Buff[] = [{
-  title: '行迹-锁接：释放终结技时，效果命中提高[effPct]%',
+  title: $t("panel-damage-rules.characters.misha.text_4b25374b30"),
   tree: 2,
   data: {
     effPct: 60
   }
 }, {
-  title: '行迹-传冲：对陷入冻结状态的敌人造成的暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.misha.text_dd4c8e3660"),
   tree: 3,
   data: {
     cdmg: 30
   }
 }, {
-  title: '米沙2命：降低目标防御力[enemyDef]%',
+  title: $t("panel-damage-rules.characters.misha.text_0f9efa993e"),
   cons: 2,
   data: {
     enemyDef: 16
   }
 }, {
-  title: '米沙4命：终结技每段攻击的伤害倍率提高6%',
+  title: $t("panel-damage-rules.characters.misha.text_a50b6536f0"),
   cons: 4
 }, {
-  title: '米沙6命：释放终结技时，自身造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.misha.text_7cd4164600"),
   cons: 6,
   data: {
     dmg: 30

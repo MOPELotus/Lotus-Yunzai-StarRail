@@ -1,15 +1,18 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 import { Format } from '../format.ts'
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_a900baa1d0"),
   dmg: ({ talent, attr, calc }, { basic }) => {
     const hp = calc(attr.hp!)
     return basic(talent.a!['技能伤害']! * hp, 'a')
   }
 }, {
-  title: '战技提高生命上限值',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_789e7606e1"),
   dmg: ({ talent, attr, calc }) => {
     return {
       avg: calc(attr.hp!) * talent.e!['生命上限提高']!,
@@ -17,7 +20,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技提高暴击率',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_022e6a0c08"),
   dmg: ({ talent }) => {
     return {
       avg: Format.percent(talent.e!['暴击率提高']!),
@@ -25,13 +28,13 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_b6a5fc7f30"),
   dmg: ({ talent, attr, calc }, { basic }) => {
     const hp = calc(attr.hp!)
     return basic(talent.q!['技能伤害']! * hp, 'q')
   }
 }, {
-  title: '终结技生命回复量',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_062180fb29"),
   tree: 2,
   dmg: ({ attr, calc }, { heal }) => heal(calc(attr.hp!) * 0.05 + 133)
 }]
@@ -40,20 +43,20 @@ export const mainAttr = 'cpct,cdmg,hp'
 export const defDmgIdx = 4
 
 export const buffs: Buff[] = [{
-  title: '战技Buff：生命上限提高[hpPlus]，暴击率提高[cpct]%',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_027897638a"),
   sort: 0,
   data: {
     hpPlus: ({ talent, attr, calc }) => calc(attr.hp!) * talent.e!['生命上限提高']!,
     cpct: ({ talent }) => talent.e!['暴击率提高']! * 100
   }
 }, {
-  title: '符玄1命：暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_051e203c2f"),
   cons: 1,
   data: {
     cdmg: 30
   }
 }, {
-  title: '符玄6命：终结技伤害提高[qPlus]',
+  title: $t("panel-damage-rules.characters.fu-xuan.text_3a9744806a"),
   cons: 6,
   data: {
     qPlus: ({ attr, calc }) => calc(attr.hp!) * 1.2

@@ -1,7 +1,10 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻对单60好活伤害',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_89d734171b"),
   params: { punchline: 60 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -10,7 +13,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技对单60好活伤害',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_ac1f1bc2ed"),
   params: { punchline: 60 },
   dmg: ({ talent }, dmg) => {
     return {
@@ -19,11 +22,11 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '120好活盲盒伤害',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_b87648cf35"),
   params: { punchline: 120, q: true },
   dmg: ({ talent }, dmg) => dmg(talent.q!['盲盒伤害']!, 'q', 'elation')
 }, {
-  title: '120好活强化普攻',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_3448b0c356"),
   params: { punchline: 120, a2: true, q: true },
   dmg: ({ talent }, dmg) => {
     return {
@@ -34,7 +37,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '120好活强普加3次超大剑',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_f3701b414f"),
   params: { punchline: 120, a2: true, q: true },
   dmg: ({ talent }, dmg) => {
     return {
@@ -45,7 +48,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '100笑点欢愉技伤害',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_9237d5d6f0"),
   params: { punchline: 100, xe: true, q: true },
   dmg: ({ talent }, dmg) => dmg(talent.xe2!['弹射伤害']! * 6, 'xe2', 'elation')
 }]
@@ -54,34 +57,34 @@ export const defDmgIdx = 5
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-假结局速通攻略：速度大于等于160时，使自身欢愉度提高50%，之后每超过1点速度使自身欢愉度提高2%',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_c34ff018d2"),
   tree: 1,
   data: {
     joy: ({ attr }) => attr.speed! >= 160 ? 50 + Math.min(Math.trunc((attr.speed! - 160) * 2), 200) : 0
   }
 }, {
-  title: '强化普攻加成：强化普攻期间造成的伤害提高原伤害的30%'
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_f80e269407")
 }, {
-  title: '笑点计算：计算笑点用',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_76c960e299"),
   data: {
     punchline: ({ params }) => params.punchline
   }
 }, {
-  title: '狼尊1魂：敌方目标受到的伤害提高[enemydmg]%',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_6b1c76ab4c"),
   check: ({ params }) => params.q === true,
   cons: 1,
   data: {
     enemydmg: 20
   }
 }, {
-  title: '狼尊4魂：【无敌玩家】状态下的欢愉技伤害额外计入5倍的笑点',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_4525606fb8"),
   check: ({ params }) => params.q && params.xe === true,
   cons: 4,
   data: {
     punchline: ({ params }) => (params.punchline as number) * 6
   }
 }, {
-  title: '狼尊6魂：强化普攻期间造成的欢愉伤害增笑[merrymakes]%，植入【禁限弱点】后抗性降低20%',
+  title: $t("panel-damage-rules.characters.silver-wolf-elation.text_faaa0d01fb"),
   check: ({ params }) => params.a2 === true,
   cons: 6,
   data: {
@@ -90,4 +93,4 @@ export const buffs: Buff[] = [{
   }
 }]
 
-export const createdBy = '欧阳青瓜'
+export const createdBy = $t("panel-damage-rules.characters.silver-wolf-elation.text_7ad80046cc")

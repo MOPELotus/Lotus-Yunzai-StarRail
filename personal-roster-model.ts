@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { gameCommandProfileId, type GameRole } from "@lotus-yunzai/account";
@@ -42,7 +45,7 @@ export function starRailRosterWeek(day: string, now: Date) {
   if (/今天|今日/u.test(day)) return new Date(shiftedTime).getUTCDay() || 7;
   if (/明天|明日/u.test(day)) return new Date(shiftedTime + 86_400_000).getUTCDay() || 7;
   const weekday = /周([1-6一二三四五六])/u.exec(day)?.[1];
-  if (weekday) return Number(weekday) || "一二三四五六".indexOf(weekday) + 1;
+  if (weekday) return Number(weekday) || $t("personal-roster-model.text_e7f1021cc2").indexOf(weekday) + 1;
 }
 
 function boundedId(value: unknown) {
@@ -119,7 +122,7 @@ async function avatarRow(row: Json, detail: PanelAvatar | undefined, theme: Them
   const name = text(catalog?.name) || detail?.name || text(row.name ?? row.name_mi18n ?? row.avatar_name);
   const level = whole(row.level, 80) ?? detail?.level;
   const rarity = whole(row.rarity, 5) ?? whole(catalog?.star, 5) ?? detail?.rarity;
-  if (!base || !level || !name) throw new Error("星铁角色名册的角色记录无效。");
+  if (!base || !level || !name) throw new Error($t("personal-roster-model.text_dc2b635aa3"));
   const rank = whole(row.rank ?? row.actived_constellation_num, 6) ?? detail?.rank;
   const cone = coneData(row, detail, theme);
   const [face, skills, sets, coneIcon] = await Promise.all([
@@ -144,7 +147,7 @@ function elapsed(days: number | undefined) {
   if (!days) return "";
   const years = Math.floor(days / 365), months = Math.floor(days % 365 / 30.41);
   const remainder = Math.floor(days % 365 % 30.41);
-  return [years && years + "年", months && months + "个月", remainder && remainder + "天"].filter(Boolean).join("");
+  return [years && years + $t("personal-roster-model.text_62ef900a8f"), months && months + $t("personal-roster-model.text_e5afd16c6a"), remainder && remainder + $t("personal-roster-model.text_49da61ceee")].filter(Boolean).join("");
 }
 
 export async function buildStarRailPersonalRoster(response: RosterResponse, role: GameRole,
@@ -152,7 +155,7 @@ export async function buildStarRailPersonalRoster(response: RosterResponse, role
   const panels = new Map<string, PanelAvatar>();
   for (const row of response.talents) {
     const key = boundedId(row.id ?? row.avatar_id);
-    if (!key || panels.has(key)) throw new Error("星铁行迹响应存在无效或重复的角色。");
+    if (!key || panels.has(key)) throw new Error($t("personal-roster-model.text_eac3ff3365"));
     panels.set(key, normalizePanel(role.uid, [{ ...row, id: key }]).avatars[0]!);
   }
   const seen = new Set<string>();
@@ -160,7 +163,7 @@ export async function buildStarRailPersonalRoster(response: RosterResponse, role
   for (const row of response.roster) {
     signal.throwIfAborted();
     const key = boundedId(row.id ?? row.avatar_id);
-    if (!key || seen.has(key)) throw new Error("星铁角色名册存在无效或重复的角色。");
+    if (!key || seen.has(key)) throw new Error($t("personal-roster-model.text_124032f2f6"));
     seen.add(key);
     all.push(await avatarRow(row, panels.get(key), theme));
   }
@@ -187,8 +190,8 @@ export async function buildStarRailPersonalRoster(response: RosterResponse, role
     nickname: response.summary.nickname || text(role.nickname, 60) || "#" + role.uid,
     level: response.summary.level ?? whole(role.level, 70), time,
     active: elapsed(response.summary.activeDays), banner, face,
-    stats: [["成就", response.summary.achievement], ["角色", Math.max(all.length, response.summary.avatarCount ?? 0)],
-      ["五星角色", all.filter(row => row.rarity === 5).length], ["金卡总数", gold]] as const,
+    stats: [[$t("personal-roster-model.text_52b0e1703d"), response.summary.achievement], [$t("personal-roster-model.text_c47b54e84e"), Math.max(all.length, response.summary.avatarCount ?? 0)],
+      [$t("personal-roster-model.text_6c7911d1da"), all.filter(row => row.rarity === 5).length], [$t("personal-roster-model.text_d2d186f90c"), gold]] as const,
   };
 }
 

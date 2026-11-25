@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { ChatFile, ChatFileResult } from "../../lib/chat-files.ts";
 import { createStarRailPanelArchive, panelDiscardedAt } from "./panel-discard.ts";
@@ -12,8 +15,8 @@ interface SignedStarRailExportRequest {
   readonly signal: AbortSignal;
 }
 
-const unauthorized = "星铁 UID 签名验证未通过或已过期，请在好友私聊重新验证。";
-const discarded = "此 UID 的旧星铁面板已删除，无法通过签名导出。";
+const unauthorized = $t("panel-signed-export.text_7c5e3b9314");
+const discarded = $t("panel-signed-export.text_c20b3795ad");
 
 export function createStarRailSignedPanelExport(lock: AcquireRoleArchiveLock, signal: AbortSignal, {
   archiveDirectory, legacyPanelDirectory,
@@ -23,7 +26,7 @@ export function createStarRailSignedPanelExport(lock: AcquireRoleArchiveLock, si
     const active = AbortSignal.any([signal, requester]);
     if (active.aborted) return;
     if (!/^[1-9]\d{0,15}$/u.test(qq) || !Number.isSafeInteger(Number(qq)) || !/^[1-9]\d{8,9}$/u.test(uid)) {
-      return "请输入明确的星铁 UID，再进行签名验证导出。";
+      return $t("panel-signed-export.text_a7587db4f3");
     }
     const authorized = async () => {
       active.throwIfAborted();
@@ -43,15 +46,15 @@ export function createStarRailSignedPanelExport(lock: AcquireRoleArchiveLock, si
       if (!await authorized()) return unauthorized;
       if (panelDiscardedAt(await archive.read(qq, uid))) return discarded;
       if (!await authorized()) return unauthorized;
-      if (!file) return `UID ${uid} 暂无可签名导出的本机旧星铁面板。`;
+      if (!file) return $t("panel-signed-export.text_dc49cf310a", { "uid": uid });
       const { name, bytes, format } = file;
       const outcome = await uploadFile({ name, bytes }).catch(() => "unknown");
       if (active.aborted) return;
-      if (outcome === "rejected") return "星铁面板文件发送失败，请检查网关的文件发送功能。";
-      if (outcome !== "confirmed") return "星铁面板文件发送结果未确认，请在当前会话查看。";
-      return `已导出 ${name}（${format}）。`;
+      if (outcome === "rejected") return $t("panel-signed-export.text_4314bb01b9");
+      if (outcome !== "confirmed") return $t("panel-signed-export.text_f9bbf47236");
+      return $t("panel-signed-export.text_b3621679ed", { "name": name, "format": format });
     } catch {
-      if (!active.aborted) return "星铁签名面板导出失败，请检查本机旧面板档案。";
+      if (!active.aborted) return $t("panel-signed-export.text_6c7b3968dc");
     }
   };
 }

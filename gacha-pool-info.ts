@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { readLiteralObjectExport } from "@lotus-yunzai/gacha/literal-exports";
@@ -7,10 +10,10 @@ import { readStarRailGachaSchedule, type StarRailGachaPeriod } from "./gacha-sch
 import { alias as characterAliases, abbr as characterAbbreviations } from "./panel-theme/character-alias.ts";
 
 const sections = [
-  { key: "char5", kind: "characters", star: 5, title: "五星角色" },
-  { key: "char4", kind: "characters", star: 4, title: "四星角色" },
-  { key: "weapon5", kind: "weapons", star: 5, title: "五星武器" },
-  { key: "weapon4", kind: "weapons", star: 4, title: "四星武器" },
+  { key: "char5", kind: "characters", star: 5, title: $t("gacha-pool-info.text_6c7911d1da") },
+  { key: "char4", kind: "characters", star: 4, title: $t("gacha-pool-info.text_2ae9e8f1f1") },
+  { key: "weapon5", kind: "weapons", star: 5, title: $t("gacha-pool-info.text_77eeb23906") },
+  { key: "weapon4", kind: "weapons", star: 4, title: $t("gacha-pool-info.text_2388a52b6d") },
 ] as const;
 const version = /^(?:\d+\.)+\d+(?:上半|下半)?$/u;
 const legacyReprintCommand = /^#星铁([^\s#\p{Cc}\p{Cf}]{1,60})复刻$/u;
@@ -19,12 +22,12 @@ const oneDay = 86_400_000;
 // First Fate collaboration roster from thisee/xhh at f898ce6d08ee7a09bede98ef6e9f493d770560d0.
 // Version 3.4 official update confirms the July 11 opening time (HoYoverse news 157441).
 const firstCollaboration: StarRailGachaPeriod = {
-  version: "联动1.0", half: "", from: "2025-07-11 12:00:00", to: "未知",
-  char5: ["Saber", "Archer"], weapon5: ["没有回报的加冕", "理想燃烧的地狱"],
+  version: $t("gacha-pool-info.text_95629ac9b8"), half: "", from: "2025-07-11 12:00:00", to: $t("gacha-pool-info.text_4d8c1c5b42"),
+  char5: ["Saber", "Archer"], weapon5: [$t("gacha-pool-info.text_2045afcf6d"), $t("gacha-pool-info.text_a3005ad0ea")],
 };
-const help = ["星铁历史卡池", "*3.0卡池 查询整版，*4.1下半卡池 查询单期。",
-  "*白厄卡池、*舞舞舞卡池 查看角色或光锥历次入池，末尾加「详情」或使用「跃迁」显示全套卡池。",
-  "*联动卡池、*联动跃迁 查看已收录的首期联动卡池。"].join("\n");
+const help = [$t("gacha-pool-info.text_b8a667f3bf"), $t("gacha-pool-info.text_f91a1a629a"),
+  $t("gacha-pool-info.text_9162a352d2"),
+  $t("gacha-pool-info.text_17703a2f99")].join("\n");
 
 type Section = typeof sections[number];
 type Kind = Section["kind"];
@@ -86,7 +89,7 @@ function findItem(items: readonly CatalogItem[], name: string) {
 }
 
 // The 4.7 first-half source spells the cataloged light cone with this variant.
-const sourceNames = new Map([["欢迎来的银河城", "欢迎来到银河城"]]);
+const sourceNames = new Map([["欢迎来的银河城", $t("gacha-pool-info.text_ac54764660")]]);
 function fromPeriod(items: readonly CatalogItem[], name: string) {
   return findItem(items, sourceNames.get(name) ?? name);
 }
@@ -117,7 +120,7 @@ function withFirstCollaboration(catalog: Catalog): Catalog {
   return {
     characters: append("characters", firstCollaboration.char5, ["1014", "1015"], characterAliases, characterAbbreviations),
     weapons: append("weapons", firstCollaboration.weapon5, ["23045", "23046"],
-      { "没有回报的加冕": "saber专武", "理想燃烧的地狱": "archer专武" }),
+      { "没有回报的加冕": $t("gacha-pool-info.text_a01be619e7"), "理想燃烧的地狱": $t("gacha-pool-info.text_41f2c42f94") }),
   };
 }
 
@@ -130,13 +133,13 @@ function reprint(list: readonly StarRailGachaPeriod[], now: number): GachaPoolCa
   let unknownEnd = false;
   for (const { from, to } of list) {
     const start = poolTime(from), end = poolTime(to);
-    if (start <= now && now <= end) return { up: true, days: 0, text: "该角色/武器正在UP" };
+    if (start <= now && now <= end) return { up: true, days: 0, text: $t("gacha-pool-info.text_76977879b7") };
     if (start <= now && !Number.isFinite(end)) unknownEnd = true;
     if (end < now) latestEnd = Math.max(latestEnd, end);
   }
   if (unknownEnd || !Number.isFinite(latestEnd)) return;
   const days = Math.floor((now - latestEnd) / oneDay);
-  return { up: false, days, text: `该角色/武器已 ${days} 天未复刻` };
+  return { up: false, days, text: $t("gacha-pool-info.text_236a3fcfdf", { "days": days }) };
 }
 
 function formatPeriod(period: StarRailGachaPeriod, catalog: Catalog, target?: CatalogItem): CardPeriod {
@@ -183,32 +186,32 @@ export async function readStarRailPoolInfo(root: string, query: Query, now = Dat
 export async function readStarRailReprint(root: string, item: string, now = Date.now()) {
   const [periods, catalog] = await Promise.all([readStarRailGachaSchedule(root), readPoolItems(root)]);
   const history = itemHistory(periods, catalog, item, item.replace(/老婆|老公|(18|[1-9])[0-9]{8}/gu, ""));
-  if (!history) return `未找到 ${item} 的复刻信息。`;
+  if (!history) return $t("gacha-pool-info.text_3a8943e7ca", { "item": item });
   const name = history.target.card.name;
-  if (history.kind === "characters" && permanentCharacters.has(name)) return "常驻角色不支持查询";
+  if (history.kind === "characters" && permanentCharacters.has(name)) return $t("gacha-pool-info.text_169eb52154");
   const ordered = history.selected.sort((a, b) => poolTime(b.from) - poolTime(a.from) || poolTime(a.to) - poolTime(b.to));
   const latest = ordered[0];
-  if (!latest) return `未找到 ${name} 的复刻信息。`;
+  if (!latest) return $t("gacha-pool-info.text_358d1b8102", { "name": name });
   const chinaDay = (time: number) => Math.floor((time + 8 * 3_600_000) / oneDay);
   const today = chinaDay(now);
   const before = chinaDay(poolTime(latest.from)) - today;
   const after = chinaDay(poolTime(latest.to)) - today;
-  const status = after < 0 ? `${-after}天未复刻` : before > 0 ? `下期UP，还有${before}天开启卡池`
-    : `当期UP，${after ? `还有${after}天` : "今天"}结束卡池`;
+  const status = after < 0 ? $t("gacha-pool-info.text_d7693df1b7", { "value1": -after }) : before > 0 ? $t("gacha-pool-info.text_3a82d6e00c", { "before": before })
+    : $t("gacha-pool-info.text_cd98cf1512", { "value1": after ? $t("gacha-pool-info.text_d524130036", { "after": after }) : $t("gacha-pool-info.text_d5f5a7a010") });
   const roster = sections.filter(section => section.kind === history.kind);
-  const pools = ordered.map(period => [`所属版本：${period.version} ${period.half}`,
+  const pools = ordered.map(period => [$t("gacha-pool-info.text_55b639ccd9", { "version": period.version, "half": period.half }),
     ...roster.flatMap(({ key, star }) => {
       const names = period[key]?.map(entry => fromPeriod(catalog[history.kind], entry)?.card.name ?? entry);
-      return names?.length ? [`${star === 5 ? "五星" : "四星"}UP：${names.join("，")}`] : [];
-    }), `开始时间：${period.from}`, `结束时间：${period.to}`].join("\n"));
-  return { type: "forward" as const, nodes: [`${name}卡池详情`, status, ...pools] };
+      return names?.length ? [`${star === 5 ? $t("gacha-pool-info.text_789a6953ec") : $t("gacha-pool-info.text_1077b809a5")}UP：${names.join("，")}`] : [];
+    }), $t("gacha-pool-info.text_a0169e92ef", { "from": period.from }), $t("gacha-pool-info.text_7ed2671010", { "to": period.to })].join("\n"));
+  return { type: "forward" as const, nodes: [$t("gacha-pool-info.text_df9624fa97", { "name": name }), status, ...pools] };
 }
 
 export async function queryStarRailPoolInfo(message: string, signal: AbortSignal) {
   if (signal.aborted) return;
   const legacy = legacyReprintCommand.exec(message.trim())?.[1];
   if (legacy) {
-    const reply = await readStarRailReprint(starRailGachaThemeDirectory(), legacy).catch(() => "星铁历史卡池暂时无法读取，请检查本地卡池资料。");
+    const reply = await readStarRailReprint(starRailGachaThemeDirectory(), legacy).catch(() => $t("gacha-pool-info.text_ab8bdabd13"));
     if (!signal.aborted) return reply;
     return;
   }
@@ -221,10 +224,10 @@ export async function queryStarRailPoolInfo(message: string, signal: AbortSignal
   try {
     model = await readStarRailPoolInfo(themeDirectory, query);
   } catch {
-    if (!signal.aborted && explicit) return "星铁历史卡池暂时无法读取，请检查本地卡池资料。";
+    if (!signal.aborted && explicit) return $t("gacha-pool-info.text_ab8bdabd13");
   }
   if (signal.aborted) return;
-  if (!model) return explicit ? `未找到 ${query.type === "version" ? `星铁${query.version}${query.half}` : query.type === "collaboration" ? "星铁联动" : query.item} 的卡池信息。` : undefined;
+  if (!model) return explicit ? $t("gacha-pool-info.text_006da0c482", { "value1": query.type === "version" ? $t("gacha-pool-info.text_cea61f8f9e", { "version": query.version, "half": query.half }) : query.type === "collaboration" ? $t("gacha-pool-info.text_77c68989a8") : query.item }) : undefined;
   try {
     const { png } = await renderGachaPoolCard(model, { themeDirectory });
     if (!signal.aborted) return { type: "image" as const, file: png };
@@ -232,7 +235,7 @@ export async function queryStarRailPoolInfo(message: string, signal: AbortSignal
     if (!signal.aborted) return [model.reprint?.text, ...model.pools.map((period) => {
       const names = period.groups.flatMap((group) => group.rows.flatMap((row) => row.map(({ name }) => name))).join("、");
       const title = [period.version, period.half].filter(Boolean).join(" ");
-      return `${title} · ${period.from} 至 ${period.to}${names ? `\n${names}` : ""}`;
+      return $t("gacha-pool-info.text_cb974a6df3", { "title": title, "from": period.from, "to": period.to, "value4": names ? `\n${names}` : "" });
     })].filter(Boolean).join("\n");
   }
 }

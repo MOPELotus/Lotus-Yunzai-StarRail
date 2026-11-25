@@ -1,7 +1,10 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '强化普攻对三击破(精英怪)',
+  title: $t("panel-damage-rules.characters.fugue.text_d9539e2a91"),
   check: ({ cons }) => cons < 6,
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg1 = dmg(talent.a2!['技能伤害']!, 'a')
@@ -13,7 +16,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '持【狐祈】强化普攻对三击破(精英怪)',
+  title: $t("panel-damage-rules.characters.fugue.text_d118433b2a"),
   params: { eBuff: true },
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg1 = dmg(talent.a2!['技能伤害']!, 'a')
@@ -25,7 +28,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '破韧后强化普攻对三伤害',
+  title: $t("panel-damage-rules.characters.fugue.text_be5706f948"),
   check: ({ cons }) => cons < 6,
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg1 = dmg(talent.a2!['技能伤害']!, 'a')
@@ -41,7 +44,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '持【狐祈】破韧后强化普攻对三伤害',
+  title: $t("panel-damage-rules.characters.fugue.text_36fb6335fc"),
   params: { eBuff: true },
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg1 = dmg(talent.a2!['技能伤害']!, 'a')
@@ -57,7 +60,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技对三击破(精英怪)',
+  title: $t("panel-damage-rules.characters.fugue.text_82d5db4189"),
   check: ({ cons }) => cons < 6,
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg = dmg(talent.q!['技能伤害']!, 'q')
@@ -68,7 +71,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '持【狐祈】终结技对三击破(精英怪)',
+  title: $t("panel-damage-rules.characters.fugue.text_d6e0b9a132"),
   params: { eBuff: true },
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg = dmg(talent.q!['技能伤害']!, 'q')
@@ -79,7 +82,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '破韧后终结技对三伤害',
+  title: $t("panel-damage-rules.characters.fugue.text_4c1922dd0e"),
   check: ({ cons }) => cons < 6,
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg = dmg(talent.q!['技能伤害']!, 'q')
@@ -92,7 +95,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '持【狐祈】破韧后终结技对三伤害',
+  title: $t("panel-damage-rules.characters.fugue.text_8d92107bcd"),
   params: { eBuff: true },
   dmg: ({ talent, attr, cons }, dmg) => {
     let atkDmg = dmg(talent.q!['技能伤害']!, 'q')
@@ -110,27 +113,27 @@ export const mainAttr = 'atk,stance'
 export const defDmgIdx = 7
 
 export const buffs: Buff[] = [{
-  title: '忘归人战技：使指定我方单体击破特攻提高[stance]%，使敌方防御降低[enemyDef]%',
+  title: $t("panel-damage-rules.characters.fugue.text_4d3e6d24f5"),
   check: ({ params }) => params.eBuff === true,
   data: {
     stance: ({ talent }) => talent.e!['击破特攻提高']! * 100,
     enemyDef: ({ talent }) => talent.e!['防御力降低']! * 100
   }
 }, {
-  title: '行迹-涂山玄设：使自身击破特攻提高[stance]%',
+  title: $t("panel-damage-rules.characters.fugue.text_72727454b8"),
   tree: 2,
   data: {
     stance: 30
   }
 }, {
-  title: '忘归人1魂：持有【狐祈】的我方目标，弱点击破效率提高50%',
+  title: $t("panel-damage-rules.characters.fugue.text_fb09b0e415"),
   cons: 1
 }, {
-  title: '忘归人4魂：持有【狐祈】的我方目标，造成的击破伤害提高20%',
+  title: $t("panel-damage-rules.characters.fugue.text_636159e985"),
   cons: 4
 },{
-  title: '忘归人6魂：忘归人的弱点击破效率提高50.0%。【狐祈】效果对我方全体生效。',
+  title: $t("panel-damage-rules.characters.fugue.text_ebb8619264"),
   cons: 6
 }]
 
-export const createdBy = '五里徘徊'
+export const createdBy = $t("panel-damage-rules.characters.fugue.text_12dc7e3fa4")

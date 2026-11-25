@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { join } from "node:path";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { validWarpPoolName } from "./settings.ts";
@@ -27,36 +30,36 @@ function record(value: unknown): Record<string, unknown> | undefined {
 
 function checkedNames(value: unknown): string[] {
   if (value === undefined) return [];
-  if (!Array.isArray(value) || value.length > 20 || !value.every(validWarpPoolName)) throw new TypeError("个人跃迁卡池名单无效。");
+  if (!Array.isArray(value) || value.length > 20 || !value.every(validWarpPoolName)) throw new TypeError($t("simulation.personal-pools.text_050559e78f"));
   return [...new Set(value)];
 }
 
 function legacyTime(value: unknown): number | undefined {
   if (value === undefined) return;
-  if (typeof value !== "string") throw new TypeError("个人跃迁卡池日期无效。");
+  if (typeof value !== "string") throw new TypeError($t("simulation.personal-pools.text_01eaadffb9"));
   const normal = /^\d{4}-\d\d-\d\d[ T]\d\d:\d\d:\d\d$/u.test(value)
     ? value.replace(" ", "T") + "+08:00" : value;
-  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:Z|[+-]\d\d:\d\d)$/u.test(normal)) throw new TypeError("个人跃迁卡池日期无效。");
+  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:Z|[+-]\d\d:\d\d)$/u.test(normal)) throw new TypeError($t("simulation.personal-pools.text_01eaadffb9"));
   const time = Date.parse(normal);
-  if (!Number.isSafeInteger(time)) throw new TypeError("个人跃迁卡池日期无效。");
+  if (!Number.isSafeInteger(time)) throw new TypeError($t("simulation.personal-pools.text_01eaadffb9"));
   return time;
 }
 
 function phase(raw: unknown, legacy: boolean): LegacyPersonalPhase {
   const row = record(raw);
-  if (!row) throw new TypeError("个人跃迁卡池须为对象。");
+  if (!row) throw new TypeError($t("simulation.personal-pools.text_6effed0111"));
   const start = legacy ? legacyTime(row.startTime) : row.start;
   const end = legacy ? legacyTime(row.endTime) : row.end;
   if ((start !== undefined && (typeof start !== "number" || !Number.isSafeInteger(start))) ||
       (end !== undefined && (typeof end !== "number" || !Number.isSafeInteger(end))) ||
-      (start !== undefined && end !== undefined && start >= end)) throw new TypeError("个人跃迁卡池活动时间无效。");
+      (start !== undefined && end !== undefined && start >= end)) throw new TypeError($t("simulation.personal-pools.text_2be3bc6375"));
   const names = Object.fromEntries(pools.map(key => [key, checkedNames(row[key])])) as Record<(typeof pools)[number], string[]>;
-  if (!names.up5.length && !names.up5_2.length && !names.weapon5.length) throw new TypeError("个人跃迁卡池缺少五星名单。");
+  if (!names.up5.length && !names.up5_2.length && !names.weapon5.length) throw new TypeError($t("simulation.personal-pools.text_2b72efbff7"));
   return { ...names, ...(start !== undefined ? { start } : {}), ...(end !== undefined ? { end } : {}) };
 }
 
 function parsePhases(value: unknown, legacy: boolean) {
-  if (!Array.isArray(value) || !value.length || value.length > 128) throw new TypeError("个人跃迁卡池期数无效。");
+  if (!Array.isArray(value) || !value.length || value.length > 128) throw new TypeError($t("simulation.personal-pools.text_1de1f595d1"));
   return value.map(row => phase(row, legacy));
 }
 
@@ -79,12 +82,12 @@ export function pickPersonalPhase(phases: readonly LegacyPersonalPhase[], at: nu
 
 export function createPersonalWarpPoolReader(directory: string, lockFile: AcquireRoleArchiveLock) {
   const archive = createRoleJsonArchive(join(directory, personalWarpPoolFolder), lockFile,
-    { subject: "个人跃迁卡池", lockSuffix: "personal-warp-pool", maxBytes: personalWarpPoolFileLimit, rejectNull: true });
+    { subject: $t("simulation.personal-pools.text_f20d87a853"), lockSuffix: "personal-warp-pool", maxBytes: personalWarpPoolFileLimit, rejectNull: true });
   return async (qq: string, at: number) => {
     const value = await archive.read(qq, "1");
     if (value === null) return;
     const saved = record(value);
-    if (saved?.version !== 1) throw new TypeError("个人跃迁卡池存档版本无效。");
+    if (saved?.version !== 1) throw new TypeError($t("simulation.personal-pools.text_cdc1b12ba9"));
     return pickPersonalPhase(parsePhases(saved.phases, false), at);
   };
 }

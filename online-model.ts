@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { StarRailPowerRecovery } from "@lotus-yunzai/hoyo-client";
 
 const minutesPerDay = 1_440;
@@ -49,7 +52,7 @@ export function starRailOnlineReport(recoveries: readonly StarRailPowerRecovery[
   let oldest = today;
   for (const { time, count } of recoveries) {
     const minute = chinaCivilMinute(time);
-    if (minute === undefined || minute > todayMinute) throw new Error("官方星铁开拓力流水的恢复日期无效。");
+    if (minute === undefined || minute > todayMinute) throw new Error($t("online-model.text_4886f35de6"));
     oldest = Math.min(oldest, Math.floor(minute / minutesPerDay));
     if (count === 1) samples.add(minute);
   }
@@ -77,9 +80,9 @@ export function starRailOnlineReport(recoveries: readonly StarRailPowerRecovery[
     const covered = day >= oldest && day <= today;
     const minutes = daily.get(day) ?? 0;
     const x = Math.floor((day - weekStart) / 7) * 12 + 30, y = date.getUTCDay() * 17 + 43;
-    if (date.getUTCDate() === 1) months.push({ x, label: `${date.getUTCMonth() + 1}月` });
+    if (date.getUTCDate() === 1) months.push({ x, label: $t("online-model.text_fa4962f757", { "value1": date.getUTCMonth() + 1 }) });
     cells.push({ x, y, color: covered ? heatColors[Math.min(heatColors.length - 1, Math.ceil(minutes / 240))] : "#faf5e6",
-      title: `${dayName(day)} ${covered ? hours(minutes) + " 小时" : "无覆盖记录"}` });
+      title: `${dayName(day)} ${covered ? hours(minutes) + $t("online-model.text_8f82ece04f") : $t("online-model.text_b07386c878")}` });
   }
   return { bars, details, year, cells, months, sampleCount: ordered.length, since: dayName(oldest) };
 }

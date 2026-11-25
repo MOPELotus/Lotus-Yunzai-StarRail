@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { reportResourceProgress, type ResourceProgressCallback } from "../../lib/resource-progress.ts";
 import { createHash } from "node:crypto";
@@ -141,7 +144,7 @@ async function copyPortraits(original: string, root: string, target: string, sig
   let copied = 0;
   const rows = Object.entries(data);
   for (const [position, [id, row]] of rows.entries()) {
-    reportResourceProgress(onProgress, signal, "starrail-portraits", "核对并恢复角色头像", position, rows.length);
+    reportResourceProgress(onProgress, signal, "starrail-portraits", $t("challenge-theme.text_a4d58cf654"), position, rows.length);
     signal?.throwIfAborted();
     const name = row?.name;
     if (!/^[1-9]\d{3,8}$/u.test(id) || String(row?.id) !== id || typeof name !== "string" ||
@@ -156,7 +159,7 @@ async function copyPortraits(original: string, root: string, target: string, sig
       break;
     }
   }
-  reportResourceProgress(onProgress, signal, "starrail-portraits", "角色头像核对完成", rows.length, rows.length);
+  reportResourceProgress(onProgress, signal, "starrail-portraits", $t("challenge-theme.text_7187beb57c"), rows.length, rows.length);
   return copied;
 }
 
@@ -171,14 +174,14 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
   readonly download?: boolean | TemplateFetch;
 } = {}) {
   const report = (message: string, completed?: number, total?: number) => reportResourceProgress(onProgress, signal, "starrail-theme", message, completed, total);
-  report("检查星铁挑战主题");
+  report($t("challenge-theme.text_ad8d1accf7"));
   if (override?.trim()) return { templates: 0, portraits: 0, missing: [] as string[] };
   const [root, donor] = await Promise.all([realpath(fileURLToPath(checkout)), realpath(fileURLToPath(source))]);
   const target = join(root, targetPath);
   let templates = 0;
   const absent: TemplateAsset[] = [];
   for (const [position, candidate] of template.entries()) {
-    report(`核对 ${candidate[0]}`, position, template.length);
+    report($t("challenge-theme.text_a7fe699ca9", { "value1": candidate[0] }), position, template.length);
     const [asset, genshin, size] = candidate;
     const output = join(target, asset);
     if (!(await entry(output))) {
@@ -200,10 +203,10 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
     const downloadSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
     const request = typeof download === "function" ? download : fetch;
     let fetched = 0;
-    report("下载缺失挑战主题", 0, absent.length);
+    report($t("challenge-theme.text_25535ff6e8"), 0, absent.length);
     const originals = await Promise.all(absent.map(async asset => {
       const bytes = await downloadOriginal(asset, request, downloadSignal);
-      report(`主题已处理 ${asset[0]}`, ++fetched, absent.length);
+      report($t("challenge-theme.text_d065206883", { "value1": asset[0] }), ++fetched, absent.length);
       return bytes;
     }));
     signal?.throwIfAborted();
@@ -218,7 +221,7 @@ export async function prepareStarRailChallengeTheme(checkout: URL, {
     const info = await entry(join(target, asset));
     if (!info?.isFile() || !info.size) missing.push(asset);
   }
-  report("恢复本地角色头像");
+  report($t("challenge-theme.text_fa7ea2af73"));
   let portraits = 0;
   const portraitSources = new Set([
     builtinResourceDirectory("games/miao/meta-sr/character", checkout),

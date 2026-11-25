@@ -1,26 +1,29 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.aglaea.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '强化普攻伤害·主目标',
+  title: $t("panel-damage-rules.characters.aglaea.text_cc28ea2fbc"),
   params: { Supreme_Stance: true, cons6_a2:true },
   dmg: ({ talent }, dmg) => dmg(talent.a2!['技能伤害']!, 'a')
 }, {
-  title: '强化普攻伤害·相邻目标',
+  title: $t("panel-damage-rules.characters.aglaea.text_c0cf586715"),
   params: { Supreme_Stance: true, cons6_a2:true },
   dmg: ({ talent }, dmg) => dmg(talent.a2!['相邻目标伤害']!, 'a')
 }, {
-  title: 'Q后忆灵技伤害·主目标',
+  title: $t("panel-damage-rules.characters.aglaea.text_6406d2e945"),
   params: { Supreme_Stance: true },
   dmg: ({ talent }, dmg) => dmg(talent.me!['技能伤害']!, 'me')
 }, {
-  title: 'Q后忆灵技伤害·相邻目标',
+  title: $t("panel-damage-rules.characters.aglaea.text_eeb6d0dac4"),
   params: { Supreme_Stance: true },
   dmg: ({ talent }, dmg) => dmg(talent.me!['相邻目标伤害']!, 'me')
 }, {
-  title: 'Q后天赋附加伤害',
+  title: $t("panel-damage-rules.characters.aglaea.text_8fe90a67bb"),
   params: { Supreme_Stance: true },
   dmg: ({ talent }, dmg) => dmg(talent.t!['附加伤害']!)
 }]
@@ -31,7 +34,7 @@ export const mainAttr = 'atk,cpct,cdmg,speed'
 
 export const buffs: Buff[] = [ {
   check: ({ params }) => params.Supreme_Stance === true,
-  title: '行迹-短视之惩：处于【至高之姿】状态时，阿格莱雅与衣匠的攻击力提高，提高数值等同于阿格莱雅速度的720%+衣匠速度的360%（按满层计算），总计[atkPlus]',
+  title: $t("panel-damage-rules.characters.aglaea.text_3f6a99dbdb"),
   sort: 9,
   tree: 1,
   data: {
@@ -42,30 +45,30 @@ export const buffs: Buff[] = [ {
     }
   }
 }, {
-  title: '阿格莱雅1魂：处于【间隙织线】状态下的敌人受到的伤害提高[enemydmg]%',
+  title: $t("panel-damage-rules.characters.aglaea.text_8ba3a5c01f"),
   cons: 1,
   data: {
     enemydmg: 15,
   }
 }, {
-  title: '阿格莱雅2魂：当阿格莱雅或衣匠行动时，使阿格莱雅与衣匠造成的伤害最多可以无视目标[ignore]%的防御力',
+  title: $t("panel-damage-rules.characters.aglaea.text_b2f5c67c68"),
   cons: 2,
   data: {
     ignore: 42
   }
 }, {
-  title: '阿格莱雅6魂：当阿格莱雅处于【至高之姿】状态时，自身与衣匠的雷属性抗性穿透提高[kx]%。',
+  title: $t("panel-damage-rules.characters.aglaea.text_c87453e2d9"),
   cons: 6,
   data: {
     kx: 20
   }
 }, {
   check: ({ params }) => params.cons6_a2 === true,
-  title: '当阿格莱雅或衣匠的速度高于320点时，连携攻击伤害提高[aDmg]%。',
+  title: $t("panel-damage-rules.characters.aglaea.text_8414d34cb6"),
   cons: 6,
   data: {
     aDmg: 60
   }
 }]
 
-export const createdBy = '冰翼'
+export const createdBy = $t("panel-damage-rules.characters.aglaea.text_08cd8017cf")

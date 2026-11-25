@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { StarRailArchivedMonth } from "./monthly-archive.ts";
 import type { starRailStatisticsPeriod } from "./monthly-period.ts";
 
@@ -29,10 +32,10 @@ export function buildStarRailMonthlyStatistics(uid: string, records: readonly St
 export type StarRailMonthlyStatistics = NonNullable<ReturnType<typeof buildStarRailMonthlyStatistics>>;
 
 export function starRailStatisticsText(model: StarRailMonthlyStatistics) {
-  return [`${model.period.label}星琼统计 · UID ${model.uid}`,
-    `共归档 ${model.months.length}/${model.period.last - model.period.first + 1} 个月`,
-    `总星琼 ${model.hcoin} · 专票与通票 ${model.railsPass} · 约 ${model.wishes} 抽`,
+  return [$t("monthly-statistics.text_c90ed3a63f", { "label": model.period.label, "uid": model.uid }),
+    $t("monthly-statistics.text_8f59f43d11", { "length": model.months.length, "value2": model.period.last - model.period.first + 1 }),
+    $t("monthly-statistics.text_f6ff8efaf7", { "hcoin": model.hcoin, "railsPass": model.railsPass, "wishes": model.wishes }),
     ...model.months.map(({ key, snapshot, finalized }) =>
-      `${key.slice(0, 4)}年${Number(key.slice(4))}月：星琼 ${snapshot.monthly.hcoin}，专票与通票 ${snapshot.monthly.railsPass}${finalized ? "" : "（未完整）"}`),
+      $t("monthly-statistics.text_1fb3dd6db7", { "value1": key.slice(0, 4), "value2": Number(key.slice(4)), "hcoin": snapshot.monthly.hcoin, "railsPass": snapshot.monthly.railsPass, "value5": finalized ? "" : $t("monthly-statistics.text_fb32e18964") })),
     ...model.sources.map(({ name, count }) => `${name}：${count}`)].join("\n");
 }

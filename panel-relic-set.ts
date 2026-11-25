@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Alias and slot semantics follow the fixed MIT ProfileChange.js and meta-sr/artifact/index.js.
 import aliases from "./panel-relic-set-aliases.json";
 import type { PanelAvatar } from "./panel-model.ts";
@@ -22,10 +25,10 @@ export function changePanelRelicSets(
   const planar: string[] = [];
   for (const name of names) {
     const set = sets.get(name);
-    if (!set) return { error: `本地主题缺少「${name}」的遗器套装资料。` };
+    if (!set) return { error: $t("panel-relic-set.text_47f91a7b0b", { "name": name }) };
     (set.outer ? outer : planar).push(name);
   }
-  if (outer.length > 2 || planar.length > 1) return { error: "可选择最多两套外圈遗器和一套位面饰品。" };
+  if (outer.length > 2 || planar.length > 1) return { error: $t("panel-relic-set.text_24cf88db95") };
 
   let applied = false;
   const relics: PanelAvatar["relics"] = [];
@@ -36,11 +39,11 @@ export function changePanelRelicSets(
       continue;
     }
     const piece = sets.get(set)?.pieces.get(`${part.slot}:${part.rarity}`);
-    if (!piece) return { error: `「${set}」缺少该部位与星级的遗器资料。` };
+    if (!piece) return { error: $t("panel-relic-set.text_5e07f3f7bd", { "set": set }) };
     relics.push({ ...part, ...piece, image: "" });
     applied = true;
   }
-  if (!applied) return { error: `「${target.name}」没有可替换的对应遗器部位。` };
-  const label = `临时套装 · ${names.join("、")}`;
+  if (!applied) return { error: $t("panel-relic-set.text_a7c782c51f", { "name": target.name }) };
+  const label = $t("panel-relic-set.text_01149de494", { "value1": names.join("、") });
   return { avatar: { ...target, relics, stats: [] }, label };
 }

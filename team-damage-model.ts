@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import { canonicalStarRailPanelCharacter, text } from "./panel-model.ts";
 import panelCharacterNames from "./challenge-character-names.json";
@@ -40,16 +43,16 @@ const aliases = new Map<string, string[]>([
 ]);
 const roleKey = (input: string) => input.normalize("NFKC").toLowerCase().replace(/[\s·•・.。&_\-—/\\|:,、()[\]【】「」『』]/gu, "");
 const roleAliases = new Map(Object.entries({
-  "开拓者·同谐": ["同谐主", "同协主", "和谐主", "开拓者同谐", "同谐开拓者"],
-  "开拓者·记忆": ["记忆主", "开拓者记忆", "记忆开拓者"],
-  "开拓者·毁灭": ["毁灭主", "物理主", "开拓者毁灭"],
-  "开拓者·存护": ["存护主", "火主", "开拓者存护"],
-  "开拓者·虚无": ["虚无主", "开拓者虚无"],
-  "开拓者·巡猎": ["巡猎主", "开拓者巡猎"],
-  "阮•梅": ["阮梅", "阮·梅"],
-  "托帕&账账": ["托帕", "账账", "托帕账账", "托帕帐帐"],
-  "银狼LV.999": ["银狼lv999", "银狼lv.999", "银狼LV999", "狼尊"],
-  "千冶•刃": ["千冶刃", "千冶·刃"],
+  "开拓者·同谐": ["同谐主", $t("team-damage-model.text_bb9aebc7c1"), $t("team-damage-model.text_92d758d0d0"), $t("team-damage-model.text_3faaedafda"), $t("team-damage-model.text_6365b92696")],
+  "开拓者·记忆": ["记忆主", $t("team-damage-model.text_0af75fa9ce"), $t("team-damage-model.text_595c0d1d3d")],
+  "开拓者·毁灭": ["毁灭主", $t("team-damage-model.text_d81fa6cc35"), $t("team-damage-model.text_6df1de01b8")],
+  "开拓者·存护": ["存护主", $t("team-damage-model.text_6a4b997356"), $t("team-damage-model.text_1d3d3fb6c4")],
+  "开拓者·虚无": ["虚无主", $t("team-damage-model.text_e7898fecdc")],
+  "开拓者·巡猎": ["巡猎主", $t("team-damage-model.text_5b2521b934")],
+  "阮•梅": ["阮梅", $t("team-damage-model.text_f65e01184f")],
+  "托帕&账账": ["托帕", $t("team-damage-model.text_965439114f"), $t("team-damage-model.text_5e908c3bdd"), $t("team-damage-model.text_6f7975354a")],
+  "银狼LV.999": ["银狼lv999", $t("team-damage-model.text_835a9e65d2"), $t("team-damage-model.text_18e870ed04"), $t("team-damage-model.text_79b7a20aa0")],
+  "千冶•刃": ["千冶刃", $t("team-damage-model.text_0896f4e577")],
 }).map(([name, names]) => [roleKey(name), names]));
 
 export interface TeamRole extends Json {
@@ -93,13 +96,13 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
     if (/[&＆]/u.test(name)) aliases.push(name.split(/[&＆]/u)[0]!, name.replace(/[&＆]/u, "和"), name.replace(/[&＆]/u, "与"));
     const trailblazer = name.match(/^开拓者[·•.・]?(.*)$/u)?.[1];
     if (trailblazer) {
-      aliases.push(`${trailblazer}主`, `${trailblazer}开拓者`);
-      if (/^80(?:0[1-9]|10)$/u.test(String(role.item_id))) aliases.push(`${trailblazer}${Number(role.item_id) % 2 ? "男" : "女"}主`);
+      aliases.push($t("team-damage-model.text_2fa2f417ac", { "trailblazer": trailblazer }), $t("team-damage-model.text_79a225f323", { "trailblazer": trailblazer }));
+      if (/^80(?:0[1-9]|10)$/u.test(String(role.item_id))) aliases.push($t("team-damage-model.text_a919c4c33c", { "trailblazer": trailblazer, "value2": Number(role.item_id) % 2 ? $t("team-damage-model.text_4e79758a99") : $t("team-damage-model.text_0ab4610b92") }));
     }
     for (const term of aliases.map(roleKey)) if (term && !entries.has(term)) entries.set(term, role);
     if (enhanced !== id) {
       const selected = { ...role, enhancementRequested: true };
-      for (const alias of [enhanced, `${name}Pro`, `加强${name}`, `${name}加强`, `加强版${name}`]) {
+      for (const alias of [enhanced, `${name}Pro`, $t("team-damage-model.text_9d0092844b", { "name": name }), $t("team-damage-model.text_fba705dda0", { "name": name }), $t("team-damage-model.text_f324fffdc0", { "name": name })]) {
         const key = roleKey(alias);
         if (!entries.has(key)) entries.set(key, selected);
       }
@@ -119,18 +122,18 @@ export function resolveTeamDamageRoles(tokens: readonly string[], catalog: reado
     const segmented: TeamRole[] = [];
     while (remaining) {
       const term = terms.find(candidate => remaining.startsWith(candidate));
-      if (!term) throw new TeamDamageError(`无法识别星铁角色：${text(token, 30)}`);
+      if (!term) throw new TeamDamageError($t("team-damage-model.text_924f0e9b32", { "value1": text(token, 30) }));
       segmented.push(entries.get(term)!);
       remaining = remaining.slice(term.length);
     }
     selected.push(...segmented.slice(0, 4 - selected.length));
   }
-  if (!selected.length) throw new TeamDamageError("请指定星铁队伍角色，例如 *队伍伤害飞托阮同。");
+  if (!selected.length) throw new TeamDamageError($t("team-damage-model.text_0a6ba292fe"));
   const characterIds = selected.map(role => {
     const id = String(role.item_id);
     if (/^80(?:0[1-9]|10)$/u.test(id)) return "trailblazer";
     return id === "1224" ? "1001" : id;
   });
-  if (new Set(characterIds).size !== selected.length) throw new TeamDamageError("同一角色只能在队伍中安排一次。");
+  if (new Set(characterIds).size !== selected.length) throw new TeamDamageError($t("team-damage-model.text_6f0b030a7a"));
   return selected;
 }

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { nativeImageRasterScale, renderPng } from "@lotus-yunzai/skia";
 import type { CanvasRenderingContext2D as Context } from "skia-canvas";
 
@@ -19,5 +22,5 @@ export async function renderStarRailCard(width: number, height: number, draw: (c
     const smaller = await render(2);
     if (smaller.png.byteLength <= inlineImageByteLimit) return smaller;
   }
-  throw new Error("星铁图卡超出当前会话的图片大小限制。");
+  throw new Error($t("render-card.text_a9a2049fd7"));
 }

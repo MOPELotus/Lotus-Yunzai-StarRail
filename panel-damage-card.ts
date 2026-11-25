@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { layoutTrialDamageTitles, trialDamageTitleLineHeight } from "../../lib/panel-trial-display.ts";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
@@ -90,9 +93,9 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
   const matrixX = (index: number) => 170 + (index + 0.5) * (width - 210) / damage.swaps.length;
   const metricLabel = personalDamageMetricLabel[baseline.metric];
   const selectedTitle = damage.trialTitleMode === 1 ? titles.rows[damage.selected]!.lines[0] : baseline.title;
-  const swapHeading = baseline.percentage !== undefined ? "词条替换 · 变化（百分点） / 辅助比例"
-    : baseline.critical === undefined ? `词条替换 · ${metricLabel}变化 / ${metricLabel}`
-    : "词条替换 · 期望变化 / 期望与暴击伤害";
+  const swapHeading = baseline.percentage !== undefined ? $t("panel-damage-card.text_a78b2e2123")
+    : baseline.critical === undefined ? $t("panel-damage-card.text_5f69dbdac8", { "metricLabel": metricLabel, "value2": metricLabel })
+    : $t("panel-damage-card.text_ffb8baa1dc");
 
   return renderStarRailCard(width, height, ctx => {
     function text(value: string, x: number, y: number, size: number, color = "#f5f3f7", align: CanvasTextAlign = "left", family = body, maxWidth?: number) {
@@ -145,13 +148,13 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
     ctx.shadowColor = "#171525";
     ctx.shadowBlur = 4;
     ctx.shadowOffsetY = 1;
-    text(`${damage.name}伤害`, 40, 78, 44, "#fff", "left", heading);
-    text(`${personalDamageEnemyLevel} 级弱点敌人 · ${selectedTitle}`, 42, 113, 19, "#fff", "left", body, damage.trialTitleMode === 2 ? width - 84 : undefined);
+    text($t("panel-damage-card.text_850202337a", { "name": damage.name }), 40, 78, 44, "#fff", "left", heading);
+    text($t("panel-damage-card.text_8f95ea200f", { "personalDamageEnemyLevel": personalDamageEnemyLevel, "selectedTitle": selectedTitle }), 42, 113, 19, "#fff", "left", body, damage.trialTitleMode === 2 ? width - 84 : undefined);
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    box(147, listHeight, comparison ? "伤害计算 · 相比换装前" : "伤害计算");
-    text("暴击伤害", critX, 173, 16, "#f5f3f7", "right");
+    box(147, listHeight, comparison ? $t("panel-damage-card.text_fd3d6b9c0c") : $t("panel-damage-card.text_393374d45e"));
+    text($t("panel-damage-card.text_15bccc3951"), critX, 173, 16, "#f5f3f7", "right");
     text(resultHeading, valueX, 173, 16, "#f5f3f7", "right");
     for (const [index, row] of damage.rows.entries()) {
       const y = 208 + titles.rows[index]!.top, color = index === damage.selected ? "#f7d895" : "#f5f3f7";
@@ -190,8 +193,8 @@ export async function renderStarRailPersonalDamage(damage: StarRailPersonalDamag
         });
       });
     }
-    box(buffTop, 45 + buffLines.length * 25, "计算条件");
+    box(buffTop, 45 + buffLines.length * 25, $t("panel-damage-card.text_524ac5f976"));
     buffLines.forEach((buff, i) => text(buff, 42, buffTop + 58 + i * 25, 17));
-    text("Lotus-Yunzai · StarRail", width / 2, height - 12, 13, "#fff", "center");
+    text($t("panel-damage-card.text_00dfd4ad2c"), width / 2, height - 12, 13, "#fff", "center");
   }, { mode: "gpu", inlineImageByteLimit });
 }

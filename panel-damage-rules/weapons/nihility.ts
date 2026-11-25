@@ -1,26 +1,29 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DynamicIndex, StaticIndex, WeaponRules } from "../types.ts";
 
 export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRules {
   return {
     以世界之名: [
-      keyIdx('按目标陷入负面效果计算伤害提高[dmg]%，按施放战技后的攻击力加成[atkPct]%估算', { dmg: 1, atkPct: 3 })
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_8529a3cd73"), { dmg: 1, atkPct: 3 })
     ],
     决心如汗珠般闪耀: [
-      keyIdx('攻陷状态敌方防御力降低[enemyDef]%', 'enemyDef', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_a80e88a1ad"), 'enemyDef', 2)
     ],
     匿影: [],
     后会有期: [],
     幽邃: [
-      keyIdx('入场效果命中提高[effPct]%，旧试算按面板效果命中判定', 'effPct', 1)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_ff0d7f63c1"), 'effPct', 1)
     ],
     延长记号: [
       staticIdx(1, 'stance'),
-      keyIdx('对触电或风化状态的敌方目标伤害提高[dmg]%', 'dmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_a77bd2d791"), 'dmg', 2)
     ],
     晚安与睡颜: [
       (tables) => {
         return {
-          title: '3层Buff提高伤害[dmg]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_e3f4fe9d38"),
           data: {
             dmg: tables[1]! * 3
           }
@@ -28,7 +31,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       }
     ],
     渊环: [
-      keyIdx('对减速状态的目标伤害提高[dmg]%', 'dmg', 1)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_1c28b165fe"), 'dmg', 1)
     ],
     猎物的视线: [
       staticIdx(1, 'effPct')
@@ -38,14 +41,14 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     雨一直下: [
       staticIdx(1, 'effPct'),
-      keyIdx('对大于3个负面效果的敌人提升暴击率[cpct]%', 'cpct', 2),
-      keyIdx('以太编码提升伤害[dmg]%', 'dmg', 3)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_cb6d799b8a"), 'cpct', 2),
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_da02b532a1"), 'dmg', 3)
     ],
     只需等待: [
       staticIdx(1, 'dmg'),
       (tables) => {
         return {
-          title: '释放攻击3层Buff提高速度[speedPct]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_47b65456c6"),
           data: {
             speedPct: tables[2]! * 3
           }
@@ -54,13 +57,13 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     孤独的疗愈: [
       staticIdx(1, 'stance'),
-      keyIdx('装备者造成的持续伤害提高[dotDmg]%', 'dotDmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_efa6b60e4b"), 'dotDmg', 2)
     ],
     重塑时光之忆: [
       staticIdx(1, 'effPct'),
       (tables) => {
         return {
-          title: '4层Buff提高攻击力[atkPct]%，造成的持续伤害无视目标[dotIgnore]%的防御力',
+          title: $t("panel-damage-rules.weapons.nihility.text_005a4d7afd"),
           data: {
             atkPct: tables[2]! * 4,
             dotIgnore: tables[3]! * 4
@@ -71,7 +74,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     好戏开演: [
       (tables) => {
         return {
-          title: '3层Buff提高造成的伤害[dmg]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_81dc6604fd"),
           data: {
             dmg: tables[1]! * 3
           }
@@ -80,7 +83,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       (tables) => {
         return {
           check: ({ attr, calc }) => calc(attr.effPct!) >= 80,
-          title: '效果命中达到80%时，攻击力提高[atkPct]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_01ce0ba4cf"),
           data: {
             atkPct: tables[2]!
           }
@@ -91,7 +94,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'cdmg'),
       (tables) => {
         return {
-          title: '造成的伤害提高[dmg]%，终结技伤害额外提高[qDmg]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_f8a2e9e7cc"),
           data: {
             dmg: tables[2]!,
             qDmg: tables[3]!
@@ -101,13 +104,13 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     无边曼舞: [
       staticIdx(1, 'cpct'),
-      keyIdx('对处于防御降低或减速状态下的敌人暴击伤害提高[cdmg]%', 'cdmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_363039cf0e"), 'cdmg', 2)
     ],
     那无数个春天: [
       staticIdx(1, 'effPct'),
       (tables) => {
         return {
-          title: '【穷寇】状态下，敌方目标受到的伤害提高[enemydmg]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_23bbbb7627"),
           data: {
             enemydmg: tables[2]! + tables[3]!
           }
@@ -116,14 +119,14 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     长路终有归途: [
       staticIdx(1, 'stance'),
-      keyIdx('【焚灼】状态下，敌方目标受到的击破伤害提高[breakEnemydmg]%', 'breakEnemydmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_ef236f7799"), 'breakEnemydmg', 2)
     ],
     谎言在风中飘扬: [
       staticIdx(1, 'speedPct'),
-      keyIdx('装备者施放攻击后，有120%的基础概率使敌方每个单体目标的防御力降低[enemyDef]%', 'enemyDef', 2),
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_3ef6ecdbd3"), 'enemyDef', 2),
       (tables) => {
         return {
-          title: '若装备者的速度大于等于170，有120%的基础概率使敌方每个单体目标的防御力降低[enemyDef]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_a80f3ecbb5"),
           check: ({ attr, calc }) => calc(attr.speed!) >= 170,
           data: {
             enemyDef: tables[3]!
@@ -135,7 +138,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'effPct'),
       (tables) => {
         return {
-          title: '【魂迷】状态下，有6个装备者施加的负面效果，受到的持续伤害提高[dotEnemydmg]%，受到我方目标攻击时，使攻击者速度提高[speedPct]%，持续3回合',
+          title: $t("panel-damage-rules.weapons.nihility.text_c410aa64ba"),
           data: {
             dotEnemydmg: tables[2]! * 6,
             speedPct: tables[3]!
@@ -145,17 +148,17 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     假日浴场大冒险: [
       staticIdx(1, 'dmg'),
-      keyIdx('使受到攻击的目标陷入易伤状态，受到的伤害提高[enemydmg]%', 'enemydmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_741866da45"), 'enemydmg', 2)
     ],
     勿忘她的火焰: [
       staticIdx(1, 'stance'),
-      keyIdx('装备者造成的击破伤害提高[breakEnemydmg]%', 'breakEnemydmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.nihility.text_7d34772c3a"), 'breakEnemydmg', 2)
     ],
     灼尽炼狱的新骸: [
       staticIdx(1, 'hpPct'),
       (tables) => {
         return {
-          title: '【炼狱】状态下目标受到的暴击伤害提高[cdmgName]%，受到来自装备者的暴击伤害额外提高[_extraCdmg]%',
+          title: $t("panel-damage-rules.weapons.nihility.text_cca0eed615"),
           data: {
             cdmgName: tables[2]!,
             _extraCdmg: tables[2]!,

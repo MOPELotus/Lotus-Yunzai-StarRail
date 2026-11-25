@@ -1,10 +1,13 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.the-herta.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '强化战技伤害·主目标',
+  title: $t("panel-damage-rules.characters.the-herta.text_aa10a3aec3"),
   params: { Enhanced_Skill: true },
   dmg: ({ talent, cons }, dmg) => {
     let num = cons < 1 ? 42 : 63
@@ -15,16 +18,16 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.the-herta.text_b6a5fc7f30"),
   params: { Ultimate: true },
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '6命终结技伤害·1名敌人',
+  title: $t("panel-damage-rules.characters.the-herta.text_e6019d5e16"),
   params: { Ultimate: true },
   cons: 6,
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']! + 400 / 100, 'q')
 }, {
-  title: '6命终结技伤害·3名敌人',
+  title: $t("panel-damage-rules.characters.the-herta.text_761db823f1"),
   params: { Ultimate: true },
   cons: 6,
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']! + 140 / 100, 'q')
@@ -35,35 +38,35 @@ export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [ {
   check: ({ params }) => params.Enhanced_Skill === true,
-  title: '行迹-冷漠的诚实：施放强化战技时，若主目标的【解读】层数达到42，使大黑塔造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.the-herta.text_62561d40cf"),
   tree: 1,
   data: {
     dmg: 50
   }
 }, {
-  title: '行迹-视界外来信：若队伍中的「智识」命途角色大于等于2名，使我方全体暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.the-herta.text_0d1232df1f"),
   tree: 2,
   data: {
     cdmg: 80
   }
 }, {
   check: ({ params }) => params.Ultimate === true,
-  title: '行迹-饥饿的地景：施放终结技时，持有99层【谜底】，使本次终结技的伤害倍率提高99%',
+  title: $t("panel-damage-rules.characters.the-herta.text_0bcdeb8e18"),
   tree: 3,
   data: {
     qPct: 99
   }
 }, {
-  title: '终结技：终结技施放时，使大黑塔攻击力提高[atkPct]%',
+  title: $t("panel-damage-rules.characters.the-herta.text_185a86e37e"),
   data: {
     atkPct: ({ talent }) => talent.q!['攻击力提高']! * 100
   }
 }, {
-  title: '大黑塔6命：冰属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.the-herta.text_85d02c9a13"),
   cons: 6,
   data: {
     kx: 20
   }
 }]
 
-export const createdBy = '冰翼'
+export const createdBy = $t("panel-damage-rules.characters.the-herta.text_08cd8017cf")

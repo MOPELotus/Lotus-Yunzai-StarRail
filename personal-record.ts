@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, gameRegionDisplayName, normalizeProfileRoleArtworkUrl, type GameRole, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { renderStarRailPersonalRecord } from "./personal-record-card.ts";
@@ -27,9 +30,9 @@ function count(value: unknown, max = Number.MAX_SAFE_INTEGER) {
 export function makeStarRailPersonalRecord(data: Record<string, unknown>, source: GameRole) {
   const stats = object(data.stats);
   const role = object(data.role);
-  if (!stats && !Array.isArray(data.avatar_list)) throw new HoyoRequestError("response", "米游社未返回有效的星铁战绩名片。");
+  if (!stats && !Array.isArray(data.avatar_list)) throw new HoyoRequestError("response", $t("personal-record.text_b20a2696e7"));
   const entries = Array.isArray(data.avatar_list) ? data.avatar_list : [];
-  if (entries.length > 256) throw new HoyoRequestError("response", "米游社返回的星铁名片角色数无效。");
+  if (entries.length > 256) throw new HoyoRequestError("response", $t("personal-record.text_b1d0fc34e1"));
   const avatars = entries.flatMap(entry => {
     const item = object(entry);
     const name = text(item?.name, 40);
@@ -45,7 +48,7 @@ export function makeStarRailPersonalRecord(data: Record<string, unknown>, source
   });
   return {
     uid: source.uid,
-    nickname: text(source.nickname, 60) || text(role?.nickname ?? data.nickname, 60) || "开拓者",
+    nickname: text(source.nickname, 60) || text(role?.nickname ?? data.nickname, 60) || $t("personal-record.text_865ee04ffd"),
     region: gameRegionDisplayName("sr", source.region,
       text(source.regionName, 40), text(role?.region_name ?? data.region_name, 40)),
     level: count(source.level ?? role?.level ?? data.level, 70),
@@ -54,11 +57,11 @@ export function makeStarRailPersonalRecord(data: Record<string, unknown>, source
     background: data.phone_background_image_url !== emptyBackground
       ? normalizeProfileRoleArtworkUrl(data.phone_background_image_url) : undefined,
     stats: [
-      ["活跃天数", count(stats?.active_days ?? stats?.active_day_number)],
-      ["已解锁角色", count(stats?.avatar_num ?? stats?.avatar_count)],
-      ["达成成就数", count(stats?.achievement_num ?? stats?.achievement_count ?? stats?.achievement_number)],
-      ["战利品开启", count(stats?.chest_num ?? stats?.chest_count)],
-      ["忘却之庭", text(stats?.abyss_process, 48) || count(stats?.abyss_process)],
+      [$t("personal-record.text_829827347a"), count(stats?.active_days ?? stats?.active_day_number)],
+      [$t("personal-record.text_df81ec4e67"), count(stats?.avatar_num ?? stats?.avatar_count)],
+      [$t("personal-record.text_3f04ad9ddf"), count(stats?.achievement_num ?? stats?.achievement_count ?? stats?.achievement_number)],
+      [$t("personal-record.text_16f293b5f1"), count(stats?.chest_num ?? stats?.chest_count)],
+      [$t("personal-record.text_e0d7f93059"), text(stats?.abyss_process, 48) || count(stats?.abyss_process)],
     ] as const,
     avatars,
   };
@@ -67,11 +70,11 @@ export function makeStarRailPersonalRecord(data: Record<string, unknown>, source
 export type StarRailPersonalRecord = ReturnType<typeof makeStarRailPersonalRecord>;
 
 export function starRailPersonalRecordText(record: StarRailPersonalRecord) {
-  const header = `星铁战绩名片 · ${record.nickname} · ${record.region} · UID ${record.uid}` +
+  const header = $t("personal-record.text_3f1fec81ff", { "nickname": record.nickname, "region": record.region, "uid": record.uid }) +
     (record.level === undefined ? "" : ` · Lv.${record.level}`);
   return [header, ...record.stats.map(([name, value]) => `${name} ${value ?? "—"}`),
-    ...(record.avatars.length ? ["我的角色", ...record.avatars.map(avatar =>
-      `${avatar.name}${avatar.level === undefined ? "" : ` Lv.${avatar.level}`}${avatar.rank ? ` · ${avatar.rank}魂` : ""}`)] : [])].join("\n");
+    ...(record.avatars.length ? [$t("personal-record.text_299e349fd3"), ...record.avatars.map(avatar =>
+      `${avatar.name}${avatar.level === undefined ? "" : ` Lv.${avatar.level}`}${avatar.rank ? $t("personal-record.text_2275384b53", { "rank": avatar.rank }) : ""}`)] : [])].join("\n");
 }
 
 type Profiles = Pick<ReturnType<typeof createProfileStore>, "requestSelectedContext">;
@@ -83,7 +86,7 @@ type Context = {
 };
 type Draw = (...args: Parameters<typeof renderStarRailPersonalRecord>) => Promise<{ png: Uint8Array }>;
 
-const changed = "星铁档案已变更，请重新查询战绩名片。";
+const changed = $t("personal-record.text_ed8d5db2e0");
 const oneBotLimit = Math.floor((96 * 1024 * 1024 - 4096) / 4) * 3;
 
 export function createStarRailPersonalRecordQuery(profiles: Profiles, client: Client, lifecycle: AbortSignal, draw: Draw = renderStarRailPersonalRecord) {
@@ -93,8 +96,8 @@ export function createStarRailPersonalRecordQuery(profiles: Profiles, client: Cl
     const user = context.user_id;
     if (context.isDelegated || (context.message_type !== "group" && context.message_type !== "private") ||
         (context.at !== undefined && String(context.at) !== String(context.self_id)) ||
-        typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) return "请从本人 QQ 会话查询星铁战绩名片。";
-    if (!Number.isInteger(profileId) || profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+        typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) return $t("personal-record.text_f9570b1529");
+    if (!Number.isInteger(profileId) || profileId < 1 || profileId > MAX_PROFILE_ID) return $t("personal-record.text_68901e8078", { "MAX_PROFILE_ID": MAX_PROFILE_ID });
     const qq = String(user);
     try {
       const source = await profiles.requestSelectedContext(qq, profileId, "sr");
@@ -121,16 +124,16 @@ export function createStarRailPersonalRecordQuery(profiles: Profiles, client: Cl
       if (signal.aborted) return [];
       if (error instanceof ProfileError) {
         if (error.code === "changed") return changed;
-        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有已同步的星铁角色。`;
+        if (error.code === "missing" || error.code === "login-required") return $t("personal-record.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("personal-record.text_c0d14d54a7", { "profileId": profileId });
       }
       if (error instanceof HoyoRequestError) {
         if (error.code === "profile-changed") return changed;
-        if (error.code === "refresh") return "星铁战绩名片的 Cookie 未能续期，请检查当前档案登录状态。";
-        if (error.retcode === 10102) return "米游社战绩未公开，或尚未在米游社绑定当前星铁角色。";
+        if (error.code === "refresh") return $t("personal-record.text_c29a0aeca5");
+        if (error.retcode === 10102) return $t("personal-record.text_1acdeee61f");
         return error.message;
       }
-      return "星铁战绩名片暂时无法读取，请稍后重试。";
+      return $t("personal-record.text_9d2a50b82b");
     }
   };
 }

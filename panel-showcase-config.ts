@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { constants } from "node:fs";
 import { open } from "node:fs/promises";
 import { readOptionalLocalConfig } from "../../lib/config.ts";
@@ -6,7 +9,7 @@ import { ShowcaseError } from "./panel-showcase.ts";
 
 const generatedConfig = "plugins/miao-plugin/config/cfg.js";
 const maxLegacyBytes = 64 * 1024;
-const invalid = () => new ShowcaseError("星铁公开展板服务配置无效，请检查 global.yaml 或旧配置的服务选项。");
+const invalid = () => new ShowcaseError($t("panel-showcase-config.text_0256c0f4c8"));
 
 function selector(value: unknown) {
   const text = typeof value === "string" ? value.trim() : typeof value === "number" ? String(value) : "";

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // HSR Nous effect execution, adapted from the MIT-licensed pinned engine.
 import { consumeEnergy, heal, hitChance, isEnemy, settleDamage, type ActorState } from "../combat/index.ts";
 import { entries, map, number, string, strings } from "../compile/library.ts";
@@ -158,7 +161,7 @@ export class HookEffects {
       case "apply_modifier": {
         const modifier = subMechanic(model, "modifier");
         const caster = this.#resolveRef(raw.source, source, payload);
-        if (!caster) throw new Error("无法读取状态施加者 " + string(raw.source));
+        if (!caster) throw new Error($t("team-engine.native.mechanics.effects.text_2f5c08bc2b") + string(raw.source));
         const targets = targeter();
         const baked = this.#bakeModifier(modifier, source, payload);
         for (const target of targets) this.#applyBakedModifier(target, baked, caster, payload, number(raw.apply_chance, 1), source);
@@ -217,16 +220,16 @@ export class HookEffects {
         const dynamic = raw.action_id === "$event.action_id";
         const casters = dynamic ? context.targets("$event.actor", source, payload) : targeter("caster");
         if (dynamic && !casters.length) return;
-        if (casters.length !== 1) throw new Error("代放行动须指定一个施放者");
+        if (casters.length !== 1) throw new Error($t("team-engine.native.mechanics.effects.text_3a02bbf248"));
         const caster = casters[0]!;
         const possible = runner.actionsOf(caster).filter(action => raw.action_type !== undefined
           ? action.kind === raw.action_type : action.id === (dynamic ? payload.action_id : raw.action_id));
-        if (raw.action_type !== undefined && possible.length !== 1) throw new Error("代放行动类型须匹配一项行动");
+        if (raw.action_type !== undefined && possible.length !== 1) throw new Error($t("team-engine.native.mechanics.effects.text_bb5cbd3eee"));
         const found = possible[0];
         if (!found) return;
         const forced = !dynamic && raw.target !== undefined ? targeter() : undefined;
         if (forced?.length === 0) return;
-        if (forced && forced.length !== 1) throw new Error("代放行动须指定一个目标");
+        if (forced && forced.length !== 1) throw new Error($t("team-engine.native.mechanics.effects.text_655689ed60"));
         const action = raw.scaling_atk !== undefined ? { ...found, scaling: [{ atk: amount("scaling_atk") }] } : found;
         runner.execute(caster, action, { insert: true, tag: "hook", forcedTarget: forced?.[0],
           poolOverride: raw.pool_override !== undefined ? amount("pool_override") : undefined });
@@ -273,7 +276,7 @@ export class HookEffects {
         for (const target of targeter("target", "enemy_first")) {
           if (target.barsExhausted || !isEnemy(target.actor) || [...target.modifiers.values()].some(mod => dataOf(mod).toughness_lock)) continue;
           const value = amount("amount", 0, target), floor = amount("floor", 0, target);
-          if (value < 0 || floor < 0) throw new RangeError("固定削韧量与下限须为非负数");
+          if (value < 0 || floor < 0) throw new RangeError($t("team-engine.native.mechanics.effects.text_76fe9b86ef"));
           const actual = Math.min(value, Math.max(0, target.toughness - floor));
           const element = string(raw.damage_type, "physical");
           if (actual > 0) {
@@ -304,7 +307,7 @@ export class HookEffects {
         return;
       case "random_choice": {
         const choices = entries(raw.options);
-        if (!choices.length) throw new Error("随机效果未包含选项");
+        if (!choices.length) throw new Error($t("team-engine.native.mechanics.effects.text_b2abbf08bc"));
         let selection = 0;
         if (runner.mode === "roll") {
           const weights = choices.map(item => number(item.weight, 1));
@@ -317,7 +320,7 @@ export class HookEffects {
       case "barrage_damage":
         this.#barrage(model, source, payload, chain);
         return;
-      default: throw new Error("未知战斗效果 " + type);
+      default: throw new Error($t("team-engine.native.mechanics.effects.text_ed7b0ec689") + type);
     }
   }
 
@@ -390,7 +393,7 @@ export class HookEffects {
   #summon(owner: ActorState, id: string, position: string): void {
     if (this.runner.state.actors.get(id)?.alive) return;
     const template = this.runner.encounter.summons.get(id);
-    if (!template?.summon) throw new Error("未登记召唤物 " + id);
+    if (!template?.summon) throw new Error($t("team-engine.native.mechanics.effects.text_f88b2b4a1b") + id);
     const { inheritance, maxHpRatio, capabilities } = template.summon;
     const gear = this.modifiers.gearPanel(owner);
     const stats = { ...template.stats };
@@ -420,7 +423,7 @@ export class HookEffects {
   }
 
   #attack(model: Mechanic, kind: string, damageType: string, scaling: CompiledAction["scaling"]): CompiledAction {
-    return { ...model, id: "hook_" + string(model.raw.name, "dmg"), name: string(model.raw.name, "效果伤害"),
+    return { ...model, id: "hook_" + string(model.raw.name, "dmg"), name: string(model.raw.name, $t("team-engine.native.mechanics.effects.text_3d87a016b5")),
       kind, damageType, levelKey: kind, target: "single", scaling, scalingBlast: [] };
   }
 
@@ -437,7 +440,7 @@ export class HookEffects {
     let damageType = string(raw.damage_type, "physical").toLowerCase();
     if (!elements.has(damageType) && !(trueDamage && damageType === "true")) {
       damageType = string(context.evaluate(context.expression(raw.damage_type, source), source, payload)).toLowerCase();
-      if (!elements.has(damageType)) throw new TypeError("伤害属性求值结果无效 " + damageType);
+      if (!elements.has(damageType)) throw new TypeError($t("team-engine.native.mechanics.effects.text_b6462077ee") + damageType);
     }
     const scaling = { ...(raw.scaling_atk == null ? {} : { atk: amount("scaling_atk") }),
       ...(raw.scaling_hp == null ? {} : { hp: amount("scaling_hp") }) };
@@ -559,7 +562,7 @@ export class HookEffects {
       runner.state.moonCocoonUsed = true;
       this.#cocoonFrame = this.#damageFrame;
       target.currentHp = 1;
-      modifiers.apply(target, { raw: { modifier_id: "MOON_COCOON", name: "月茧", modifier_type: "buff",
+      modifiers.apply(target, { raw: { modifier_id: "MOON_COCOON", name: $t("team-engine.native.mechanics.effects.text_20e390d6e6"), modifier_type: "buff",
         duration: 1, dispellable: false, tick_anchor: "owner_turn_start", moon_cocoon: true },
       expressions: new Map() }, this.context.actor(sourceId), {});
       return;

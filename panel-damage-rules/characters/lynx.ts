@@ -1,10 +1,13 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.lynx.text_a900baa1d0"),
   dmg: ({ talent, calc, attr }, { basic }) => basic(talent.a!['技能伤害']! * calc(attr.hp!), 'a')
 }, {
-  title: '战技提高生命上限值',
+  title: $t("panel-damage-rules.characters.lynx.text_789e7606e1"),
   dmg: ({ talent, calc, attr, cons }) => {
     const c6Plus = cons >= 6 ? 0.06 : 0
     const hpPctData = talent.e!['生命提高·百分比生命']! + c6Plus
@@ -14,16 +17,16 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技生命回复',
+  title: $t("panel-damage-rules.characters.lynx.text_f9bc6007f7"),
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.e!['治疗·百分比']! + talent.e!['治疗·固定值']!)
 }, {
-  title: '终结技生命回复',
+  title: $t("panel-damage-rules.characters.lynx.text_daafe329e2"),
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.q!['治疗·百分比生命']! + talent.q!['治疗·固定值']!)
 }, {
-  title: '天赋持续回复',
+  title: $t("panel-damage-rules.characters.lynx.text_8f77dd693c"),
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.t!['治疗·百分比生命']! + talent.t!['治疗·固定值']!)
 }, {
-  title: '天赋额外回复',
+  title: $t("panel-damage-rules.characters.lynx.text_0d6c71ab3b"),
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.t!['额外治疗·百分比生命']! + talent.t!['额外治疗·固定值']!)
 }]
 
@@ -31,13 +34,13 @@ export const mainAttr = 'cpct,cdmg,hp'
 export const defDmgIdx = 2
 
 export const buffs: Buff[] = [{
-  title: '玲可1命：为生命值百分比<=50%的目标提供治疗时，治疗量提高[heal]%',
+  title: $t("panel-damage-rules.characters.lynx.text_624ae257d8"),
   cons: 1,
   data: {
     heal: 20
   }
 }, {
-  title: '玲可6命：战技提供的生命上限提高效果额外提高,提高[_hpPlus]',
+  title: $t("panel-damage-rules.characters.lynx.text_996ce2e402"),
   cons: 6,
   data: {
     _hpPlus: ({ calc, attr }) => calc(attr.hp!) * 0.06

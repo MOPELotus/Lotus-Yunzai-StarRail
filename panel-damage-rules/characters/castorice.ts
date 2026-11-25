@@ -1,32 +1,35 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.castorice.text_a900baa1d0"),
   dmg: ({ talent, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害·主目标',
+  title: $t("panel-damage-rules.characters.castorice.text_ef9a46e334"),
   dmg: ({ talent, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.e!['技能伤害']!, 'e')
 }, {
-  title: '战技伤害·相邻目标',
+  title: $t("panel-damage-rules.characters.castorice.text_f647479cc6"),
   dmg: ({ talent, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.e!['相邻目标伤害']!, 'e')
 }, {
-  title: '强化战技伤害（遐蝶）',
+  title: $t("panel-damage-rules.characters.castorice.text_0df52ebdb5"),
   params: { cons1: true },
   dmg: ({ talent, cons, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.e2!['遐蝶伤害']!, 'e')
 }, {
-  title: '强化战技伤害（死龙）',
+  title: $t("panel-damage-rules.characters.castorice.text_a12dcef4e8"),
   params: { cons1: true },
   dmg: ({ talent, cons, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.e2!['死龙伤害']!, 'e')
 }, {
-  title: '忆灵天赋单次伤害',
+  title: $t("panel-damage-rules.characters.castorice.text_6d79479b4c"),
   params: { cons1: true },
   dmg: ({ talent, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.mt2!['技能伤害']!, 'mt')
 }, {
-  title: '忆灵技（爪痕）伤害',
+  title: $t("panel-damage-rules.characters.castorice.text_2286ea0882"),
   params: { cons1: true },
   dmg: ({ talent, calc, attr }, { basic }) => basic(calc(attr.hp!) * talent.me!['技能伤害']!, 'me')
 }, {
-  title: '三次死龙焰息+死龙晦翼总伤害',
+  title: $t("panel-damage-rules.characters.castorice.text_1c134e3d48"),
   params: { cons1: true },
   dmg: ({ talent, cons, attr, calc }, { basic }) => {
     let cost = cons > 1 ? 4 : 2
@@ -51,33 +54,33 @@ export const defParams = { Memosprite: true }
 export const mainAttr = 'hp,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '遐蝶天赋：我方损失生命值时，遐蝶与死龙造成的伤害最多提高[dmg]%',
+  title: $t("panel-damage-rules.characters.castorice.text_440558c5ea"),
   data: {
     dmg: ({ talent }) => talent.t!['伤害提高']! * 100 * 3
   }
 }, {
-  title: '遐蝶终结技：展开境界【遗世冥域】，使敌方全体全属性抗性降低[kx]%',
+  title: $t("panel-damage-rules.characters.castorice.text_4e87152f41"),
   data: {
     kx: ({ talent }) => talent.q!['抗性降低']! * 100
   }
 }, {
-  title: '忆灵天赋-震彻寂壤的怒啸：死龙被召唤时，我方全体造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.castorice.text_70658186e8"),
   data: {
     dmg: 10
   }
 }, {
   check: ({ params }) => params.cons1 === true,
-  title: '遐蝶1魂：敌方目标当前生命值小于等于自身生命上限50%时，强化战技对其造成的伤害为原伤害的140%',
+  title: $t("panel-damage-rules.characters.castorice.text_02554cc74d"),
   cons: 1,
   data: {
     multi: 40
   }
 }, {
-  title: '遐蝶6魂：遐蝶与死龙造成伤害时，量子属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.castorice.text_6ca3cc0e27"),
   cons: 6,
   data: {
     kx: 20
   }
 }]
 
-export const createdBy = '冰翼 & 其实雨很好'
+export const createdBy = $t("panel-damage-rules.characters.castorice.text_ca6c33df17")

@@ -1,9 +1,12 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Tier overrides retain the base skill levels used by the fixed CharTalent.js.
 import { object, recoverStarRailSkillLevel, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
 
 export function changePanelEidolon(target: PanelAvatar, rank: number, talentCons: unknown) {
   const upgrades = object(talentCons);
-  const missing = { error: `「${target.name}」换星魂暂不可用，缺少可确认的星魂、技能等级或加级资料。` };
+  const missing = { error: $t("panel-eidolon.text_07872403c5", { "name": target.name }) };
   if (!upgrades || (target.rank === undefined && (!target.legacy || target.skills.some(skill => skill.effective)))) return missing;
 
   const skillKeys = ["a", "e", "q", "t", ...["me", "mt", "xe"].filter(key => Object.hasOwn(upgrades, key))];
@@ -27,5 +30,5 @@ export function changePanelEidolon(target: PanelAvatar, rank: number, talentCons
     adjusted.push({ ...skill, original, level: starRailLegacySkillLevel(skill.key, original, rank, upgrades[skill.key]) });
   }
   const avatar = { ...target, rank, skills: adjusted, stats: [] };
-  return { avatar, label: `临时星魂 · ${rank}魂` };
+  return { avatar, label: $t("panel-eidolon.text_36dbcd38ea", { "rank": rank }) };
 }

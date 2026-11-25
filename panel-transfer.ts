@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { createPanelTransferCommand, type TransferWriteResult } from "../../lib/panel-transfer-command.ts";
@@ -81,8 +84,8 @@ export function createStarRailPanelTransfer(profiles: Profiles, lockFile: Acquir
       const selected = await profiles.savedRole(qq, profileId, "sr");
       const latest = await profiles.requestContext(qq, profileId, "sr", selected.uid);
       const identity = starRailTraceOwner(latest, selected);
-      if (!identity || identity.qq !== qq) throw new ProfileError("invalid", "星铁角色与登录账号不一致。");
-      if (before.revision !== latest.revision) throw new ProfileError("changed", "星铁面板档案已变更。");
+      if (!identity || identity.qq !== qq) throw new ProfileError("invalid", $t("panel-transfer.text_b1e1280622"));
+      if (before.revision !== latest.revision) throw new ProfileError("changed", $t("panel-transfer.text_c2e478daea"));
       return { identity, revision: latest.revision };
     }
     const bound = await owner();
@@ -92,7 +95,7 @@ export function createStarRailPanelTransfer(profiles: Profiles, lockFile: Acquir
       active.throwIfAborted();
       const latest = await owner();
       if (latest.revision !== bound.revision || !matchesStarRailTraceOwner(bound.identity, latest.identity) ||
-          panelDiscardedAt(await archive.read(qq, uid)) !== discarded) throw new ProfileError("changed", "星铁面板档案已变更。");
+          panelDiscardedAt(await archive.read(qq, uid)) !== discarded) throw new ProfileError("changed", $t("panel-transfer.text_c2e478daea"));
       active.throwIfAborted();
     }
     return {
@@ -127,7 +130,7 @@ export function createStarRailPanelTransfer(profiles: Profiles, lockFile: Acquir
         if (!available.length) return { state: "discarded" };
         return archive.update<TransferWriteResult>({ qq, uid }, verify, async current => {
           const boundary = panelDiscardedAt(current);
-          if (boundary !== discarded) throw new ProfileError("changed", "星铁面板档案已变更。");
+          if (boundary !== discarded) throw new ProfileError("changed", $t("panel-transfer.text_c2e478daea"));
           const saved = managedSnapshot(uid, current, false, true) ?? (!boundary ? (await legacy(uid))?.snapshot : undefined);
           const existing = new Set(saved?.avatars.map(row => row.id));
           const additions = available.filter(row => !existing.has(row.id));

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DynamicIndex, StaticIndex, WeaponRules } from "../types.ts";
 
 export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRules {
@@ -8,7 +11,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     制胜的瞬间: [
       staticIdx(1, 'defPct'),
       staticIdx(2, 'effPct'),
-      keyIdx('受到攻击时，防御力提高[defPct]%', 'defPct', 3)
+      keyIdx($t("panel-damage-rules.weapons.preservation.text_3fd22073f1"), 'defPct', 3)
     ],
     宇宙市场趋势: [
       staticIdx(1, 'defPct')
@@ -19,7 +22,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     朗道的选择: [],
     琥珀: [
       staticIdx(1, 'defPct'),
-      keyIdx('生命值小于50%时，防御力提高[defPct]%', 'defPct', 2)
+      keyIdx($t("panel-damage-rules.weapons.preservation.text_1a7b9bac7a"), 'defPct', 2)
     ],
     记忆的质料: [
       staticIdx(1, 'effDef')
@@ -28,7 +31,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'defPct'),
       (tables) => {
         return {
-          title: '基于防御力换算的终结技增量[qInc]（旧试算提示）',
+          title: $t("panel-damage-rules.weapons.preservation.text_e0c192e391"),
           data: {
             qInc: ({ calc, attr }) => calc(attr.def!) * tables[2]! / 100
           }
@@ -38,13 +41,13 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     她已闭上双眼: [
       staticIdx(1, 'hpPct'),
       staticIdx(2, 'recharge'),
-      keyIdx('装备者生命降低时，使我方全体造成的伤害提高[dmg]%', 'dmg', 3)
+      keyIdx($t("panel-damage-rules.weapons.preservation.text_a4cf254dd5"), 'dmg', 3)
     ],
     织造命运之线: [
       staticIdx(1, 'effDef'),
       (tables) => {
         return {
-          title: '按防御力提高造成的伤害[dmg]%，沿用旧试算32%上限',
+          title: $t("panel-damage-rules.weapons.preservation.text_2549ddc39b"),
           data: {
             dmg: ({ calc, attr }) => Math.min(calc(attr.def!) * tables[2]! / 100, 32)
           }
@@ -55,7 +58,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'defPct'),
       (tables) => {
         return {
-          title: '装备者为我方提供护盾时，暴击伤害提高[cdmg]%。追击命中敌方时，使敌方目标受到伤害提高[enemydmg]%',
+          title: $t("panel-damage-rules.weapons.preservation.text_2fd5c75f2f"),
           data: {
             cdmg: tables[2]!,
             enemydmg: tables[4]!
@@ -67,7 +70,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'defPct'),
       (tables) => {
         return {
-          title: '按场上4名角色持有护盾计算，装备者造成的伤害提高[dmg]%',
+          title: $t("panel-damage-rules.weapons.preservation.text_8affb44ca5"),
           data: {
             dmg: tables[2]! * 4
           }
@@ -75,13 +78,13 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       }
     ],
     愿旅途永远坦然: [
-      keyIdx('我方目标持有护盾时，造成的伤害提高[dmg]%', 'dmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.preservation.text_aba3c5bd19"), 'dmg', 2)
     ],
     纵然山河万程: [
       staticIdx(1, 'atkPct'),
       (tables) => {
         return {
-          title: '终结技后【卫戍】状态：造成的伤害提高[dmg]%',
+          title: $t("panel-damage-rules.weapons.preservation.text_716c31cbce"),
           data: {
             dmg: tables[4]!
           }

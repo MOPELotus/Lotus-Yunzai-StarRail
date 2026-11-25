@@ -1,16 +1,19 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.himeko.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技主目标伤害',
+  title: $t("panel-damage-rules.characters.himeko.text_eb18acf178"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['主目标伤害']!, 'e')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.himeko.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '天赋追击伤害',
+  title: $t("panel-damage-rules.characters.himeko.text_72c9e01999"),
   dmg: ({ talent }, dmg) => dmg(talent.t!['技能伤害']!, 't')
 }]
 
@@ -19,24 +22,24 @@ export const defDmgIdx = 2
 export const mainAttr = 'atk,cpct,cdmg,speed'
 
 export const buffs: Buff[] = [{
-  title: '姬子秘技：释放领域使敌方受到伤害提高10%',
+  title: $t("panel-damage-rules.characters.himeko.text_dc84077fec"),
   data: {
     dmg: 10
   }
 }, {
-  title: '姬子1命：对生命小于50%的敌人伤害提高15%',
+  title: $t("panel-damage-rules.characters.himeko.text_c388f8a8bf"),
   cons: 1,
   data: {
     dmg: 15
   }
 }, {
-  title: '行迹-灼热：战技对灼烧状态下的敌方目标造成的伤害提高20%',
+  title: $t("panel-damage-rules.characters.himeko.text_38089f27e1"),
   tree: 2,
   data: {
     eDmg: 20
   }
 }, {
-  title: '行迹-道标：生命值大于80%时提高暴击率15%',
+  title: $t("panel-damage-rules.characters.himeko.text_1a92a0c830"),
   tree: 3,
   data: {
     cpct: 15

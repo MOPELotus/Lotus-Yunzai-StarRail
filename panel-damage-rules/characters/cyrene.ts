@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff, DamageFn, DamageValue, Variables } from "../types.ts";
 
 const addDmg = (...items: DamageValue[]) => {
@@ -45,25 +48,25 @@ const getBounceCount = ({ cons, params }: Variables) => {
 }
 
 export const details: DamageDetail[] = [{
-  title: '普攻',
+  title: $t("panel-damage-rules.characters.cyrene.text_8b79df27ba"),
   params: { ripple: false, Memosprite: false, trueSelfTriggered: false, e2BuffCount: 0 },
   dmg: (data, { basic }) => {
     const basicDmg = basic(data.calc(data.attr.hp!) * data.talent.a!['技能伤害']!, 'a')
     return addFieldDmg(basicDmg, data)
   }
 }, {
-  title: '强化普攻·主目标',
+  title: $t("panel-damage-rules.characters.cyrene.text_3369b65b80"),
   params: { ripple: true, e2BuffCount: 4 },
   dmg: (data, dmg) => addFieldDmg(getEnhancedBasic(data, dmg), data)
 }, {
-  title: '强化普攻·其余目标',
+  title: $t("panel-damage-rules.characters.cyrene.text_e06acc924f"),
   params: { ripple: true, e2BuffCount: 4 },
   dmg: (data, { basic }) => {
     const basicDmg = basic(data.calc(data.attr.hp!) * data.talent.a2!['全体伤害']!, 'a')
     return addFieldDmg(basicDmg, data)
   }
 }, {
-  title: (data) => `忆灵技【花与箭的舞曲】（${getBounceCount(data)}段弹射）`,
+  title: (data) => $t("panel-damage-rules.characters.cyrene.text_5d7cbe2aa4", { "value1": getBounceCount(data) }),
   params: {
     ripple: true,
     Memosprite: true,
@@ -77,7 +80,7 @@ export const details: DamageDetail[] = [{
     return addFieldDmg(basicDmg, data)
   }
 }, {
-  title: (data) => `【献予「真我」之诗】（${getBounceCount(data)}段弹射）`,
+  title: (data) => $t("panel-damage-rules.characters.cyrene.text_4063530088", { "value1": getBounceCount(data) }),
   dmgKey: 'me',
   params: { ripple: true, Memosprite: true, trueSelfTriggered: true, teammateCount: 3, e2BuffCount: 4, e4Stacks: 24 },
   dmg: (data, dmg) => {
@@ -100,26 +103,26 @@ export const mainAttr = 'hp,cpct,cdmg,speed'
 export const createdBy = 'starim00'
 
 export const buffs: Buff[] = [{
-  title: '天赋-众愿啊，汇流如歌：我方全体造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.cyrene.text_a6d2b7b3b0"),
   data: {
     dmg: ({ talent }) => talent.t!['造成的伤害提高']! * 100
   }
 }, {
   check: ({ params }) => params.ripple === true,
-  title: '终结技-往昔的涟漪：昔涟与德谬歌的暴击率提高[cpct]%',
+  title: $t("panel-damage-rules.characters.cyrene.text_bdf078bcf5"),
   data: {
     cpct: ({ talent }) => talent.q!['暴击率提高']! * 100
   }
 }, {
   check: ({ params }) => params.Memosprite === true,
-  title: '忆灵天赋-等待，在所有的过去：昔涟与德谬歌的生命上限提高[hpPct]%',
+  title: $t("panel-damage-rules.characters.cyrene.text_b398067b7c"),
   data: {
     hpPct: ({ talent }) => talent.mt!['生命上限提高']! * 100
   }
 }, {
   tree: 3,
   check: ({ attr, calc }) => calc(attr.speed!) >= 180,
-  title: '行迹-三相的因果：全队伤害提高[dmg]%，昔涟与德谬歌冰抗穿透提高[kx]%（[_speed]速度）',
+  title: $t("panel-damage-rules.characters.cyrene.text_6b6e0c1335"),
   sort: 9,
   data: {
     _speed: ({ attr, calc }) => calc(attr.speed!),
@@ -129,7 +132,7 @@ export const buffs: Buff[] = [{
 }, {
   cons: 6,
   check: ({ params }) => params.trueSelfTriggered === true,
-  title: '昔涟6魂：【真我】首次触发后，敌方全体防御力降低[enemyDef]%',
+  title: $t("panel-damage-rules.characters.cyrene.text_4989e6336a"),
   data: {
     enemyDef: 20
   }

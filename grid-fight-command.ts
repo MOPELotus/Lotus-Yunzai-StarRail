@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import { starRailGachaThemeDirectory } from "./gacha-detail-source.ts";
@@ -25,7 +28,7 @@ type GridImageReply = { readonly type: "image"; readonly file: Uint8Array };
 type GridReply = string | GridImageReply;
 type Draw = (...args: Parameters<typeof renderGridFight>) => Promise<{ png: Uint8Array }>;
 
-const changed = "星铁档案已变更，请重新查询货币战争。";
+const changed = $t("grid-fight-command.text_8c8f22b6fe");
 
 export function createStarRailGridFightQuery(profiles: Profiles, client: Client, lifecycle: AbortSignal, {
   draw = renderGridFight,
@@ -39,13 +42,13 @@ export function createStarRailGridFightQuery(profiles: Profiles, client: Client,
     if (context.isDelegated || (context.at !== undefined && String(context.at) !== String(context.self_id)) ||
         (context.message_type !== "private" && context.message_type !== "group") ||
         typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) {
-      return "货币战争只查询本人已登录档案，请在 QQ 会话直接发送指令。";
+      return $t("grid-fight-command.text_438eaecfb7");
     }
     const { profileId } = request;
-    if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+    if (profileId < 1 || profileId > MAX_PROFILE_ID) return $t("grid-fight-command.text_68901e8078", { "MAX_PROFILE_ID": MAX_PROFILE_ID });
     const index = request.mode === "detail" ? request.index : undefined;
     if (index !== undefined && (index < 1 || index > gridFightHistoryMax)) {
-      return `货币战争战绩编号须为 1–${gridFightHistoryMax}。`;
+      return $t("grid-fight-command.text_eae9b72371", { "gridFightHistoryMax": gridFightHistoryMax });
     }
     const qq = String(user);
     try {
@@ -59,11 +62,11 @@ export function createStarRailGridFightQuery(profiles: Profiles, client: Client,
         signal.throwIfAborted();
       }
       await verify();
-      if (index !== undefined && index > records.length) return `未找到货币战争第 ${index} 条记录。`;
-      if (!brief) return "该档案尚无米游社货币战争战绩。";
+      if (index !== undefined && index > records.length) return $t("grid-fight-command.text_e7e6459595", { "index": index });
+      if (!brief) return $t("grid-fight-command.text_ab936ec6f3");
       const count = request.mode === "recent" ? await recentCount() : undefined;
       const card = makeGridFightCard(source.role.uid, brief, records, index, count);
-      if (index !== undefined && !card.battle) return "米游社未返回此场货币战争的完整战绩。";
+      if (index !== undefined && !card.battle) return $t("grid-fight-command.text_c51d62bd8f");
       const limit = context.inlineImageByteLimit ?? oneBotImageBytes;
       const directory = theme();
       let napCat: Promise<boolean> | undefined;
@@ -92,15 +95,15 @@ export function createStarRailGridFightQuery(profiles: Profiles, client: Client,
       if (signal.aborted) return [];
       if (error instanceof ProfileError) {
         if (error.code === "changed") return changed;
-        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有已同步的星铁角色。`;
+        if (error.code === "missing" || error.code === "login-required") return $t("grid-fight-command.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("grid-fight-command.text_c0d14d54a7", { "profileId": profileId });
       }
       if (error instanceof HoyoRequestError) {
         if (error.code === "profile-changed") return changed;
-        if (error.code === "refresh") return "货币战争战绩的 Cookie 未能续期，请检查当前档案登录状态。";
+        if (error.code === "refresh") return $t("grid-fight-command.text_df42fb73c5");
         return error.message;
       }
-      return "星铁货币战争战绩暂时无法读取，请稍后重试。";
+      return $t("grid-fight-command.text_9bc33ba76f");
     }
   };
 }

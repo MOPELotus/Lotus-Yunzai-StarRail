@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Same-archive equipment replacement follows apps/profile/ProfileChange.js in the MIT source.
 import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
 import type { PanelAvatar } from "./panel-model.ts";
@@ -17,7 +20,7 @@ const parts: Readonly<Record<string, EquipmentSlot>> = {
   绳: 6, 线: 6, 链接绳: 6, 连接绳: 6,
   遗器: allRelics, 圣遗物: allRelics,
 };
-const partNames = ["光锥", "头部", "手部", "躯干", "脚部", "位面球", "连接绳"];
+const partNames = [$t("panel-equipment.text_e733238b28"), $t("panel-equipment.text_ae549a2e68"), $t("panel-equipment.text_5fb6d5ffe1"), $t("panel-equipment.text_89e702ec48"), $t("panel-equipment.text_a55782616f"), $t("panel-equipment.text_1855da2422"), $t("panel-equipment.text_fb8515eb4b")];
 const role = String.raw`[\p{L}\p{N}·・•_.&★ -]{1,28}?`;
 const partPattern = Object.keys(parts).sort((a, b) => b.length - a.length).join("|");
 const changePattern = new RegExp(
@@ -27,10 +30,10 @@ const changePattern = new RegExp(
 const donorPattern = new RegExp(String.raw`^(${role})\s*((?:${partPattern})(?:\s*\+\s*(?:${partPattern})){0,6})$`, "u");
 const superimpositionPattern = /^(?:([1-5一二三四五满])(?:叠影?|精炼?)|(?:叠影?|精炼?)([1-5一二三四五]))\s*([^+]{1,64})$/u;
 const invalidTierPrefix = /^(?:[0-9零一二三四五六七八九十满])?(?:叠影?|精炼?)/u;
-const tiers = "一二三四五";
+const tiers = $t("panel-equipment.text_3c040c8ec5");
 const eidolonToken = /([0-6零一二三四五六满])(?:命|魂|星魂)/u;
 const eidolonPattern = new RegExp(`^${eidolonToken.source}$`, "u");
-const eidolonDigits = "零一二三四五六";
+const eidolonDigits = $t("panel-equipment.text_3c409887ef");
 const characterLevelPattern = /^(?:([1-9]\d?)级|等级[\s:：]+([1-9]\d?))$/u;
 
 const skillNumber = "(1[0-5]|[1-9])";
@@ -187,33 +190,33 @@ function readDonorEquipment(request: string): DonorEquipment | undefined {
 
 export function changePanelSuperimposition(target: PanelAvatar, rank: number, requestedName: string, canonicalName: string) {
   const cone = target.cone;
-  if (!cone) return { error: `「${target.name}」的星铁面板没有光锥记录。` };
+  if (!cone) return { error: $t("panel-equipment.text_2eb078623e", { "name": target.name }) };
   const coneName = canonicalName || cone.name;
   if (requestedName !== "武器" && requestedName !== "光锥" && requestedName !== coneName) {
-    return { error: `「${target.name}」当前装备「${coneName || cone.id}」，请指定当前光锥。` };
+    return { error: $t("panel-equipment.text_f784cba3dc", { "name": target.name, "value2": coneName || cone.id }) };
   }
   const avatar = { ...target, cone: { ...cone, rank, description: "" }, stats: [] };
-  return { avatar, label: `临时换装 · ${coneName || cone.id} · 叠影${rank}阶` };
+  return { avatar, label: $t("panel-equipment.text_53b3113885", { "value1": coneName || cone.id, "rank": rank }) };
 }
 
 export function replacePanelEquipment(target: PanelAvatar, donor: PanelAvatar, slots: readonly EquipmentSlot[]) {
-  if (slots.length !== new Set(slots).size) return { error: "同一个装备部位只能指定一次。" };
-  if (slots.includes(allRelics) && !donor.relics.length) return { error: `「${donor.name}」的星铁面板没有遗器记录。` };
+  if (slots.length !== new Set(slots).size) return { error: $t("panel-equipment.text_04f49c1c17") };
+  if (slots.includes(allRelics) && !donor.relics.length) return { error: $t("panel-equipment.text_26ee7e6252", { "name": donor.name }) };
   const originalRelics = slots.includes(allRelics) ? donor.relics : target.relics;
   const relics = originalRelics.filter(part => !slots.includes(part.slot));
   let cone = target.cone;
   for (const slot of slots) {
     if (slot === allRelics) continue;
     if (slot === 0) {
-      if (!donor.cone) return { error: `「${donor.name}」的星铁面板没有光锥记录。` };
+      if (!donor.cone) return { error: $t("panel-equipment.text_2eb078623e", { "name": donor.name }) };
       cone = { ...donor.cone, description: "" };
       continue;
     }
     const equipped = donor.relics.filter(part => part.slot === slot);
-    if (equipped.length !== 1) return { error: `「${donor.name}」的星铁面板缺少可用的${partNames[slot]}记录。` };
+    if (equipped.length !== 1) return { error: $t("panel-equipment.text_9e60e8f30e", { "name": donor.name, "value2": partNames[slot] }) };
     relics.push(equipped[0]!);
   }
   const avatar = { ...target, cone, relics: relics.sort((a, b) => a.slot - b.slot), stats: [] };
-  const label = `临时换装 · ${donor.name} · ${slots.map(slot => slot === allRelics ? "全部遗器" : partNames[slot]).join("、")}`;
+  const label = $t("panel-equipment.text_15d7d5da8e", { "name": donor.name, "value2": slots.map(slot => slot === allRelics ? $t("panel-equipment.text_5bee0753ec") : partNames[slot]).join("、") });
   return { avatar, label };
 }

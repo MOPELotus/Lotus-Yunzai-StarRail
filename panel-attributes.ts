@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Static Star Rail panel math adapted from miao-plugin's models/attr/{Attr,AttrData}.js,
 // models/Character.js, models/Weapon.js and models/artis/ArtisAttr.js.
 import staticRules from "./panel-theme/static-panel-rules.json";
@@ -137,11 +140,11 @@ export function changePanelLevel(target: PanelAvatar, level: number, metadata: P
     if (weapon && boundaryWeaponLevel !== undefined) cone = { ...weapon, promote: defaultPromotion(boundaryWeaponLevel) };
   } else if ((sameLevel && ascensions.includes(level)) || boundaryWeaponLevel !== undefined) {
     const recorded = recordedPromotions(target, metadata);
-    if (!recorded) return { error: `「${target.name}」等级试算缺少可确认的角色或光锥突破资料。` };
+    if (!recorded) return { error: $t("panel-attributes.text_a59bb0d92a", { "name": target.name }) };
     if (sameLevel) promotion = recorded.progression;
     if (weapon && boundaryWeaponLevel !== undefined) cone = { ...weapon, promote: recorded.weaponPhase };
   }
-  return { avatar: { ...target, level, cone, stats: [] }, promotion, label: `临时等级 · Lv.${level}` };
+  return { avatar: { ...target, level, cone, stats: [] }, promotion, label: $t("panel-attributes.text_ad4e78d938", { "level": level }) };
 }
 
 export function calculateManagedElation(avatar: PanelAvatar, { character, cone, setForId }: PanelAttributeMetadata) {

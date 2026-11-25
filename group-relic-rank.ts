@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,9 +43,9 @@ const defaultDirectory = fileURLToPath(new URL("../../data/starrail/relic-rank/"
 const defaultLimit = 15;
 const rosterLimit = 10_000;
 const aggregateTitles: Readonly<Record<RelicRankMetric, string>> = {
-  damage: "*最强排行", mark: "*最高分排行", crit: "*双爆排行", valid: "*词条排行",
+  damage: $t("group-relic-rank.text_47f215cdcd"), mark: $t("group-relic-rank.text_1c4e14357e"), crit: $t("group-relic-rank.text_95c8d7f939"), valid: $t("group-relic-rank.text_6bac414715"),
 };
-const rankTerm = "(?:遗器)?(?:双[暴爆](?:副?词条)?|加权(?:有效)?词条|有效词条|词条|评分)|遗器";
+const rankTerm = $t("group-relic-rank.text_50f37f6510");
 const rankPrefix = new RegExp(`^(?:${rankTerm})`, "u");
 const rankSuffix = new RegExp(`(?:${rankTerm})$`, "u");
 const rankEnding = /(?:排行|排名)榜?$/u;
@@ -166,7 +169,7 @@ function observations(raw: unknown, scope: Scope, qq: number): Record<string, Ob
   const input = object(raw);
   const profiles = object(input?.profiles);
   if (!profiles || input?.version !== 1 || input.adapter !== scope.adapter || input.bot !== scope.bot || input.group !== scope.group || input.qq !== qq) {
-    throw new TypeError("星铁群遗器排行摘要与当前会话不一致。");
+    throw new TypeError($t("group-relic-rank.text_21fe6596d6"));
   }
   const records: Record<string, Observation> = {};
   for (const [key, value] of Object.entries(profiles)) {
@@ -242,7 +245,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
   const enabled = new Set(groups.split(/[\s,]+/u).filter((group) => /^[1-9]\d*$/u.test(group)));
   const folder = (scope: Scope) => join(directory, scope.adapter, String(scope.bot));
   const archive = (scope: Scope) => createRoleJsonArchive(folder(scope), lockFile, {
-    subject: "星铁群遗器评分摘要", lockSuffix: "relic-rank", maxBytes: 2 * 1024 * 1024, rejectNull: true,
+    subject: $t("group-relic-rank.text_ec4e8410dc"), lockSuffix: "relic-rank", maxBytes: 2 * 1024 * 1024, rejectNull: true,
   });
   const groupEnabled = (scope: Scope) => readEnabled("sr", scope.group, enabled.has(String(scope.group)));
   const panelStore = createStarRailPanelArchive(lockFile, panelDirectory);
@@ -276,7 +279,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
       await verify();
       context.groupActivitySignal?.throwIfAborted();
       signal.throwIfAborted();
-      if (!await groupEnabled(scope) || (!summary && !await groupMembers(scope, context))) throw new Error("星铁群榜登记已失效。");
+      if (!await groupEnabled(scope) || (!summary && !await groupMembers(scope, context))) throw new Error($t("group-relic-rank.text_f3167ec453"));
       context.groupActivitySignal?.throwIfAborted();
       signal.throwIfAborted();
     }, async raw => {
@@ -316,20 +319,20 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
       const { character, metric: requestedMetric, strongest } = command;
       const metric = character && requestedMetric === "damage" && !hasPersonalDamage(String(character.id)) ? "mark" : requestedMetric;
       const label = relicRankLabels[metric];
-      const title = `星铁群${label}排行`;
+      const title = $t("group-relic-rank.text_cf322d128c", { "label": label });
       const scope = scopeOf(context);
-      if (!scope) return `${title}只能在群聊中查询。`;
-      const disabled = `本群未启用${title}。`;
+      if (!scope) return $t("group-relic-rank.text_6f4e3ec2df", { "title": title });
+      const disabled = $t("group-relic-rank.text_d7a4339d20", { "title": title });
       const enabledAtStart = await groupEnabled(scope);
       if (active.aborted) return;
       if (!enabledAtStart) return disabled;
       const groupKey = `${scope.adapter}:${scope.bot}:${scope.group}`;
-      if (refreshing.has(groupKey)) return "本群星铁遗器排行正在刷新，请稍后再查。";
+      if (refreshing.has(groupKey)) return $t("group-relic-rank.text_0a6b7f0e37");
       refreshing.add(groupKey);
       try {
         const members = await groupMembers(scope, context);
         active.throwIfAborted();
-        if (!members) return "暂时无法核对本群成员，请稍后查询。";
+        if (!members) return $t("group-relic-rank.text_64ba9d6e54");
         const files = await readdir(join(folder(scope), String(scope.group))).catch((error: NodeJS.ErrnoException) => {
           if (error.code === "ENOENT") return [];
           throw error;
@@ -350,7 +353,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           }
         }
         active.throwIfAborted();
-        if (!registered.size) return `本群暂无已登记的星铁 UID。可在本群查看本人的角色面板或遗器以登记当前档案。`;
+        if (!registered.size) return $t("group-relic-rank.text_8afccbc83c");
         const [provider, theme] = await Promise.all([readServer(), readRankTheme()]);
         const requestShowcase = async (entry: Candidate, requestSignal: AbortSignal) => {
           if (!await remainsRegistered(entry, members)) return;
@@ -358,7 +361,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const target = showcaseTarget(entry.role, provider);
           try {
             const snapshot = await fetchShowcase(target, requestSignal);
-            if (snapshot.uid !== entry.role.uid || snapshot.source !== target.provider) throw new ShowcaseError("展板身份不一致。");
+            if (snapshot.uid !== entry.role.uid || snapshot.source !== target.provider) throw new ShowcaseError($t("group-relic-rank.text_1084bc5ae2"));
             return snapshot;
           } catch (error) {
             if (error instanceof ShowcaseError && error.notListed) return;
@@ -371,7 +374,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const enabled = await groupEnabled(scope);
           active.throwIfAborted();
           if (!enabled) return disabled;
-          if (!live) return "群成员或档案已变化，请重新查询排行。";
+          if (!live) return $t("group-relic-rank.text_b5d9036c34");
         };
         async function assess(snapshot: PanelSnapshot, avatar: PanelAvatar, selectedMetric: RelicRankMetric) {
           if (selectedMetric === "damage") {
@@ -420,7 +423,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           }, active);
           const latest = await groupMembers(scope, context);
           active.throwIfAborted();
-          if (!latest) return "暂时无法核对本群成员，请稍后查询。";
+          if (!latest) return $t("group-relic-rank.text_64ba9d6e54");
           if (!await groupEnabled(scope)) return disabled;
           const winners = new Map<string, { value: Assessed; selectedMetric: RelicRankMetric; entry: Candidate }>();
           const coverage = { registered: 0, scored: 0, notListed: 0, failed: 0 };
@@ -441,13 +444,13 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
               }
             }
           }
-          if (!coverage.registered) return "群成员或档案已变化，请重新查询排行。";
+          if (!coverage.registered) return $t("group-relic-rank.text_b5d9036c34");
           const heading = aggregateTitles[metric];
           const ranked = [...winners.values()].sort((a, b) => a.value.uid.localeCompare(b.value.uid) ||
             (b.value.avatar.rarity ?? 0) - (a.value.avatar.rarity ?? 0) || Number(a.value.characterId) - Number(b.value.characterId));
-          const summary = relicRankCoverageText(coverage) + ` · ${ranked.length} 位角色` +
-            (ranked.some(row => row.selectedMetric !== metric) ? " · 无伤害规则的角色按遗器评分" : "");
-          if (!ranked.length) return [heading, summary, "本群本轮未取得可用于排行的公开展板。"].join("\n");
+          const summary = relicRankCoverageText(coverage) + $t("group-relic-rank.text_b7556486cf", { "length": ranked.length }) +
+            (ranked.some(row => row.selectedMetric !== metric) ? $t("group-relic-rank.text_83724c55e2") : "");
+          if (!ranked.length) return [heading, summary, $t("group-relic-rank.text_c0f1214885")].join("\n");
           const entries = [...new Set(ranked.map(row => row.entry))];
           const beforeRender = await changed(entries);
           if (beforeRender) return beforeRender;
@@ -477,7 +480,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         }, active);
         const latest = await groupMembers(scope, context);
         active.throwIfAborted();
-        if (!latest) return "暂时无法核对本群成员，请稍后查询。";
+        if (!latest) return $t("group-relic-rank.text_64ba9d6e54");
         if (!await groupEnabled(scope)) {
           active.throwIfAborted();
           return disabled;
@@ -487,7 +490,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           active.throwIfAborted();
           if (await remainsRegistered(result.entry, latest)) current.push(result);
         }
-        if (!current.length) return "群成员或档案已变化，请重新查询排行。";
+        if (!current.length) return $t("group-relic-rank.text_b5d9036c34");
         const scored = current.flatMap(row => row.status === "fresh" ? [row] : []);
         scored.sort((a, b) => b.value.score - a.value.score ||
           (b.value.uid > a.value.uid ? 1 : b.value.uid < a.value.uid ? -1 : 0));
@@ -499,19 +502,19 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         if (strongest) {
           const lead = scored[0];
           const summary = relicRankCoverageText(coverage);
-          if (!lead) return `本群暂无${character.name}的本轮有效${label}数据。\n${summary}`;
+          if (!lead) return $t("group-relic-rank.text_41ca35f5b3", { "name": character.name, "label": label, "summary": summary });
           const beforeRender = await changed(current.map(row => row.entry));
           if (beforeRender) return beforeRender;
           const { uid, snapshot, avatar } = lead.value;
           const card = await renderStrongest(snapshot, avatar, theme, active, context.inlineImageByteLimit, await starRailUsesBuiltInPortrait(context)).catch(() => undefined);
           const afterRender = await changed(current.map(row => row.entry));
           if (afterRender) return afterRender;
-          const heading = `${character.name} · 本轮${label}榜首 · UID ${uid}\n${summary}`;
-          return card ? [heading, { type: "image" as const, file: card.png }] : `${heading}\n本轮公开数据已取得，暂时无法生成完整面板。`;
+          const heading = $t("group-relic-rank.text_335f329c23", { "name": character.name, "label": label, "uid": uid, "summary": summary });
+          return card ? [heading, { type: "image" as const, file: card.png }] : $t("group-relic-rank.text_18ae85a8bc", { "heading": heading });
         }
         const ranked = scored.slice(0, await readLimit("sr", defaultLimit));
         const rows = await Promise.all(ranked.map(({ value }) => displayRow(value, metric)));
-        if (!rows.length) return `本群暂无${character.name}的本轮有效公开展板${label}。\n${relicRankCoverageText(coverage)}`;
+        if (!rows.length) return $t("group-relic-rank.text_cfae2312a8", { "name": character.name, "label": label, "value3": relicRankCoverageText(coverage) });
         let png: Uint8Array | undefined;
         try {
           png = (await render(character, rows, undefined, context.inlineImageByteLimit, coverage, metric))?.png;
@@ -519,10 +522,10 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         const afterRender = await changed(ranked.map(row => row.entry));
         if (afterRender) return afterRender;
         if (png) return { type: "image" as const, file: png };
-        return [`${character.name} · 本群${label}排行`, relicRankCoverageText(coverage), ...rows.map(({ uid, score, grade }, index) =>
+        return [$t("group-relic-rank.text_697e854ea9", { "name": character.name, "label": label }), relicRankCoverageText(coverage), ...rows.map(({ uid, score, grade }, index) =>
           [`${index + 1}. UID ${uid}`, groupPanelNumber(score.toFixed(1), theme.commaGroup), grade].filter(Boolean).join(" · "))].join("\n");
       } catch {
-        if (!active.aborted) return `暂时无法刷新本群公开展板，未生成本轮${label}排行。`;
+        if (!active.aborted) return $t("group-relic-rank.text_d22746e735", { "label": label });
       } finally {
         refreshing.delete(groupKey);
       }

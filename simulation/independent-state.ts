@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { join } from "node:path";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { simulateIndependentWarps, type WarpPity, type WarpPull } from "./draw.ts";
@@ -38,7 +41,7 @@ function makeState(day: string, expiresAt: number, pool: (kind: WarpKind) => Poo
   return { day, expiresAt, pools: Object.fromEntries(kinds.map(kind => [kind, pool(kind)])) as State["pools"] };
 }
 function invalid(): never {
-  throw new TypeError("独立星铁旧模拟保底存档格式无效。");
+  throw new TypeError($t("simulation.independent-state.text_c3f717a4b2"));
 }
 
 function readCurrent(input: unknown, day: string, time: number): State {
@@ -78,7 +81,7 @@ function readLegacy(entry: Awaited<ReturnType<ReadIndependentWarpKey>>, day: str
 
 export function createIndependentWarpDraw(lock: AcquireRoleArchiveLock, directory: string,
   readPrevious: ReadIndependentWarpKey | undefined, signal: AbortSignal) {
-  const options = { subject: "独立星铁模拟跃迁", lockSuffix: "independent-warp", maxBytes: 64 * 1024, rejectNull: true };
+  const options = { subject: $t("simulation.independent-state.text_361997ebd4"), lockSuffix: "independent-warp", maxBytes: 64 * 1024, rejectNull: true };
   const groupArchive = createRoleJsonArchive(join(directory, "independent-group"), lock, options);
   const privateArchive = createRoleJsonArchive(join(directory, "independent-private"), lock, options);
   return async ({ qq, group, time, now, pool, random, isOwner, rules }: {
@@ -95,7 +98,7 @@ export function createIndependentWarpDraw(lock: AcquireRoleArchiveLock, director
       const state = input === null ? readLegacy(previous, day, current) : readCurrent(input, day, current);
       const selected = state.pools[pool.kind];
       if (!isOwner() && rules.dailyTenPulls !== 0 && Math.floor(selected.draws / 10) >= rules.dailyTenPulls) {
-        const result = { text: `今日已抽 ${selected.draws} 抽，其中${selected.five ? `有 ${selected.five} 个五星` : "没有五星"}，明日再来吧。` };
+        const result = { text: $t("simulation.independent-state.text_d028f8c27e", { "draws": selected.draws, "value2": selected.five ? $t("simulation.independent-state.text_6959f557ff", { "five": selected.five }) : $t("simulation.independent-state.text_a32fff188c") }) };
         return input === null ? { document: state, result } : { result };
       }
       const pulls = simulateIndependentWarps(pool, selected, random);

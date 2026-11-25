@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readFile, realpath, stat } from "node:fs/promises";
 import { join, sep } from "node:path";
 import characterNames from "../challenge-character-names.json";
@@ -17,10 +20,10 @@ interface WarpIdentityCatalog {
 
 const fallbackCharacters = [...new Set(Object.values(characterNames))].map(name => ({ name }));
 const fallbackOthers: readonly WarpIdentity[] = [
-  ["阿基维利", "开拓"], ["纳努克", "毁灭"], ["岚", "巡猎"], ["博识尊", "智识"], ["希佩", "同谐"],
-  ["IX", "虚无"], ["克里珀", "存护"], ["药师", "丰饶"], ["阿哈", "欢愉"], ["伊德莉拉", "纯美"],
-  ["互", "均衡"], ["末王", "终末"], ["浮黎", "记忆"], ["奥博洛斯", "贪饕"], ["龙", "不朽"], ["太一", "秩序"],
-].map(([name, path]) => ({ name: name!, path, allegiance: "星神" }));
+  [$t("simulation.reincarnation.text_fa46f08de9"), $t("simulation.reincarnation.text_079410538f")], [$t("simulation.reincarnation.text_22f996d85d"), $t("simulation.reincarnation.text_85a5719200")], [$t("simulation.reincarnation.text_e3f2f3cb99"), $t("simulation.reincarnation.text_89ae343575")], [$t("simulation.reincarnation.text_71b0a2bd0c"), $t("simulation.reincarnation.text_4807b62b3a")], [$t("simulation.reincarnation.text_2fffcd0553"), $t("simulation.reincarnation.text_b28b5f46a0")],
+  ["IX", $t("simulation.reincarnation.text_135fd7b0a1")], [$t("simulation.reincarnation.text_9ba7785441"), $t("simulation.reincarnation.text_d55d4d5989")], [$t("simulation.reincarnation.text_e31f4f875a"), $t("simulation.reincarnation.text_18db236249")], [$t("simulation.reincarnation.text_f3bdb51746"), $t("simulation.reincarnation.text_17f4b35418")], [$t("simulation.reincarnation.text_aa9827ba15"), $t("simulation.reincarnation.text_287b5e9dae")],
+  [$t("simulation.reincarnation.text_693142cc42"), $t("simulation.reincarnation.text_2588b5b9ba")], [$t("simulation.reincarnation.text_36db2eb283"), $t("simulation.reincarnation.text_a3b420b718")], [$t("simulation.reincarnation.text_2867a6866c"), $t("simulation.reincarnation.text_7a6335b379")], [$t("simulation.reincarnation.text_a47c5285d6"), $t("simulation.reincarnation.text_32972ff9f3")], [$t("simulation.reincarnation.text_c10756e3ca"), $t("simulation.reincarnation.text_5d7e67f533")], [$t("simulation.reincarnation.text_fc5ae07f8a"), $t("simulation.reincarnation.text_c2c1845c3b")],
+].map(([name, path]) => ({ name: name!, path, allegiance: $t("simulation.reincarnation.text_433d4bb510") }));
 
 function record(value: unknown): Record<string, unknown> | undefined {
   if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) return value as Record<string, unknown>;

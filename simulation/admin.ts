@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readWarpRandomCandidates } from "./pools.ts";
 import { defaultWarpRates, readWarpAllowance, type createWarpSettingsStore, type WarpAllowance, type WarpPoolNames, type WarpRates,
   type WarpSettings } from "./settings.ts";
@@ -13,7 +16,7 @@ const toggleFields = {
   "双黄": "weeklyBonus", "每周双黄": "weeklyBonus", "卡池同步": "automaticPools", "卡池自动同步": "automaticPools",
 } as const;
 const globalFields = [...Object.keys(rateFields), ...Object.keys(poolFields), ...Object.keys(toggleFields),
-  "概率复位", "随机卡池", "转生间隔", "违禁词", "屏蔽词"].sort((left, right) => right.length - left.length);
+  $t("simulation.admin.text_077b20bfaa"), $t("simulation.admin.text_79013b55dd"), $t("simulation.admin.text_d95dc3efdf"), $t("simulation.admin.text_ddf210db3b"), $t("simulation.admin.text_6f2a65988f")].sort((left, right) => right.length - left.length);
 const globalPattern = new RegExp(`^#星铁(?:模拟)?抽卡设置\\s*(?:(${globalFields.join("|")})\\s*(.*))?$`, "u");
 const allowancePattern = new RegExp(`^(?:#星铁设置(?:星铁)?抽卡|#设置星铁抽卡)\\s*(?:(${Object.keys(allowanceFields).join("|")})\\s*(.*))?$`, "u");
 
@@ -33,7 +36,7 @@ function take<T>(source: readonly T[], count: number, random: () => number) {
 }
 
 function number(input: string | undefined, min: number, max: number) {
-  if (!input || !/^\d{1,5}$/u.test(input)) throw new RangeError(`请输入 ${min}–${max} 的整数。`);
+  if (!input || !/^\d{1,5}$/u.test(input)) throw new RangeError($t("simulation.admin.text_e9d7324c5b", { "min": min, "max": max }));
   return Math.max(min, Math.min(Number(input), max));
 }
 
@@ -41,7 +44,7 @@ function toggle(input: string | undefined) {
   if (!input) return true;
   if (/^(?:开启|启用|打开|开|是|1|true)$/iu.test(input ?? "")) return true;
   if (/^(?:关闭|禁用|关|否|0|false)$/iu.test(input ?? "")) return false;
-  throw new RangeError("请提供开启或关闭。");
+  throw new RangeError($t("simulation.admin.text_daa505cc19"));
 }
 
 type PoolCandidates = Awaited<ReturnType<typeof readWarpRandomCandidates>>;
@@ -67,7 +70,7 @@ function editGlobal(settings: WarpSettings, field: string, value: string | undef
       names = value?.startsWith("[") ? JSON.parse(value) : value?.split(/[,，]/u).map(name => name.trim()).filter(Boolean);
     } catch {}
     if (!Array.isArray(names) || !names.length || !names.every(name => typeof name === "string")) {
-      throw new RangeError("请输入卡池名称。多个名称用逗号分隔，名称内有逗号时请用 JSON 字符串数组。");
+      throw new RangeError($t("simulation.admin.text_ddf27ebdcc"));
     }
     settings.automaticPools = false;
     settings.poolNames[key] = names;
@@ -76,16 +79,16 @@ function editGlobal(settings: WarpSettings, field: string, value: string | undef
 }
 
 function summarize(settings: WarpSettings) {
-  const switchText = (value: boolean) => value ? "开启" : "关闭";
-  const poolNames = Object.entries(poolFields).map(([label, field]) => `${label} ${settings.poolNames[field]?.join("、") ?? "随官方配置"}`);
+  const switchText = (value: boolean) => value ? $t("simulation.admin.text_8da97ddda9") : $t("simulation.admin.text_3fd47edce4");
+  const poolNames = Object.entries(poolFields).map(([label, field]) => `${label} ${settings.poolNames[field]?.join("、") ?? $t("simulation.admin.text_b2d71ca5fe")}`);
   const rates = settings.rates;
   return [
-    "星铁模拟跃迁设置",
-    `模拟 ${switchText(settings.enabled)} · 多连 ${switchText(settings.multiple)} · 每周双黄 ${switchText(settings.weeklyBonus)}`,
-    `卡池 ${settings.automaticPools ? "自动同步" : "手工设置"} · 转生间隔 ${settings.reincarnationMinutes} 分钟`,
-    `角色池五星 ${rates.characterFive}/10000 · 四星 ${rates.characterFour}/10000`,
-    `光锥池五星 ${rates.coneFive}/10000 · 四星 ${rates.coneFour}/10000`,
-    `五星小保底 ${rates.featuredFive === null ? "角色 50% · 光锥 75%" : rates.featuredFive + "%"}`,
+    $t("simulation.admin.text_071b2e76e9"),
+    $t("simulation.admin.text_3f091e82a2", { "value1": switchText(settings.enabled), "value2": switchText(settings.multiple), "value3": switchText(settings.weeklyBonus) }),
+    $t("simulation.admin.text_f7fb1e0060", { "value1": settings.automaticPools ? $t("simulation.admin.text_6e9adb42a2") : $t("simulation.admin.text_1c74bf5ef1"), "reincarnationMinutes": settings.reincarnationMinutes }),
+    $t("simulation.admin.text_c65eda7337", { "characterFive": rates.characterFive, "characterFour": rates.characterFour }),
+    $t("simulation.admin.text_a19bd40fbc", { "coneFive": rates.coneFive, "coneFour": rates.coneFour }),
+    $t("simulation.admin.text_23494e5361", { "value1": rates.featuredFive === null ? $t("simulation.admin.text_1c1b92a4e7") : rates.featuredFive + "%" }),
     ...poolNames,
   ].join("\n");
 }
@@ -98,7 +101,7 @@ export async function runWarpAdministration(request: NonNullable<ReturnType<type
 }) {
   const { field, value } = request;
   if (request.scope === "global") {
-    if (field === "违禁词" || field === "屏蔽词") return "全局词表通过群管的屏蔽词设置管理。";
+    if (field === "违禁词" || field === "屏蔽词") return $t("simulation.admin.text_bd2d7757e5");
     const candidates = field === "随机卡池" ? await readWarpRandomCandidates() : undefined;
     return summarize(field ? await settings.update(current => editGlobal(current, field, value, random, candidates), verifyOwner) : await settings.read());
   }
@@ -110,5 +113,5 @@ export async function runWarpAdministration(request: NonNullable<ReturnType<type
     return current;
   }, verifyOwner) : await settings.read();
   const { special, regular, recallSeconds } = readWarpAllowance(saved, group);
-  return `${group ? "本群" : "默认"}模拟跃迁设置\n每日专票 ${special} 张 · 通票 ${regular} 张 · 撤回 ${recallSeconds} 秒`;
+  return $t("simulation.admin.text_e903d5f1e2", { "value1": group ? $t("simulation.admin.text_0d5f4509dd") : $t("simulation.admin.text_844b8cc8df"), "special": special, "regular": regular, "recallSeconds": recallSeconds });
 }

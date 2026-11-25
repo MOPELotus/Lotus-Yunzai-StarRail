@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { fileURLToPath } from "node:url";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { object, type PanelSnapshot } from "./panel-model.ts";
@@ -5,7 +8,7 @@ import { object, type PanelSnapshot } from "./panel-model.ts";
 const defaultDirectory = fileURLToPath(new URL("../../data/starrail/panels/", import.meta.url));
 
 export function createStarRailPanelArchive(lock: AcquireRoleArchiveLock, directory = defaultDirectory) {
-  return createRoleJsonArchive(directory, lock, { subject: "星铁面板", lockSuffix: "panel", maxBytes: 8 * 1024 * 1024, rejectNull: true });
+  return createRoleJsonArchive(directory, lock, { subject: $t("panel-discard.text_6ce5363a7d"), lockSuffix: "panel", maxBytes: 8 * 1024 * 1024, rejectNull: true });
 }
 
 export function panelDiscardedAt(raw: unknown): number {

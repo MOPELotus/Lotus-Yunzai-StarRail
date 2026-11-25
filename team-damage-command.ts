@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { renderStarRailTeamDamage, type TeamMember } from "./team-damage-card.ts";
 import { calculateEquipmentAttributeRows, leveledAttributes, readPanelStaticConeEffects } from "./panel-attributes.ts";
@@ -10,13 +13,13 @@ import { calculateTeamDamage, starRailTeamCatalog, starRailTeamCones, starRailTe
 import { projectTeamOwnedPanel } from "./team-owned-panel.ts";
 import { starRailTraceOwner } from "./panel-trace-refresh.ts";
 
-const statNames = ["暴击率", "暴击伤害", "攻击力", "速度", "击破", "效果命中"];
+const statNames = [$t("team-damage-command.text_d4b0baf955"), $t("team-damage-command.text_15bccc3951"), $t("team-damage-command.text_b84ee11f4f"), $t("team-damage-command.text_0e14d148b4"), $t("team-damage-command.text_092a6b7674"), $t("team-damage-command.text_84c7536950")];
 const number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 });
 
 function teamDamageReport(uid: string, command: TeamDamageCommand, team: readonly TeamMember[], result: TeamBattleResult) {
   const summary = [
-    { label: "总伤害", value: number.format(result.total) }, { label: "DPS", value: number.format(result.dps) },
-    { label: "轮次", value: String(command.cycle) }, { label: "目标", value: `${command.enemies} 怪` },
+    { label: $t("team-damage-command.text_a3c16bf938"), value: number.format(result.total) }, { label: "DPS", value: number.format(result.dps) },
+    { label: $t("team-damage-command.text_4890584bb5"), value: String(command.cycle) }, { label: $t("team-damage-command.text_57060c88a3"), value: $t("team-damage-command.text_6100756358", { "enemies": command.enemies }) },
   ];
   const contribution = result.damage.map(row => ({ ...row, value: number.format(row.value),
     share: result.total > 0 ? `${(row.value / result.total * 100).toFixed(1)}%` : "0%" }));
@@ -46,19 +49,19 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
     const user = context.user_id;
     if (context.isDelegated || !Number.isSafeInteger(user) || !user || user < 1 ||
         (context.message_type !== "private" && context.message_type !== "group")) {
-      return "请从本人 QQ 会话查询星铁队伍伤害。";
+      return $t("team-damage-command.text_cc3df32e08");
     }
     const profileId = command.profileId;
-    if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
-    if (!command.roles.length) return "请指定星铁队伍角色，例如 *队伍伤害飞托阮同。";
-    if (running >= 2) return "星铁队伍伤害正在计算，请稍后重试。";
+    if (profileId < 1 || profileId > MAX_PROFILE_ID) return $t("team-damage-command.text_68901e8078", { "MAX_PROFILE_ID": MAX_PROFILE_ID });
+    if (!command.roles.length) return $t("team-damage-command.text_0a6ba292fe");
+    if (running >= 2) return $t("team-damage-command.text_c72814bac2");
     running++;
-    const changed = "计算期间星铁档案已变更，请重新查询。";
+    const changed = $t("team-damage-command.text_a6a8149326");
     try {
       const qq = String(user);
       const account = await profiles.requestSelectedContext(qq, profileId, "sr");
       const { uid, region, gameBiz } = account.role;
-      if (command.uid && command.uid !== uid) return "此 UID 与所选档案当前绑定的星铁角色不一致。";
+      if (command.uid && command.uid !== uid) return $t("team-damage-command.text_370919db22");
       const verify = async () => {
         signal.throwIfAborted();
         const current = await profiles.requestSelectedContext(qq, profileId, "sr").catch(() => undefined);
@@ -72,7 +75,7 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
         readTheme(),
       ]);
       const { snapshot, unreadable } = panelSource;
-      const defaultSource = unreadable ? "基准配装（本人面板暂不可读）" : "基准配装";
+      const defaultSource = unreadable ? $t("team-damage-command.text_084e056f0b") : $t("team-damage-command.text_644ac819c8");
       const roles = resolveTeamDamageRoles(command.roles, starRailTeamCatalog, {
         customAliases: theme.customAliases, ownedIds: snapshot?.avatars.map(avatar => avatar.id),
       });
@@ -98,12 +101,12 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
         team.push({
           name: teamRoleName(role).replaceAll("{NICKNAME}", "开拓者"),
           level: panel?.level ?? 80, rank: panel?.rank ?? 0,
-          weapon: cone?.id ? (panel ? text(avatar?.cone?.name) : "") || starRailTeamCones[cone.id] || "光锥资料未记录" : "未装备",
+          weapon: cone?.id ? (panel ? text(avatar?.cone?.name) : "") || starRailTeamCones[cone.id] || $t("team-damage-command.text_5ac28ebeb7") : $t("team-damage-command.text_2e03e7c94f"),
           weaponLevel: cone?.id ? cone.level ?? 0 : 0, weaponRank: cone?.id ? cone.rank : 0,
-          source: panel ? "本人面板" : avatar ? "基准配装（本地数据不全）" : defaultSource,
+          source: panel ? $t("team-damage-command.text_afc2e4bf23") : avatar ? $t("team-damage-command.text_2f4bc2cc7b") : defaultSource,
           face: await readPanelAvatarFace(theme, avatar?.id ?? key),
           stats: ["cpct", "cdmg", "atk", "speed", "stance", "effPct"].map(key =>
-            panel ? stats.find(row => row.key === key)?.value ?? "未记录" : "未记录"),
+            panel ? stats.find(row => row.key === key)?.value ?? $t("team-damage-command.text_7450cc5b16") : $t("team-damage-command.text_7450cc5b16")),
         });
       }
       await verify();
@@ -114,24 +117,24 @@ export function createStarRailTeamDamageQuery(profiles: ReturnType<typeof create
       await verify();
       if (file) return [{ type: "image" as const, file }];
       return [
-        `星铁队伍伤害 · UID ${uid} · 档案 ${profileId}`,
+        $t("team-damage-command.text_576f92da9a", { "uid": uid, "profileId": profileId }),
         report.summary.map(row => `${row.label} ${row.value}`).join(" · "),
         ...team.map(member => `${member.name} · ${member.source}`),
         ...report.contribution.map(row => `${row.name} · ${row.value}（${row.share}）`),
-        ...(report.timeline ? [`起手顺序 ${report.timeline}`] : []),
+        ...(report.timeline ? [$t("team-damage-command.text_fbcb52baf5", { "timeline": report.timeline })] : []),
         ...report.turns.flatMap(turn => [turn.title, ...turn.lines.slice(0, 2)]),
-        ...report.warnings.map(note => `模拟说明 · ${note}`),
-        `计算引擎 · ${report.engine}。固定假人和自动行动策略，数值仅供参考。`,
+        ...report.warnings.map(note => $t("team-damage-command.text_dc2d9ae906", { "note": note })),
+        $t("team-damage-command.text_84523086f8", { "engine": report.engine }),
       ].join("\n");
     } catch (error) {
       if (signal.aborted) return [];
       if (error instanceof ProfileError) {
-        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有已同步的星铁角色。`;
+        if (error.code === "missing" || error.code === "login-required") return $t("team-damage-command.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("team-damage-command.text_c0d14d54a7", { "profileId": profileId });
         if (error.code === "changed") return changed;
       }
       if (error instanceof TeamDamageError) return error.message;
-      return "星铁队伍伤害计算失败，请稍后重试。";
+      return $t("team-damage-command.text_a0f7cf98b3");
     } finally {
       running--;
     }

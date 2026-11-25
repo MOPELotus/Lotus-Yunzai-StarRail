@@ -1,14 +1,17 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_a900baa1d0"),
   dmg: ({ talent, attr, calc }, { basic }) => {
     const hp = calc(attr.hp!)
     const hpDmg = (talent.a!['技能伤害']!) * hp
     return basic(hpDmg, 'a')
   }
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_aef3538851"),
   params: { q: true },
   dmg: ({ talent, attr, calc }, { basic }) => {
     const hp = calc(attr.hp!)
@@ -16,7 +19,7 @@ export const details: DamageDetail[] = [{
     return basic(hpDmg, 'e')
   }
 }, {
-  title: '追击伤害',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_3c62b8771b"),
   params: { q: true },
   dmg: ({ talent, attr, calc }, { basic }) => {
     const hp = calc(attr.hp!)
@@ -24,7 +27,7 @@ export const details: DamageDetail[] = [{
     return basic(hpDmg, 't')
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_b6a5fc7f30"),
   params: { q: true },
   dmg: ({ talent, attr, calc }, { basic }) => {
     const hp = calc(attr.hp!)
@@ -34,7 +37,7 @@ export const details: DamageDetail[] = [{
 }]
 
 export const buffs: Buff[] = [{
-  title: '终结技：【煞火缠身】状态下的敌方目标防御力降低[enemyDef]%，受到的伤害提高[enemydmg]%，暴击率提高[cpct]%，暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_b041eaf7bd"),
   data: {
     enemyDef: ({ talent }) => talent.q!['防御力降低']! * 100,
     enemydmg: ({ talent }) => talent.q!['易伤提高']! * 100,
@@ -43,7 +46,7 @@ export const buffs: Buff[] = [{
   }
 }, {
   check: ({ params }) => params.q === true,
-  title: '行迹-万淬心：我方目标造成的伤害提高[dmg]%，我方队伍中存在除千冶•刃之外的「虚无」命途角色时，使我方目标造成的终结技伤害提高[q2Dmg]%',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_4ab02c1cb6"),
   tree: 3,
   data: {
     dmg: ({ cons }) => { return cons >= 4 ? 100 : 50 },
@@ -51,13 +54,13 @@ export const buffs: Buff[] = [{
   }
 }, {
   check: ({ params }) => params.q === true,
-  title: '千冶刃1命：使敌方全体全属性抗性降低[kx]%',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_90b48579d8"),
   cons: 2,
   data: {
     kx: 20
   }
 }, {
-  title: '千冶刃2命：我方目标造成的追加攻击伤害提高[tDmg]%',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_1006299ead"),
   cons: 2,
   data: {
     q2Dmg: 75,
@@ -65,14 +68,14 @@ export const buffs: Buff[] = [{
   }
 }, {
   check: ({ params }) => params.q === true,
-  title: '千冶刃4命：【万淬心】使我方目标造成的伤害额外提高50%',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_8b45ddfec0"),
   cons: 4,
   data: {
     dmg: 50
   }
 }, {
   check: ({ params }) => params.q === true,
-  title: '千冶刃6命：【千冶铸一，万劫烬灭】的伤害倍率提高为原倍率的[qMulti]%',
+  title: $t("panel-damage-rules.characters.mortenax-blade.text_ab63f9caf1"),
   cons: 6,
   data: {
     qMulti: 150
@@ -81,4 +84,4 @@ export const buffs: Buff[] = [{
 
 export const defDmgIdx = 3
 export const mainAttr = 'hp,cpct,cdmg,speed'
-export const createdBy = '欧阳青瓜'
+export const createdBy = $t("panel-damage-rules.characters.mortenax-blade.text_7ad80046cc")

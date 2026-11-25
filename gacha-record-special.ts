@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { builtinResourceDirectory } from "../../lib/builtin-resources.ts";
 import { fileURLToPath } from "node:url";
 import {
@@ -9,12 +12,12 @@ import type { StarRailGachaSpecialOptions } from "./gacha-special.ts";
 import type { StarRailUigfPool } from "./gacha-uigf.ts";
 
 const pools = [
-  { pool: "GachaType_AvatarUp", code: "11", type: 11, name: "角色", max: 90, featured: true },
-  { pool: "GachaType_CollabAvatarUp", code: "21", type: 21, name: "角色联动", max: 90, featured: true },
-  { pool: "GachaType_EquipmentUp", code: "12", type: 12, name: "光锥", max: 80, featured: true },
-  { pool: "GachaType_CollabEquipmentUp", code: "22", type: 22, name: "光锥联动", max: 80, featured: true },
-  { pool: "GachaType_Standard", code: "1", type: 1, name: "常驻", max: 90, featured: false },
-  { pool: "GachaType_Newbie", code: "2", type: 2, name: "新手", max: undefined, featured: false },
+  { pool: "GachaType_AvatarUp", code: "11", type: 11, name: $t("gacha-record-special.text_c47b54e84e"), max: 90, featured: true },
+  { pool: "GachaType_CollabAvatarUp", code: "21", type: 21, name: $t("gacha-record-special.text_957dff2ffa"), max: 90, featured: true },
+  { pool: "GachaType_EquipmentUp", code: "12", type: 12, name: $t("gacha-record-special.text_e733238b28"), max: 80, featured: true },
+  { pool: "GachaType_CollabEquipmentUp", code: "22", type: 22, name: $t("gacha-record-special.text_7085c8362b"), max: 80, featured: true },
+  { pool: "GachaType_Standard", code: "1", type: 1, name: $t("gacha-record-special.text_300b6634fe"), max: 90, featured: false },
+  { pool: "GachaType_Newbie", code: "2", type: 2, name: $t("gacha-record-special.text_dcfce30c45"), max: undefined, featured: false },
 ] as const satisfies readonly {
   pool: Exclude<StarRailGachaSpecialOptions["pool"], "all">;
   code: StarRailUigfPool; type: number; name: string; max?: number; featured: boolean;
@@ -105,12 +108,12 @@ function summarize(pool: Pool, draws: StarRailRecordDraw[], resolvePool?: Resolv
   }
   const fiveNum = fiveLog.length;
   const metrics: readonly (readonly GachaSpecialMetric[])[] = [
-    [["未出五星", sinceFive, "抽"], ["已知五星", fiveNum, "个"],
-      ["已知五星平均", knownIntervals ? Number((intervalDraws / knownIntervals).toFixed(1)) : undefined, "抽"],
-      ["已知UP", pool.featured ? up : undefined, "个"], ["最长已知间隔", longest || undefined, "抽"]],
-    [["已知出金间隔", knownIntervals, "条"], ["星级未记录", unknownRanks, "抽"],
-      ["已知非UP", pool.featured ? offUp : undefined, "个"], ["UP未记录", pool.featured ? fiveNum - up - offUp : undefined, "个"],
-      ["最短已知间隔", knownIntervals ? shortest : undefined, "抽"]],
+    [[$t("gacha-record-special.text_8ac5c1b37e"), sinceFive, $t("gacha-record-special.text_7364d39606")], [$t("gacha-record-special.text_63ddd6aa0e"), fiveNum, $t("gacha-record-special.text_3a116815bc")],
+      [$t("gacha-record-special.text_9ecfe0f922"), knownIntervals ? Number((intervalDraws / knownIntervals).toFixed(1)) : undefined, $t("gacha-record-special.text_7364d39606")],
+      [$t("gacha-record-special.text_bc312785ec"), pool.featured ? up : undefined, $t("gacha-record-special.text_3a116815bc")], [$t("gacha-record-special.text_2bdfa501ab"), longest || undefined, $t("gacha-record-special.text_7364d39606")]],
+    [[$t("gacha-record-special.text_269b9bef9c"), knownIntervals, $t("gacha-record-special.text_f004f1d84c")], [$t("gacha-record-special.text_bb1a174add"), unknownRanks, $t("gacha-record-special.text_7364d39606")],
+      [$t("gacha-record-special.text_5384f7f10c"), pool.featured ? offUp : undefined, $t("gacha-record-special.text_3a116815bc")], [$t("gacha-record-special.text_3a1484234f"), pool.featured ? fiveNum - up - offUp : undefined, $t("gacha-record-special.text_3a116815bc")],
+      [$t("gacha-record-special.text_faee43fcf4"), knownIntervals ? shortest : undefined, $t("gacha-record-special.text_7364d39606")]],
   ];
   return {
     type: pool.type, typeName: pool.name, allNum: draws.length, fiveNum,
@@ -121,12 +124,12 @@ function summarize(pool: Pool, draws: StarRailRecordDraw[], resolvePool?: Resolv
 export function buildStarRailRecordSpecial({
   uid, draws, pool, maxRows = 48, page, resolvePool,
 }: StarRailRecordSpecialOptions): StarRailRecordSpecialModel | undefined {
-  if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError("星铁抽卡显示 UID 无效。");
+  if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError($t("gacha-record-special.text_7a9a5a67d7"));
   if (!Number.isSafeInteger(maxRows) || maxRows < 1 || (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
-    throw new RangeError("星铁抽卡显示分页参数无效。");
+    throw new RangeError($t("gacha-record-special.text_e356344050"));
   }
   const selected = pool === "all" ? pools : pools.filter((entry) => entry.pool === pool);
-  if (!selected.length) throw new TypeError("星铁抽卡显示卡池无效。");
+  if (!selected.length) throw new TypeError($t("gacha-record-special.text_9febac977d"));
   const byPool = new Map<StarRailUigfPool, StarRailRecordDraw[]>();
   for (const draw of draws) {
     const existing = byPool.get(draw.pool);
@@ -145,7 +148,7 @@ export function buildStarRailRecordSpecial({
   const start = ((page ?? 1) - 1) * maxRows;
   const end = Math.min(start + maxRows, count);
   return {
-    uid, poolName: pool === "all" ? "全部" : selected[0]!.name,
+    uid, poolName: pool === "all" ? $t("gacha-record-special.text_5c55a67935") : selected[0]!.name,
     totalDraws: summaries.reduce((sum, entry) => sum + entry.allNum, 0),
     fiveNum: summaries.reduce((sum, entry) => sum + entry.fiveNum, 0),
     pools: summaries.map((entry) => {

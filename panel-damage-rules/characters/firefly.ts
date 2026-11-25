@@ -1,16 +1,19 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 // 强化战技 主目标3削韧，副目标1.5削韧
 
 export const details: DamageDetail[] = [{
-  title: '强化战技伤害',
+  title: $t("panel-damage-rules.characters.firefly.text_0882b21a9d"),
   params: { q: true },
   dmg: ({ talent, attr }, dmg) => {
     let td = talent.e2!['目标伤害']! + Math.min(attr.stance! * 0.2, 72) / 100
     return dmg(td, 'e')
   }
 }, {
-  title: '破韧后战技主目标伤害',
+  title: $t("panel-damage-rules.characters.firefly.text_35498b7fd3"),
   params: { q: true },
   dmg: ({ talent, attr, cons }, dmg) => {
     let td = talent.e2!['目标伤害']! + Math.min(attr.stance! * 0.2, 72) / 100
@@ -29,7 +32,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '破韧后战技副目标伤害',
+  title: $t("panel-damage-rules.characters.firefly.text_a74bb45059"),
   params: { q: true },
   dmg: ({ talent, attr, cons }, dmg) => {
     let td = talent.e2!['相邻目标伤害']! + Math.min(attr.stance! * 0.1, 36) / 100
@@ -53,14 +56,14 @@ export const mainAttr = 'atk,stance'
 export const defDmgIdx = 1
 
 export const buffs: Buff[] = [{
-  title: '终结技Buff：速度提高[speed]点，释放强化普攻和战技时弱点击破效率提高50%，使敌方受到的击破伤害提高[breakEnemydmg]%',
+  title: $t("panel-damage-rules.characters.firefly.text_161bfe9682"),
   check: ({ params }) => params.q === true,
   data: {
     speed: ({ talent }) => talent.q!['速度提高']!,
     breakEnemydmg: ({ talent }) => talent.q!['击破伤害提高']! * 100
   }
 }, {
-  title: '行迹-过载核心：基于攻击力，提高自身击破特攻[stance]%',
+  title: $t("panel-damage-rules.characters.firefly.text_6087b17212"),
   check: ({ params, attr }) => params.q === true && attr.atk! >= 1800,
   sort: 9,
   tree: 3,
@@ -68,20 +71,20 @@ export const buffs: Buff[] = [{
     stance: ({ attr }) => Math.floor((attr.atk! - 1800) / 10) * 0.8
   }
 }, {
-  title: '流萤1魂：释放强化战技时无视目标[ignore]%的防御',
+  title: $t("panel-damage-rules.characters.firefly.text_3141c6002e"),
   cons: 1,
   data: {
     ignore: 15
   }
 }, {
-  title: '流萤4魂：终结技状态下，效果抵抗提高[effDef]%',
+  title: $t("panel-damage-rules.characters.firefly.text_af48438fe4"),
   cons: 4,
   check: ({ params }) => params.q === true,
   data: {
     effDef: 50
   }
 }, {
-  title: '流萤6魂：终结技状态下，火属性抗性穿透提高[kx]%，释放强化普攻和战技时的弱点击破效率提高50%',
+  title: $t("panel-damage-rules.characters.firefly.text_437ebd45a0"),
   cons: 6,
   check: ({ params }) => params.q === true,
   data: {

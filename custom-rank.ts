@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { arkPublicUid } from "../../lib/ark-custom-rank.ts";
 import { arkCustomRankGrade, createArkRankCommand } from "../../lib/ark-custom-rank-command.ts";
 import { renderStarRailRelicRank, type RelicRankRow } from "./group-relic-rank-card.ts";
@@ -49,7 +52,7 @@ export function createStarRailCustomRank(signal: AbortSignal) {
       const avatar = snapshot?.avatars.find(row => row.id === String(character.id));
       if (!snapshot || !avatar || signal.aborted) return;
       const theme = await readTheme();
-      const model = await makePanelDetailCard(snapshot, avatar, theme, signal, { localOnly: true, sourceLabel: "全服排行公开面板" });
+      const model = await makePanelDetailCard(snapshot, avatar, theme, signal, { localOnly: true, sourceLabel: $t("custom-rank.text_ce5ee012b3") });
       if (signal.aborted) return;
       const { png } = await renderStarRailPanelDetail(model, theme.root, "auto", context.inlineImageByteLimit);
       return { type: "image", file: png };

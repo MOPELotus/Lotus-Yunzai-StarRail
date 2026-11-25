@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { setTimeout as wait } from "node:timers/promises";
 import type { GameRole } from "@lotus-yunzai/account";
 import { normalizeStarRailRegion } from "./region.ts";
@@ -26,13 +29,13 @@ export function checkedStarRailLinkRole(role: GameRole): LinkRole {
   const { uid, gameBiz } = role;
   const region = normalizeStarRailRegion(role.region);
   if (!region || !/^[1-9]\d{8,9}$/u.test(uid) || !Object.hasOwn(regions, region) || regions[region as Region] !== gameBiz) {
-    throw new StarRailGachaLinkError("当前档案没有可核验的星铁 UID 和区服，请先同步角色。");
+    throw new StarRailGachaLinkError($t("gacha-link-source.text_f3a3341f15"));
   }
   return { uid, region: region as Region, gameBiz: gameBiz as LinkRole["gameBiz"] };
 }
 
 function invalidLink(): never {
-  throw new StarRailGachaLinkError("请发送与当前档案一致的完整星铁官方抽卡链接。");
+  throw new StarRailGachaLinkError($t("gacha-link-source.text_1eb86a00af"));
 }
 
 function readKey(input: string, role: LinkRole): string {
@@ -65,7 +68,7 @@ function readKey(input: string, role: LinkRole): string {
 const object = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function badResponse(): never {
-  throw new StarRailGachaLinkError("星铁逐抽服务返回了与本档案不一致或不完整的数据，原档案已保留。");
+  throw new StarRailGachaLinkError($t("gacha-link-source.text_9edc30363e"));
 }
 
 async function responseJson(response: Response, signal: AbortSignal): Promise<unknown> {
@@ -115,7 +118,7 @@ export async function readStarRailGachaLink(input: string, role: LinkRole, signa
   for (const pool of pools) {
     let cursor = "0";
     for (let page = 1; ; page++) {
-      if (requested >= maxPages) throw new StarRailGachaLinkError("星铁逐抽达到分页上限，本次未写入。");
+      if (requested >= maxPages) throw new StarRailGachaLinkError($t("gacha-link-source.text_5a963be19f"));
       if (requested++ && intervalMs) await wait(intervalMs, undefined, { signal });
       await verifyProfile();
       signal.throwIfAborted();
@@ -127,20 +130,20 @@ export async function readStarRailGachaLink(input: string, role: LinkRole, signa
           redirect: "error", referrerPolicy: "no-referrer", signal: requestSignal,
         });
       } catch {
-        throw new StarRailGachaLinkError("星铁逐抽请求未完成，请稍后重试。");
+        throw new StarRailGachaLinkError($t("gacha-link-source.text_6688971941"));
       }
       if (!response.ok || response.redirected) {
         await response.body?.cancel().catch(() => undefined);
-        if (response.status === 401 || response.status === 403) throw new StarRailGachaLinkError("星铁抽卡链接已失效，请在官方客户端重新获取。");
-        if (response.status === 429) throw new StarRailGachaLinkError("星铁逐抽请求频繁，请稍后重试。");
-        throw new StarRailGachaLinkError("星铁逐抽服务暂时不可用，原档案已保留。");
+        if (response.status === 401 || response.status === 403) throw new StarRailGachaLinkError($t("gacha-link-source.text_6bcee8aad8"));
+        if (response.status === 429) throw new StarRailGachaLinkError($t("gacha-link-source.text_a58a328844"));
+        throw new StarRailGachaLinkError($t("gacha-link-source.text_28ef13acba"));
       }
       const payload = await responseJson(response, requestSignal).catch(badResponse);
       if (!object(payload)) badResponse();
-      if (payload.retcode === -100 || payload.retcode === -101) throw new StarRailGachaLinkError("星铁抽卡链接已失效，请在官方客户端重新获取。");
-      if (payload.retcode === -110) throw new StarRailGachaLinkError("星铁逐抽请求频繁，请稍后重试。");
+      if (payload.retcode === -100 || payload.retcode === -101) throw new StarRailGachaLinkError($t("gacha-link-source.text_6bcee8aad8"));
+      if (payload.retcode === -110) throw new StarRailGachaLinkError($t("gacha-link-source.text_a58a328844"));
       if ([1034, 10035, 10041].some(code => code === payload.retcode)) {
-        throw new StarRailGachaLinkError("星铁逐抽服务要求验证，请在官方客户端处理后再试。");
+        throw new StarRailGachaLinkError($t("gacha-link-source.text_7d48b9a0c5"));
       }
       const data = payload.data;
       if (payload.retcode !== 0 || !object(data) || !Array.isArray(data.list) || data.list.length > pageSize ||
@@ -170,7 +173,7 @@ export async function readStarRailGachaLink(input: string, role: LinkRole, signa
   }
   await verifyProfile();
   signal.throwIfAborted();
-  if (!rows.length) throw new StarRailGachaLinkError("官方链接暂无可核验的星铁逐抽记录，原档案已保留。");
+  if (!rows.length) throw new StarRailGachaLinkError($t("gacha-link-source.text_e2cf6073cc"));
   if (timezone === undefined) badResponse();
   try {
     return selectStarRailUigf({ info: { version: "v4.2" }, hkrpg: [{ uid: role.uid, timezone, lang: "zh-cn", list: rows }] }, { uid: role.uid });

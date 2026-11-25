@@ -1,13 +1,16 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [
   {
-    title: "普攻伤害",
+    title: $t("panel-damage-rules.characters.blade-enhanced.text_a900baa1d0"),
     dmg: ({ talent, attr, calc }, { basic }) => {
       return basic(talent.a!["技能伤害"]! * calc(attr.hp!), "a")
     }
   }, {
-    title: "【地狱变】强化普攻(扩散)",
+    title: $t("panel-damage-rules.characters.blade-enhanced.text_842b25ed18"),
     params: { ebuff: true },
     dmg: ({ talent, attr, calc }, { basic }) => {
       const hp = calc(attr.hp!)
@@ -15,7 +18,7 @@ export const details: DamageDetail[] = [
       return basic(hpDmg, "a")
     }
   }, {
-    title: ({ params }) => `天赋追加攻击(群伤, ${params.tTargetCount}目标)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.blade-enhanced.text_5277f770b4", { "tTargetCount": params.tTargetCount }),
     params: { ebuff: true },
     dmg: ({ talent, attr, calc, params }, { basic }) => {
       const hp = calc(attr.hp!)
@@ -23,7 +26,7 @@ export const details: DamageDetail[] = [
       return basic(hpDmg, "t")
     }
   }, {
-    title: ({ params }) => `终结技(扩散, ${(params.lostHp as number) * 100}%已损失生命)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.blade-enhanced.text_a50ec2c29f", { "value1": (params.lostHp as number) * 100 }),
     params: { ebuff: true },
     dmg: ({ talent, attr, calc, params }, { basic }) => {
       const hp = calc(attr.hp!)
@@ -32,7 +35,7 @@ export const details: DamageDetail[] = [
       return basic(hpDmg + lostHpDmg, "q")
     }
   }, {
-    title: ({ params }) => `1命强化普攻(扩散, ${(params.lostHp as number) * 100}%已损失生命)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.blade-enhanced.text_35ed371280", { "value1": (params.lostHp as number) * 100 }),
     cons: 1,
     params: { ebuff: true },
     dmg: ({ talent, attr, calc, params }, { basic }) => {
@@ -57,18 +60,18 @@ export const mainAttr = "hp,cpct,cdmg"
 export const buffs: Buff[] = [
   {
     check: ({ params }) => params.ebuff === true,
-    title: "战技-地狱变：造成伤害提高[dmg]%",
+    title: $t("panel-damage-rules.characters.blade-enhanced.text_f07bbc6839"),
     data: {
       dmg: ({ talent }) => talent.e!["造成的伤害提高"]! * 100
     }
   }, {
-    title: "行迹-坏劫隳亡：天赋追加攻击伤害提高[tDmg]%",
+    title: $t("panel-damage-rules.characters.blade-enhanced.text_c133a657ab"),
     tree: 3,
     data: {
       tDmg: 20
     }
   }, {
-    title: ({ params }) => `1命额外伤害(基于${(params.lostHp as number) * 100}%已损失生命)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.blade-enhanced.text_1fcb69d6f8", { "value1": (params.lostHp as number) * 100 }),
     cons: 1,
     data: {
       aPlus: ({ attr, calc, talent, params }) => talent.q!["累计已损生命伤害"]! * 1.5 * calc(attr.hp!) * (params.lostHp as number),
@@ -76,19 +79,19 @@ export const buffs: Buff[] = [
     }
   }, {
     check: ({ params }) => params.ebuff === true,
-    title: "刃Pro2命：【地狱变】状态下，暴击率提高[cpct]%",
+    title: $t("panel-damage-rules.characters.blade-enhanced.text_86ec7ed9a6"),
     cons: 2,
     data: {
       cpct: 15
     }
   }, {
-    title: ({ params }) => `4命生命上限提高[hpPct]%(${params.c4stacks}层)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.blade-enhanced.text_f5acd50743", { "c4stacks": params.c4stacks }),
     cons: 4,
     data: {
       hpPct: ({ params }) => (params.c4stacks as number) * 20
     }
   }, {
-    title: ({ params }) => `6命追加攻击伤害值提高[tPlus](${params.tTargetCount}目标)`,
+    title: ({ params }) => $t("panel-damage-rules.characters.blade-enhanced.text_fd9c8e3250", { "tTargetCount": params.tTargetCount }),
     cons: 6,
     data: {
       tPlus: ({ attr, calc, params }) => calc(attr.hp!) * 0.5 * (params.tTargetCount as number)

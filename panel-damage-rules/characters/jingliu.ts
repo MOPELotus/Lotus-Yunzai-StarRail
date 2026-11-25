@@ -1,21 +1,24 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.jingliu.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.jingliu.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '转魄状态·战技伤害(扩散)',
+  title: $t("panel-damage-rules.characters.jingliu.text_dc753f33f3"),
   params: { strength: true },
   dmg: ({ talent }, dmg) => dmg(talent.e2!['目标伤害']! + talent.e2!['相邻目标伤害']! * 2, 'e')
 }, {
-  title: '终结技伤害(扩散)',
+  title: $t("panel-damage-rules.characters.jingliu.text_a8b5ec058a"),
   params: { q: true },
   dmg: ({ talent }, dmg) => dmg(talent.q!['目标伤害']! + talent.q!['相邻目标伤害']! * 2, 'q')
 }, {
-  title: '转魄状态·终结技伤害(扩散)',
+  title: $t("panel-damage-rules.characters.jingliu.text_6cb8b268e9"),
   params: { strength: true, q: true },
   dmg: ({ talent }, dmg) => dmg(talent.q!['目标伤害']! + talent.q!['相邻目标伤害']! * 2, 'q')
 }]
@@ -24,42 +27,42 @@ export const defDmgIdx = 4
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-霜魄：转魄状态下，终结技造成的伤害提高[qDmg]%',
+  title: $t("panel-damage-rules.characters.jingliu.text_df95a1414c"),
   tree: 3,
   check: ({ params }) => params.strength === true,
   data: {
     qDmg: 20
   }
 }, {
-  title: '天赋-澹月转魄：转魄状态下，暴击率提高[cpct]%，根据消耗的队友血量，最高提升攻击力[atkPlus]',
+  title: $t("panel-damage-rules.characters.jingliu.text_fe37a5a161"),
   check: ({ params }) => params.strength === true,
   data: {
     cpct: ({ talent }) => talent.t!['暴击率提高']! * 100,
     atkPlus: ({ attr, talent }) => attr.atk!.base! * talent.t!['攻击力提高上限']!
   }
 }, {
-  title: '镜流1命：释放终结技或强化战技时，暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.jingliu.text_c718bd64b3"),
   cons: 1,
   check: ({ params }) => params.strength === true || params.q === true,
   data: {
     cdmg: 24
   }
 }, {
-  title: '镜流2命：释放终结技后，下一次强化战技的伤害提高[eDmg]%',
+  title: $t("panel-damage-rules.characters.jingliu.text_f980aff2e5"),
   cons: 2,
   check: ({ params }) => params.strength === true,
   data: {
     eDmg: 80
   }
 }, {
-  title: '镜流4命：转魄状态下，消耗队友生命获得的攻击力额外提高[atkPlus]',
+  title: $t("panel-damage-rules.characters.jingliu.text_1e22acae0a"),
   check: ({ params }) => params.strength === true,
   cons: 4,
   data: {
     atkPlus: ({ attr }) => attr.atk!.base! * 0.3
   }
 }, {
-  title: '镜流6命：转魄状态下，暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.jingliu.text_0149cb228e"),
   check: ({ params }) => params.strength === true,
   cons: 6,
   data: {

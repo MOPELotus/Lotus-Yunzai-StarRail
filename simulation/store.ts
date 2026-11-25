@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { lstat, mkdir, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,19 +25,19 @@ export function warpStateDirectory() {
 
 export function createWarpArchive(directory: string, lockFile: AcquireRoleArchiveLock) {
   return createRoleJsonArchive(directory, lockFile, {
-    subject: "星铁模拟跃迁", lockSuffix: "warp-lock", maxBytes: 1024 * 1024, rejectNull: true,
+    subject: $t("simulation.store.text_739afb8575"), lockSuffix: "warp-lock", maxBytes: 1024 * 1024, rejectNull: true,
   });
 }
 
 export async function lockWarpReincarnation(directory: string, qq: string, lock: AcquireRoleArchiveLock) {
-  if (!/^[1-9]\d*$/u.test(qq) || !integer(Number(qq))) throw new TypeError("星铁转生的 QQ 无效。");
+  if (!/^[1-9]\d*$/u.test(qq) || !integer(Number(qq))) throw new TypeError($t("simulation.store.text_48f5997b1c"));
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const root = join(await realpath(directory), "reincarnation-locks");
   await mkdir(root, { recursive: true, mode: 0o700 });
   if (!(await lstat(root)).isDirectory() || await realpath(root) !== root) {
-    throw new Error("星铁转生锁目录须为实体目录。");
+    throw new Error($t("simulation.store.text_a1c2705ac8"));
   }
-  return lock(join(root, `${qq}.sqlite`), "星铁转生");
+  return lock(join(root, `${qq}.sqlite`), $t("simulation.store.text_3a05b5ee50"));
 }
 
 export interface WarpBalance {
@@ -80,29 +83,29 @@ function validFiveSummary(summary: WarpFiveSummary) {
 
 export function readWarpAccount(data: unknown): WarpAccount {
   if (data === null) return { version: 1, balance: { day: 0, special: 0, regular: 0 }, conversations: {} };
-  if (typeof data !== "object") throw new TypeError("模拟跃迁存档格式无效。");
+  if (typeof data !== "object") throw new TypeError($t("simulation.store.text_e9f364ef3d"));
   const { version, balance, conversations, legacy, reincarnatedUntil } = data as Partial<WarpAccount>;
   if (version !== 1 || !balance || !integer(balance.day) || !integer(balance.special) || !integer(balance.regular) ||
       (balance.expiresAt !== undefined && !integer(balance.expiresAt)) ||
-      !conversations || typeof conversations !== "object" || Array.isArray(conversations)) throw new TypeError("模拟跃迁存档格式无效。");
+      !conversations || typeof conversations !== "object" || Array.isArray(conversations)) throw new TypeError($t("simulation.store.text_e9f364ef3d"));
   for (const [key, state] of Object.entries(conversations)) {
     if (!privateOrGroup.test(key) || !state || !integer(state.lastDay) || (state.expiresAt !== undefined && !integer(state.expiresAt)) ||
         !state.pity || states.some(kind => !validPity(state.pity[kind], kind)) ||
         collaborationStates.some(kind => Object.hasOwn(state.pity, kind) && !validPity(state.pity[kind], kind))) {
-      throw new TypeError("模拟跃迁保底格式无效。");
+      throw new TypeError($t("simulation.store.text_c6ba88e7df"));
     }
     const { today, week } = state;
     if (today !== undefined && (!today || !integer(today.day) || !integer(today.standardAndCharacter) || !integer(today.cone) ||
         !validFiveSummary(today) || (today.collaboration !== undefined && (!today.collaboration || typeof today.collaboration !== "object" ||
           Array.isArray(today.collaboration) || Object.keys(today.collaboration).some(key => !collaborationStates.some(kind => kind === key)) ||
           Object.values(today.collaboration).some(value => !value || !integer(value.draws) || !validFiveSummary(value)))))) {
-      throw new TypeError("模拟跃迁日统计格式无效。");
+      throw new TypeError($t("simulation.store.text_b4119c045a"));
     }
-    if (week !== undefined && (!week || !integer(week.id) || !integer(week.five))) throw new TypeError("模拟跃迁周统计格式无效。");
+    if (week !== undefined && (!week || !integer(week.id) || !integer(week.five))) throw new TypeError($t("simulation.store.text_71d98c6498"));
   }
   if (legacy !== undefined && (!legacy || (legacy.balance !== undefined && legacy.balance !== true) ||
       !Array.isArray(legacy.conversations) || legacy.conversations.some((key) => typeof key !== "string" || !privateOrGroup.test(key)) ||
-      new Set(legacy.conversations).size !== legacy.conversations.length)) throw new TypeError("旧模拟跃迁迁移记录无效。");
-  if (reincarnatedUntil !== undefined && !integer(reincarnatedUntil)) throw new TypeError("星铁转生冷却格式无效。");
+      new Set(legacy.conversations).size !== legacy.conversations.length)) throw new TypeError($t("simulation.store.text_bcccba237f"));
+  if (reincarnatedUntil !== undefined && !integer(reincarnatedUntil)) throw new TypeError($t("simulation.store.text_0cc6878f0b"));
   return { version, balance, conversations, legacy, reincarnatedUntil };
 }

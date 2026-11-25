@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { fileURLToPath } from "node:url";
 import { gameCommandProfileId, MAX_PROFILE_ID, ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import { HoyoRequestError, type createProfileHoyoClient, type StarRailLedgerKind, type StarRailLedgerRow } from "@lotus-yunzai/hoyo-client";
@@ -8,8 +11,8 @@ const names = {
   星琼: "stellar", 古老梦华: "dreams", 体力: "power", 遗器: "relic", 充值: "dreams",
 } as const satisfies Record<string, StarRailLedgerKind>;
 const titles = {
-  stellar: ["星琼", "Stellar"], dreams: ["古老梦华", "Dreams"], power: ["体力", "Power"], relic: ["遗器", "Relic"],
-  cone: ["光锥", "Cone"],
+  stellar: [$t("ledger-command.text_ae25247f75"), "Stellar"], dreams: [$t("ledger-command.text_2c4e19033b"), "Dreams"], power: [$t("ledger-command.text_d6d2aa99fd"), "Power"], relic: [$t("ledger-command.text_2f2b17beb4"), "Relic"],
+  cone: [$t("ledger-command.text_e733238b28"), "Cone"],
 } as const;
 const theme = new URL("./monthly-theme/charge/", import.meta.url);
 
@@ -41,15 +44,15 @@ interface Context {
 
 export function createStarRailLedgerQuery(profiles: ReturnType<typeof createProfileStore>,
   client: ReturnType<typeof createProfileHoyoClient>, lifecycle: AbortSignal) {
-  const changed = "星铁档案已变更，请重新查询流水。";
+  const changed = $t("ledger-command.text_ccc3907337");
   return async function query(context: Context, { kind, page, profileId }: NonNullable<ReturnType<typeof matchStarRailLedger>>) {
     const signal = context.privateCredentialSignal ? AbortSignal.any([lifecycle, context.privateCredentialSignal]) : lifecycle;
     if (signal.aborted) return [];
     const user = context.user_id;
     if ((context.message_type !== "private" && context.message_type !== "group") || context.isDelegated ||
-        typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) return "请从本人 QQ 会话查询星铁流水。";
-    if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
-    if (page < 1) return "流水页码须大于零。";
+        typeof user !== "number" || !Number.isSafeInteger(user) || user < 1) return $t("ledger-command.text_8c3d02e1ea");
+    if (profileId < 1 || profileId > MAX_PROFILE_ID) return $t("ledger-command.text_68901e8078", { "MAX_PROFILE_ID": MAX_PROFILE_ID });
+    if (page < 1) return $t("ledger-command.text_51c0dcaac9");
     const qq = String(user);
     try {
       const source = await profiles.requestSelectedContext(qq, profileId, "sr");
@@ -64,27 +67,27 @@ export function createStarRailLedgerQuery(profiles: ReturnType<typeof createProf
         signal.throwIfAborted();
       }
       await verify();
-      if (!rows.length) return "暂无记录。";
+      if (!rows.length) return $t("ledger-command.text_70a40a534c");
       const model = makeStarRailLedgerCard(source.role.uid, kind, page, rows);
       const image = await renderStarRailLedgerCard(model, { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
       await verify();
       const photo = image?.png;
       return photo ? { type: "image" as const, file: photo } : [
-        `UID ${model.uid} · ${model.type}记录 · 第 ${page} 页`,
+        $t("ledger-command.text_390dd2bff8", { "uid": model.uid, "type": model.type, "page": page }),
         ...rows.map(row => `${row.time} · +${row.count} · ${row.reason}`),
       ].join("\n");
     } catch (error) {
       if (signal.aborted) return [];
       if (error instanceof ProfileError) {
-        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有已同步的星铁角色。`;
+        if (error.code === "missing" || error.code === "login-required") return $t("ledger-command.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("ledger-command.text_c0d14d54a7", { "profileId": profileId });
         if (error.code === "changed") return changed;
       }
       if (error instanceof HoyoRequestError) {
         if (error.code === "profile-changed") return changed;
         return error.message;
       }
-      return "查询星铁流水失败，请稍后重试。";
+      return $t("ledger-command.text_2e087cc1e0");
     }
   };
 }

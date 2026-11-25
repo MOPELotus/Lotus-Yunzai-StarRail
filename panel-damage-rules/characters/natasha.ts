@@ -1,28 +1,31 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.natasha.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技治疗量',
+  title: $t("panel-damage-rules.characters.natasha.text_e813c6666d"),
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.e!['治疗·百分比生命']! + talent.e!['治疗·固定值']!)
 }, {
-  title: '战技治疗量(目标生命<=30%)',
+  title: $t("panel-damage-rules.characters.natasha.text_97ea4582af"),
   params: { tBuff: true },
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.e!['治疗·百分比生命']! + talent.e!['治疗·固定值']!)
 }, {
-  title: '终结技治疗量',
+  title: $t("panel-damage-rules.characters.natasha.text_c2aa73a5df"),
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.q!['百分比生命']! + talent.q!['固定值']!)
 }, {
-  title: '终结技治疗量(目标生命<=30%)',
+  title: $t("panel-damage-rules.characters.natasha.text_c5bcf6651d"),
   params: { tBuff: true },
   dmg: ({ talent, calc, attr }, { heal }) => heal(calc(attr.hp!) * talent.q!['百分比生命']! + talent.q!['固定值']!)
 }, {
-  title: '1命治疗量',
+  title: $t("panel-damage-rules.characters.natasha.text_be50bc0b25"),
   params: { tBuff: true },
   dmg: ({ calc, attr }, { heal }) => heal(calc(attr.hp!) * 0.15 + 400)
 }, {
-  title: '2命持续治疗量',
+  title: $t("panel-damage-rules.characters.natasha.text_80e40c2309"),
   params: { tBuff: true },
   dmg: ({ calc, attr }, { heal }) => heal(calc(attr.hp!) * 0.06 + 160)
 }]
@@ -31,19 +34,19 @@ export const defDmgIdx = 1
 export const mainAttr = 'atk,cpct,cdmg,hp'
 
 export const buffs: Buff[] = [{
-  title: '娜塔莎6命',
+  title: $t("panel-damage-rules.characters.natasha.text_b35a9d7eb5"),
   cons: 6,
   data: {
     aPlus: ({ calc, attr }) => calc(attr.hp!) * 0.4
   }
 }, {
-  title: '天赋-生机焕发：对生命值小于等于30%的目标提供治疗时，治疗量提高50%',
+  title: $t("panel-damage-rules.characters.natasha.text_b1d5f5058d"),
   check: ({ params }) => params.tBuff === true,
   data: {
     heal: 50
   }
 }, {
-  title: '行迹-医者：治疗量提高10%',
+  title: $t("panel-damage-rules.characters.natasha.text_02dc0461ec"),
   tree: 2,
   data: {
     heal: 10

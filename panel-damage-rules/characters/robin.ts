@@ -1,12 +1,15 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 import { Format } from '../format.ts'
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.robin.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技提升全体伤害',
+  title: $t("panel-damage-rules.characters.robin.text_2a6201ea3a"),
   dmg: ({ talent }, dmg) => {
     return {
       avg: Format.percent(talent.e!['伤害提高']!),
@@ -14,7 +17,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技提升全体攻击力',
+  title: $t("panel-damage-rules.characters.robin.text_0e2b024f0c"),
   dmg: ({ talent, attr }, dmg) => {
     return {
       avg: talent.q!['攻击力提高百分比']! * attr.atk! + talent.q!['攻击力提高固定值']!,
@@ -22,7 +25,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技附加伤害',
+  title: $t("panel-damage-rules.characters.robin.text_18c9e8f8d1"),
   params: { q: true },
   dmg: ({ talent, cons }, dmg) => {
     // 暴击伤害固定为150%（6命时为600%），且伤害必定暴击
@@ -38,44 +41,44 @@ export const mainAttr = 'atk,cpct,cdmg'
 export const defDmgIdx = 3
 
 export const buffs: Buff[] = [{
-  title: '天赋-调性合颂：我方全体暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.robin.text_caf0bf04f4"),
   data: {
     cdmg: ({ talent }) => talent.t!['暴伤提高']! * 100
   }
 }, {
-  title: '战技Buff：我方全体伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.robin.text_40bb6dafda"),
   data: {
     dmg: ({ talent }) => talent.e!['伤害提高']! * 100
   }
 }, {
-  title: '终结技Buff：我方全体攻击力提高[atkPlus]',
+  title: $t("panel-damage-rules.characters.robin.text_6782e52007"),
   check: ({ params }) => params.q === true,
   sort: 9,
   data: {
     atkPlus: ({ talent, attr }) => talent.q!['攻击力提高百分比']! * attr.atk! + talent.q!['攻击力提高固定值']!
   }
 }, {
-  title: '知更鸟1命：我方全体全属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.robin.text_6e96d8ee8e"),
   check: ({ params }) => params.q === true,
   cons: 1,
   data: {
     kx: 24
   }
 }, {
-  title: '知更鸟2命：我方全体速度提高[speedPct]%',
+  title: $t("panel-damage-rules.characters.robin.text_98ec7cdbba"),
   check: ({ params }) => params.q === true,
   cons: 2,
   data: {
     speedPct: 16
   }
 }, {
-  title: '知更鸟4命：我方全体效果抵抗提高[effDef]%',
+  title: $t("panel-damage-rules.characters.robin.text_a5f2a26cd9"),
   cons: 4,
   data: {
     effDef: 50
   }
 }, {
-  title: '知更鸟6命：终结技造成的附加伤害的暴击伤害额外提高450%',
+  title: $t("panel-damage-rules.characters.robin.text_97410f5aa0"),
   check: ({ params }) => params.q === true,
   cons: 6
 }]

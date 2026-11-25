@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { starRailGachaPools, type createHoyoClient, type StarRailGachaPool } from "@lotus-yunzai/hoyo-client";
 
 type ObjectRecord = Record<string, unknown>;
@@ -43,24 +46,24 @@ function idText(value: unknown): string {
   if (value === undefined || value === null) return "";
   if (typeof value === "string") return value.trim();
   if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return String(value);
-  throw new TypeError("星铁抽卡记录编号格式无效或精度不足。");
+  throw new TypeError($t("gacha-history.text_c43053ed72"));
 }
 
 function count(value: unknown): number {
   const number = typeof value === "string" && /^\d+$/u.test(value.trim()) ? Number(value) : value;
   if (typeof number !== "number" || !Number.isSafeInteger(number) || number < 0) {
-    throw new TypeError("星铁抽卡计数格式无效或超过安全整数范围。");
+    throw new TypeError($t("gacha-history.text_86a5e57d98"));
   }
   return number;
 }
 
 function normalizeFiveStar(value: unknown, isIncoming: boolean): FiveStarHistory {
-  const row = record(value, "星铁五星记录格式有误。");
+  const row = record(value, $t("gacha-history.text_014955d722"));
   const { is_up, ...fields } = row;
   const id = idText(row.id);
   const uuid = idText(row.uuid);
-  if (!id && !uuid) throw new TypeError("星铁五星记录缺少编号。");
-  const item = row.item == null && !isIncoming ? null : record(row.item, "星铁五星物品资料格式有误。");
+  if (!id && !uuid) throw new TypeError($t("gacha-history.text_5e0e5e17d1"));
+  const item = row.item == null && !isIncoming ? null : record(row.item, $t("gacha-history.text_a9d858a7cf"));
   return {
     ...fields, id, uuid, item, ...(typeof is_up === "boolean" ? { is_up } : {}), got_item: row.got_item ?? null,
     gacha_count: count(isIncoming ? row.gacha_count : row.gacha_count ?? 0),
@@ -75,13 +78,13 @@ function compareNewest(left: FiveStarHistory, right: FiveStarHistory): number {
 }
 
 function mergeFiveStars(legacy: unknown, recent: readonly unknown[]) {
-  const previous = list(legacy, "旧星铁五星列表格式有误。").map((row) => normalizeFiveStar(row, false));
+  const previous = list(legacy, $t("gacha-history.text_3683ef2240")).map((row) => normalizeFiveStar(row, false));
   const incoming = recent.map((row) => normalizeFiveStar(row, true));
   const byUuid = new Map<string, string>();
   for (const row of [...previous, ...incoming]) {
     if (!row.id || !row.uuid) continue;
     const mapped = byUuid.get(row.uuid);
-    if (mapped !== undefined && mapped !== row.id) throw new Error("星铁五星记录的编号与 UUID 冲突。");
+    if (mapped !== undefined && mapped !== row.id) throw new Error($t("gacha-history.text_bbb72c798d"));
     byUuid.set(row.uuid, row.id);
   }
 
@@ -104,10 +107,10 @@ function mergeFiveStars(legacy: unknown, recent: readonly unknown[]) {
 
 function updateCounters(counters: Map<string, number>, cards: readonly unknown[]) {
   for (const value of cards) {
-    const card = record(value, "星铁卡池统计格式有误。");
+    const card = record(value, $t("gacha-history.text_0260ad50b4"));
     const total = count(card.total_count);
     const id = idText(card.gacha_id);
-    if (!id && total > 0) throw new TypeError("星铁卡池抽数缺少对应卡池编号。");
+    if (!id && total > 0) throw new TypeError($t("gacha-history.text_6d50b0ffa7"));
     if (id) counters.set(id, Math.max(counters.get(id) ?? 0, total));
   }
 }
@@ -115,11 +118,11 @@ function updateCounters(counters: Map<string, number>, cards: readonly unknown[]
 function mergePool(previous: ObjectRecord, latest: SnapshotPool) {
   const counters = new Map<string, number>();
   if (previous.cardCounters == null) {
-    updateCounters(counters, list(previous.cards ?? [], "旧星铁卡池统计格式有误。"));
+    updateCounters(counters, list(previous.cards ?? [], $t("gacha-history.text_6a11627b78")));
   } else {
-    const saved = record(previous.cardCounters, "旧星铁卡池累计抽数格式有误。");
+    const saved = record(previous.cardCounters, $t("gacha-history.text_5dddcd723d"));
     for (const [id, total] of Object.entries(saved)) {
-      if (!id.trim()) throw new TypeError("旧星铁卡池累计抽数缺少编号。");
+      if (!id.trim()) throw new TypeError($t("gacha-history.text_bfb20e936b"));
       counters.set(id, count(total));
     }
   }
@@ -142,13 +145,13 @@ function mergePool(previous: ObjectRecord, latest: SnapshotPool) {
 function snapshotPools(latest: StarRailGachaSnapshot) {
   const pools = new Map<StarRailGachaPool, SnapshotPool>();
   if (!Array.isArray(latest.pools) || latest.pools.length !== poolTypes.length) {
-    throw new TypeError("星铁抽卡快照须取完全部六种跃迁。");
+    throw new TypeError($t("gacha-history.text_46e19f9bea"));
   }
   for (const pool of latest.pools) {
     if (!isRecord(pool) || !Object.hasOwn(starRailGachaPools, pool.type) || pools.has(pool.type) ||
         !Array.isArray(pool.cards) || !Array.isArray(pool.fiveStars) ||
         (pool.pity !== null && (!Number.isSafeInteger(pool.pity) || pool.pity < 0))) {
-      throw new TypeError("星铁抽卡快照的跃迁资料缺失、重复或无效。");
+      throw new TypeError($t("gacha-history.text_25cb527d02"));
     }
     pools.set(pool.type, pool);
   }
@@ -164,20 +167,20 @@ export function mergeStarRailGachaHistory(
   if (!/^[1-9]\d*$/u.test(qq) || !/^[1-9]\d*$/u.test(latest.uid) ||
       (latest.region !== "prod_gf_cn" && latest.region !== "prod_qd_cn") ||
       !Number.isInteger(profileId) || profileId < 1 || profileId > 255) {
-    throw new TypeError("星铁档案身份或国服区服无效。");
+    throw new TypeError($t("gacha-history.text_211ebe0eaf"));
   }
-  const previous = oldLog == null ? {} : record(oldLog, "旧星铁抽卡记录格式有误。");
+  const previous = oldLog == null ? {} : record(oldLog, $t("gacha-history.text_6cf035ebde"));
   if ((previous.version != null && idText(previous.version) !== "1") ||
       (previous.qq != null && idText(previous.qq) !== qq) ||
       (previous.uid != null && idText(previous.uid) !== latest.uid) ||
       (previous.region != null && previous.region !== latest.region)) {
-    throw new Error("旧星铁抽卡记录版本或身份与本次档案不一致。");
+    throw new Error($t("gacha-history.text_cd91f607d2"));
   }
 
   const pools = snapshotPools(latest);
-  const previousPools = record(previous.pools ?? {}, "旧星铁抽卡记录的跃迁清单格式有误。");
+  const previousPools = record(previous.pools ?? {}, $t("gacha-history.text_0175828bc9"));
   const merged = poolTypes.map((type) => ({
-    type, ...mergePool(record(previousPools[type] ?? {}, "旧星铁跃迁资料格式有误。"), pools.get(type)!),
+    type, ...mergePool(record(previousPools[type] ?? {}, $t("gacha-history.text_e3fc8ec3e5")), pools.get(type)!),
   }));
   const updatedPools = Object.fromEntries(merged.map(({ type, pool }) => [type, pool])) as
     Record<StarRailGachaPool, StarRailGachaHistoryPool>;

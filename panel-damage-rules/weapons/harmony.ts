@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DynamicIndex, StaticIndex, WeaponRules } from "../types.ts";
 
 export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRules {
@@ -11,19 +14,19 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'stance')
     ],
     调和: [
-      keyIdx('进入战斗提高速度[speed]', 'speed', 1)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_9fc8b25d81"), 'speed', 1)
     ],
     轮契: [],
     过往未来: [],
     镂月裁云之意: [
-      keyIdx('攻击Buff下提高攻击力[atkPct]%', 'atkPct', 1)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_bd68aaad42"), 'atkPct', 1)
     ],
     齐颂: [
-      keyIdx('进入战斗后，攻击力提高[atkPct]%', 'atkPct', 1)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_3f2ecbe155"), 'atkPct', 1)
     ],
     镜中故我: [
       staticIdx(1, 'stance'),
-      keyIdx('装备者释放终结技后，我方全体造成伤害提高[dmg]%', 'dmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_2bda1b049a"), 'dmg', 2)
     ],
     游戏尘寰: [
       staticIdx(1, 'cdmg')
@@ -31,7 +34,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     美梦小镇大冒险: [
       (tables) => {
         return {
-          title: '普攻、战技、终结技造成的伤害提高[_dmg]%',
+          title: $t("panel-damage-rules.weapons.harmony.text_043714337a"),
           data: {
             _dmg: tables[1]!,
             aDmg: tables[1]!,
@@ -43,12 +46,12 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     为了明日的旅途: [
       staticIdx(1, 'atkPct'),
-      keyIdx('装备者释放终结技后，造成的伤害提高[dmg]%', 'dmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_7769a97c6b"), 'dmg', 2)
     ],
     夜色流光溢彩: [
       (tables) => {
         return {
-          title: '5层【歌咏】使装备者能量恢复效率提高[recharge]%，释放终结技后，装备者攻击力提高[atkPct]%，我方全体造成伤害提高[dmg]%',
+          title: $t("panel-damage-rules.weapons.harmony.text_3a1b7055aa"),
           data: {
             recharge: tables[1]! * 5,
             atkPct: tables[2]!,
@@ -59,17 +62,17 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     芳华待灼: [
       staticIdx(1, 'atkPct'),
-      keyIdx('有两名及以上相同命途我方角色，暴击伤害提高[cdmg]%', 'cdmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_984d60ec83"), 'cdmg', 2)
     ],
     如果时间是一朵花: [
       staticIdx(1, 'cdmg'),
-      keyIdx('当装备者持有【谕示】时，我方全体目标的暴击伤害提高[cdmg]%', 'cdmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.harmony.text_9bf0537d35"), 'cdmg', 2)
     ],
     永远的迷境饭: [
       staticIdx(1, 'atkPct'),
       (tables) => {
         return {
-          title: '3层buff使装备者攻击力提高[atkPct]%',
+          title: $t("panel-damage-rules.weapons.harmony.text_838bf4c703"),
           data: {
             atkPct: tables[2]! * 3
           }

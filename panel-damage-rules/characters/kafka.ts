@@ -1,13 +1,16 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.kafka.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['单体伤害']!, 'e')
 }, {
-  title: '追加攻击伤害',
+  title: $t("panel-damage-rules.characters.kafka.text_d896ef4928"),
   dmg: ({ talent }, dmg) => dmg(talent.t!['追加伤害']!, 't')
 }, {
-  title: '战技+引爆dot伤害',
+  title: $t("panel-damage-rules.characters.kafka.text_d87fc52e97"),
   params: { isDot: true },
   dmg: ({ talent, cons, weapon }, dmg) => {
     let plusDot = cons >= 6 ? 1.56 : 0
@@ -20,7 +23,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.kafka.text_b6a5fc7f30"),
   params: { isDot: true },
   dmg: ({ talent, cons, weapon }, dmg) => {
     let plusDot = cons >= 6 ? 1.56 : 0
@@ -39,22 +42,22 @@ export const mainAttr = 'atk,cpct,cdmg'
 export const defDmgIdx = 3
 
 export const buffs: Buff[] = [{
-  title: '卡芙卡1命：目标受到的持续伤害提高30%',
+  title: $t("panel-damage-rules.characters.kafka.text_3fc05b0907"),
   cons: 1,
   data: {
     dotEnemydmg: 30
   }
 }, {
-  title: '卡芙卡2命：我方全体造成的持续伤害提高25%',
+  title: $t("panel-damage-rules.characters.kafka.text_2c5997437b"),
   cons: 2,
   data: {
     dotDmg: 25
   }
 }, {
-  title: '卡芙卡六命：持续伤害倍率提高156%',
+  title: $t("panel-damage-rules.characters.kafka.text_5a3a4cd5f2"),
   cons: 6
 }, {
-  title: '只需等待-游丝：游丝状态下，敌方目标陷入触电状态，每回合开始受到等同于装备者攻击力[dotData]%的雷属性持续伤害',
+  title: $t("panel-damage-rules.characters.kafka.text_f7f0b0d9b6"),
   check: ({ weapon, params }) => (weapon.name === '只需等待' && params.isDot === true),
   data: {
     dotData: ({ weapon }) => weapon.affix * 10 + 50

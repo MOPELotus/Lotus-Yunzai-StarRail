@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Named cone defaults follow ProfileChange.js and the fixed weapon metadata.
 import type { PanelAvatar } from "./panel-model.ts";
 import aliases from "./panel-cone-aliases.json";
@@ -14,10 +17,10 @@ export function changePanelNamedCone(
 ): { avatar: PanelAvatar; label: string } | { error: string } {
   const previous = target.cone;
   if (!previous?.level || previousStar === undefined) {
-    return { error: `「${target.name}」缺少能确认光锥等级和稀有度的当前配装。` };
+    return { error: $t("panel-cone-preview.text_7ad1feebb7", { "name": target.name }) };
   }
   const rank = replacement.star === 5 && previousStar !== 5 ? 1 : previous.rank || 5;
   const cone = { id: replacement.id, name: replacement.name, level: previous.level, promote: previous.promote,
     rank, image: "", description: "" };
-  return { avatar: { ...target, cone, stats: [] }, label: `临时光锥 · ${cone.name} · Lv.${cone.level} · 叠影${rank}阶` };
+  return { avatar: { ...target, cone, stats: [] }, label: $t("panel-cone-preview.text_a2cbefb82f", { "name": cone.name, "level": cone.level, "rank": rank }) };
 }

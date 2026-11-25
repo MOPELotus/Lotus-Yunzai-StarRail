@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { WarpItem, WarpPool } from "./pools.ts";
 import { defaultWarpRates, type WarpRates } from "./settings.ts";
 

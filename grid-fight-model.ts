@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { gameCommandProfileId, normalizeProfileRoleArtworkUrl } from "@lotus-yunzai/account";
 import names from "./challenge-character-names.json";
 import type { GridFightRecentCount } from "./grid-fight-config.ts";
@@ -121,17 +124,17 @@ function battle(raw: Row, recent = false): Battle | undefined {
     const entity = id === undefined ? undefined : kind === "role" ? rolesById.get(id)
       : kind === "trait" ? traitsById.get(id) : kind === "strategy" ? augmentsById.get(id)
         : kind === "environment" ? portalsById.get(id) : undefined;
-    return [{ amount, kind, entity: entity ?? { name: "未知伤害来源" } }];
+    return [{ amount, kind, entity: entity ?? { name: $t("grid-fight-model.text_061d060aeb") } }];
   });
   if (!recent) hits.sort((left, right) => right.amount - left.amount);
   hits.splice(5);
   const peak = hits[0]?.amount ?? 0;
   const damage = hits.map(hit => ({ ...hit, ratio: peak > 0 ? hit.amount / peak : 0,
-    label: recent ? (Math.ceil(hit.amount) / 10_000).toFixed(2) + "万" : hit.amount >= 100_000_000 ? (hit.amount / 100_000_000).toFixed(1) + "亿" : hit.amount >= 10_000 ? (hit.amount / 10_000).toFixed(1) + "万" : hit.amount.toFixed(0) }));
+    label: recent ? (Math.ceil(hit.amount) / 10_000).toFixed(2) + $t("grid-fight-model.text_fc227df4fc") : hit.amount >= 100_000_000 ? (hit.amount / 100_000_000).toFixed(1) + $t("grid-fight-model.text_395ae225e5") : hit.amount >= 10_000 ? (hit.amount / 10_000).toFixed(1) + $t("grid-fight-model.text_fc227df4fc") : hit.amount.toFixed(0) }));
   const rawMode = raw.archive_type ?? brief.archive_type;
-  const mode = rawMode === "ArchiveTypeHard" ? "超频博弈"
-    : recent ? "标准博弈" : rawMode === "ArchiveTypePromotion" || brief.is_promotion === true ? "快速博弈"
-    : rawMode === "ArchiveTypeNormal" || rawMode === "ArchiveTypeStandard" || brief.is_promotion === false ? "标准博弈" : undefined;
+  const mode = rawMode === "ArchiveTypeHard" ? $t("grid-fight-model.text_59b38837be")
+    : recent ? $t("grid-fight-model.text_9db25688df") : rawMode === "ArchiveTypePromotion" || brief.is_promotion === true ? $t("grid-fight-model.text_8fbde77ef2")
+    : rawMode === "ArchiveTypeNormal" || rawMode === "ArchiveTypeStandard" || brief.is_promotion === false ? $t("grid-fight-model.text_9db25688df") : undefined;
   const rank = /^GridFightArchiveRank(SSS|SS|S|A|B|C|D)$/u.exec(String(brief.archive_rank))?.[1];
   const unix = num(brief.archive_time_ts, 9_999_999_999);
   const time = text(brief.archive_time) ?? (unix ? new Date((unix + 8 * 3600) * 1000).toISOString().slice(0, 16).replace("T", " ") : undefined);
@@ -157,42 +160,42 @@ const fraction = (value: number | undefined, max: number | undefined) => value !
   ? `${value ?? missing}/${max ?? missing}` : missing;
 export function gridFightStats({ season, points, pointsMax, handbook, traits, quest, questMax, recent }: GridFightCard) {
   return {
-    header: [["晋升等级", season === undefined ? missing : recent ? `${season}级` : season],
-      [recent ? "货币积分" : "本期积分", fraction(points, pointsMax)]] as const,
+    header: [[$t("grid-fight-model.text_fb9da3b31b"), season === undefined ? missing : recent ? $t("grid-fight-model.text_a39dde7482", { "season": season }) : season],
+      [recent ? $t("grid-fight-model.text_1c8734b3d5") : $t("grid-fight-model.text_8f338755a1"), fraction(points, pointsMax)]] as const,
     progress: [
-      ["数据银行", handbook === undefined ? missing : `${handbook}%`],
-      ["羁绊链路", traits === undefined ? missing : `${traits}%`],
-      ["预期收益", fraction(quest, questMax)],
+      [$t("grid-fight-model.text_b361025bae"), handbook === undefined ? missing : `${handbook}%`],
+      [$t("grid-fight-model.text_eb8de802c1"), traits === undefined ? missing : `${traits}%`],
+      [$t("grid-fight-model.text_abfb61ed0b"), fraction(quest, questMax)],
     ] as const,
   };
 }
 
 function artLabels(items: readonly (GridArt | GridMember)[], withEquipment = false) {
   return items.length ? items.map(item => {
-    const name = item.name ?? "未提供名称";
+    const name = item.name ?? $t("grid-fight-model.text_3e12cc8126");
     if (withEquipment && "equipment" in item && item.equipment.length) {
-      return `${name}（${item.equipment.map(equip => equip.name ?? "未提供名称").join("、")}）`;
+      return `${name}（${item.equipment.map(equip => equip.name ?? $t("grid-fight-model.text_3e12cc8126")).join("、")}）`;
     }
     return name;
-  }).join("、") : "暂无";
+  }).join("、") : $t("grid-fight-model.text_b336a174cd");
 }
 
 export function gridFightText(model: GridFightCard) {
   const { header, progress } = gridFightStats(model);
-  const lines = [`货币战争${model.index ? " · 战绩回顾 " + model.index : ""} · UID ${model.uid}`,
+  const lines = [$t("grid-fight-model.text_af17925f23", { "value1": model.index ? $t("grid-fight-model.text_e2b9a28a51") + model.index : "", "uid": model.uid }),
     header.map(([title, value]) => `${title} ${value}`).join(" · "),
-    `职级 ${model.division.level === undefined ? "" : "A" + model.division.level + " "}${model.division.name ?? missing}`];
+    $t("grid-fight-model.text_ea7e47e37a", { "value1": model.division.level === undefined ? "" : "A" + model.division.level + " ", "value2": model.division.name ?? missing })];
   if (model.index === undefined && !model.recent) lines.push(progress.map(([title, value]) => `${title} ${value}`).join(" · "));
   const battles = model.recent ?? (model.battle ? [{ ordinal: model.index ?? 1, battle: model.battle }] : []);
-  if (!battles.length) return [...lines, "暂无通关战绩"].join("\n");
+  if (!battles.length) return [...lines, $t("grid-fight-model.text_fca5cfacde")].join("\n");
   for (const { ordinal, battle: row } of battles) {
-    if (model.recent) lines.push(`战绩 ${ordinal}`);
+    if (model.recent) lines.push($t("grid-fight-model.text_910e05b6d0", { "ordinal": ordinal }));
     lines.push([row.division.name, row.mode, row.rank, row.time].filter(Boolean).join(" · "),
-      `小队生命值 ${row.health ?? missing} · 总经济 ${row.coin ?? missing} · 阵容价值 ${row.value ?? missing}`,
-      `前台 ${artLabels(row.front, !!model.recent)}`, `后台 ${artLabels(row.back, !!model.recent)}`);
-    if (model.index !== undefined || model.recent) lines.push(`羁绊 ${artLabels(row.traits)}`, `投资环境 ${artLabels(row.portals)}`, `投资策略 ${artLabels(row.augments)}`,
-      ...row.damage.map(hit => `${hit.entity.name ?? "未提供名称"} ${hit.label}`));
+      $t("grid-fight-model.text_f2cd4ae167", { "value1": row.health ?? missing, "value2": row.coin ?? missing, "value3": row.value ?? missing }),
+      $t("grid-fight-model.text_f1b240541f", { "value1": artLabels(row.front, !!model.recent) }), $t("grid-fight-model.text_f986abe894", { "value1": artLabels(row.back, !!model.recent) }));
+    if (model.index !== undefined || model.recent) lines.push($t("grid-fight-model.text_372183d526", { "value1": artLabels(row.traits) }), $t("grid-fight-model.text_05cebdcca8", { "value1": artLabels(row.portals) }), $t("grid-fight-model.text_633ee35f35", { "value1": artLabels(row.augments) }),
+      ...row.damage.map(hit => `${hit.entity.name ?? $t("grid-fight-model.text_3e12cc8126")} ${hit.label}`));
   }
-  if (model.historyCount > 0) lines.push(`可查询 ${model.historyCount} 条战绩，发送 *币战战报1 查看详情。`);
+  if (model.historyCount > 0) lines.push($t("grid-fight-model.text_f0f06f53e4", { "historyCount": model.historyCount }));
   return lines.filter(Boolean).join("\n");
 }

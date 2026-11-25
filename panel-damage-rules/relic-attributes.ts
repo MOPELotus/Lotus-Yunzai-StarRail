@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { Format } from './format.ts'
 
 export const mainAttr = {
@@ -28,21 +31,21 @@ type AttributeRule = {
   text?: string;
 };
 const attrMap: Record<string, AttributeRule> = {
-  atk: { title: '大攻击', format: 'pct', calc: 'pct', value: 4.32 },
-  atkPlus: { title: '小攻击', format: 'comma', value: 127 / 6 },
-  def: { title: '大防御', format: 'pct', calc: 'pct', value: 5.4 },
-  defPlus: { title: '小防御', format: 'comma', value: 127 / 6 },
-  hp: { title: '大生命', format: 'pct', calc: 'pct', value: 4.32 },
-  hpPlus: { title: '小生命', format: 'comma', value: 254 / 6 },
-  speed: { title: '速度', format: 'comma', calc: 'plus', value: 2.6 },
-  cpct: { title: '暴击率', format: 'pct', calc: 'plus', value: 3.24 },
-  cdmg: { title: '暴击伤害', format: 'pct', calc: 'plus', value: 6.48 },
-  recharge: { title: '充能效率', format: 'pct', calc: 'plus', value: 3.11 },
-  dmg: { title: '伤害加成', format: 'pct', value: 6.22 },
-  heal: { title: '治疗加成', format: 'pct', calc: 'pct', value: 5.53 },
-  stance: { title: '击破特攻', format: 'pct', value: 6.48, calc: 'pct' },
-  effPct: { title: '效果命中', format: 'pct', value: 4.32, calc: 'pct' },
-  effDef: { title: '效果抵抗', format: 'pct', value: 4.32, calc: 'pct' }
+  atk: { title: $t("panel-damage-rules.relic-attributes.text_0d43934fdb"), format: 'pct', calc: 'pct', value: 4.32 },
+  atkPlus: { title: $t("panel-damage-rules.relic-attributes.text_5085a8d5b4"), format: 'comma', value: 127 / 6 },
+  def: { title: $t("panel-damage-rules.relic-attributes.text_aeed4dc439"), format: 'pct', calc: 'pct', value: 5.4 },
+  defPlus: { title: $t("panel-damage-rules.relic-attributes.text_5a0e2465ee"), format: 'comma', value: 127 / 6 },
+  hp: { title: $t("panel-damage-rules.relic-attributes.text_dd1fad216f"), format: 'pct', calc: 'pct', value: 4.32 },
+  hpPlus: { title: $t("panel-damage-rules.relic-attributes.text_c2bb9b8f40"), format: 'comma', value: 254 / 6 },
+  speed: { title: $t("panel-damage-rules.relic-attributes.text_0e14d148b4"), format: 'comma', calc: 'plus', value: 2.6 },
+  cpct: { title: $t("panel-damage-rules.relic-attributes.text_d4b0baf955"), format: 'pct', calc: 'plus', value: 3.24 },
+  cdmg: { title: $t("panel-damage-rules.relic-attributes.text_15bccc3951"), format: 'pct', calc: 'plus', value: 6.48 },
+  recharge: { title: $t("panel-damage-rules.relic-attributes.text_4e061c7460"), format: 'pct', calc: 'plus', value: 3.11 },
+  dmg: { title: $t("panel-damage-rules.relic-attributes.text_4da2b666c4"), format: 'pct', value: 6.22 },
+  heal: { title: $t("panel-damage-rules.relic-attributes.text_6f2eca7102"), format: 'pct', calc: 'pct', value: 5.53 },
+  stance: { title: $t("panel-damage-rules.relic-attributes.text_13d58c9c3a"), format: 'pct', value: 6.48, calc: 'pct' },
+  effPct: { title: $t("panel-damage-rules.relic-attributes.text_84c7536950"), format: 'pct', value: 4.32, calc: 'pct' },
+  effDef: { title: $t("panel-damage-rules.relic-attributes.text_c9a7dcf1f7"), format: 'pct', value: 4.32, calc: 'pct' }
 }
 
 Object.entries(attrMap).forEach(([key, attr]) => {

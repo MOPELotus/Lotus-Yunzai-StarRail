@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { join } from "node:path";
 import { createRoleJsonArchive, type AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import { integer, warpStateDirectory } from "./store.ts";
@@ -31,7 +34,7 @@ export function parseIndependentWarpSettings(input: unknown): IndependentWarpSet
       !integer(data.recallSeconds, 2_147_483) || !Array.isArray(data.disabledGroups) ||
       !data.disabledGroups.every(value => typeof value === "string" && canonicalGroup(value) === value) ||
       new Set(data.disabledGroups).size !== data.disabledGroups.length) {
-    throw new TypeError("独立星铁旧模拟跃迁配置无效。");
+    throw new TypeError($t("simulation.independent-settings.text_db037e230d"));
   }
   return { enabled: data.enabled, group: data.group, private: data.private, dailyTenPulls: data.dailyTenPulls,
     recallSeconds: data.recallSeconds, disabledGroups: data.disabledGroups };
@@ -40,7 +43,7 @@ export function parseIndependentWarpSettings(input: unknown): IndependentWarpSet
 export function convertIndependentWarpSettings(defaults: unknown, overrides: unknown): IndependentWarpSettings {
   const base = record(defaults), local = record(overrides);
   if ((defaults !== undefined && !base) || (overrides !== undefined && !local)) {
-    throw new TypeError("独立星铁旧模拟跃迁 YAML 无效。");
+    throw new TypeError($t("simulation.independent-settings.text_5516a1defd"));
   }
   // The former loader replaced nested blocks as a whole when the operator supplied them.
   const merged = { limit: { group: true, private: true, count: 1 }, recall: { enable: true, time: 110 },
@@ -53,7 +56,7 @@ export function convertIndependentWarpSettings(defaults: unknown, overrides: unk
       (recall.enable !== undefined && typeof recall.enable !== "boolean") ||
       (recall.time !== undefined && !integer(recall.time, 2_147_483)) ||
       (limit.count !== undefined && !integer(limit.count))) {
-    throw new TypeError("独立星铁旧模拟跃迁 YAML 无效。");
+    throw new TypeError($t("simulation.independent-settings.text_5516a1defd"));
   }
   return parseIndependentWarpSettings({
     enabled: true, group: limit.group === true, private: limit.private === true, dailyTenPulls: limit.count ?? 0,
@@ -64,7 +67,7 @@ export function convertIndependentWarpSettings(defaults: unknown, overrides: unk
 
 export function createIndependentWarpSettingsStore(lock: AcquireRoleArchiveLock, directory = warpStateDirectory()) {
   const archive = createRoleJsonArchive(join(directory, "independent-settings"), lock, {
-    subject: "独立星铁模拟跃迁设置", lockSuffix: "independent-warp-settings", maxBytes: 512 * 1024, rejectNull: true,
+    subject: $t("simulation.independent-settings.text_faac4d3805"), lockSuffix: "independent-warp-settings", maxBytes: 512 * 1024, rejectNull: true,
   });
   const id = { qq: "1", uid: "1" };
   const decode = (input: unknown) => input === null ? defaultIndependentWarpSettings() : parseIndependentWarpSettings(input);

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const mainAttr = 'atk,cpct,cdmg'
@@ -7,14 +10,14 @@ export const buffs: Buff[] = [
   {
     cons: 1,
     check: ({ params }) => params.isQ_Enhanced && params.isComradeDmg,
-    title: '1魂-蜕却旧鳞的荒龙：【同袍】全属性抗性穿透提高[kx]%',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_05ba3b7b3b"),
     data: {
       kx: 18
     }
   },
   {
     cons: 6,
-    title: '6魂-草木微尘皆入梦中：场上存在【同袍】时，敌方全体受到的伤害提高[enemydmg]%',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_2de6b9d615"),
     data: {
       enemydmg: 20
     }
@@ -22,7 +25,7 @@ export const buffs: Buff[] = [
   {
     cons: 6,
     check: ({ params }) => params.isComradeDmg,
-    title: '6魂-草木微尘皆入梦中：【同袍】造成伤害时，无视敌方目标[ignore]%的防御力',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_fcfd8916fa"),
     data: {
       ignore: 12
     }
@@ -31,24 +34,24 @@ export const buffs: Buff[] = [
 
 export const details: DamageDetail[] = [
   {
-    title: '普攻伤害',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_a900baa1d0"),
     dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
   },
   {
-    title: '战技护盾量',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_9953377f67"),
     dmg: ({ calc, attr, talent }, dmg) => dmg.shield(calc(attr.atk!) * talent.e!['护盾•百分比攻击']! + talent.e!['护盾•固定值']!)
   },
   {
-    title: '终结技伤害',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_b6a5fc7f30"),
     dmgKey: 'q',
     dmg: ({ talent }, dmg) => dmg(talent.q!['全体伤害']!, 'q')
   },
   {
-    title: '终结技护盾量',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_2f5c203ac1"),
     dmg: ({ calc, attr, talent }, dmg) => dmg.shield(calc(attr.atk!) * talent.q!['护盾•百分比攻击']! + talent.q!['护盾•固定值']!)
   },
   {
-    title: '天赋龙灵护盾量',
+    title: $t("panel-damage-rules.characters.danheng-permansor.text_9eff916f17"),
     params: { isQ_Enhanced: true },
     dmg: ({ calc, attr, talent, cons, params }, dmg) => {
       let shieldVal = calc(attr.atk!) * talent.t!['护盾•百分比攻击']! + talent.t!['护盾•固定值']!
@@ -59,7 +62,7 @@ export const details: DamageDetail[] = [
     }
   },
   {
-    title: ({ cons, trees, params }) => `终结技强化龙灵追击(同袍攻击:${params.comradeAtk})${cons >= 2 ? '(2魂+)' : ''}${trees['103'] ? '(峥嵘)' : ''}`,
+    title: ({ cons, trees, params }) => $t("panel-damage-rules.characters.danheng-permansor.text_369c810a4d", { "comradeAtk": params.comradeAtk, "value2": cons >= 2 ? $t("panel-damage-rules.characters.danheng-permansor.text_a223a01491") : '', "value3": trees['103'] ? $t("panel-damage-rules.characters.danheng-permansor.text_da3e69b52d") : '' }),
     params: { isQ_Enhanced: true, isComradeDmg: true },
     dmg: (ds, dmg) => {
       const { talent, calc, attr, params, cons, trees } = ds
@@ -78,7 +81,7 @@ export const details: DamageDetail[] = [
     }
   },
   {
-    title: ({ params }) => `6命终结技【同袍】附加伤害(同袍攻击:${params.comradeAtk})`,
+    title: ({ params }) => $t("panel-damage-rules.characters.danheng-permansor.text_82532557e5", { "comradeAtk": params.comradeAtk }),
     cons: 6,
     params: { isQ_Enhanced: true, isComradeDmg: true },
     dmg: (ds, dmg) => {

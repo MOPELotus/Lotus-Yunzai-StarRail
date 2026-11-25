@@ -1,7 +1,10 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '10次战技80好活强化普攻伤害',
+  title: $t("panel-damage-rules.characters.sparxie.text_c3a2ab0783"),
   params: { punchline: 80 },
   dmg: ({ talent }, dmg) => {
     let a2Normal = talent.a2!['强化普攻目标伤害']! * 2 * (1 + talent.e2!['强化普攻目标倍率提升']! / talent.a2!['强化普攻目标伤害']! * 10)
@@ -13,7 +16,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.sparxie.text_b6a5fc7f30"),
   dmg: ({ talent, attr }, dmg) => {
     let qNormal = talent.q!['终结技']! + (attr.joy!.base! + attr.joy!.pct!) / 100 * 0.6
     let qXe = talent.t!['终结技欢愉伤害']!
@@ -23,7 +26,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '80笑点欢愉技伤害',
+  title: $t("panel-damage-rules.characters.sparxie.text_902f89d4bd"),
   params: { punchline: 80 },
   dmg: ({ talent }, dmg) => dmg(talent.xe!['群攻']! + talent.xe!['弹射']! * 20, 'xe', 'elation')
 }]
@@ -32,52 +35,52 @@ export const defDmgIdx = 1
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-甜蜜！笑点签售会：使自身欢愉度提高[joy]%',
+  title: $t("panel-damage-rules.characters.sparxie.text_b5bd96de5c"),
   tree: 1,
   data: {
     joy: ({ attr }) => Math.min(Math.trunc((attr.atk! - 2000) / 100 * 5), 80)
   }
 }, {
-  title: '行迹-沸腾！真伪调色盘：我方全体暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.sparxie.text_9774ddfc5b"),
   tree: 3,
   data: {
     cdmg: 80
   }
 }, {
-  title: '行迹-神闲意满：提升[cdmg]%暴击伤害',
+  title: $t("panel-damage-rules.characters.sparxie.text_d4facb9a06"),
   tree: 2,
   data: {
     cdmg: 60
   }
 }, {
-  title: '笑点计算：计算笑点用',
+  title: $t("panel-damage-rules.characters.sparxie.text_76c960e299"),
   data: {
     punchline: ({ params }) => params.punchline
   }
 }, {
-  title: '火花1魂：我方全体全属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.sparxie.text_3575b0b8fd"),
   cons: 1,
   data: {
     kx: 15
   }
 }, {
-  title: '火花2魂：消耗【爆点】使自身暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.sparxie.text_05a98f4f26"),
   cons: 2,
   data: {
     cdmg: 40
   }
 }, {
-  title: '火花4魂：施放终结技时使自身欢愉度提高[joy]%',
+  title: $t("panel-damage-rules.characters.sparxie.text_7df8de617f"),
   cons: 4,
   data: {
     joy: 36
   }
 }, {
-  title: '火花6魂：全属性抗性穿透提高[kx]%。欢愉技每计入1个笑点使其造成的额外伤害次数增加1次，最多增加至40次',
+  title: $t("panel-damage-rules.characters.sparxie.text_3f3c775a44"),
   cons: 6,
   data: {
     kx: 20
   }
 }]
 
-export const createdBy = '欧阳青瓜'
+export const createdBy = $t("panel-damage-rules.characters.sparxie.text_7ad80046cc")

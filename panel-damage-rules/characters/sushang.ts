@@ -1,13 +1,16 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.sushang.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.sushang.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '战技+剑势伤害',
+  title: $t("panel-damage-rules.characters.sushang.text_b066459a31"),
   dmg: ({ talent }, dmg) => {
     let eDmg = dmg(talent.e!['技能伤害']!, 'e')
     let ePlusDmg = dmg.dynamic(talent.e!['附加伤害']!, 'e', { dynamicDmg: 20 })
@@ -17,10 +20,10 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.sushang.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '终结技后满剑势战技伤害',
+  title: $t("panel-damage-rules.characters.sushang.text_97d3c6501a"),
   dmg: ({ talent }, dmg) => {
     let eDmg = dmg(talent.e!['技能伤害']!, 'e')
     let ePlusDmg = dmg.dynamic(talent.e!['附加伤害']!, 'e', { dynamicDmg: 20 })
@@ -35,24 +38,24 @@ export const mainAttr = 'atk,cpct,cdmg'
 export const defDmgIdx = 4
 
 export const buffs: Buff[] = [{
-  title: '天赋-游刃若水：敌方弱点被击破后，素裳速度提高[speedPct]%',
+  title: $t("panel-damage-rules.characters.sushang.text_b7f006c259"),
   data: {
     speedPct: ({ talent }) => talent.t!['速度提高']! * 100
   }
 }, {
-  title: '行迹-逐寇：10层Buff提升【剑势】造成的伤害[_dmg]%',
+  title: $t("panel-damage-rules.characters.sushang.text_999dd49dbc"),
   tree: 1,
   data: {
     _dmg: 20
   }
 }, {
-  title: '素裳4命：击破特攻提高[stance]%',
+  title: $t("panel-damage-rules.characters.sushang.text_851a9a466a"),
   cons: 4,
   data: {
     stance: 40
   }
 }, {
-  title: '素裳6命：天赋的加速效果额外提高[speedPct]%',
+  title: $t("panel-damage-rules.characters.sushang.text_892f47008c"),
   cons: 6,
   data: {
     speedPct: ({ talent }) => talent.t!['速度提高']! * 100

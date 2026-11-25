@@ -1,22 +1,25 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.topaz.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 't')
 }, {
-  title: '战技伤害(负债标记)',
+  title: $t("panel-damage-rules.characters.topaz.text_22e862fb9b"),
   params: { debt: true },
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 't')
 }, {
-  title: '战技伤害(负债+强化)',
+  title: $t("panel-damage-rules.characters.topaz.text_c15b7b7f93"),
   params: { debt: true, qBuff: true },
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']! + talent.q!['伤害倍率提高']!, 't')
 }, {
-  title: '账账伤害(负债标记)',
+  title: $t("panel-damage-rules.characters.topaz.text_f9126d52ae"),
   params: { debt: true },
   dmg: ({ talent }, dmg) => dmg(talent.t!['技能伤害']!, 't')
 }, {
-  title: '账账伤害(负债+强化)',
+  title: $t("panel-damage-rules.characters.topaz.text_a3b94c4d92"),
   params: { debt: true, qBuff: true },
   dmg: ({ talent }, dmg) => dmg(talent.t!['技能伤害']! + talent.q!['伤害倍率提高']!, 't')
 }]
@@ -26,35 +29,35 @@ export const defDmgIdx = 4
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '负债证明：处于该状态的敌人受到的追加攻击伤害提高[tDmg]%',
+  title: $t("panel-damage-rules.characters.topaz.text_6173a46cf9"),
   check: ({ params }) => params.debt === true,
   data: {
     tDmg: ({ talent }) => talent.e!['追加攻击伤害提高']! * 100
   }
 }, {
-  title: '涨幅惊人：账账的伤害倍率提高[_pct]%,暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.topaz.text_c211f94780"),
   check: ({ params }) => params.qBuff === true,
   data: {
     _pct: ({ talent }) => talent.q!['伤害倍率提高']! * 100,
     cdmg: ({ talent }) => talent.q!['暴击伤害提高']! * 100
   }
 }, {
-  title: '行迹-金融动荡：托帕和账账对拥有火属性弱点的敌人造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.topaz.text_82f157b320"),
   tree: 2,
   data: {
     dmg: 15
   }
 }, {
-  title: '行迹-透支：托帕的普攻视为追加攻击',
+  title: $t("panel-damage-rules.characters.topaz.text_0d0a4b7ca3"),
   tree: 1
 }, {
-  title: '托帕1命：【被执行】状态的目标受到的追加攻击的暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.topaz.text_2920d6b1b2"),
   cons: 1,
   data: {
     cdmg: 25
   }
 }, {
-  title: '托帕6命：账账攻击时火属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.topaz.text_a368104b16"),
   cons: 6,
   data: {
     kx: 10

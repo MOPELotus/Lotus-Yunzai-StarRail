@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { ActorState } from "../combat/index.ts";
 import { entries, number, string } from "../compile/library.ts";
 import type { Mechanic } from "../compile/types.ts";
@@ -33,7 +36,7 @@ export function nativeMechanics({ panelCalibration, diagnose }: MechanicsOptions
       evaluate: (expression, actor, payload, scope) => context.evaluate(expression, actor, payload, scope),
       evaluateZone: (zone, context) => {
         const expression = rulebook.zones[zone];
-        if (!expression) throw new Error("缺少战斗属性公式 " + zone);
+        if (!expression) throw new Error($t("team-engine.native.mechanics.index.text_5c668fc768") + zone);
         return runner.encounter.expr.evaluate<number>(expression, { context, trace: false });
       },
       runModifierEffect: (owner, effect, payload) => effects.effect(effect, owner, payload),
@@ -46,12 +49,12 @@ export function nativeMechanics({ panelCalibration, diagnose }: MechanicsOptions
       condition(hook, actor, payload) {
         if (!hook.condition) return true;
         try { return Boolean(context.evaluate(hook.condition, actor, payload, { readonlyRoll: true })); }
-        catch (error) { warn(hook.source + " 的战斗触发条件无法计算，" + String(error)); return false; }
+        catch (error) { warn(hook.source + $t("team-engine.native.mechanics.index.text_ed0f78a382") + String(error)); return false; }
       },
       filter(hook, actor, payload, target) {
         if (!hook.targetFilter) return true;
         try { return Boolean(context.evaluate(hook.targetFilter, actor, payload, { extra: { it: target } })); }
-        catch (error) { warn(hook.source + " 的累积目标无法计算，" + String(error)); return false; }
+        catch (error) { warn(hook.source + $t("team-engine.native.mechanics.index.text_ed9d800134") + String(error)); return false; }
       },
       effect(hook, actor, payload, waterfall) { return effects.chain(hook.effects, actor, payload, waterfall); },
     });
@@ -68,7 +71,7 @@ export function nativeMechanics({ panelCalibration, diagnose }: MechanicsOptions
           if (!actor) continue;
           const panel = modifiers.panelOf(actor, true, true);
           modifiers.apply(actor, model({
-            modifier_id: "LOTUS_PANEL_RESIDUAL", name: "本人面板校准", dispellable: false,
+            modifier_id: "LOTUS_PANEL_RESIDUAL", name: $t("team-engine.native.mechanics.index.text_e11b185bbe"), dispellable: false,
             stat_effects: panelResidual(runner.actorTemplate(id), { stats: panel.stats, damageBonus: panel.damageBonus ?? {} }, calibration),
           }), undefined, {});
         }
@@ -115,7 +118,7 @@ export function nativeMechanics({ panelCalibration, diagnose }: MechanicsOptions
         const expression = action.expressions.get("available_if");
         if (!expression) return true;
         try { return Boolean(context.evaluate(expression, actor, {})); }
-        catch (error) { warn(action.name + " 的可用条件无法计算，" + String(error)); return false; }
+        catch (error) { warn(action.name + $t("team-engine.native.mechanics.index.text_705d258ec1") + String(error)); return false; }
       },
       gainResource: (actor, id, amount, sourceId) => { resources.gain(actor, id, amount, sourceId); },
       onDamageEvent: fn => context.frame(() => effects.damageFrame(fn)),
@@ -125,13 +128,13 @@ export function nativeMechanics({ panelCalibration, diagnose }: MechanicsOptions
         const control = string(rule.control);
         if (control) modifiers.apply(target, model({
           modifier_id: "BRK_" + control.toUpperCase(), modifier_type: "control", debuff_kind: "control",
-          name: { freeze: "冻结", entangle: "纠缠", imprison: "禁锢" }[control] ?? control,
+          name: { freeze: $t("team-engine.native.mechanics.index.text_0eafcb149b"), entangle: $t("team-engine.native.mechanics.index.text_ecf91d2fca"), imprison: $t("team-engine.native.mechanics.index.text_e9853de70e") }[control] ?? control,
           duration: number(rule.control_duration), control_kind: control,
         }), source, {});
         const ratio = number(rule.dot_ratio, number(rule.bleed_ratio));
         if (ratio > 0) modifiers.apply(target, model({
           modifier_id: "BRK_DOT_" + element, modifier_type: "dot", debuff_kind: "dot",
-          name: { physical: "裂伤", fire: "灼烧", thunder: "触电", wind: "风化", quantum: "纠缠" }[element] ?? "持续伤害",
+          name: { physical: $t("team-engine.native.mechanics.index.text_6303851325"), fire: $t("team-engine.native.mechanics.index.text_6e3c6d247d"), thunder: $t("team-engine.native.mechanics.index.text_3d3fa34917"), wind: $t("team-engine.native.mechanics.index.text_6a66b9977f"), quantum: $t("team-engine.native.mechanics.index.text_ecf91d2fca") }[element] ?? $t("team-engine.native.mechanics.index.text_3b03af9409"),
           duration: number(rule.dot_duration), dot_element: element, dot_ratio: ratio,
         }), source, {});
       },

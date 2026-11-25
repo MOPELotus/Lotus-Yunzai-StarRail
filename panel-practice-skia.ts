@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { Canvas } from "skia-canvas";
 import { renderPng } from "@lotus-yunzai/skia";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
@@ -7,7 +10,7 @@ type Model = Awaited<ReturnType<typeof makePanelPracticeCards>>[number];
 const width = 600, density = 4;
 const tableX = 10, tableY = 107, tableWidth = 575, rowHeight = 36;
 const columns = [23, 94, 29, 35, 26, 28, 28, 28, 176, 108];
-const headers = ["#", "角色", "Lv", "星魂", "A", "E", "Q", "T", "光锥", "遗器"];
+const headers = ["#", $t("panel-practice-skia.text_c47b54e84e"), "Lv", $t("panel-practice-skia.text_9bd2d5af77"), "A", "E", "Q", "T", $t("panel-practice-skia.text_e733238b28"), $t("panel-practice-skia.text_2f2b17beb4")];
 const columnX = columns.map((_, index) => tableX + columns.slice(0, index).reduce((a, b) => a + b, 0));
 const rarityColors = ["#0000", "#c8c8c859", "#a8ff8559", "#89a8ff59", "#c386ff59", "#ffd48459"];
 const talentBgs = ["#0000", "#3c3f414c", "#17b83a80", "#1b80d480", "#925aff8c", "#ff241a8c"];
@@ -46,8 +49,8 @@ export async function renderStarRailPanelPractice(model: Model, theme: string, m
     ctx.save();
     ctx.shadowColor = "#000";
     ctx.shadowBlur = 3;
-    text("*面板练度统计", 35, 51, 36, "#fff", "left", false, true);
-    text(`UID:${model.uid} 共${model.total}名角色`, 35, 82, 16);
+    text($t("panel-practice-skia.text_8cb98d4472"), 35, 51, 36, "#fff", "left", false, true);
+    text($t("panel-practice-skia.text_eebb4bced5", { "uid": model.uid, "total": model.total }), 35, 82, 16);
     ctx.restore();
 
     ctx.save();
@@ -112,18 +115,18 @@ export async function renderStarRailPanelPractice(model: Model, theme: string, m
         fill(ctx, markColor, relicX + 37, y + 11, 26, 14, 4);
         text(row.rating.markClass, relicX + 50, y + 18, 10, "#fff", "center");
         text(row.rating.mark, relicX + 65, y + 18, 14, "#333");
-      } else text("暂无面板数据", relicX + 40, y + 18, 11, "#666", "left", false, false, 64);
+      } else text($t("panel-practice-skia.text_75ef5c86a9"), relicX + 40, y + 18, 11, "#666", "left", false, false, 64);
       ctx.strokeStyle = "#6663";
       columns.forEach((w, i) => ctx.strokeRect(columnX[i]!, y, w, rowHeight));
     });
     fill(ctx, "#000c", tableX, footerY, tableWidth, 36);
-    const updated = [model.updateTime.profile && `*更新面板: ${model.updateTime.profile}`, model.updateTime.mys && `米游社: ${model.updateTime.mys}`].filter(Boolean).join("  ");
+    const updated = [model.updateTime.profile && $t("panel-practice-skia.text_94fd113221", { "profile": model.updateTime.profile }), model.updateTime.mys && $t("panel-practice-skia.text_f42ae69be1", { "mys": model.updateTime.mys })].filter(Boolean).join("  ");
     if (updated) {
       measure.font = `12px ${font.body}`;
-      const start = (width - measure.measureText("数据更新时间  " + updated).width) / 2;
-      text("数据更新时间", start, footerY + 18, 12, "#d3bc8e");
+      const start = (width - measure.measureText($t("panel-practice-skia.text_c792f14b77") + updated).width) / 2;
+      text($t("panel-practice-skia.text_d3f348a8d6"), start, footerY + 18, 12, "#d3bc8e");
       text(updated, start + 85, footerY + 18, 12, "#fff");
-    } else text("发送 *更新面板 获取角色数据。", width / 2, footerY + 18, 12, "#fff", "center");
+    } else text($t("panel-practice-skia.text_d251e43746"), width / 2, footerY + 18, 12, "#fff", "center");
     ctx.restore();
     rounded(ctx, tableX, tableY, tableWidth, footerY + 36 - tableY, 10);
     ctx.strokeStyle = "#fff5";

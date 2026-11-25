@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { setTimeout } from "node:timers/promises";
 import { MAX_PROFILE_ID, ProfileError, type createProfileStore, type ProfileRequestContext } from "@lotus-yunzai/account";
 import { GameRecordRequestError, HoyoRequestError, type createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
@@ -28,10 +31,10 @@ interface MonthlyContext {
   readonly reply?: (message: string) => unknown;
 }
 
-const changed = "星铁档案已变更，请重新查询月收入。";
+const changed = $t("monthly-command.text_197ce429fa");
 const shortcuts = (profileId: number) => {
-  const profile = profileId === 1 ? "" : ` 档案${profileId}`;
-  return `记录 *星琼${profile} · 统计 *星琼统计${profile}`;
+  const profile = profileId === 1 ? "" : $t("monthly-command.text_31a2142f9f", { "profileId": profileId });
+  return $t("monthly-command.text_4c3c858fac", { "profile": profile, "value2": profile });
 };
 
 function identity(source: ProfileRequestContext, qq: string): StarRailMonthlyIdentity | undefined {
@@ -83,22 +86,22 @@ export function createStarRailMonthlyQuery(profiles: Profiles, client: Client, l
     if (context.isDelegated || (scene !== "private" && scene !== "group") || !user ||
         !Number.isSafeInteger(user) || user < 1 || user === self ||
         (Array.isArray(message) && message.some(part => part.type === "at" && String(part.qq) !== String(self)))) {
-      return "请从本人 QQ 会话查询星铁月收入。";
+      return $t("monthly-command.text_1beae0104e");
     }
     const time = now();
     const recent = starRailRecentPeriods(time);
     const current = recent.at(-1);
-    if (!current) return "暂无可查询的星铁月份。";
+    if (!current) return $t("monthly-command.text_2765586dda");
     const qq = String(user);
 
     if (input.type === "task") {
       const authorized = () => context.isBotMaster ? context.isBotMaster(user) : context.isMaster === true;
-      if (!authorized()) return "仅当前机器人的主人可执行星琼任务。";
-      if (running) return "星琼任务正在执行，请稍后重试。";
+      if (!authorized()) return $t("monthly-command.text_6dd6ffd8f1");
+      if (running) return $t("monthly-command.text_12251e9506");
       const guard = () => {
         signal.throwIfAborted();
         if (!authorized() || starRailRecentPeriods(now()).at(-1)?.key !== current.key) {
-          throw new DOMException("权限变化或已跨月。", "AbortError");
+          throw new DOMException($t("monthly-command.text_9ba1b8754c"), "AbortError");
         }
       };
       let completed = 0, failed = 0, written = 0;
@@ -122,8 +125,8 @@ export function createStarRailMonthlyQuery(profiles: Profiles, client: Client, l
           }
         }
         guard();
-        if (!targets.length) return "没有可归档的已登录国服星铁角色。";
-        await context.reply?.(`开始保存 ${targets.length} 个星铁角色的开拓月历。`);
+        if (!targets.length) return $t("monthly-command.text_c77d6b21af");
+        await context.reply?.($t("monthly-command.text_5c43d7466d", { "length": targets.length }));
         for (const [index, target] of targets.entries()) {
           const { qq: targetQQ, account, who, profileId } = target;
           guard();
@@ -145,30 +148,30 @@ export function createStarRailMonthlyQuery(profiles: Profiles, client: Client, l
           if (index + 1 < targets.length) await pace(signal);
         }
         guard();
-        return `星琼任务结束。已完成 ${completed}/${targets.length} 个角色，${failed} 个未完成，保存 ${written} 个月。`;
+        return $t("monthly-command.text_ab52560844", { "completed": completed, "length": targets.length, "failed": failed, "written": written });
       } catch {
         if (signal.aborted || !authorized()) return;
-        return `星琼任务已停止。已完成 ${completed}/${targets.length} 个角色，保存 ${written} 个月。`;
+        return $t("monthly-command.text_8629c635b1", { "completed": completed, "length": targets.length, "written": written });
       } finally {
         running = false;
       }
     }
 
     const { profileId } = input;
-    if (profileId < 1 || profileId > MAX_PROFILE_ID) return `档案编号须为 1–${MAX_PROFILE_ID}。`;
+    if (profileId < 1 || profileId > MAX_PROFILE_ID) return $t("monthly-command.text_68901e8078", { "MAX_PROFILE_ID": MAX_PROFILE_ID });
     const period = input.type === "month" && input.month !== undefined
       ? recent.find(({ key }) => Number(key.slice(4)) === input.month) : current;
-    if (!period) return "开拓月历仅支持查询最近三个月的数据。";
+    if (!period) return $t("monthly-command.text_413b8d5507");
     const read = () => profiles.requestSelectedContext(qq, profileId, "sr");
     const guard = () => signal.throwIfAborted();
     try {
       const source = await read();
       const who = identity(source, qq);
-      if (!who) return "请使用已登录并同步国服角色的星铁档案。";
+      if (!who) return $t("monthly-command.text_1cdabc8136");
       const session = access(read, archive, client, guard, signal, time)(source, who);
       if (input.type === "month" && !input.legacy) {
         const snapshot = await session.fetchMonth(period, false);
-        if (!snapshot) return "暂无星铁月收入数据。";
+        if (!snapshot) return $t("monthly-command.text_cbb70b1497");
         const returned = snapshot.month.replace(/-/gu, "").replace(/月$/u, "");
         if (returned === period.key || (returned.length <= 2 && Number(returned) === Number(period.key.slice(4)))) {
           try { await session.save(period, snapshot); } catch { await session.verify(); }
@@ -195,7 +198,7 @@ export function createStarRailMonthlyQuery(profiles: Profiles, client: Client, l
           } catch (error) {
             if (error instanceof HoyoRequestError && error.code === "profile-changed") throw error;
             await session.verify();
-            notice = error instanceof HoyoRequestError ? error.message : "星铁月历本次未能完整更新。";
+            notice = error instanceof HoyoRequestError ? error.message : $t("monthly-command.text_e1e3c205ca");
             break;
           }
         }
@@ -205,31 +208,31 @@ export function createStarRailMonthlyQuery(profiles: Profiles, client: Client, l
       let line: string, image: Uint8Array | undefined;
       if (input.type === "month") {
         const snapshot = requested ?? saved.find(row => row.key === period.key)?.snapshot;
-        if (!snapshot) return notice ?? "暂无该月的星铁月收入数据。";
+        if (!snapshot) return notice ?? $t("monthly-command.text_d537e9c104");
         const rendered = await render(makeStarRailMonthlyCard(snapshot), { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
         image = rendered?.png;
         line = starRailMonthlyText(snapshot);
       } else {
         const selection = starRailStatisticsPeriod(time, input.selection);
-        if (!selection) return "请指定星穹铁道上线至今年之间的年份。";
+        if (!selection) return $t("monthly-command.text_0738782a61");
         const model = buildStarRailMonthlyStatistics(who.uid, saved, selection);
-        if (!model) return notice ?? `${selection.label}暂无星琼统计存档。可先查询 *星琼。`;
+        if (!model) return notice ?? $t("monthly-command.text_d7a29a9e20", { "label": selection.label });
         const rendered = await renderStatistics(model, { inlineImageByteLimit: context.inlineImageByteLimit }).catch(() => undefined);
         image = rendered?.png;
         line = starRailStatisticsText(model);
       }
       await session.verify();
-      const tail = notice ? `${notice} 已显示可用数据。\n${shortcuts(profileId)}` : shortcuts(profileId);
+      const tail = notice ? $t("monthly-command.text_2928b2ba1b", { "notice": notice, "value2": shortcuts(profileId) }) : shortcuts(profileId);
       return [image ? { type: "image" as const, file: image } : line, tail] as const;
     } catch (error) {
       if (signal.aborted) return [];
       if (error instanceof ProfileError) {
-        if (error.code === "missing" || error.code === "login-required") return `请先登录档案 ${profileId}。`;
-        if (error.code === "role-missing") return `档案 ${profileId} 没有已同步的星铁角色。`;
+        if (error.code === "missing" || error.code === "login-required") return $t("monthly-command.text_76720712c8", { "profileId": profileId });
+        if (error.code === "role-missing") return $t("monthly-command.text_c0d14d54a7", { "profileId": profileId });
         if (error.code === "changed") return changed;
       }
       if (error instanceof HoyoRequestError) return error.code === "profile-changed" ? changed : error.message;
-      return "获取星铁月收入失败，请稍后重试。";
+      return $t("monthly-command.text_7844fed4a4");
     }
   };
 }

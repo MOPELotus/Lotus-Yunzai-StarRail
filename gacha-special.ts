@@ -1,14 +1,17 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { StarRailGachaPool } from "@lotus-yunzai/hoyo-client";
 import type { StarRailGachaDetailOptions } from "./gacha-detail.ts";
 import { officialStarRailGachaSource, officialStarRailGachaTime } from "./gacha-time.ts";
 
 const poolInfo = {
   GachaType_AvatarUp: { type: 11, typeName: "角色", max: 90 },
-  GachaType_CollabAvatarUp: { type: 21, typeName: "角色联动", max: 90 },
+  GachaType_CollabAvatarUp: { type: 21, typeName: $t("gacha-special.text_957dff2ffa"), max: 90 },
   GachaType_EquipmentUp: { type: 12, typeName: "光锥", max: 80 },
-  GachaType_CollabEquipmentUp: { type: 22, typeName: "光锥联动", max: 80 },
-  GachaType_Standard: { type: 1, typeName: "常驻", max: 90 },
-  GachaType_Newbie: { type: 2, typeName: "新手", max: undefined },
+  GachaType_CollabEquipmentUp: { type: 22, typeName: $t("gacha-special.text_7085c8362b"), max: 80 },
+  GachaType_Standard: { type: 1, typeName: $t("gacha-special.text_300b6634fe"), max: 90 },
+  GachaType_Newbie: { type: 2, typeName: $t("gacha-special.text_dcfce30c45"), max: undefined },
 } as const satisfies Record<StarRailGachaPool, { type: number; typeName: string; max: number | undefined }>;
 
 type PoolInfo = typeof poolInfo[StarRailGachaPool];
@@ -71,12 +74,12 @@ const shanghaiTime = new Intl.DateTimeFormat("sv-SE", {
 });
 
 function object(value: unknown): RecordData {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("星铁抽卡历史格式无效。");
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError($t("gacha-special.text_69e0e8620e"));
   return value as RecordData;
 }
 
 function list(value: unknown): readonly unknown[] {
-  if (!Array.isArray(value)) throw new TypeError("星铁抽卡历史列表无效。");
+  if (!Array.isArray(value)) throw new TypeError($t("gacha-special.text_d325e3a87b"));
   return value;
 }
 
@@ -88,7 +91,7 @@ function text(value: unknown): string {
 function count(value: unknown): number {
   const number = typeof value === "string" && /^\d+$/u.test(value.trim()) ? Number(value) : value;
   if (typeof number !== "number" || !Number.isSafeInteger(number) || number < 0) {
-    throw new TypeError("星铁抽卡历史中的抽数无效。");
+    throw new TypeError($t("gacha-special.text_11b6f1494c"));
   }
   return number;
 }
@@ -96,14 +99,14 @@ function count(value: unknown): number {
 function cardDraws(pool: RecordData): number {
   const counters = new Map<string, number>();
   for (const [id, value] of Object.entries(object(pool.cardCounters ?? {}))) {
-    if (!id.trim()) throw new TypeError("星铁卡池统计缺少编号。");
+    if (!id.trim()) throw new TypeError($t("gacha-special.text_105c402800"));
     counters.set(id, count(value));
   }
   for (const value of list(pool.cards ?? [])) {
     const card = object(value);
     const id = text(card.gacha_id);
     const draws = count(card.total_count);
-    if (!id && draws) throw new TypeError("星铁卡池统计缺少编号。");
+    if (!id && draws) throw new TypeError($t("gacha-special.text_105c402800"));
     if (id) counters.set(id, Math.max(counters.get(id) ?? 0, draws));
   }
   return count([...counters.values()].reduce((sum, draws) => sum + draws, 0));
@@ -133,14 +136,14 @@ function deduplicate(values: unknown): ReadonlyMap<string, RecordData> {
     const id = text(row.id);
     const uuid = text(row.uuid);
     if (!id || !uuid) continue;
-    if (byUuid.has(uuid) && byUuid.get(uuid) !== id) throw new Error("星铁五星记录的编号与 UUID 冲突。");
+    if (byUuid.has(uuid) && byUuid.get(uuid) !== id) throw new Error($t("gacha-special.text_bbb72c798d"));
     byUuid.set(uuid, id);
   }
   const unique = new Map<string, RecordData>();
   for (const row of rows) {
     const uuid = text(row.uuid);
     const id = text(row.id) || byUuid.get(uuid) || uuid;
-    if (!id) throw new TypeError("星铁五星记录缺少有效编号。");
+    if (!id) throw new TypeError($t("gacha-special.text_3179611f22"));
     const known = unique.get(id);
     unique.set(id, known ? {
       ...row, ...known, id: text(known.id) || text(row.id), item: known.item ?? row.item,
@@ -167,7 +170,7 @@ function readPool(
   let first = Infinity, last = -Infinity;
   for (const [id, row] of deduplicate(raw.fiveStars ?? [])) {
     const item = object(row.item ?? {});
-    const name = text(item.name) || "未知";
+    const name = text(item.name) || $t("gacha-special.text_4d8c1c5b42");
     const itemType = itemTypeOf(item);
     const num = count(row.gacha_count ?? 0) || undefined;
     const time = timeOf(row, isOfficialHistory, now);
@@ -219,14 +222,14 @@ function readPool(
 export function buildStarRailGachaSpecial({
   uid, history, pool, resolveItem, now = new Date(), maxRows = 48, page,
 }: StarRailGachaSpecialOptions): StarRailGachaSpecialModel | undefined {
-  if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError("星铁抽卡显示 UID 无效。");
-  if (pool !== "all" && !Object.hasOwn(poolInfo, pool)) throw new TypeError("星铁抽卡显示卡池无效。");
+  if (!/^[1-9]\d*$/u.test(uid)) throw new TypeError($t("gacha-special.text_7a9a5a67d7"));
+  if (pool !== "all" && !Object.hasOwn(poolInfo, pool)) throw new TypeError($t("gacha-special.text_9febac977d"));
   if (!Number.isFinite(now.getTime()) || !Number.isSafeInteger(maxRows) || maxRows < 1 ||
       (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
-    throw new RangeError("星铁抽卡显示时间或分页参数无效。");
+    throw new RangeError($t("gacha-special.text_64ba011e89"));
   }
   const log = object(history ?? {});
-  if (log.uid != null && text(log.uid) !== uid) throw new Error("星铁抽卡显示资料与当前角色不一致。");
+  if (log.uid != null && text(log.uid) !== uid) throw new Error($t("gacha-special.text_bda4feb8e5"));
   const source = object(log.pools ?? {});
   const selected = pool === "all" ? Object.keys(poolInfo) as StarRailGachaPool[] : [pool];
   const isOfficialHistory = log.source === officialStarRailGachaSource;
@@ -244,7 +247,7 @@ export function buildStarRailGachaSpecial({
   const start = ((page ?? 1) - 1) * maxRows;
   const end = Math.min(start + maxRows, countPerPage);
   return {
-    uid, poolName: pool === "all" ? "全部" : poolInfo[pool].typeName,
+    uid, poolName: pool === "all" ? $t("gacha-special.text_5c55a67935") : poolInfo[pool].typeName,
     totalDraws, fiveNum,
     pools: pools.map((data) => {
       const fiveLog = data.fiveLog.slice(start, end);

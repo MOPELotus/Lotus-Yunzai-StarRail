@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { fileURLToPath } from "node:url";
 import type { StarRailMonthlySnapshot } from "@lotus-yunzai/hoyo-client";
 
@@ -31,7 +34,7 @@ function incomeGroups(groups: StarRailMonthlySnapshot["groups"]) {
   });
 }
 
-const incomeLabels = ["当月共获取", "今日共获取", "昨日共获取"] as const;
+const incomeLabels = [$t("monthly-card.text_2494c80167"), $t("monthly-card.text_e44fd8e840"), $t("monthly-card.text_fe651e90c2")] as const;
 
 function incomeSections(snapshot: StarRailMonthlySnapshot) {
   return [snapshot.monthly, snapshot.today, snapshot.yesterday].map((income, index) => ({
@@ -44,14 +47,14 @@ export function makeStarRailMonthlyCard(snapshot: StarRailMonthlySnapshot) {
     tplFile: fileURLToPath(new URL("month.html", themePath)),
     css: themeFile("month.css"), jadeIcon: themeFile("星琼.png"), passIcon: themeFile("车票.png"),
     month: snapshot.month, total: snapshot.monthly.hcoin, incomes: incomeSections(snapshot), groups: incomeGroups(snapshot.groups),
-    cardBrand: "Lotus-Yunzai · StarRail", imgType: "png" as const, viewport: { width: 660, height: 880 }, scale: 1,
+    cardBrand: $t("monthly-card.text_00dfd4ad2c"), imgType: "png" as const, viewport: { width: 660, height: 880 }, scale: 1,
   };
 }
 
 export function starRailMonthlyText(snapshot: StarRailMonthlySnapshot) {
-  return [`${snapshot.month} | 开拓日历`,
-    ...incomeSections(snapshot).map(({ label, hcoin, railsPass }) => `${label} · 星琼：${hcoin} · 星轨通票&星轨专票：${railsPass}`),
-    ...(snapshot.groups.length ? ["本月星琼收入", ...incomeGroups(snapshot.groups).map(
+  return [$t("monthly-card.text_7d80867c35", { "month": snapshot.month }),
+    ...incomeSections(snapshot).map(({ label, hcoin, railsPass }) => $t("monthly-card.text_3171e0b450", { "label": label, "hcoin": hcoin, "railsPass": railsPass })),
+    ...(snapshot.groups.length ? [$t("monthly-card.text_03d531c062"), ...incomeGroups(snapshot.groups).map(
       group => `${group.name} ${group.count} · ${group.percentage}%`,
     )] : []),
   ].join("\n");

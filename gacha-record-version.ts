@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import {
   matchStarRailRecordPeriod, starRailRecordPeriods, starRailRecordUp, type StarRailRecordDraw,
 } from "./gacha-record-source.ts";
@@ -11,11 +14,11 @@ type Item = Version["itemMap"][string];
 type ItemCount = Group["items"][number];
 
 const selections: Record<Selection, { readonly pools: readonly StarRailRecordDraw["pool"][]; readonly name: string; readonly aggregate?: string }> = {
-  up: { pools: ["11", "12"], name: "抽卡" },
-  char: { pools: ["11"], name: "角色" },
-  weapon: { pools: ["12"], name: "光锥" },
-  normal: { pools: ["1"], name: "常驻", aggregate: "常驻池" },
-  all: { pools: ["11", "12", "1"], name: "全部", aggregate: "全部统计" },
+  up: { pools: ["11", "12"], name: $t("gacha-record-version.text_02d44306fd") },
+  char: { pools: ["11"], name: $t("gacha-record-version.text_c47b54e84e") },
+  weapon: { pools: ["12"], name: $t("gacha-record-version.text_e733238b28") },
+  normal: { pools: ["1"], name: $t("gacha-record-version.text_300b6634fe"), aggregate: $t("gacha-record-version.text_d0cf5ec4c8") },
+  all: { pools: ["11", "12", "1"], name: $t("gacha-record-version.text_5c55a67935"), aggregate: $t("gacha-record-version.text_5336683ac2") },
 };
 const dateFormat = new Intl.DateTimeFormat("sv-SE", {
   timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
@@ -76,9 +79,9 @@ function compact({ items, stats }: Bucket, name: GroupName, itemMap: Readonly<Re
 export function buildStarRailRecordVersion({
   uid, draws, face, type = "up", schedule, maxRows = 10, page,
 }: StarRailRecordVersionOptions): StarRailGachaVersionModel | undefined {
-  if (!/^[1-9]\d*$/u.test(uid) || !Object.hasOwn(selections, type)) throw new TypeError("星铁抽卡统计 UID 或卡池无效。");
+  if (!/^[1-9]\d*$/u.test(uid) || !Object.hasOwn(selections, type)) throw new TypeError($t("gacha-record-version.text_c40cfba7d8"));
   if (!Number.isSafeInteger(maxRows) || maxRows < 0 || (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
-    throw new RangeError("星铁抽卡统计分页参数无效。");
+    throw new RangeError($t("gacha-record-version.text_a3d96943ab"));
   }
 
   const selected = selections[type];
@@ -119,7 +122,7 @@ export function buildStarRailRecordVersion({
         name: name ?? char5?.map((char) => abbreviations.get(char) ?? char).join(" / ") ?? "",
       }, itemMap));
     if (unknown.stats.totalNum) rows.push(compact(unknown, {
-      version: "未判定期次", half: "", from: "", to: "", name: "", unassigned: true,
+      version: $t("gacha-record-version.text_2e59e4b5fc"), half: "", from: "", to: "", name: "", unassigned: true,
     }, itemMap));
   }
 
@@ -131,7 +134,7 @@ export function buildStarRailRecordVersion({
   };
   const count = rows.length;
   const total = maxRows ? Math.max(1, Math.ceil(count / maxRows)) : 1;
-  if (page !== undefined && page > total) throw new RangeError("星铁抽卡统计页码超出范围。");
+  if (page !== undefined && page > total) throw new RangeError($t("gacha-record-version.text_0a9b27f96e"));
   const from = maxRows ? ((page ?? 1) - 1) * maxRows : 0;
   const to = maxRows ? Math.min(count, from + maxRows) : count;
   const pageInfo = page !== undefined && total > 1 ? { page, total, from: from + 1, to, count } : undefined;

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { constants, type Stats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -8,7 +11,7 @@ import { convertStarRailUigfTimezone, exportStarRailUigf, validateStarRailUigfAr
 const pools = ["11", "12", "21", "22", "2", "1"] as const;
 const maxArchiveBytes = 32 * 1024 * 1024;
 const maxLegacyPoolBytes = 16 * 1024 * 1024;
-const subject = "星铁逐抽档案";
+const subject = $t("gacha-record-archive.text_3c76b74895");
 const accountId = /^[1-9]\d{0,18}$/u;
 
 interface Identity {
@@ -49,7 +52,7 @@ function missing(error: unknown): boolean {
 
 function checkIdentity({ qq, uid }: Identity) {
   if (typeof qq !== "string" || typeof uid !== "string" || !accountId.test(qq) || !accountId.test(uid)) {
-    throw new TypeError("星铁逐抽档案的 QQ 或 UID 无效。");
+    throw new TypeError($t("gacha-record-archive.text_76d6232bee"));
   }
 }
 
@@ -72,27 +75,27 @@ async function readStat(path: string): Promise<Stats | undefined> {
 async function locateLegacy(directory: string, segments: readonly string[]): Promise<string | undefined> {
   const info = await readStat(directory);
   if (!info) return;
-  if (!info.isDirectory()) corrupt("星铁旧逐抽档案的根须为实际目录。");
+  if (!info.isDirectory()) corrupt($t("gacha-record-archive.text_fd6f9cc2c5"));
   const root = await realpath(directory);
   let path = root;
   for (const segment of segments) {
     path = join(path, segment);
     const info = await readStat(path);
     if (!info) return;
-    if (!info.isDirectory() || await realpath(path) !== path) corrupt("星铁旧逐抽档案的 QQ 和 UID 须为实际目录。");
+    if (!info.isDirectory() || await realpath(path) !== path) corrupt($t("gacha-record-archive.text_d995ef5a75"));
   }
   return path;
 }
 
 function changedLegacy(): never {
-  throw new StarRailGachaArchiveError("io", "星铁旧逐抽档案正在变化，请稍后重试。");
+  throw new StarRailGachaArchiveError("io", $t("gacha-record-archive.text_686dfebda6"));
 }
 
 async function readLegacyPool(file: string, remaining: number) {
   const expected = await readStat(file);
   if (!expected) return;
-  if (!expected.isFile()) corrupt("星铁旧逐抽档案的卡池须为普通 JSON 文件。");
-  if (expected.size > Math.min(remaining, maxLegacyPoolBytes)) corrupt("星铁旧逐抽档案超过可读取大小。");
+  if (!expected.isFile()) corrupt($t("gacha-record-archive.text_83cbd00740"));
+  if (expected.size > Math.min(remaining, maxLegacyPoolBytes)) corrupt($t("gacha-record-archive.text_7d46f9c8f4"));
   const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const info = await handle.stat();
@@ -108,9 +111,9 @@ async function readLegacyPool(file: string, remaining: number) {
     try {
       parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     } catch {
-      corrupt("星铁旧逐抽档案的卡池 JSON 无效。");
+      corrupt($t("gacha-record-archive.text_1724446b8d"));
     }
-    if (!Array.isArray(parsed)) corrupt("星铁旧逐抽档案的卡池须为逐抽数组。");
+    if (!Array.isArray(parsed)) corrupt($t("gacha-record-archive.text_972b6223a3"));
     return { info, records: parsed as unknown[] };
   } finally {
     await handle.close();
@@ -143,14 +146,14 @@ async function readLegacy(directory: string, source: "legacy" | "backup" | "inde
     if (!snapshot) continue;
     availableBytes -= snapshot.info.size;
     for (const row of snapshot.records) {
-      if (!record(row) || !sameIdentifier(row.gacha_type, pool)) corrupt("星铁旧逐抽档案的卡池编号与文件不一致。");
-      if (row.uid !== undefined && !sameIdentifier(row.uid, uid)) corrupt("星铁旧逐抽档案包含其他 UID 的记录。");
+      if (!record(row) || !sameIdentifier(row.gacha_type, pool)) corrupt($t("gacha-record-archive.text_b3da348a16"));
+      if (row.uid !== undefined && !sameIdentifier(row.uid, uid)) corrupt($t("gacha-record-archive.text_e9ea856932"));
       // These summaries can share a pool file with real game records.
       if (row.xhh_ph === 1 || row.xhh_src === "mini") {
         hasSummaryRows = true;
         continue;
       }
-      if (source === "independent" && row.uid === undefined) corrupt("星铁独立旧档的逐抽记录缺少 UID，无法确认归属。");
+      if (source === "independent" && row.uid === undefined) corrupt($t("gacha-record-archive.text_c5f5bdea78"));
       if (typeof row.lang === "string" && row.lang.trim()) languages.add(row.lang.trim());
       records.push(row);
     }
@@ -162,23 +165,23 @@ async function readLegacy(directory: string, source: "legacy" | "backup" | "inde
   }
   if (!records.length) return { status: "unavailable", reason: hasSummaryRows ? "mirror" : "missing" };
   if (records.some(mirrorDatum) || records.every(mirrorFiveStar)) return { status: "unavailable", reason: "mirror" };
-  if (legacyTimezone === undefined) corrupt("无法确认星铁旧逐抽档案的服务器时区，请使用带时区的 UIGF 文件。");
+  if (legacyTimezone === undefined) corrupt($t("gacha-record-archive.text_fe29cd3b99"));
   const lang = languages.size === 1 ? languages.values().next().value : undefined;
   try {
     const archive = validateStarRailUigfArchive({ uid, timezone: legacyTimezone, lang, records }, uid);
     return { status: "available", source, archive };
   } catch (error) {
-    corrupt(error instanceof TypeError ? error.message : "星铁旧逐抽档案的格式无效。");
+    corrupt(error instanceof TypeError ? error.message : $t("gacha-record-archive.text_a21cb9fe1b"));
   }
 }
 
 export async function prepareIndependentStarRailGachaImport(directory: string, uid: string, timezone: number) {
-  if (typeof uid !== "string" || !accountId.test(uid)) throw new TypeError("星铁独立旧档的 UID 无效。");
+  if (typeof uid !== "string" || !accountId.test(uid)) throw new TypeError($t("gacha-record-archive.text_3e846de7c1"));
   const result = await readLegacy(directory, "independent", [uid], uid, { legacyTimezone: timezone });
   if (result.status !== "available") {
     corrupt(result.reason === "mirror"
-      ? "星铁独立旧档只有汇总或占位记录，无法作为逐抽档案导入。"
-      : "星铁独立旧档未找到该 UID 的逐抽记录。");
+      ? $t("gacha-record-archive.text_76b4fac4c0")
+      : $t("gacha-record-archive.text_302c49110a"));
   }
   const { archive } = result;
   // UIGF v4 uses whole-hour offsets. UTC preserves draw instants for archives with fractional offsets.
@@ -191,12 +194,12 @@ export async function prepareIndependentStarRailGachaImport(directory: string, u
 
 function decodeManaged(value: unknown, identity: Identity): StarRailUigfArchive {
   if (!record(value) || value.version !== 1 || value.qq !== identity.qq || value.uid !== identity.uid) {
-    corrupt("星铁逐抽档案的版本或 QQ、UID 不匹配。");
+    corrupt($t("gacha-record-archive.text_56627ad386"));
   }
   try {
     return validateStarRailUigfArchive(value, identity.uid);
   } catch (error) {
-    corrupt(error instanceof TypeError ? error.message : "星铁逐抽档案的格式无效。");
+    corrupt(error instanceof TypeError ? error.message : $t("gacha-record-archive.text_bed122677f"));
   }
 }
 
@@ -232,7 +235,7 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
       return backup.status === "available" || backup.reason === "mirror" ? backup : live;
     } catch (error) {
       if (error instanceof StarRailGachaArchiveError) throw error;
-      throw new StarRailGachaArchiveError("io", "无法读取星铁旧逐抽档案。");
+      throw new StarRailGachaArchiveError("io", $t("gacha-record-archive.text_f46025d0da"));
     }
   }
 
@@ -241,22 +244,22 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
       checkIdentity(identity);
       let saved: unknown;
       try { saved = await managed.read(identity.qq, identity.uid); }
-      catch { corrupt("无法读取星铁逐抽档案，请核对 JSON 文件、大小和目录。"); }
+      catch { corrupt($t("gacha-record-archive.text_3315847567")); }
       if (saved !== null) return { status: "available", source: "managed", archive: decodeManaged(saved, identity) };
       return existingLegacy(identity, options);
     },
     async prepareLegacyHandback(identity: Identity, legacyTimezone: number) {
       checkIdentity(identity);
       const saved = await managed.read(identity.qq, identity.uid);
-      if (saved === null) throw new Error("没有找到指定 QQ 和 UID 的新版星铁逐抽档案副本。");
+      if (saved === null) throw new Error($t("gacha-record-archive.text_ed7d2aec24"));
       const modern = convertStarRailUigfTimezone(decodeManaged(saved, identity), legacyTimezone);
       const local = await readLegacy(legacyDirectory, "legacy", [identity.qq, identity.uid], identity.uid, { legacyTimezone });
       if (local.status === "unavailable" && local.reason === "mirror") {
-        throw new Error("旧逐抽副本含显示占位记录，无法安全交还。");
+        throw new Error($t("gacha-record-archive.text_52ceb5e573"));
       }
       const legacy = local.status === "available" ? local.archive : undefined;
       if (legacy?.lang && modern.lang && legacy.lang !== modern.lang) {
-        throw new Error("新旧星铁逐抽档案的语言不同，无法安全交还到同一旧档。");
+        throw new Error($t("gacha-record-archive.text_cb538a8d41"));
       }
 
       const legacyRows = legacy?.records ?? [];
@@ -265,7 +268,7 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
         const previous = existing.get(row.id);
         if ((previous?.name && row.name && previous.name !== row.name) ||
             (previous?.item_type && row.item_type && previous.item_type !== row.item_type)) {
-          throw new Error("星铁抽卡文件存在编号相同但名称或物品种类不同的记录。");
+          throw new Error($t("gacha-record-archive.text_91d2483f78"));
         }
       }
       const merged = validateStarRailUigfArchive({
@@ -274,7 +277,7 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
       // The old importer requests metadata only when its first row lacks it.
       if (merged.records.some(({ name, item_type, rank_type }) =>
         !name || (item_type !== "角色" && item_type !== "光锥" && item_type !== "武器") || !rank_type)) {
-        throw new Error("旧导入需要每条记录的名称、物品种类和星级，无法安全交还缺少旧显示字段的记录。");
+        throw new Error($t("gacha-record-archive.text_2c8dff64e1"));
       }
 
       const version = merged.lang && !merged.records.some(({ gacha_type }) => gacha_type === "21" || gacha_type === "22") ? "v2" : "v4";
@@ -303,7 +306,7 @@ export function createStarRailGachaRecordArchive({ directory, legacyDirectory, l
             archive = validateStarRailUigfArchive({ ...previous, lang: previous.lang ?? normalized.lang,
               records: [...previous.records, ...normalized.records] }, identity.uid);
           } catch (error) {
-            throw new StarRailGachaArchiveError("conflict", error instanceof TypeError ? error.message : "星铁逐抽档案合并冲突。");
+            throw new StarRailGachaArchiveError("conflict", error instanceof TypeError ? error.message : $t("gacha-record-archive.text_f1c0a168d8"));
           }
         }
         const result = summarize(archive, incoming, previous);

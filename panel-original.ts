@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { MAX_PROFILE_ID, type createProfileStore } from "@lotus-yunzai/account";
 import type { CommandReply, MessageFallbackContext } from "../../lib/commands.ts";
 import { readStarRailOriginalSettings } from "./panel-original-config.ts";
@@ -93,7 +96,7 @@ export function createStarRailPanelOriginals(profiles: Pick<ReturnType<typeof cr
         const quote = await context.lookupReply();
         if (!quote || quote.user_id !== context.self_id || quote.message.filter(part => part.type === "image").length !== 1) return;
         const config = await readStarRailOriginalSettings(root);
-        if (!config.starrailOriginalEnabled && context.isBotMaster?.(context.user_id!) !== true) return "星铁原图功能已关闭。";
+        if (!config.starrailOriginalEnabled && context.isBotMaster?.(context.user_id!) !== true) return $t("panel-original.text_b4da83e66b");
         const { binding } = receipt;
         async function stillOwned() {
           active.throwIfAborted();
@@ -105,7 +108,7 @@ export function createStarRailPanelOriginals(profiles: Pick<ReturnType<typeof cr
         if (!await stillOwned()) return;
         const file = await readPicture(receipt.photo, active);
         if (!file || !await stillOwned()) return;
-        if (context.inlineImageByteLimit !== undefined && file.byteLength > context.inlineImageByteLimit) return "星铁面板原图超过当前会话的图片大小上限。";
+        if (context.inlineImageByteLimit !== undefined && file.byteLength > context.inlineImageByteLimit) return $t("panel-original.text_3ee1886cbe");
         const message = { type: "image", file } as const;
         const seconds = config.starrailOriginalRecall ? config.starrailOriginalRecallSeconds : 0;
         return seconds ? { type: "recallable", message, seconds } : message;

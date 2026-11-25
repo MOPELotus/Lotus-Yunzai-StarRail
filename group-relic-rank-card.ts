@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Layout follows the MIT Miao rank-profile-list HTML/CSS; extra Eidolon border matches 87b09ace.
 import type { CanvasRenderingContext2D as Context, Image } from "skia-canvas";
 import { groupPanelNumber, maxGroupPanelRankLimit } from "../../lib/group-panel-rank-settings.ts";
@@ -6,7 +9,7 @@ import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { readTheme, type readPanelRankAvatar } from "./panel-card.ts";
 import { object, text } from "./panel-model.ts";
 
-export const relicRankLabels = { damage: "伤害", mark: "遗器评分", crit: "双爆副词条", valid: "加权有效词条" } as const;
+export const relicRankLabels = { damage: $t("group-relic-rank-card.text_30e1196888"), mark: $t("group-relic-rank-card.text_08ddb000a9"), crit: $t("group-relic-rank-card.text_8239a4e7ae"), valid: $t("group-relic-rank-card.text_60ac93fb6d") } as const;
 export type RelicRankMetric = keyof typeof relicRankLabels;
 
 export interface RelicRankRow {
@@ -27,9 +30,9 @@ export interface RelicRankCoverage {
 }
 
 export function relicRankCoverageText({ registered, scored, notListed, failed }: RelicRankCoverage) {
-  const parts = [`本轮公开展板 ${scored}/${registered} 已计分`];
-  if (notListed) parts.push(`未展示或词条不全 ${notListed}`);
-  if (failed) parts.push(`读取失败 ${failed}`);
+  const parts = [$t("group-relic-rank-card.text_490e18dd65", { "scored": scored, "registered": registered })];
+  if (notListed) parts.push($t("group-relic-rank-card.text_d26a25f1b4", { "notListed": notListed }));
+  if (failed) parts.push($t("group-relic-rank-card.text_4c3cf9a067", { "failed": failed }));
   return parts.join(" · ");
 }
 
@@ -43,11 +46,11 @@ const gradeColors: Readonly<Record<string, string>> = {
 const gold = "#d3bc8e";
 const white = "#fff";
 const lines = [
-  ["综合练度排名", "以计入暴击率的期望伤害比较。当前卡的伤害栏沿用角色的个人计算规则。"],
-  ["遗器评分排名", "按角色遗器规则评分，线性评分无法反映词条平衡，仅供参考。"],
-  ["双暴排名", "按遗器的双暴词条计算，包含暴击主词条。"],
-  ["加权有效词条排名", "按角色的词条权重计算遗器有效词条。"],
-  ["排名范围", "本群主动登记并仍绑定的 UID，使用本轮读到的公开展板。"],
+  [$t("group-relic-rank-card.text_5e574e16da"), $t("group-relic-rank-card.text_d5b1019cf7")],
+  [$t("group-relic-rank-card.text_a12840164b"), $t("group-relic-rank-card.text_ddbfdc4a14")],
+  [$t("group-relic-rank-card.text_7527b41911"), $t("group-relic-rank-card.text_976ffc8799")],
+  [$t("group-relic-rank-card.text_94c51e5cd1"), $t("group-relic-rank-card.text_2985cca526")],
+  [$t("group-relic-rank-card.text_cc5a9ebd9d"), $t("group-relic-rank-card.text_7420dc5ff6")],
 ] as const;
 const geometry = {
   normal: { width: 900, face: 40, nameX: 114, talentX: 193, coneX: 419, setX: 524, dmgX: 650, secondX: 760 },
@@ -95,12 +98,12 @@ export async function renderStarRailRelicRank(
   publicRanking?: { readonly filters: string; readonly count: number },
 ) {
   const maximum = publicRanking ? 50 : maxGroupPanelRankLimit;
-  if (!rows.length || rows.length > maximum) throw new RangeError(`星铁遗器榜须为 1 至 ${maximum} 行。`);
+  if (!rows.length || rows.length > maximum) throw new RangeError($t("group-relic-rank-card.text_35cabeaebc", { "maximum": maximum }));
   const theme = await readTheme();
   const meta = character && object(theme.characters[String(character.id)]);
   const path = aggregate
-    ? rows.some(row => row.presentation?.path === "记忆") ? "记忆" :
-      rows.some(row => row.presentation?.path === "欢愉") ? "欢愉" : undefined
+    ? rows.some(row => row.presentation?.path === "记忆") ? $t("group-relic-rank-card.text_7a6335b379") :
+      rows.some(row => row.presentation?.path === "欢愉") ? $t("group-relic-rank-card.text_17f4b35418") : undefined
     : text(meta?.weapon) || rows[0]?.presentation?.path;
   const slotCount = path === "记忆" ? 6 : path === "欢愉" ? 5 : 4;
   const layout = path === "记忆" ? geometry.remembrance : path === "欢愉" ? geometry.elation : geometry.normal;
@@ -181,18 +184,18 @@ export async function renderStarRailRelicRank(
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
     const name = character?.name.replace(/^(?:穹|星)·(毁灭|存护|同谐|记忆|欢愉)$/u, "开拓者·$1");
-    write(aggregate?.title ?? `*${publicRanking ? "自定义" : ""}${name}${relicRankLabels[metric]}排行`, 20, 63, 36, white, "left", false, true, width - 40);
+    write(aggregate?.title ?? $t("group-relic-rank-card.text_9d9e52587d", { "value1": publicRanking ? $t("group-relic-rank-card.text_4eafa9e925") : "", "name": name, "value3": relicRankLabels[metric] }), 20, 63, 36, white, "left", false, true, width - 40);
     ctx.restore();
     box(97, 165 + extra, () => {
       fill(ctx, "#0006", 10, 97, panelWidth, 40);
       fill(ctx, "#ffffff46", 10, 137, panelWidth, 1);
-      write(publicRanking ? "全服自定义排行说明" : "群排名说明", 30, 119, 16, gold);
+      write(publicRanking ? $t("group-relic-rank-card.text_f48d2b932c") : $t("group-relic-rank-card.text_2a2a030720"), 30, 119, 16, gold);
       fill(ctx, "#0006", 10, 138, panelWidth, 124 + extra);
       const notes = publicRanking ? [
-        ["排序", (metric === "damage" ? "伤害均值" : "遗器评分") + "降序"],
-        ["筛选", publicRanking.filters], ["数量", `最多 ${publicRanking.count} 名，本次 ${rows.length} 名`],
-        ["面板", "引用本消息发送 *排行面板1 查看前 20 名中的指定一名。"],
-        ["范围", "排名服务的公开展板。"],
+        [$t("group-relic-rank-card.text_a96c9a8541"), (metric === "damage" ? $t("group-relic-rank-card.text_fe2142d7c9") : $t("group-relic-rank-card.text_08ddb000a9")) + $t("group-relic-rank-card.text_4b77c35468")],
+        [$t("group-relic-rank-card.text_b5f15473fd"), publicRanking.filters], [$t("group-relic-rank-card.text_5e29d121dd"), $t("group-relic-rank-card.text_67ce28e000", { "count": publicRanking.count, "length": rows.length })],
+        [$t("group-relic-rank-card.text_3c8c5939d6"), $t("group-relic-rank-card.text_46fec63bf7")],
+        [$t("group-relic-rank-card.text_ae72b532f4"), $t("group-relic-rank-card.text_cf61de2083")],
       ] : lines;
       for (const [index, [title, body]] of notes.entries()) {
         const y = 161 + index * 19;
@@ -247,7 +250,7 @@ export async function renderStarRailRelicRank(
           const coneTextX = layout.coneX + 46;
           cell(lightCone.name || "—", coneTextX, y + 22, 13, gold, layout.setX - coneTextX - 3);
           const affix = lightCone.affix;
-          if (affix !== undefined) pill(`精${affix}`, soulColors[affix + 1] ?? "#666", coneTextX, y + 33, 25);
+          if (affix !== undefined) pill($t("group-relic-rank-card.text_8f16cda3b9", { "affix": affix }), soulColors[affix + 1] ?? "#666", coneTextX, y + 33, 25);
           if (lightCone.level !== undefined) write(`Lv.${lightCone.level}`, coneTextX, y + (affix === undefined ? 41 : 54), 12);
         } else {
           rounded(ctx, layout.coneX, y + 12, 36, 36, 6);
@@ -267,12 +270,12 @@ export async function renderStarRailRelicRank(
         cell(groupPanelNumber(relicMark?.score.toFixed(1) ?? "—", theme.commaGroup),
           layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
         divider(ctx, layout.dmgX - 15, y + 10);
-        cell(known?.damage?.title || "期望伤害", layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
+        cell(known?.damage?.title || $t("group-relic-rank-card.text_d5f4617e07"), layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
         const damageValue = known?.damage?.value ?? (rowMetric === "damage" && !publicRanking ? row.score.toFixed(1) : "—");
         cell(groupPanelNumber(damageValue, theme.commaGroup), layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
         divider(ctx, layout.secondX - 15, y + 10);
       });
     });
-    write("Lotus-Yunzai · StarRail", width / 2, height - 15, 14, white, "center");
+    write($t("group-relic-rank-card.text_00dfd4ad2c"), width / 2, height - 15, 14, white, "center");
   }, { mode, inlineImageByteLimit });
 }

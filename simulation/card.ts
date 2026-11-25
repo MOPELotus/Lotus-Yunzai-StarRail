@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readFile, realpath, stat } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { loadImage } from "skia-canvas";
@@ -119,7 +122,7 @@ export async function renderWarpReincarnation({
     return asset(warp, relative).then(file => file ? loadImage(file).catch(() => undefined) : undefined);
   }
   const faction = allegiance ?? art?.allegiance;
-  const factionKey = faction?.startsWith("仙舟") && faction !== "仙舟「罗浮」" ? "仙舟联盟" : faction;
+  const factionKey = faction?.startsWith("仙舟") && faction !== "仙舟「罗浮」" ? $t("simulation.card.text_1eb45840a1") : faction;
   const [otherPortrait, backdrop, emblem, userAvatar, titleFont, detailFont] = await Promise.all([
     path ? picture(`img/icon/other/${name}.png`) : undefined,
     picture("img/bg/bg1.png"),
@@ -128,7 +131,7 @@ export async function renderWarpReincarnation({
     asset(warp, "font/NZBZ.ttf").then(file => file ? registerGachaThemeFont("StarRailRelifeTitle", file) : theme.font).catch(() => theme.font),
     asset(warp, "font/SHCN-Bold.otf", 16 * 1024 * 1024).then(file => file ? registerGachaThemeFont("StarRailRelifeDetail", file) : theme.font).catch(() => theme.font),
   ]);
-  const fields = [["命途", path ?? art?.pathName], ["阵营", faction]] as const;
+  const fields = [[$t("simulation.card.text_d9455920fc"), path ?? art?.pathName], [$t("simulation.card.text_5a62168bef"), faction]] as const;
   const elementColor: Readonly<Record<string, string>> = {
     虚数: "#EDBE43", 量子: "#6A79E3", 风: "#40C48B", 冰: "#48C0F8", 雷: "#D850F8", 火: "#ED453C", 物理: "#808080",
   };
@@ -154,14 +157,14 @@ export async function renderWarpReincarnation({
     else {
       ctx.fillStyle = color;
       ctx.fillRect(100, 25, 150, 150);
-      label(ctx, [...nickname][0] ?? "星", 175, 121, titleFont, 54, 86, "center");
+      label(ctx, [...nickname][0] ?? $t("simulation.card.text_83e9c51b3d"), 175, 121, titleFont, 54, 86, "center");
     }
     ctx.restore();
     label(ctx, nickname, 290, 91, titleFont, 65, 445, "left", color);
     label(ctx, qq, 290, 152, titleFont, 48, 445, "left", color);
     ctx.fillStyle = ribbon;
     ctx.fillRect(88, 200, 650, 173);
-    label(ctx, "恭喜你转生成了", 413, 261, titleFont, 59, 570, "center", color);
+    label(ctx, $t("simulation.card.text_bb1aed7651"), 413, 261, titleFont, 59, 570, "center", color);
     label(ctx, name, 413, 350, titleFont, 95, 570, "center", color);
     for (const [index, [field, value]] of fields.entries()) {
       if (!value) continue;
@@ -177,14 +180,14 @@ export async function renderWarpReincarnation({
       ctx.fillRect(10, 372, 206, 213);
       imageBox(ctx, emblem, 10, 372, 206, 213);
     }
-    const identity = "身份：" + (description ?? (path ? "星神" : "星穹铁道角色"));
+    const identity = $t("simulation.card.text_fd36091058") + (description ?? (path ? $t("simulation.card.text_433d4bb510") : $t("simulation.card.text_c5b67735f2")));
     const { rows, size, line } = wrapIdentity(ctx, identity, detailFont);
     ctx.fillStyle = ribbon;
     ctx.fillRect(88, 580, 650, rows.length * line + 14);
     for (const [index, row] of rows.entries()) {
       label(ctx, row, 413, 589 + size + index * line, detailFont, size, 610, "center", color);
     }
-    label(ctx, "Lotus-Yunzai · StarRail", 20, 756, theme.font, 22, 550);
+    label(ctx, $t("simulation.card.text_00dfd4ad2c"), 20, 756, theme.font, 22, 550);
   }, { inlineImageByteLimit, mode });
 }
 
@@ -211,7 +214,7 @@ function wrapIdentity(ctx: Context, text: string, font: string) {
     if (rows.length * line <= 151) return { rows, size, line };
     if (size === 16) return { rows: [...rows.slice(0, 6), rows[6]!.slice(0, -1) + "…"], size, line };
   }
-  throw new Error("转生身份排版无效。");
+  throw new Error($t("simulation.card.text_5ca9deb0ce"));
 }
 
 type Theme = Awaited<ReturnType<typeof loadTheme>>;
@@ -304,7 +307,7 @@ function drawResult(ctx: Context, pull: WarpPull, art: Art, theme: Theme, x: num
   rankStars(ctx, pull, theme, cone ? 58 : 44, 151, 32);
   label(ctx, pull.name, 24, 220, theme.font, 32, cardWidth - 48);
   if (pull.featured || pull.pity !== undefined) {
-    const text = [pull.featured && "UP", pull.pity !== undefined && `${pull.pity} 抽`].filter(Boolean).join(" · ");
+    const text = [pull.featured && "UP", pull.pity !== undefined && $t("simulation.card.text_708443e089", { "pity": pull.pity })].filter(Boolean).join(" · ");
     ctx.fillStyle = accent;
     ctx.fillRect(cardWidth - 166, cardHeight - 46, 166, 46);
     label(ctx, text, cardWidth - 18, cardHeight - 16, theme.font, 27, 142, "right", "#0b0c11");
@@ -315,9 +318,9 @@ function drawResult(ctx: Context, pull: WarpPull, art: Art, theme: Theme, x: num
 }
 
 export async function renderWarpCard({
-  title, nickname = "开拓者", pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode, inlineImageByteLimit,
+  title, nickname = $t("simulation.card.text_865ee04ffd"), pity, pulls, page, pages, themeDirectory = starRailGachaThemeDirectory(), mode, inlineImageByteLimit,
 }: WarpCard) {
-  if (pulls.length < 1 || pulls.length > 10) throw new RangeError("每张跃迁卡需有 1–10 抽。");
+  if (pulls.length < 1 || pulls.length > 10) throw new RangeError($t("simulation.card.text_51c46c9f73"));
   const theme = await loadTheme(themeDirectory, pulls);
   return renderStarRailCard(width, height, ctx => {
     ctx.fillStyle = "#0b0c11";
@@ -351,8 +354,8 @@ export async function renderWarpCard({
     }
     if (theme.titleIcon) imageBox(ctx, theme.titleIcon, 110, 42, 55, 55);
     const titleX = theme.titleIcon ? 185 : 110;
-    label(ctx, "跃迁记录", titleX, 82, theme.font, 44, 240);
-    const nameX = titleX + ctx.measureText("跃迁记录").width + 37;
+    label(ctx, $t("simulation.card.text_7fe5d91927"), titleX, 82, theme.font, 44, 240);
+    const nameX = titleX + ctx.measureText($t("simulation.card.text_7fe5d91927")).width + 37;
     const nameWidth = Math.min(ctx.measureText(nickname).width, 480);
     ctx.fillStyle = "#fff";
     ctx.beginPath();
@@ -361,7 +364,7 @@ export async function renderWarpCard({
     label(ctx, nickname, nameX + 15, 82, theme.font, 44, nameWidth, "left", "#0b0c11");
     ctx.font = `46px ${theme.font}`;
     const poolWidth = Math.min(820, ctx.measureText(title).width + 36);
-    const count = `当前垫 ${pity} 抽`;
+    const count = $t("simulation.card.text_219915f320", { "pity": pity });
     const countWidth = ctx.measureText(count).width + 36;
     ctx.fillStyle = "#05050599";
     ctx.fillRect(width - 55 - poolWidth, 20, poolWidth, 82);
@@ -369,6 +372,6 @@ export async function renderWarpCard({
     label(ctx, title, width - 73, 81, theme.font, 46, poolWidth - 36, "right");
     label(ctx, count, 68, 181, theme.font, 46, countWidth - 36);
     label(ctx, `${page} / ${pages}`, width - 54, height - 19, theme.font, 27, 155, "right");
-    label(ctx, "Lotus-Yunzai · StarRail", 17, height - 14, theme.font, 24, 408);
+    label(ctx, $t("simulation.card.text_00dfd4ad2c"), 17, height - 14, theme.font, 24, 408);
   }, { mode, inlineImageByteLimit });
 }

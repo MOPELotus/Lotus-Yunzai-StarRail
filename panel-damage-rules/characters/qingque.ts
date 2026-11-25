@@ -1,48 +1,51 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['门前清·伤害']!, 'a')
 }, {
-  title: '0层E暗杠·强化普攻主目标伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_814f9a3860"),
   params: {
     eBuffCount: 0,
     hiddenHand: true
   },
   dmg: ({ talent }, dmg) => dmg(talent.a2!['杠·伤害']!, 'a')
 }, {
-  title: '0层E暗杠·强化普攻副目标伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_0752ba6620"),
   params: {
     eBuffCount: 0,
     hiddenHand: true
   },
   dmg: ({ talent }, dmg) => dmg(talent.a2!['杠·相邻目标伤害']!, 'a')
 }, {
-  title: '4层E暗杠·强化普攻主目标伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_f200f83db0"),
   params: {
     eBuffCount: 4,
     hiddenHand: true
   },
   dmg: ({ talent }, dmg) => dmg(talent.a2!['杠·伤害']!, 'a')
 }, {
-  title: '4层E暗杠·强化普攻副目标伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_ef4fd920f8"),
   params: {
     eBuffCount: 4,
     hiddenHand: true
   },
   dmg: ({ talent }, dmg) => dmg(talent.a2!['杠·相邻目标伤害']!, 'a')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '4层E暗杠·终结技伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_39c4fa8ad0"),
   params: {
     eBuffCount: 4,
     hiddenHand: true
   },
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '4层E不求人·强化普攻主目标伤害',
+  title: $t("panel-damage-rules.characters.qingque.text_0cf1a0928f"),
   cons: 4,
   params: {
     eBuffCount: 4,
@@ -55,20 +58,20 @@ export const mainAttr = 'atk,cpct,cdmg'
 export const defDmgIdx = 3
 
 export const buffs: Buff[] = [{
-  title: '战技Buff：[_eBuffCount]层Buff使自身造成的伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.qingque.text_5aecccf2df"),
   check: ({ params }) => params.eBuffCount,
   data: {
     _eBuffCount: ({ params }) => params.eBuffCount,
     dmg: ({ params, talent }) => talent.e!['伤害提高']! * 100 * (params.eBuffCount as number)
   }
 }, {
-  title: '天赋-帝垣琼玉：持有4张相同花色的牌时，进入【暗杠】状态，自身攻击力提高[atkPct]%',
+  title: $t("panel-damage-rules.characters.qingque.text_74118f6716"),
   check: ({ params }) => params.hiddenHand,
   data: {
     atkPct: ({ talent }) => talent.t!['攻击力提高']! * 100
   }
 }, {
-  title: '行迹-听牌：[_eBuffCount]层战技使自身造成的伤害提高效果额外提高[dmg]%',
+  title: $t("panel-damage-rules.characters.qingque.text_e6c7cc8fd8"),
   tree: 2,
   check: ({ params }) => params.eBuffCount,
   data: {
@@ -76,19 +79,19 @@ export const buffs: Buff[] = [{
     dmg: ({ params }) => 10 * (params.eBuffCount as number)
   }
 }, {
-  title: '行迹-抢杠：速度提高[speedPct]%',
+  title: $t("panel-damage-rules.characters.qingque.text_46808da9a8"),
   tree: 3,
   data: {
     speedPct: 10
   }
 }, {
-  title: '青雀1命：终结技造成的伤害提高[qDmg]%',
+  title: $t("panel-damage-rules.characters.qingque.text_d36234187a"),
   cons: 1,
   data: {
     qDmg: 10
   }
 }, {
-  title: '青雀4命：【不求人】状态下，释放普攻后额外进行一次追加攻击',
+  title: $t("panel-damage-rules.characters.qingque.text_c46b1a2760"),
   check: ({ params }) => params.tAttack,
   cons: 4
 }]

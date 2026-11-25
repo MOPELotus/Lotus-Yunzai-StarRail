@@ -1,10 +1,13 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DynamicIndex, StaticIndex, WeaponRules } from "../types.ts";
 
 export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRules {
   return {
     一场术后对话: [
       staticIdx(1, 'recharge'),
-      keyIdx('终结技治疗加成[qHeal]%（旧试算提示）', 'qHeal', 2)
+      keyIdx($t("panel-damage-rules.weapons.abundance.text_c04800f25c"), 'qHeal', 2)
     ],
     同一种心情: [
       staticIdx(1, 'heal')
@@ -21,7 +24,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'effDef'),
       (tables) => {
         return {
-          title: '基于效果抵抗，提高治疗量[heal]%',
+          title: $t("panel-damage-rules.weapons.abundance.text_71413a236b"),
           data: {
             heal: ({ attr, calc }) => Math.min(tables[3]!, calc(attr.effDef!) * tables[2]! / 100)
           }
@@ -29,23 +32,23 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       }
     ],
     物穰: [
-      keyIdx('战技和终结技治疗加成[eHeal]%（旧试算提示）', { eHeal: 1, qHeal: 1 })
+      keyIdx($t("panel-damage-rules.weapons.abundance.text_d192d21f6b"), { eHeal: 1, qHeal: 1 })
     ],
     等价交换: [],
     蕃息: [],
     棺的回响: [
       staticIdx(1, 'atkPct'),
-      keyIdx('释放终结技后，速度提升[speed]', 'speed', 3)
+      keyIdx($t("panel-damage-rules.weapons.abundance.text_4a66e9567a"), 'speed', 3)
     ],
     '嘿，我在这儿': [
       staticIdx(1, 'hpPct'),
-      keyIdx('释放战技时，治疗量提高[heal]%', 'heal', 2)
+      keyIdx($t("panel-damage-rules.weapons.abundance.text_1db033064e"), 'heal', 2)
     ],
     惊魂夜: [
       staticIdx(1, 'recharge'),
       (tables) => {
         return {
-          title: '提供治疗时，5层提供目标攻击力[atkPct]%',
+          title: $t("panel-damage-rules.weapons.abundance.text_001da3ceb6"),
           data: {
             atkPct: tables[3]! * 5
           }
@@ -59,7 +62,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
       staticIdx(1, 'stance'),
       (tables) => {
         return {
-          title: '终结技攻击敌方目标后，敌方目标受到的伤害提高[enemydmg]%，击破特攻达到150%时计入额外加成',
+          title: $t("panel-damage-rules.weapons.abundance.text_56fcdfbb3f"),
           sort: 9,
           data: {
             enemydmg: ({ attr, calc }) => calc(attr.stance!) >= 150 ? (tables[2]! + tables[3]!) : tables[2]!
@@ -72,7 +75,7 @@ export default function (staticIdx: StaticIndex, keyIdx: DynamicIndex): WeaponRu
     ],
     直到明天的明天: [
       staticIdx(1, 'heal'),
-      keyIdx('按我方目标生命值不低于50%估算，造成的伤害提高[dmg]%', 'dmg', 2)
+      keyIdx($t("panel-damage-rules.weapons.abundance.text_e3d5971534"), 'dmg', 2)
     ]
   }
 }

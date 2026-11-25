@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { gachaProbabilityFor, type GachaDisplaySettings } from "@lotus-yunzai/gacha/display-settings";
 import { applyGachaGuarantees, gachaLuckFor, type GachaLuck } from "@lotus-yunzai/gacha";
 import { buildStarRailLegacyRecords, type StarRailLegacyGachaRecord } from "./gacha-display.ts";
@@ -41,7 +44,7 @@ export interface StarRailGachaDetailModel {
   readonly uid: string;
   readonly recordArchive?: true;
   readonly face: Face;
-  readonly poolName: "角色" | "光锥" | "常驻";
+  readonly poolName: string;
   readonly gacha: {
     readonly stat: GachaDetailStats;
     readonly items: Items;
@@ -74,9 +77,9 @@ export interface StarRailGachaDetailOptions {
 const pityItem = 888;
 const unknownPull = 403;
 export const detailPools = {
-  GachaType_AvatarUp: { legacy: 11, name: "角色", base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0.5 },
-  GachaType_EquipmentUp: { legacy: 12, name: "光锥", base: 0.008, soft: 66, step: 0.07, hard: 80, upRate: 0.75 },
-  GachaType_Standard: { legacy: 1, name: "常驻", base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0 },
+  GachaType_AvatarUp: { legacy: 11, name: $t("gacha-detail.text_c47b54e84e"), base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0.5 },
+  GachaType_EquipmentUp: { legacy: 12, name: $t("gacha-detail.text_e733238b28"), base: 0.008, soft: 66, step: 0.07, hard: 80, upRate: 0.75 },
+  GachaType_Standard: { legacy: 1, name: $t("gacha-detail.text_300b6634fe"), base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0 },
 } as const;
 const dateFormat = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit" });
 function countOnlyPity(history: unknown, pool: StarRailGachaDetailPool): number {
@@ -100,10 +103,10 @@ export function buildStarRailGachaDetail({
   uid, history, face, now = new Date(), resolveItem, resolvePool, pool = "GachaType_AvatarUp", display, maxRows = display?.detailRows ?? 30, page,
 }: StarRailGachaDetailOptions): StarRailGachaDetailModel | undefined {
   if (!Number.isSafeInteger(maxRows) || maxRows < 0 || (page !== undefined && (!Number.isSafeInteger(page) || page < 1))) {
-    throw new RangeError("星铁抽卡显示分页参数无效。");
+    throw new RangeError($t("gacha-detail.text_e356344050"));
   }
   const model = detailPools[pool];
-  if (!model) throw new TypeError("星铁抽卡卡池没有对应的详情模板。");
+  if (!model) throw new TypeError($t("gacha-detail.text_03b8727e80"));
   const records = buildStarRailLegacyRecords(uid, history)[model.legacy];
   if (!records.length) return;
 
@@ -136,7 +139,7 @@ export function buildStarRailGachaDetail({
     } });
   }
 
-  if (fillers) items[unknownPull] = { type: "weapon", count: fillers, star: 3, name: "未知", abbr: "未知", img: "" };
+  if (fillers) items[unknownPull] = { type: "weapon", count: fillers, star: 3, name: $t("gacha-detail.text_4d8c1c5b42"), abbr: $t("gacha-detail.text_4d8c1c5b42"), img: "" };
   // Sort only official five-star timestamps. Fillers belong to their interval, without giving them a draw date.
   if (dated.every(({ time }) => Number.isFinite(time))) dated.sort((a, b) => b.time - a.time);
   const five = dated.map(({ row }) => row);
@@ -162,7 +165,7 @@ export function buildStarRailGachaDetail({
   };
   const currentPity: FiveStarDisplay[] = [];
   if (pity) {
-    items[pityItem] = { name: "已抽", abbr: "已抽", star: 5, img: "gacha/imgs/no-avatar.webp" };
+    items[pityItem] = { name: $t("gacha-detail.text_95b727161e"), abbr: $t("gacha-detail.text_95b727161e"), star: 5, img: "gacha/imgs/no-avatar.webp" };
     currentPity.push({ id: pityItem, isUp: true, count: pity, date: dateAt(now.valueOf()) });
   }
 
@@ -173,14 +176,14 @@ export function buildStarRailGachaDetail({
   if (truncated) to = maxRows;
   if (page !== undefined) {
     const total = maxRows ? Math.max(1, Math.ceil(fiveNum / maxRows)) : 1;
-    if (page > total) throw new RangeError("星铁抽卡显示页码超出范围。");
+    if (page > total) throw new RangeError($t("gacha-detail.text_4108a73b14"));
     from = (page - 1) * maxRows;
     to = maxRows ? Math.min(fiveNum, from + maxRows) : fiveNum;
     if (total > 1) pageInfo = { page, total, from: from + 1, to, count: fiveNum };
   }
   return {
     uid, face, poolName: model.name, pageInfo, gacha: {
-      stat, items, luck, noWaiRate: state.noWaiRate, maxFour: { name: "无", count: 0 },
+      stat, items, luck, noWaiRate: state.noWaiRate, maxFour: { name: $t("gacha-detail.text_484d556139"), count: 0 },
       fiveLog: [...(from ? [] : currentPity), ...five.slice(from, to)],
       ...(truncated ? { shownNum: to, hiddenNum: fiveNum - to } : {}),
     },

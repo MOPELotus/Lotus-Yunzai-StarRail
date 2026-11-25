@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { id, isStarRailTalentUnlocks, object, recoverStarRailSkillLevel, safeArt, type PanelSnapshot } from "./panel-model.ts";
 
 function scalarFields(value: unknown, names: readonly string[]) {
@@ -77,7 +80,7 @@ function managedDocument(snapshot: PanelSnapshot) {
 export function panelExportFile(snapshot: PanelSnapshot, legacy?: Record<string, unknown>,
   talentCons?: ReadonlyMap<string, Record<string, unknown>>) {
   const { document, unresolved } = legacy ? legacyDocument(snapshot, legacy, talentCons) : { document: managedDocument(snapshot), unresolved: 0 };
-  const format = legacy ? "旧 PlayerData 格式" : "Lotus-Yunzai 面板格式";
+  const format = legacy ? $t("panel-file.text_f853f1db63") : $t("panel-file.text_78081eb7f1");
   const name = `${snapshot.uid}.json`;
   return { name, format, unresolved, bytes: Buffer.from(JSON.stringify(document, null, "\t") + "\n") };
 }

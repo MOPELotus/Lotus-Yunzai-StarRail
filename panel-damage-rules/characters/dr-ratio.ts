@@ -1,16 +1,19 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '3负面·追加攻击',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_3592a3c1a2"),
   dmg: ({ talent, cons }, dmg) => {
     const extraPct = cons >= 2 ? 60 : 0
     return {
@@ -19,7 +22,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '5负面·追加攻击',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_b1e29b0745"),
   params: { debuffCount: 5 },
   dmg: ({ talent, cons }, dmg) => {
     const extraPct = cons >= 2 ? 80 : 0
@@ -35,7 +38,7 @@ export const defDmgIdx = 4
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '天赋-归纳：叠满[_count]层时，真理医生暴击率提高[cpct]%，暴击伤害提高[cdmg]%',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_9174d7c623"),
   tree: 2,
   data: {
     _count: ({ cons }) => cons < 1 ? 6 : 10,
@@ -43,20 +46,20 @@ export const buffs: Buff[] = [{
     cdmg: ({ cons }) => cons < 1 ? 30 : 50
   }
 }, {
-  title: '天赋-推理：目标持有[_count]个负面状态，真理医生造成伤害提高[dmg]%',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_8381c734b5"),
   tree: 3,
   data: {
     _count: ({ params }) => params.debuffCount,
     dmg: ({ params }) => (params.debuffCount as number) * 10
   }
 }, {
-  title: '真理2命：天赋的追加攻击额外造成[_atkPct]%的附加伤害',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_690e3f51a9"),
   cons: 2,
   data: {
     _atkPct: ({ params }) => Math.min((params.debuffCount as number) * 20, 80)
   }
 }, {
-  title: '真理6命：天赋的追加攻击造成伤害提高[tDmg]%',
+  title: $t("panel-damage-rules.characters.dr-ratio.text_88aafb91c5"),
   cons: 6,
   data: {
     tDmg: 50

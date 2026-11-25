@@ -1,15 +1,18 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 import { Format } from '../format.ts'
 
 export const details: DamageDetail[] = [{
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_aef3538851"),
   dmg: ({ talent, cons }, dmg) => {
     let count = cons < 6 ? 5 : 7
     return dmg(talent.e!['技能伤害']! * count, 'e')
   }
 }, {
-  title: '终结技提高全队击破特攻',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_daf719e52d"),
   dmg: ({ talent }) => {
     return {
       avg: Format.percent(talent.q!['击破特攻提高']!),
@@ -17,7 +20,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '4魂提高队友击破特攻',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_65aa3d3c6a"),
   params: { q: true },
   cons: 4,
   dmg: ({ attr }) => {
@@ -27,7 +30,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '普攻·超击破伤害',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_51de53db91"),
   params: { q: true },
   dmg: ({ trees }, { reaction }) => {
     let extraDmg = trees['101'] ? 1.6 : 1
@@ -36,7 +39,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '战技·超击破伤害',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_410c28e0f7"),
   dmgKey: 'e',
   params: { q: true },
   dmg: ({ cons, trees }, { reaction }) => {
@@ -52,15 +55,15 @@ export const mainAttr = 'atk,stance'
 export const defDmgKey = 'e'
 
 export const buffs: Buff[] = [{
-  title: '终结技Buff：我方全体击破特攻提高[stance]%',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_b23bfea281"),
   data: {
     stance: ({ talent }) => talent.q!['击破特攻提高']! * 100
   }
 }, {
-  title: '行迹-卫我起舞：场上敌方数量为1时，超击破伤害提高60%',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_15a81e31f1"),
   tree: 1
 }, {
-  title: '开拓者6命：战技的额外伤害次数增加2次',
+  title: $t("panel-damage-rules.characters.harmony-trailblazer.text_0a1308028d"),
   cons: 6
 }]
 

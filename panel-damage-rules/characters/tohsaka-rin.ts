@@ -1,19 +1,22 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-    title: '普攻',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_8b79df27ba"),
     dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
   }, {
-    title: '战技',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_6d8c868f52"),
     dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
   }, {
-    title: '30宝石能量强化战技',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_8e626818bc"),
     dmg: ({ talent }, dmg) => dmg(talent.e2!['群攻伤害']! + talent.e2!['弹射伤害']! * 10, 'e2')
   }, {
-    title: '大招对五',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_b36d5d3502"),
     dmg: ({ talent }, dmg) => dmg(talent.q!['目标伤害']! + talent.q!['群攻伤害']! * 4, 'q')
   }, {
-    title: '凛天赋合击伤害',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_3d39b02c9f"),
     dmg: ({ talent }, dmg) => dmg(talent.t2!['技能伤害']!, 't2')
   }]
 
@@ -21,24 +24,24 @@ export const details: DamageDetail[] = [{
   export const mainAttr = 'atk,cpct,cdmg,dmg'
 
   export const buffs: Buff[] = [{
-    title: '天赋-秉持优雅：量子属性抗性穿透提高[kx]%、攻击力提高[atkPct]%',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_6ed1faec4a"),
     tree: 1,
     data: {
       kx: 20,
       atkPct: 150
     }
   }, {
-    title: '终结技使敌方全体受到的伤害提高[enemydmg]%',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_fe16322d11"),
     data: {
       enemydmg: 20
     }
   }, {
-    title: '我方目标消耗或恢复战技点时，使其暴击伤害提高[cdmg]%',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_2cf79c2b4a"),
     data: {
       cdmg: 70
     }
   },{
-    title: '远坂凛2魂：远坂凛造成的战技伤害提高[eDmg]%。远坂凛在场时，我方全体造成的战技伤害为原伤害的[eMulti]%',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_d1faa3499e"),
     cons: 2,
     data: {
       eDmg: 30,
@@ -46,17 +49,17 @@ export const details: DamageDetail[] = [{
       eMulti: 130
     }
   }, {
-    title: '远坂凛4魂：天赋的暴击伤害提高效果对远坂凛生效时，效果可以叠加',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_4582764127"),
     cons: 4,
     data: {
       cdmg: 70
     }
   }, {
-    title: '远坂凛6魂：远坂凛的全属性抗性穿透提高[kx]%',
+    title: $t("panel-damage-rules.characters.tohsaka-rin.text_f33c683e88"),
     cons: 6,
     data: {
       kx: 20
     }
   }]
 
-  export const createdBy = '欧阳青瓜'
+  export const createdBy = $t("panel-damage-rules.characters.tohsaka-rin.text_7ad80046cc")

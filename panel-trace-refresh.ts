@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { GameRole, ProfileRequestContext } from "@lotus-yunzai/account";
 import { previewRedeemIdentity } from "@lotus-yunzai/hoyo-client/redeem-submit";
 import { array, canonicalStarRailPanelCharacter, id, object, readOfficialPanelSkill, starRailLegacySkillLevel, whole,
@@ -75,14 +78,14 @@ export function readStarRailTraceArchive(owner: StarRailTraceOwner, raw: unknown
   const stored = object(raw);
   // Pre-release archives without a verified owner cannot authorize reads.
   if (stored?.version === 1 && stored.uid === owner.uid) return {};
-  if (stored?.version !== 2 || !object(stored.owner)) throw new Error("星铁行迹档案无效。");
+  if (stored?.version !== 2 || !object(stored.owner)) throw new Error($t("panel-trace-refresh.text_04e88c3e1d"));
   if (!matchesStarRailTraceOwner(owner, stored.owner)) return {};
   const records = object(stored.records);
-  if (!records || Object.keys(records).length > 256) throw new Error("星铁行迹档案无效。");
+  if (!records || Object.keys(records).length > 256) throw new Error($t("panel-trace-refresh.text_04e88c3e1d"));
   return Object.fromEntries(Object.entries(records).map(([key, value]) => {
     const row = object(value), rank = whole(row?.rank, 6), at = whole(row?.at, Number.MAX_SAFE_INTEGER);
     const levels = confirmedLevels(object(row?.levels) ?? {});
-    if (id(key) !== key || rank === undefined || at === undefined || !levels) throw new Error("星铁行迹档案无效。");
+    if (id(key) !== key || rank === undefined || at === undefined || !levels) throw new Error($t("panel-trace-refresh.text_04e88c3e1d"));
     return [key, { rank, at, levels }];
   }));
 }

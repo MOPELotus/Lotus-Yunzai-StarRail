@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 import { renderPng } from "@lotus-yunzai/skia";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
@@ -86,7 +89,7 @@ async function renderRosterPage(model: StarRailRosterModel, rows: StarRailRoster
     clip(ctx, left, 125, contentW, footerY + 35 - 125, 10);
     fill(ctx, "#0008", left, 125, contentW, footerY + 35 - 125);
     fill(ctx, "#0005", left, 125, contentW, 36);
-    text("角色列表", left + 15, 144, 16, gold);
+    text($t("personal-roster-card.text_83be44950d"), left + 15, 144, 16, gold);
     rows.forEach((row, i) => {
       const art: RowArt = avatars[i]!;
       const x = left + 13 + i % columns * gridPitch, y = gridY + 13 + Math.floor(i / columns) * rowPitch;
@@ -111,7 +114,7 @@ async function renderRosterPage(model: StarRailRosterModel, rows: StarRailRoster
           text(skill.level, x + 22.5 + 29 * i, y + 122, 16, crown ? "#3a2702" : raised ? "#0284b9" : ink,
             "center", raised);
         });
-      } else text("暂无天赋数据", x + 52.5, y + 120, 13, "#7778", "center");
+      } else text($t("personal-roster-card.text_8110e9898a"), x + 52.5, y + 120, 13, "#7778", "center");
       const gearY = y + 136.5;
       if (row.cone) {
         clip(ctx, x + 4.5, gearY, 46.5, 46.5, 4.5);
@@ -132,10 +135,10 @@ async function renderRosterPage(model: StarRailRosterModel, rows: StarRailRoster
       });
       ctx.restore();
     });
-    text(`数据更新时间  米游社：${model.time}`, left + contentW - 15, footerY + 18, 12, gold, "right");
+    text($t("personal-roster-card.text_14d694b692", { "time": model.time }), left + contentW - 15, footerY + 18, 12, gold, "right");
     ctx.restore();
     edge(ctx, left, 125, contentW, footerY + 35 - 125, 10);
-    text("Lotus-Yunzai · StarRail", width / 2, height - 18, 14, white, "center");
+    text($t("personal-roster-card.text_00dfd4ad2c"), width / 2, height - 18, 14, white, "center");
   }, mode, { allowHalfScale: true });
 }
 
@@ -148,7 +151,7 @@ async function renderTalentPage(model: StarRailRosterModel, rows: StarRailRoster
   const font = typography(theme);
   const width = 600, tableX = 10, tableY = 107, tableW = 575, rowH = 36;
   const fontSizes = [14, 14, 14, 14, 14, 14, 14, 14, 13, 13];
-  const headers = ["#", "角色", "Lv", "星魂", "A", "E", "Q", "T", "周本", "天赋书"];
+  const headers = ["#", $t("personal-roster-card.text_c47b54e84e"), "Lv", $t("personal-roster-card.text_9bd2d5af77"), "A", "E", "Q", "T", $t("personal-roster-card.text_110d762ac9"), $t("personal-roster-card.text_99bf2c141d")];
   const cols = [30, 100, 35, 40, 35, 35, 35, 35, 61, 169];
   const begins = cols.map((_, i) => tableX + cols.slice(0, i).reduce((a, b) => a + b, 0));
   const footerY = tableY + rowH * (rows.length + 1), footerH = 60, height = footerY + footerH + 47;
@@ -167,8 +170,8 @@ async function renderTalentPage(model: StarRailRosterModel, rows: StarRailRoster
     ctx.shadowBlur = 3;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
-    text("*面板练度统计", 35, 51, 36, white, "left", false, true);
-    text(`UID:${model.uid} 共${model.rows.length}名角色`, 35, 82, 16);
+    text($t("personal-roster-card.text_8cb98d4472"), 35, 51, 36, white, "left", false, true);
+    text($t("personal-roster-card.text_e315050697", { "uid": model.uid, "length": model.rows.length }), 35, 82, 16);
     ctx.restore();
 
     clip(ctx, tableX, tableY, tableW, footerY - tableY + footerH, 10);
@@ -200,16 +203,16 @@ async function renderTalentPage(model: StarRailRosterModel, rows: StarRailRoster
         text(skill.level ?? "—", x + w / 2, y + 18, raised ? 15 : 14, raised ? raisedInk[levelClass] : ink, "center", raised);
       });
       if (model.materialWeek === 7) fill(ctx, "#ffe4b480", begins[8]!, y, cols[8]! + cols[9]!, rowH);
-      text("- (周-)", begins[9]! + cols[9]! / 2, y + 18, 13, model.materialWeek === 7 ? "#765100" : "#666", "center");
+      text($t("personal-roster-card.text_27c3751e02"), begins[9]! + cols[9]! / 2, y + 18, 13, model.materialWeek === 7 ? "#765100" : "#666", "center");
       ctx.strokeStyle = "#6663";
       cols.forEach((w, i) => ctx.strokeRect(begins[i]!, y, w, rowH));
     });
     fill(ctx, "#000b", tableX, footerY, tableW, footerH);
-    text(`数据更新时间  米游社：${model.time}`, width / 2, footerY + 17, 13, gold, "center");
-    text("查询已登录角色的当前技能。可用 *刷新行迹 更新本人面板。", width / 2, footerY + 38, 12, white, "center");
+    text($t("personal-roster-card.text_14d694b692", { "time": model.time }), width / 2, footerY + 17, 13, gold, "center");
+    text($t("personal-roster-card.text_0eb7adfc34"), width / 2, footerY + 38, 12, white, "center");
     ctx.restore();
     edge(ctx, tableX, tableY, tableW, footerY - tableY + footerH, 10);
-    text("Lotus-Yunzai · StarRail", width / 2, height - 18, 14, white, "center");
+    text($t("personal-roster-card.text_00dfd4ad2c"), width / 2, height - 18, 14, white, "center");
   }, mode, { allowHalfScale: true });
 }
 

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { Canvas } from "skia-canvas";
 import { renderPng } from "@lotus-yunzai/skia";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
@@ -35,11 +38,11 @@ export async function renderStarRailPanelList(model: Model, theme: string, mode:
     text(`UID:${model.uid}`, bodyX + 34 + measure.measureText("#面板列表").width, 49, 14, "#fff");
     const infoY = model.msg ? 88 : 71;
     if (model.msg) text(model.msg, bodyX + 20, 71, 14, "#fff");
-    text("使用", bodyX + 20, infoY, 14);
-    const command = `*${model.chars[0]?.abbr ?? "三月七"}面板${model.profileSuffix}`;
+    text($t("panel-list-skia.text_cdfd0b34e4"), bodyX + 20, infoY, 14);
+    const command = $t("panel-list-skia.text_4acdf7dc02", { "value1": model.chars[0]?.abbr ?? $t("panel-list-skia.text_db7ef68667"), "profileSuffix": model.profileSuffix });
     text(command, bodyX + 50, infoY, 14, "#d3bc8e");
     measure.font = `14px ${font.body}`;
-    text("查看角色详情", bodyX + 53 + measure.measureText(command).width, infoY, 14);
+    text($t("panel-list-skia.text_6c62653cc1"), bodyX + 53 + measure.measureText(command).width, infoY, 14);
     ctx.restore();
 
     ctx.save();
@@ -90,11 +93,11 @@ export async function renderStarRailPanelList(model: Model, theme: string, mode:
     fill(ctx, "#0006", bodyX, footerTop, bodyWidth, 35);
     if (model.hasNew) {
       fill(ctx, "#90e800", bodyX + 15, footerTop + 14, 8, 8, 4);
-      text("本次更新角色", bodyX + 26, footerTop + 18, 12, "#fff");
+      text($t("panel-list-skia.text_8e5a316cfa"), bodyX + 26, footerTop + 18, 12, "#fff");
     } else if (model.updateTime.profile) {
-      text(`更新时间：${model.updateTime.profile}`, bodyX + 15, footerTop + 18, 12, "#fff");
+      text($t("panel-list-skia.text_fcda3205c2", { "profile": model.updateTime.profile }), bodyX + 15, footerTop + 18, 12, "#fff");
     }
-    text(`当前更新服务：${model.servName}`, bodyX + bodyWidth - 15, footerTop + 18, 12, "#fff", "right");
+    text($t("panel-list-skia.text_bbdd2275bd", { "servName": model.servName }), bodyX + bodyWidth - 15, footerTop + 18, 12, "#fff", "right");
     ctx.restore();
     rounded(ctx, bodyX, gridTop, bodyWidth, gridHeight + 35, 10);
     ctx.strokeStyle = "#ffffff40";

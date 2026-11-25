@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Field mappings and list ordering adapted from miao-plugin
 // apps/profile/ProfileList.js and models/serv/api/MysPanelHSR{Api,Data,Mappings}.js.
 import { gameCommandProfileId, MAX_PROFILE_ID } from "@lotus-yunzai/account";
@@ -63,7 +66,7 @@ export function recoverStarRailSkillLevel(skill: string, effective: number, oldR
   return base;
 }
 const elements: Readonly<Record<string, string>> = {
-  Physical: "物理", Fire: "火", Ice: "冰", Thunder: "雷", Wind: "风", Quantum: "量子", Imaginary: "虚数",
+  Physical: $t("panel-model.text_a454f17872"), Fire: $t("panel-model.text_d4cfe8c82c"), Ice: $t("panel-model.text_ce1b850700"), Thunder: $t("panel-model.text_5de1b913e7"), Wind: $t("panel-model.text_be65bd5518"), Quantum: $t("panel-model.text_14ed0de6a1"), Imaginary: $t("panel-model.text_8908281fc3"),
 };
 export const officialArtHosts = new Set(["act-webstatic.mihoyo.com", "upload-bbs.mihoyo.com", "fastcdn.mihoyo.com"]);
 const mappedNames: Readonly<Record<string, string>> = names;
@@ -337,7 +340,7 @@ export function normalizePanel(uid: string, source: readonly Json[], now = new D
   const avatars = new Map<string, PanelAvatar>();
   for (const row of source) {
     const avatar = officialAvatar(row);
-    if (!avatar || avatars.has(avatar.id)) throw new Error("星铁面板含无效或重复的角色记录。");
+    if (!avatar || avatars.has(avatar.id)) throw new Error($t("panel-model.text_27d07b9b46"));
     avatars.set(avatar.id, avatar);
   }
   return { version: 1, uid, source: "miyoushe", updatedAt: now.toISOString(), avatars: [...avatars.values()] };
@@ -347,7 +350,7 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
   const data = object(source);
   const avatars = object(data?.avatars);
   if (id(data?.uid) !== uid || !avatars || Object.keys(avatars).length > 256) {
-    throw new Error("旧面板档案与当前角色不匹配。");
+    throw new Error($t("panel-model.text_c8dc0242dd"));
   }
   const parsed: PanelAvatar[] = [];
   for (const [key, value] of Object.entries(avatars)) {

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { readFile, stat } from "node:fs/promises";
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
 import type { WarpPity } from "./draw.ts";
@@ -32,10 +35,10 @@ async function authorizedScope(file: string): Promise<Scope[]> {
     const info = await stat(file);
     if (!info.isFile() || info.size > 1024 * 1024) throw new Error();
     root = record(JSON.parse(await readFile(file, "utf8")));
-  } catch { throw new TypeError("星铁旧模拟授权文件须为有效的 UTF-8 JSON。"); }
+  } catch { throw new TypeError($t("simulation.legacy-import.text_979882c890")); }
   const accounts = root?.accounts;
   if (root?.source !== "starrail-only-copy" || !Array.isArray(accounts) || accounts.length === 0 || accounts.length > 1000) {
-    throw new TypeError("授权文件须确认 starrail-only-copy 来源，列出 1 至 1000 个 QQ。");
+    throw new TypeError($t("simulation.legacy-import.text_21fd3cd6ea"));
   }
   const seen = new Set<string>();
   return accounts.map((entry: unknown) => {
@@ -46,7 +49,7 @@ async function authorizedScope(file: string): Promise<Scope[]> {
     if (!identity(qq) || seen.has(qq) || typeof balance !== "boolean" || !Array.isArray(conversations) ||
         (!balance && conversations.length === 0) || conversations.length > 200 ||
         conversations.some((key) => key !== "private" && !identity(key)) || new Set(conversations).size !== conversations.length) {
-      throw new TypeError("授权文件的 QQ、余额范围或群私聊范围无效或重复。");
+      throw new TypeError($t("simulation.legacy-import.text_706bea3105"));
     }
     seen.add(qq);
     return { qq, balance, conversations };
@@ -62,34 +65,34 @@ async function readKey(redis: InstanceType<typeof Bun.RedisClient>, key: string,
     raw = await redis.get(key);
     if (raw === null) return "missing";
     expiresAt = await redis.send("PEXPIRETIME", [key]);
-  } catch { throw new Error("读取授权的星铁旧模拟键失败，请检查 Valkey ACL 与版本。"); }
+  } catch { throw new Error($t("simulation.legacy-import.text_793d124c50")); }
   if (expiresAt === -2 || (integer(expiresAt) && expiresAt <= now())) return "expired";
   if (!integer(expiresAt) || expiresAt > Math.max(start, now()) + maximumAge || Buffer.byteLength(raw, "utf8") > maxValueBytes) {
-    throw new TypeError("星铁旧模拟键缺少有效的过期时间或数据过大。");
+    throw new TypeError($t("simulation.legacy-import.text_c6d5482818"));
   }
   try {
     const data = record(JSON.parse(raw));
     if (data) return { data, expiresAt };
   } catch {}
-  throw new TypeError("星铁旧模拟键须为 JSON 对象。");
+  throw new TypeError($t("simulation.legacy-import.text_40cfe962b0"));
 }
 
 function balanceFrom({ data, expiresAt }: LegacySource, now: number): LegacyBalance | undefined {
   const day = warpDay(now);
   if (!integer(data.expire, Math.floor(Number.MAX_SAFE_INTEGER / 1000)) || !integer(data.pink) || !integer(data.blue)) {
-    throw new TypeError("星铁旧模拟票数或日界无效。");
+    throw new TypeError($t("simulation.legacy-import.text_a7909776c6"));
   }
   const end = data.expire * 1000;
   if (expiresAt <= now || end <= warpDayStart(day)) return;
   const boundary = warpDayStart(day + 1);
-  if (end !== boundary && end !== boundary - 1000) throw new TypeError("星铁旧模拟票数须使用北京时间 04:00 日界。");
+  if (end !== boundary && end !== boundary - 1000) throw new TypeError($t("simulation.legacy-import.text_7e2f82bb66"));
   return { day, special: data.pink, regular: data.blue, expiresAt };
 }
 
 function pityFrom(value: unknown, hardLimit: number, hasFeatured: boolean): WarpPity {
   const data = record(value);
   if (!integer(data?.num4, 9) || !integer(data?.num5, hardLimit) || !integer(data?.isUp4, 1) || !integer(data?.isUp5, 1)) {
-    throw new TypeError("星铁旧模拟跃迁保底格式无效。");
+    throw new TypeError($t("simulation.legacy-import.text_e00c142ade"));
   }
   return { fiveMisses: Math.min(data.num5, hardLimit - 1), fourOrBetterMisses: data.num4,
     nextFourFeatured: hasFeatured && data.isUp4 === 1, nextFiveFeatured: hasFeatured && data.isUp5 === 1 };
@@ -101,7 +104,7 @@ type LegacyBalance = WarpBalance & { expiresAt: number };
 function conversationFrom({ data, expiresAt }: LegacySource, now: number): LegacyConversation {
   const weapon = record(data.weapon);
   if (weapon && ("type" in weapon || "lifeNum" in weapon || "bingWeapon" in weapon)) {
-    throw new TypeError("旧模拟键含原神定轨字段，不能导入星铁。");
+    throw new TypeError($t("simulation.legacy-import.text_1393fcdf20"));
   }
   const conversation: LegacyConversation = {
     lastDay: warpDay(expiresAt - legacyRetention), expiresAt,
@@ -130,12 +133,12 @@ export async function importLegacyWarps(options: ImportOptions, lockFile: Acquir
   const { sourceUrl, authorizationFile, destinationDirectory, apply, now = Date.now, signal = new AbortController().signal } = options;
   const scope = await authorizedScope(authorizationFile);
   const protocol = URL.parse(sourceUrl)?.protocol;
-  if (protocol !== "redis:" && protocol !== "rediss:") throw new TypeError("星铁旧模拟 Valkey 地址须使用 redis:// 或 rediss://。");
+  if (protocol !== "redis:" && protocol !== "rediss:") throw new TypeError($t("simulation.legacy-import.text_639534be71"));
   const target = createWarpArchive(destinationDirectory, lockFile);
   const source = new Bun.RedisClient(sourceUrl, { autoReconnect: false, enableOfflineQueue: false, connectionTimeout: 2000 });
   try {
     try { await source.connect(); }
-    catch { throw new Error("无法连接星铁旧模拟 Valkey 副本。"); }
+    catch { throw new Error($t("simulation.legacy-import.text_101fbd0972")); }
     const totals = { accounts: scope.length, balances: 0, conversations: 0, existing: 0, missing: 0, expired: 0 };
     for (const { qq, balance, conversations } of scope) {
       signal.throwIfAborted();

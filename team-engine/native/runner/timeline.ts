@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../../packages/i18n/index.ts";
+import messageCatalog from "../../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 // Public report preserves the event attribution and row limits of Lotus's Python timeline.
 import panelCharacterNames from "../../../challenge-character-names.json";
 import type { TeamBattleResult } from "../../../team-damage-runtime.ts";
@@ -6,12 +9,12 @@ import type { BattleEvent, Payload } from "./contracts.ts";
 import type { BattleRunner } from "./runner.ts";
 
 const actionLabels: Readonly<Record<string, string>> = {
-  basic: "普攻", skill: "战技", ultimate: "终结技", follow_up: "追加攻击",
-  elation_skill: "欢愉技", memosprite_skill: "忆灵技", assist: "助战技", technique: "秘技",
+  basic: $t("team-engine.native.runner.timeline.text_8b79df27ba"), skill: $t("team-engine.native.runner.timeline.text_6d8c868f52"), ultimate: $t("team-engine.native.runner.timeline.text_a985bc32b7"), follow_up: $t("team-engine.native.runner.timeline.text_28960b911a"),
+  elation_skill: $t("team-engine.native.runner.timeline.text_a9613395e7"), memosprite_skill: $t("team-engine.native.runner.timeline.text_79bd79472f"), assist: $t("team-engine.native.runner.timeline.text_bde5b0a97f"), technique: $t("team-engine.native.runner.timeline.text_4bd90c6477"),
 };
 const knownApproximations: Readonly<Record<string, string>> = {
-  "1220": "终结技视为追加攻击等细节未完整计入。",
-  "1112": "账账继承托帕攻击力和部分暴击伤害效果按近似规则计算。",
+  "1220": $t("team-engine.native.runner.timeline.text_cc703ae0a0"),
+  "1112": $t("team-engine.native.runner.timeline.text_fde71418d5"),
 };
 
 const onePlace = parse("round(value, 1)");
@@ -42,16 +45,16 @@ function publicTimeline(events: readonly BattleEvent[], runner: BattleRunner,
   for (const def of runner.encounter.summons.values()) {
     if (!def.ownerId || !contributors.has(def.ownerId)) continue;
     summons.set(def.id, def.ownerId);
-    names.set(def.id, label(def.name, "召唤物")!);
+    names.set(def.id, label(def.name, $t("team-engine.native.runner.timeline.text_3c58afb55c"))!);
   }
   const allies = new Set([...contributors.keys(), ...summons.keys(), ...runner.encounter.systemActors.map(actor => actor.id)]);
   for (const [id, name] of contributors) names.set(id, name);
   for (const id of runner.state.actors.keys()) {
     if (!names.has(id)) {
-      names.set(id, label(runner.actorTemplate(id).name, summons.has(id) ? "召唤物" : "目标")!);
+      names.set(id, label(runner.actorTemplate(id).name, summons.has(id) ? $t("team-engine.native.runner.timeline.text_3c58afb55c") : $t("team-engine.native.runner.timeline.text_57060c88a3"))!);
     }
   }
-  const name = (id: string, fallback = "队员") => names.get(id) ?? fallback;
+  const name = (id: string, fallback = $t("team-engine.native.runner.timeline.text_6f3a9f7421")) => names.get(id) ?? fallback;
   const opening = new Map<string, { name: string; value: number }>();
   const rows: Row[] = [];
   const pending = new Map<string, Row>();
@@ -70,25 +73,25 @@ function publicTimeline(events: readonly BattleEvent[], runner: BattleRunner,
     if (kind === "on_turn_start" && contributors.has(actor)) {
       if (!opening.has(actor)) opening.set(actor, { name: name(actor), value: av });
     } else if (kind === "actor_enter" && summons.has(actor) && payload.reason === "summon") {
-      row(name(summons.get(actor)!), av, "召唤 · " + name(actor, "召唤物") + "登场");
+      row(name(summons.get(actor)!), av, $t("team-engine.native.runner.timeline.text_c0fec559c9") + name(actor, $t("team-engine.native.runner.timeline.text_3c58afb55c")) + $t("team-engine.native.runner.timeline.text_989ba36a73"));
     } else if (kind === "on_cycle_start") {
-      row("战斗轮次", av, "第 " + text(payload, "cycle_index") + " 轮开始");
+      row($t("team-engine.native.runner.timeline.text_a3205a2a50"), av, $t("team-engine.native.runner.timeline.text_9552fe3bd3") + text(payload, "cycle_index") + $t("team-engine.native.runner.timeline.text_ea318ce106"));
     } else if (kind === "on_wave_start" && Number(payload.wave_index) > 0) {
-      row("敌人波次", av, "第 " + (Number(payload.wave_index) + 1) + " 波敌人登场");
+      row($t("team-engine.native.runner.timeline.text_73632ab84c"), av, $t("team-engine.native.runner.timeline.text_9552fe3bd3") + (Number(payload.wave_index) + 1) + $t("team-engine.native.runner.timeline.text_b561c4fc73"));
     } else if (kind === "on_state_change" && allies.has(actor)) {
       const entering = Boolean(payload.to_state);
       const config = runner.actorTemplate(actor).stateConfig?.raw;
       const state = entering ? payload.to_state : payload.from_state;
       const display = config && config.state === state ? label(config.name) : undefined;
-      row(name(actor), av, (entering ? "进入" : "退出") + (display ? "「" + display + "」" : "强化状态"));
+      row(name(actor), av, (entering ? $t("team-engine.native.runner.timeline.text_f88182fcd5") : $t("team-engine.native.runner.timeline.text_498e1d59b4")) + (display ? "「" + display + "」" : $t("team-engine.native.runner.timeline.text_215495f806")));
     } else if (kind === "on_break" && allies.has(text(payload, "source"))) {
-      row(name(text(payload, "source")), av, "击破弱点 · " + name(text(payload, "target"), "目标"));
+      row(name(text(payload, "source")), av, $t("team-engine.native.runner.timeline.text_fd4f0bcd90") + name(text(payload, "target"), $t("team-engine.native.runner.timeline.text_57060c88a3")));
     } else if (kind === "on_action" || kind === "after_being_hit") {
       const source = kind === "on_action" ? actor : text(payload, "source");
       if (!allies.has(source)) continue;
       const actionType = text(payload, "action_type");
       const actionId = text(payload, "action_id");
-      const category = actionLabels[actionType] ?? (kind === "on_action" ? "行动" : "伤害结算");
+      const category = actionLabels[actionType] ?? (kind === "on_action" ? $t("team-engine.native.runner.timeline.text_253fb75906") : $t("team-engine.native.runner.timeline.text_051f03a7be"));
       const actionKey = JSON.stringify([av, source, actionId || actionType]);
       const sourceKey = JSON.stringify([av, source]);
       if (kind === "on_action") {
@@ -109,7 +112,7 @@ function publicTimeline(events: readonly BattleEvent[], runner: BattleRunner,
           }
         }
         if (!entry) {
-          entry = row(name(source), av, "伤害结算");
+          entry = row(name(source), av, $t("team-engine.native.runner.timeline.text_051f03a7be"));
           pending.set(actionKey, entry);
         }
         const target = text(payload, "target");
@@ -124,9 +127,9 @@ function publicTimeline(events: readonly BattleEvent[], runner: BattleRunner,
       const lines = [entry.label];
       if (entry.hits.size) {
         const total = [...entry.hits.values()].reduce((sum, amount) => sum + amount, 0);
-        const summary = "造成 " + formatDamage(total) + " 点伤害";
-        lines.push(summary + (entry.hits.size > 1 ? " · 命中 " + entry.hits.size + " 个目标" : ""));
-        for (const [target, amount] of entry.hits) lines.push(name(target, "目标") + "受到 " + formatDamage(amount) + " 点伤害");
+        const summary = $t("team-engine.native.runner.timeline.text_9863bfdb7b") + formatDamage(total) + $t("team-engine.native.runner.timeline.text_cd07575758");
+        lines.push(summary + (entry.hits.size > 1 ? $t("team-engine.native.runner.timeline.text_6015819aab") + entry.hits.size + $t("team-engine.native.runner.timeline.text_bfccaf26c2") : ""));
+        for (const [target, amount] of entry.hits) lines.push(name(target, $t("team-engine.native.runner.timeline.text_57060c88a3")) + $t("team-engine.native.runner.timeline.text_22df40c9a4") + formatDamage(amount) + $t("team-engine.native.runner.timeline.text_cd07575758"));
       }
       return { title: entry.title, actionPoint: entry.actionPoint, lines: lines.slice(0, 8) };
     }),
@@ -147,7 +150,7 @@ export function reportBattle(runner: BattleRunner, cycles: number,
     const previous = amounts.get(target);
     if (previous !== undefined) amounts.set(target, previous + damage);
     else if (damage > 0 && actor && actor.kind !== "monster") {
-      contributors.set(id, label(actor.name, "助战单位")!);
+      contributors.set(id, label(actor.name, $t("team-engine.native.runner.timeline.text_7f1723b231"))!);
       amounts.set(id, damage);
     }
   }
@@ -156,11 +159,11 @@ export function reportBattle(runner: BattleRunner, cycles: number,
     const id = text(caveat, "actor");
     const ref = text(caveat, "ref");
     if (contributors.has(id) && ref.startsWith("characters/")) {
-      notes.set(id, contributors.get(id) + "：" + (knownApproximations[id] ?? "部分角色机制按近似规则计算。"));
+      notes.set(id, contributors.get(id) + "：" + (knownApproximations[id] ?? $t("team-engine.native.runner.timeline.text_b5578a00b4")));
     } else if (ref.startsWith("light_cones/") || ref.startsWith("relics/")) {
-      notes.set("gear", "部分光锥或遗器的条件效果按近似规则计算。");
+      notes.set("gear", $t("team-engine.native.runner.timeline.text_5a4c39f0cc"));
     } else {
-      notes.set("other", "部分触发条件按近似规则计算。");
+      notes.set("other", $t("team-engine.native.runner.timeline.text_b885777d5a"));
     }
   }
   const damage = [...amounts].sort((a, b) => b[1] - a[1]).map(([id, value]) => ({ name: contributors.get(id)!, value }));

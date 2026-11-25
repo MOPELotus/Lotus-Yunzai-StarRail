@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { ProfileError, type createProfileStore } from "@lotus-yunzai/account";
 import type { createHoyoClient, StarRailGachaOptions } from "@lotus-yunzai/hoyo-client";
 import type { createStarRailGachaHistoryStore } from "./gacha-store.ts";
@@ -7,7 +10,7 @@ interface StarRailGachaSyncOptions extends StarRailGachaOptions {
 }
 
 export class StarRailGachaUpdateBusy extends Error {
-  constructor() { super("该账号的星铁抽卡记录正在更新，请稍后再试。"); }
+  constructor() { super($t("gacha-sync.text_de583dfe2b")); }
 }
 
 export function createStarRailGachaSync(
@@ -25,13 +28,13 @@ export function createStarRailGachaSync(
       active.add(key);
       try {
         const latest = await client.fetchStarRailGacha(original, options);
-        if (latest.uid !== original.role.uid) throw new Error("星铁抽卡快照与请求角色不一致。");
+        if (latest.uid !== original.role.uid) throw new Error($t("gacha-sync.text_57d3d2be9d"));
 
         async function verifyProfile() {
           options.signal?.throwIfAborted();
           const current = await profiles.requestContext(qq, profileId, "sr", latest.uid).catch(() => undefined);
           if (current?.revision !== latest.revision || current?.role.uid !== latest.uid) {
-            throw new ProfileError("changed", "更新星铁抽卡历史时档案已变更，请重新发起请求。");
+            throw new ProfileError("changed", $t("gacha-sync.text_561966cbbe"));
           }
           options.signal?.throwIfAborted();
         }

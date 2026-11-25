@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { fileURLToPath } from "node:url";
 import { id, object, text } from "./panel-model.ts";
 import { TeamDamageError } from "./team-damage-model.ts";
@@ -32,10 +35,10 @@ export interface TeamBattleResult {
 }
 
 function teamBattleResult(result: ReturnType<typeof object>): TeamBattleResult {
-  if (result?.error === "data" || result?.error === "invalid") throw new TeamDamageError("HSR_Nous 模板或面板数据校验失败，请检查资源和所选面板。");
-  if (result?.error === "limit") throw new TeamDamageError("队伍伤害达到模拟行动上限，请减少轮次后重试。");
-  if (result?.error === "characters" && id(result.id)) throw new TeamDamageError(`此版本的 HSR_Nous 暂无角色 ID ${result.id} 的机制模板。`);
-  if (result?.error === "light_cones" && id(result.id)) throw new TeamDamageError(`这枚光锥（ID ${result.id}）暂无数据，原面板也没有可核对的白值。`);
+  if (result?.error === "data" || result?.error === "invalid") throw new TeamDamageError($t("team-damage-runtime.text_bf341ad8cc"));
+  if (result?.error === "limit") throw new TeamDamageError($t("team-damage-runtime.text_d647aa3296"));
+  if (result?.error === "characters" && id(result.id)) throw new TeamDamageError($t("team-damage-runtime.text_73ec85b03d", { "id": result.id }));
+  if (result?.error === "light_cones" && id(result.id)) throw new TeamDamageError($t("team-damage-runtime.text_4b07e89df3", { "id": result.id }));
   const { total, dps, damage, actions, turns, warnings } = result ?? {};
   const finite = (entry: unknown): entry is number => typeof entry === "number" && Number.isFinite(entry) && entry >= 0;
   function namedRows(input: unknown, limit: number) {
@@ -81,7 +84,7 @@ async function readWorkerStream(stream: ReadableStream<Uint8Array>, signal: Abor
 
 export async function calculateTeamDamage(roles: readonly TeamSimulationMember[], cycle: number, enemies: number, cancellation: AbortSignal) {
   cancellation.throwIfAborted();
-  if (!(await Bun.file(workerFile).exists())) throw new TeamDamageError("本地队伍伤害模块文件缺失，请检查安装。");
+  if (!(await Bun.file(workerFile).exists())) throw new TeamDamageError($t("team-damage-runtime.text_a7fa433e67"));
   cancellation.throwIfAborted();
   const timeout = AbortSignal.timeout(8_000);
   const signal = AbortSignal.any([cancellation, timeout]);
@@ -95,10 +98,10 @@ export async function calculateTeamDamage(roles: readonly TeamSimulationMember[]
   try {
     const [output, exit] = await Promise.all([readWorkerStream(child.stdout, signal), child.exited]);
     signal.throwIfAborted();
-    if (exit !== 0 || !output) throw new TeamDamageError("星铁队伍伤害计算进程未完成，请稍后重试。");
+    if (exit !== 0 || !output) throw new TeamDamageError($t("team-damage-runtime.text_1653b054eb"));
     return teamBattleResult(object(JSON.parse(output)));
   } catch (error) {
-    if (timeout.aborted && !cancellation.aborted) throw new TeamDamageError("星铁队伍伤害计算超时，请减少轮次后重试。");
+    if (timeout.aborted && !cancellation.aborted) throw new TeamDamageError($t("team-damage-runtime.text_450cf3ea62"));
     throw error;
   } finally {
     signal.removeEventListener("abort", kill);

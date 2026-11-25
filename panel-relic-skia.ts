@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { Canvas, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
 import { renderPng } from "@lotus-yunzai/skia";
 import { fill, image, picture, relicPortrait, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
@@ -71,7 +74,7 @@ function drawPart(ctx: Context, text: Style, assets: Awaited<ReturnType<typeof t
     ctx.restore();
   }
   text(part.name, x + 15, y + 25, 15, white, "left", true, false, w - 23);
-  text(`${part.mark}分 - ${part.markClass}`, x + 15, y + 45, 14, markColors[part.markClass] ?? white, "left", true);
+  text($t("panel-relic-skia.text_37b08c3e12", { "mark": part.mark, "markClass": part.markClass }), x + 15, y + 45, 14, markColors[part.markClass] ?? white, "left", true);
   if (detailed && part.level !== "") {
     fill(ctx, "#000c", x + w - 34, y + 38, 27, 18, 4);
     text("+" + part.level, x + w - 20.5, y + 47, 12, white, "center");
@@ -96,8 +99,8 @@ function drawPart(ctx: Context, text: Style, assets: Awaited<ReturnType<typeof t
     text(value, x + w - (detailed ? 55 : 10), top + 13, 14, weight || !i ? white : "#888", "right", !i);
     if (detailed) {
       fill(ctx, "#0006", x + w - 48, top, 48, 26);
-      const score = i ? (points * stat._mark).toFixed(1) + "分" :
-        part.ignoreMain || slot <= 2 ? "不计分" : fmtMark(stat.mark / 6) + "分";
+      const score = i ? (points * stat._mark).toFixed(1) + $t("panel-relic-skia.text_b6a993c256") :
+        part.ignoreMain || slot <= 2 ? $t("panel-relic-skia.text_32b2119768") : fmtMark(stat.mark / 6) + $t("panel-relic-skia.text_b6a993c256");
       text(score, x + w - 6, top + 13, 12, white, "right");
     }
   });
@@ -106,9 +109,9 @@ function drawPart(ctx: Context, text: Style, assets: Awaited<ReturnType<typeof t
     const max = part.pMax || configuredMax;
     fill(ctx, "#0005", x, top, w, 54);
     [
-      ["总分对齐", max ? `×${(66 / (points * max) * 100).toFixed(1)}%` : "—"],
-      ["最优主词缀", part.ignoreMain || slot <= 2 ? "—" : `×${(part.mainFactor * 100).toFixed(0)}%`],
-      ["最终得分", `${part.mark}分`],
+      [$t("panel-relic-skia.text_d12a6fe4b3"), max ? `×${(66 / (points * max) * 100).toFixed(1)}%` : "—"],
+      [$t("panel-relic-skia.text_effce16500"), part.ignoreMain || slot <= 2 ? "—" : `×${(part.mainFactor * 100).toFixed(0)}%`],
+      [$t("panel-relic-skia.text_ef9c2aa30c"), $t("panel-relic-skia.text_b0e0ce719c", { "mark": part.mark })],
     ].forEach(([label, val], i) => {
       if (i === 2) fill(ctx, "#000a", x, top + 54, w, 30);
       text(label, x + 30, top + 14 + i * 27, 14);
@@ -121,7 +124,7 @@ function drawPart(ctx: Context, text: Style, assets: Awaited<ReturnType<typeof t
 export async function renderStarRailRelicList(model: ListModel, theme: string, mode: Renderer = "auto") {
   const font = typography(theme);
   const [assets, pictures] = await Promise.all([
-    themeAssets(theme, "物理"),
+    themeAssets(theme, $t("panel-relic-skia.text_a454f17872")),
     Promise.all(model.artis.map(async part => ({ relic: await image(part.img), side: await image(part.side) }))),
   ]);
   const width = 790, height = 103 + 200 * Math.ceil(model.artis.length / 4);
@@ -138,22 +141,22 @@ export async function renderStarRailRelicList(model: ListModel, theme: string, m
 }
 
 const ruleNotes = [
-  "每个角色有不同的词条评分权重（已隐藏权重为0的词条），后续会逐步扩充不同流派的规则",
-  "以权重值100的单词条理论最高分46.6分为基准，根据权重值及当前词条成长计算每点得分",
-  "词条得分：词条数值 × 当前词条每点得分。小攻击、小防御、小生命折算为对应百分比词条进行计分",
-  "原始总分（对齐前）：计算所有副词条的评分之和，躯干、脚部、位面球和连结绳附加25%的主词条评分",
+  $t("panel-relic-skia.text_31edde20d1"),
+  $t("panel-relic-skia.text_f5cd572570"),
+  $t("panel-relic-skia.text_9f8f4beab3"),
+  $t("panel-relic-skia.text_c88fc37867"),
 ];
 const positionNotes = [
-  "总分对齐比例：根据角色不同遗器位置可选词条及评分，计算理论最高原始词条总分。为使不同角色不同位置最终总分对齐，规定遗器满分为66分。理论总分对齐比例 = 66 / 理论最高原始分 × 100%",
-  "最优主词缀比例：对主词条词缀非最优的遗器进行评分惩罚。若装备的遗器主词条不是当前位置的最高权重主词条或元素属性不符，则依据权重差值比例进行分数扣减，最多扣减50%。主词缀为充能时不进行扣减",
-  "最终得分：遗器最终得分 = 原始总分 × 总分对齐比例 × 最优主词缀比例",
-  "得分级别：MAX(>56分) / ACE(>49分) / SSS(>42分) / SS(>35分) / S(>28分) / A / B / C / D",
+  $t("panel-relic-skia.text_b61f46f317"),
+  $t("panel-relic-skia.text_8c474c64b4"),
+  $t("panel-relic-skia.text_e583d7279c"),
+  $t("panel-relic-skia.text_9c26ea5163"),
 ];
 const guidance = [
-  "遗器评分的目标是对角色遗器词条进行一个快速的评估，一般来说评分更高的遗器可能会更匹配角色",
-  "但实际情况下遗器各词条的提升并非线性，且需考虑各词条平衡，故评分仅供参考，请勿过分追求高评分",
-  "各角色有各自的词条权重，反映对不同属性的需求。",
-  "分数适合在同一角色内对比装备。",
+  $t("panel-relic-skia.text_37039b41d9"),
+  $t("panel-relic-skia.text_515f34b527"),
+  $t("panel-relic-skia.text_ef4dc9155c"),
+  $t("panel-relic-skia.text_5fc9fcf985"),
 ];
 
 export async function renderStarRailRelicMark(model: MarkModel, theme: string, mode: Renderer = "auto") {
@@ -188,13 +191,13 @@ export async function renderStarRailRelicMark(model: MarkModel, theme: string, m
   });
   const slots = ["1", "2", "3", "4", "5", "6"];
   const sections = [
-    section(`${data.name}评分规则: ${charCfg.classTitle}`, ["属性", "评分权重", "词条成长", "每点得分", "副词条最高分", "主词条最高分"], weightRows, ruleNotes),
-    section("遗器评分计算", ["位置", "帽子", "手套", "衣服", "靴子", "球", "绳"], [
-      ["最高分(对齐前)", ...slots.map(slot => fmtMark((charCfg.posMaxMark[slot] ?? 0) / 6))],
-      ["总分对齐比例", ...slots.map(slot => charCfg.posMaxMark[slot] ? `${(66 / (points * charCfg.posMaxMark[slot]!) * 100).toFixed(1)}%` : "—")],
-      ["最优主词缀权重", ...slots.map((slot,i) => i < 2 ? "—" : String(charCfg.posMaxMark["m" + slot] ?? "—"))],
+    section($t("panel-relic-skia.text_acf83a0706", { "name": data.name, "classTitle": charCfg.classTitle }), [$t("panel-relic-skia.text_86de52d178"), $t("panel-relic-skia.text_57526346b5"), $t("panel-relic-skia.text_c516c07c73"), $t("panel-relic-skia.text_139bdd3b8d"), $t("panel-relic-skia.text_0b4c47ddbc"), $t("panel-relic-skia.text_15d8868a40")], weightRows, ruleNotes),
+    section($t("panel-relic-skia.text_de922572d4"), [$t("panel-relic-skia.text_1fb4d574da"), $t("panel-relic-skia.text_f045b9ca8f"), $t("panel-relic-skia.text_d3db5e5606"), $t("panel-relic-skia.text_3a28422f1f"), $t("panel-relic-skia.text_ee5d390496"), $t("panel-relic-skia.text_12a2aadcf0"), $t("panel-relic-skia.text_231e8863ee")], [
+      [$t("panel-relic-skia.text_ed894aabbe"), ...slots.map(slot => fmtMark((charCfg.posMaxMark[slot] ?? 0) / 6))],
+      [$t("panel-relic-skia.text_07808af625"), ...slots.map(slot => charCfg.posMaxMark[slot] ? `${(66 / (points * charCfg.posMaxMark[slot]!) * 100).toFixed(1)}%` : "—")],
+      [$t("panel-relic-skia.text_78a586e49d"), ...slots.map((slot,i) => i < 2 ? "—" : String(charCfg.posMaxMark["m" + slot] ?? "—"))],
     ], positionNotes),
-    section("遗器评分补充说明", [], [], guidance),
+    section($t("panel-relic-skia.text_3f908191f9"), [], [], guidance),
   ];
   const width = 660;
   const firstSection = 255 + Math.max(280, Math.ceil(parts.length / 3) * 284 + 10) + 5;
@@ -207,18 +210,18 @@ export async function renderStarRailRelicMark(model: MarkModel, theme: string, m
     picture(ctx, hero, -545, 0, 1400, 520);
     text(data.name, 640, 51, 50, white, "right", false, true, 600);
     fill(ctx, soulColors[Number(data.cons)] ?? soulColors[0], 600, 79, 40, 21, 4);
-    text(`${data.cons}魂`, 620, 90, 18, white, "center");
+    text($t("panel-relic-skia.text_70593aa83c", { "cons": data.cons }), 620, 90, 18, white, "center");
     text(`UID ${model.uid} - Lv.${data.level}`, 594, 90, 18, white, "right");
     const summaryHeight = ranking.incomplete ? 128 : 103;
     box(ctx, assets.texture, 389, 125, 251, summaryHeight);
     fill(ctx, "#0007", 389, 125, 251, summaryHeight);
-    text(`评分规则：${charCfg.classTitle}`, 514, 137, 12, white, "center");
-    if (ranking.incomplete) text(`${ranking.incomplete} 件遗器的词条资料不全，未计分`, 514, 162, 12, white, "center");
+    text($t("panel-relic-skia.text_db409bb319", { "classTitle": charCfg.classTitle }), 514, 137, 12, white, "center");
+    if (ranking.incomplete) text($t("panel-relic-skia.text_aed20330e7", { "incomplete": ranking.incomplete }), 514, 162, 12, white, "center");
     const scoreTop = 125 + summaryHeight;
     text(ranking.markClass, 452, scoreTop - 49, 30, markColors[ranking.markClass] ?? white, "center", true);
     text(ranking.mark, 577, scoreTop - 49, 30, white, "center", true);
-    text("遗器评级", 452, scoreTop - 19, 12, white, "center");
-    text("遗器总分", 577, scoreTop - 19, 12, white, "center");
+    text($t("panel-relic-skia.text_f8a1198a68"), 452, scoreTop - 19, 12, white, "center");
+    text($t("panel-relic-skia.text_562b5ec995"), 577, scoreTop - 19, 12, white, "center");
     closeBox(ctx, 389, 125, 251, summaryHeight);
     parts.forEach(([key, part], i) => drawPart(ctx, text, assets, part, relics[i], undefined, model.artisKeyTitle, ranking.charWeight,
       10 + i % 3 * 215, 260 + Math.floor(i / 3) * 284, 205, 279, Number(key), charCfg.posMaxMark[key]));

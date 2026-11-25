@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { brandTextColor } from "@lotus-yunzai/skia/brand-color";
 import { renderStarRailCard, type StarRailCardOptions } from "./render-card.ts";
 import { fileURLToPath } from "node:url";
@@ -13,14 +16,14 @@ const colors = ["#5470c6", "#91cc75", "#fac858"];
 const image = (path: string) => loadImage(new URL(path, theme));
 
 function label(ctx: Context, value: string, x: number, y: number, size: number,
-  { color = "#111", weight = 400, align = "left", maxWidth, family = font }: {
-    color?: string; weight?: number; align?: CanvasTextAlign; maxWidth?: number; family?: string;
+  { color = "#111", weight = 400, align = "left", maxWidth, family = font, footer = false }: {
+    color?: string; weight?: number; align?: CanvasTextAlign; maxWidth?: number; family?: string; footer?: boolean;
   } = {}) {
   ctx.font = `${weight} ${size}px ${family}`;
   ctx.textBaseline = "middle";
   ctx.textAlign = align;
   ctx.fillStyle = color;
-  if (value.includes("Lotus-Yunzai")) ctx.fillStyle = brandTextColor(ctx, value, x, y, maxWidth);
+  if (footer) ctx.fillStyle = brandTextColor(ctx, value, x, y, maxWidth);
   ctx.fillText(value, x, y, maxWidth);
 }
 
@@ -68,7 +71,7 @@ export async function renderStarRailLedgerCard(model: ReturnType<typeof makeStar
     cover(ctx, background, width, height);
     cover(ctx, decoration, width, height);
     label(ctx, `UID ${model.uid}`, 10, 28, textSize, { weight: 900, color: "#e9e7e2" });
-    label(ctx, `${model.type}记录`, 700, 89, 48, { weight: 900, color: "#edd3b2", align: "right" });
+    label(ctx, $t("account-report-renderer.text_47c5c11c00", { "type": model.type }), 700, 89, 48, { weight: 900, color: "#edd3b2", align: "right" });
     ctx.fillStyle = "#c0c0c2";
     ctx.fillRect(0, 122, width, 3);
     label(ctx, `${model.typeen} History`, width, 145, 24, { weight: 900, color: "#fff", align: "right" });
@@ -86,13 +89,13 @@ export async function renderStarRailLedgerCard(model: ReturnType<typeof makeStar
         x += w + 2;
       }
     };
-    tableRow([["时间"], ["获取数量"], ["变化原因"]], tableY, 54, "#c2ad7e", true);
+    tableRow([[$t("account-report-renderer.text_8b6ff49851")], [$t("account-report-renderer.text_afeb042063")], [$t("account-report-renderer.text_dad72c3bf7")]], tableY, 54, "#c2ad7e", true);
     let y = tableY + 54;
     for (const [index, row] of rows.entries()) {
       tableRow(row.values, y, row.height, index % 2 ? "#e9e7e2" : "#fff");
       y += row.height;
     }
-    label(ctx, `当前第${model.page}页`, width / 2, tableBottom + 28, textSize, { align: "center", color: "#000" });
+    label(ctx, $t("account-report-renderer.text_28f833178e", { "page": model.page }), width / 2, tableBottom + 28, textSize, { align: "center", color: "#000" });
   }, options);
 }
 
@@ -107,22 +110,22 @@ export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeSta
     ctx.fillStyle = "#faf9f7";
     ctx.fillRect(0, 0, width, height);
     cover(ctx, background, width, height);
-    label(ctx, `${model.month} | 开拓日历`, 7, 50, 36, { weight: 700 });
-    label(ctx, "继续努力，星辰大海在等着你呢！", 7, 98, 20, { color: "#2e353e" });
+    label(ctx, $t("account-report-renderer.text_7d80867c35", { "month": model.month }), 7, 50, 36, { weight: 700 });
+    label(ctx, $t("account-report-renderer.text_818fb038c8"), 7, 98, 20, { color: "#2e353e" });
     model.incomes.forEach((income, index) => {
       const y = 121 + index * 111;
       box(ctx, 7.5, y + 0.5, 581, 100, [5, 25, 5, 5], "rgba(244,242,229,.60)", "#cecece");
       label(ctx, income.label, 18, y + 35, 30, { color: "#f38d38", weight: 700 });
       ctx.drawImage(jade, 18, y + 65, 20, 20);
-      const first = `星琼：${income.hcoin}`;
+      const first = $t("account-report-renderer.text_394b6a9d19", { "hcoin": income.hcoin });
       label(ctx, first, 43, y + 76, 24, { color: "#565656", weight: 700 });
       const second = 63 + ctx.measureText(first).width;
       ctx.drawImage(pass, second, y + 65, 20, 20);
-      label(ctx, `星轨通票&星轨专票：${income.railsPass}`, second + 25, y + 76, 24,
+      label(ctx, $t("account-report-renderer.text_4a913617c4", { "railsPass": income.railsPass }), second + 25, y + 76, 24,
         { color: "#565656", weight: 700, maxWidth: 575 - second - 25 });
     });
     box(ctx, 7.5, 454.5, 581, chartHeight + 65, [5, 25, 5, 5], "rgba(244,242,229,.60)", "#cecece");
-    label(ctx, "本月星琼收入", 18, 489, 30, { color: "#f38d38", weight: 700 });
+    label(ctx, $t("account-report-renderer.text_03d531c062"), 18, 489, 30, { color: "#f38d38", weight: 700 });
     const cy = chartY + chartHeight / 2, cx = 399, radius = 111;
     ctx.lineWidth = 39;
     ctx.strokeStyle = "#edeae5";
@@ -137,7 +140,7 @@ export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeSta
     for (const group of groups) if (group.showPercentage) {
       label(ctx, `${group.percentage}%`, cx + group.x - 145, cy + group.y - 145, 15, { color: "#20202a", align: "center" });
     }
-    label(ctx, "总计", cx, cy - 12, 24, { weight: 700, align: "center" });
+    label(ctx, $t("account-report-renderer.text_e8dc871a7f"), cx, cy - 12, 24, { weight: 700, align: "center" });
     label(ctx, String(model.total), cx, cy + 21, 24, { weight: 700, align: "center", maxWidth: 176 });
     let y = cy - legendHeight / 2;
     for (const group of groups) {
@@ -145,7 +148,7 @@ export async function renderStarRailMonthlyCard(model: ReturnType<typeof makeSta
       for (const [index, line] of group.lines.entries()) label(ctx, line, 77, y + 12 + 23 * index, 17);
       y += group.lines.length * 23 + 7;
     }
-    label(ctx, model.cardBrand, width / 2, height - 35, 24, { color: "#fff", align: "center" });
+    label(ctx, model.cardBrand, width / 2, height - 35, 24, { color: "#fff", align: "center", footer: true });
   }, options);
 }
 
@@ -164,10 +167,10 @@ export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typ
     label(ctx, model.nickname, 260, 114, 30, { maxWidth: 200 });
     const nicknameWidth = Math.min(200, ctx.measureText(model.nickname).width);
     label(ctx, model.uid, 267 + nicknameWidth, 117, 24, { color: "#2e353e", maxWidth: 340 - nicknameWidth });
-    label(ctx, `${model.region}${model.level ? ` ${model.level}级` : ""}`, 260, 151, 24, { color: "#aaac9c" });
+    label(ctx, `${model.region}${model.level ? $t("account-report-renderer.text_783c14ed00", { "level": model.level }) : ""}`, 260, 151, 24, { color: "#aaac9c" });
     ctx.drawImage(mascot, 620, 20, 180, 180 * mascot.height / mascot.width);
 
-    label(ctx, "近期每日在线时长", 400, 226, 24, { align: "center" });
+    label(ctx, $t("account-report-renderer.text_18e1c0bccd"), 400, 226, 24, { align: "center" });
     const barWidth = (700 - Math.max(0, model.bars.length - 1) * 14) / Math.max(1, model.bars.length);
     model.bars.forEach((bar, index) => {
       const x = 50 + index * (barWidth + 14), center = x + barWidth / 2;
@@ -179,13 +182,13 @@ export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typ
       label(ctx, bar.hours, center, 470 - h, 16, { color: "#20282e", align: "center" });
       label(ctx, bar.shortDate, center, 494, 16, { color: "#20282e", align: "center" });
     });
-    label(ctx, `${model.year} 年每日在线时长热力图`, 400, 544, 24, { align: "center" });
+    label(ctx, $t("account-report-renderer.text_ba7ed3278c", { "year": model.year }), 400, 544, 24, { align: "center" });
     for (const month of model.months) label(ctx, month.label, 50 + month.x, 605, 13);
     for (const cell of model.cells) {
       box(ctx, 50 + cell.x, 578 + cell.y, 11, 16, 0, cell.color, "#b9b5a9", 0.25);
     }
 
-    label(ctx, "近期在线可视化", 400, 799, 24, { align: "center" });
+    label(ctx, $t("account-report-renderer.text_e5513a4089"), 400, 799, 24, { align: "center" });
     for (const [index, value] of ["0", "6", "12", "18", "24"].entries()) {
       label(ctx, value, 104 + index * 159, 838, 16, { align: "center" });
     }
@@ -213,9 +216,9 @@ export async function renderStarRailOnlineCard(model: NonNullable<ReturnType<typ
     const noteHeight = model.complete ? 30 : 54;
     box(ctx, 51, footerY, 698, noteHeight, 5, undefined, "#a45000", 2);
     label(ctx, model.note, 400, footerY + 16, 16, { color: "#a45000", align: "center" });
-    if (!model.complete) label(ctx, "已达到查询页数上限，仅显示本次读取的记录。", 400, footerY + 40, 16,
+    if (!model.complete) label(ctx, $t("account-report-renderer.text_e16c1c65b9"), 400, footerY + 40, 16,
       { color: "#a45000", align: "center" });
-    label(ctx, model.cardBrand, 400, footerY + noteHeight + 32, 24, { color: "#fff", align: "center" });
+    label(ctx, model.cardBrand, 400, footerY + noteHeight + 32, 24, { color: "#fff", align: "center", footer: true });
   }, options);
 }
 
@@ -234,12 +237,12 @@ export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStat
   const contentWidth = 530, scale = 1.3;
   const pieHeight = Math.max(305, 52 + model.sources.length * 28);
   const height = 676 + pieHeight;
-  const monthName = (key: string) => `${Number(key.slice(4))}月`;
+  const monthName = (key: string) => $t("account-report-renderer.text_fa4962f757", { "value1": Number(key.slice(4)) });
   const cards = [
-    [model.hcoin >= 10_000 ? `${(model.hcoin / 10_000).toFixed(2)}w` : String(model.hcoin), "总星琼"],
-    [`${model.wishes}抽`, "总抽数"], [monthName(model.bestJade.key), "星琼最多"],
-    [String(model.bestJade.snapshot.monthly.hcoin), `${monthName(model.bestJade.key)}星琼`],
-    [`${model.railsPass}张`, "总专&通票"], [monthName(model.bestPass.key), "专&通票最多"],
+    [model.hcoin >= 10_000 ? `${(model.hcoin / 10_000).toFixed(2)}w` : String(model.hcoin), $t("account-report-renderer.text_d747cbab7c")],
+    [$t("account-report-renderer.text_e4eb4cdadc", { "wishes": model.wishes }), $t("account-report-renderer.text_530453ec9b")], [monthName(model.bestJade.key), $t("account-report-renderer.text_3ba720fe5e")],
+    [String(model.bestJade.snapshot.monthly.hcoin), $t("account-report-renderer.text_5696c221b2", { "value1": monthName(model.bestJade.key) })],
+    [$t("account-report-renderer.text_ba9b304b3e", { "railsPass": model.railsPass }), $t("account-report-renderer.text_2a04ed1cb9")], [monthName(model.bestPass.key), $t("account-report-renderer.text_410b3d305d")],
     ...model.sources.slice(0, 2).map(({ count, name }) => [String(count), [...name].slice(0, 4).join("")]),
   ];
   return renderStarRailCard(Math.round(contentWidth * scale), Math.ceil(height * scale), ctx => {
@@ -271,10 +274,10 @@ export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStat
     ctx.drawImage(banner, 515 - bannerWidth, 20, bannerWidth, 75);
     ctx.restore();
     label(ctx, `ID: ${model.uid}`, 35, 43, 24, { color: "#e8ebee", family: `"${statisticsNumbers}", ${font}` });
-    label(ctx, `${model.period.label}${model.period.label.endsWith("年") ? "-" : ""}星琼统计`, 35, 72, 20, { weight: 700, color: "#f3f6f8" });
+    label(ctx, $t("account-report-renderer.text_8fc43c4340", { "label": model.period.label, "value2": model.period.label.endsWith("年") ? "-" : "" }), 35, 72, 20, { weight: 700, color: "#f3f6f8" });
     ctx.drawImage(logo, 350, 13, 150, logo.height / logo.width * 150);
 
-    section("数据总览", 115, 149);
+    section($t("account-report-renderer.text_3c5118f194"), 115, 149);
     cards.forEach(([amount, title], index) => {
       const x = 82 + (index % 4) * 122;
       const y = 150 + Math.floor(index / 4) * 64;
@@ -282,9 +285,9 @@ export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStat
       label(ctx, title!, x, y + 22, 13, { color: "#7f858a", align: "center", maxWidth: 115 });
     });
 
-    section("月份统计", 284, 325);
+    section($t("account-report-renderer.text_b7de033bc5"), 284, 325);
     box(ctx, 30, 314, 8, 8, 0, "#5b8ff9");
-    label(ctx, "星琼", 46, 318, 12);
+    label(ctx, $t("account-report-renderer.text_ae25247f75"), 46, 318, 12);
     const chartBottom = 574;
     const peak = Math.max(1, ...model.months.map(month => month.snapshot.monthly.hcoin));
     const decade = 10 ** Math.floor(Math.log10(Math.ceil(peak / 4)));
@@ -310,7 +313,7 @@ export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStat
       number(monthName(key), x, chartBottom + 16, 14, "#787f88");
     });
 
-    section("详细统计", 629, pieHeight);
+    section($t("account-report-renderer.text_56e3db2f46"), 629, pieHeight);
     const sum = model.sources.reduce((total, row) => total + row.count, 0);
     const cx = 165, cy = 629 + pieHeight / 2 + 7, radius = 110;
     let angle = -Math.PI / 2;
@@ -337,9 +340,9 @@ export async function renderStarRailMonthlyStatistics(model: StarRailMonthlyStat
       label(ctx, group, 328, y, 16, { maxWidth: 72 });
       label(ctx, String(count), 398, y, 16, { color: "#59616e", family: `"${statisticsNumbers}", ${font}` });
     }
-    label(ctx, "总计", cx, cy - 10, 14, { align: "center" });
+    label(ctx, $t("account-report-renderer.text_e8dc871a7f"), cx, cy - 10, 14, { align: "center" });
     number(String(sum), cx, cy + 14, 34, "#263444");
-    label(ctx, `已归档 ${model.months.length}/${model.period.last - model.period.first + 1} 个月 · Lotus-Yunzai`,
-      contentWidth / 2, height - 18, 13, { color: "#fff", align: "center" });
+    label(ctx, $t("account-report-renderer.text_65925a7049", { "length": model.months.length, "value2": model.period.last - model.period.first + 1 }),
+      contentWidth / 2, height - 18, 13, { color: "#fff", align: "center", footer: true });
   }, options);
 }

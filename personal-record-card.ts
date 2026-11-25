@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { fileURLToPath } from "node:url";
 import { loadOfficialArtwork } from "@lotus-yunzai/account";
 import { FontLibrary, loadImage, type CanvasRenderingContext2D as Context, type Image } from "skia-canvas";
@@ -100,7 +103,7 @@ export async function renderStarRailPersonalRecord(record: StarRailPersonalRecor
 
     box(ctx, 25, 18, 30, 30, 7, "white");
     maskedPicture(ctx, logo, 27, 20, 26, 5);
-    const brand = "Lotus-Yunzai";
+    const brand = $t("personal-record-card.text_3867834e77");
     label(ctx, brand, 63, 33, 21.6, "white");
     const arrowX = 72 + ctx.measureText(brand).width;
     ctx.beginPath();
@@ -151,7 +154,7 @@ export async function renderStarRailPersonalRecord(record: StarRailPersonalRecor
 
     box(ctx, 0, headerBottom, width, height - headerBottom, [18, 18, 0, 0], "white");
     ctx.drawImage(star, 20, 420, 24, 24);
-    label(ctx, "我的角色", 54, 433, 23.76, "black");
+    label(ctx, $t("personal-record-card.text_299e349fd3"), 54, 433, 23.76, "black");
     box(ctx, 20, gridY, 560, gridHeight, [5, 40, 5, 5], "#f4f2e5");
     path(ctx, 30, gridY + 10, 540, gridHeight - 20, [5, 35, 5, 5]);
     ctx.setLineDash([6, 4]);
@@ -170,7 +173,7 @@ export async function renderStarRailPersonalRecord(record: StarRailPersonalRecor
       const art = portraits.get(character);
       if (art) ctx.drawImage(art, x, y, 90, 90);
       box(ctx, x, y + 76, 90, 17, 0, "black");
-      label(ctx, character.level === undefined ? "等级 —" : `等级 ${character.level}`, x + 45, y + 85, 14.4, "white", "center");
+      label(ctx, character.level === undefined ? $t("personal-record-card.text_2369e160bc") : $t("personal-record-card.text_d6960d887e", { "level": character.level }), x + 45, y + 85, 14.4, "white", "center");
       const element = icons.get(character.element);
       if (element) {
         ctx.save();

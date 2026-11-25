@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../packages/i18n/index.ts";
+import messageCatalog from "../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { BaseAttr, Buff, DamageMetadata, EngineAttr, Numbers, Params, Variables } from "./types.ts"
 import { eleBaseDmg } from './DmgCalcMeta.ts'
 import lodash from './compat.ts'
@@ -147,8 +150,8 @@ let DmgAttr = {
       let title = typeof buff.title === 'function' ? buff.title(ds) : buff.title
 
       if (buff.mastery) {
-        let mKey: Record<string, string> = { vaporize: '蒸发', melt: '融化', swirl: '扩散' }
-        let mKey2: Record<string, string> = { aggravate: '超激化', spread: '蔓激化' }
+        let mKey: Record<string, string> = { vaporize: $t("panel-damage-rules.DmgAttr.text_d8c812aa9f"), melt: $t("panel-damage-rules.DmgAttr.text_3ad2d041d4"), swirl: $t("panel-damage-rules.DmgAttr.text_46f1d54dc9") }
+        let mKey2: Record<string, string> = { aggravate: $t("panel-damage-rules.DmgAttr.text_9278c673c4"), spread: $t("panel-damage-rules.DmgAttr.text_6e8c43a177") }
         let mastery = Math.max(0, (attr.mastery?.base || 0) + (attr.mastery?.plus || 0))
         buff.data = buff.data || {}
         let key = buff.mastery

@@ -1,12 +1,15 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 import { Format } from '../format.ts'
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.tingyun.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '赐福提高攻击力上限',
+  title: $t("panel-damage-rules.characters.tingyun.text_5564239ac1"),
   dmg: ({ attr, calc, talent }) => {
     return {
       avg: calc(attr.atk!) * talent.e!['攻击力上限']!,
@@ -14,7 +17,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '终结技伤害提高',
+  title: $t("panel-damage-rules.characters.tingyun.text_95c246490c"),
   dmg: ({ talent }) => {
     return {
       avg: Format.percent(talent.q!['伤害提高']!),
@@ -27,7 +30,7 @@ export const defDmgIdx = 1
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-止厄：普攻造成的伤害提高40%',
+  title: $t("panel-damage-rules.characters.tingyun.text_5d16c5e1f1"),
   tree: 2,
   data: {
     aDmg: 40

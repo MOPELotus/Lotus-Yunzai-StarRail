@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
+import messageCatalog from "./i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { layoutTrialDamageTitles, trialDamageTitleLineHeight } from "../../lib/panel-trial-display.ts";
 // Native drawing of the Star Rail profile-detail layout. Geometry and artwork follow
 // the fixed MIT Miao reference in panel-theme/character/profile-detail.{html,css}.
@@ -13,9 +16,9 @@ const white = "#fff", gold = "#ffe699", tan = "#d3bc8e";
 const dark = "rgba(0,0,0,.4)", darkOdd = "rgba(50,50,50,.4)";
 const elementNames: Readonly<Record<string, string>> = { 风: "anemo", 雷: "electro", 冰: "cryo", 火: "pyro", 虚数: "geo", 量子: "quantum", 物理: "sr" };
 const attributeLabels = [
-  ["hp", "生命值", 1], ["atk", "攻击力", 2], ["def", "防御力", 3], ["speed", "速度", 10],
-  ["cpct", "暴击率", 5], ["cdmg", "暴击伤害", 6], ["dmg", "伤害加成", 8], ["stance", "击破特攻", 4],
-  ["effPct", "效果命中", 11], ["effDef", "效果抵抗", 12], ["heal", "治疗加成", 9], ["joy", "欢愉度", 13],
+  ["hp", $t("panel-detail-skia.text_1a256e6376"), 1], ["atk", $t("panel-detail-skia.text_b84ee11f4f"), 2], ["def", $t("panel-detail-skia.text_1cb579e6ba"), 3], ["speed", $t("panel-detail-skia.text_0e14d148b4"), 10],
+  ["cpct", $t("panel-detail-skia.text_d4b0baf955"), 5], ["cdmg", $t("panel-detail-skia.text_15bccc3951"), 6], ["dmg", $t("panel-detail-skia.text_4da2b666c4"), 8], ["stance", $t("panel-detail-skia.text_13d58c9c3a"), 4],
+  ["effPct", $t("panel-detail-skia.text_84c7536950"), 11], ["effDef", $t("panel-detail-skia.text_c9a7dcf1f7"), 12], ["heal", $t("panel-detail-skia.text_6f2eca7102"), 9], ["joy", $t("panel-detail-skia.text_cbfad500aa"), 13],
 ] as const;
 // Calculation snapshots retain full precision; the original panel displays short decimal values.
 function panelStat(value: string | undefined) {
@@ -24,11 +27,11 @@ function panelStat(value: string | undefined) {
   if (!Number.isFinite(number)) return value;
   return number.toLocaleString("en-US", { useGrouping: value.includes(","), maximumFractionDigits: 1 }) + (value.endsWith("%") ? "%" : "");
 }
-const skillNames = { a: "普攻", e: "战技", t: "天赋", q: "爆发", me: "忆灵技", mt: "忆灵天赋", xe: "欢愉技" } as const;
+const skillNames = { a: $t("panel-detail-skia.text_8b79df27ba"), e: $t("panel-detail-skia.text_6d8c868f52"), t: $t("panel-detail-skia.text_866e2e6d67"), q: $t("panel-detail-skia.text_2f2c7421e9"), me: $t("panel-detail-skia.text_79bd79472f"), mt: $t("panel-detail-skia.text_2df39f9d63"), xe: $t("panel-detail-skia.text_a9613395e7") } as const;
 const rankColors: Readonly<Record<string, string>> = { ACE: "#e85656", MAX: "#e85656", SSS: gold, SS: gold, S: "#d699ff", A: "#d699ff" };
 const relicShortTitles: Readonly<Record<string, string>> = {
-  hp: "生命", hpPlus: "生命", atk: "攻击", atkPlus: "攻击", def: "防御", defPlus: "防御",
-  cpct: "暴击", cdmg: "爆伤", recharge: "充能", effPct: "命中", effDef: "抵抗", stance: "击破",
+  hp: $t("panel-detail-skia.text_45bc77bc1c"), hpPlus: $t("panel-detail-skia.text_45bc77bc1c"), atk: $t("panel-detail-skia.text_8226ca02ff"), atkPlus: $t("panel-detail-skia.text_8226ca02ff"), def: $t("panel-detail-skia.text_75ba7a5727"), defPlus: $t("panel-detail-skia.text_75ba7a5727"),
+  cpct: $t("panel-detail-skia.text_59d499d937"), cdmg: $t("panel-detail-skia.text_c750f692ee"), recharge: $t("panel-detail-skia.text_c0c253c271"), effPct: $t("panel-detail-skia.text_393df9bb13"), effDef: $t("panel-detail-skia.text_0d40173188"), stance: $t("panel-detail-skia.text_092a6b7674"),
 };
 
 async function loadArt(model: Model, theme: string) {
@@ -79,7 +82,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
   const damageY = relicY + relicRows * 200 + (relicRows ? 10 : 0);
   const damageComparison = damageRows.some(row => row.change !== undefined);
   const damageRowHeight = damageComparison ? 54 : 40;
-  const rows = [{ title: "伤害类型", critical: "暴击伤害", average: "期望伤害", change: undefined }, ...damageRows];
+  const rows = [{ title: $t("panel-detail-skia.text_9b65f38ca8"), critical: $t("panel-detail-skia.text_15bccc3951"), average: $t("panel-detail-skia.text_d5f4617e07"), change: undefined }, ...damageRows];
   measure.font = `15px ${font.body}`;
   const titles = layoutTrialDamageTitles(rows, damageRowHeight, model.trialTitleMode, line => measure.measureText(line).width <= 201);
   const damageHeight = damageRows.length ? 75 + titles.height : 0;
@@ -154,7 +157,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
     ctx.shadowOffsetY = 2;
     text(data.name, 580, 51, 50, white, "right", false, true, 545);
     measure.font = `18px ${font.body}`;
-    const soul = `${data.cons}魂`, soulWidth = Math.ceil(measure.measureText(soul).width) + 12;
+    const soul = $t("panel-detail-skia.text_70593aa83c", { "cons": data.cons }), soulWidth = Math.ceil(measure.measureText(soul).width) + 12;
     fill(ctx, soulColors[Number(data.cons)] ?? soulColors[0]!, 580 - soulWidth, 79, soulWidth, 21, 4);
     text(soul, 580 - soulWidth / 2, 90, 18, white, "center");
     text(`UID ${model.uid} - Lv.${data.level}`, 574 - soulWidth, 90, 18, white, "right");
@@ -192,7 +195,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
     const extra = Boolean(data.imgs.consEx);
     for (let i = 1; i <= 6; i++) icon(data.imgs[`cons${i}`], 15 + (i - 1) * 40, extra ? 420 : 465, 50, 50, i <= Number(data.cons));
     if (extra) icon(data.imgs.consEx, 15, 468, 50, 50, data.exCons > 0);
-    text([`数据源：${data.dataSource}`, data.updateTime].filter(Boolean).join("  "), 585, 520, 12, "#fffd", "right", false, false, 560);
+    text([$t("panel-detail-skia.text_f9124d8645", { "dataSource": data.dataSource }), data.updateTime].filter(Boolean).join("  "), 585, 520, 12, "#fffd", "right", false, false, 560);
 
     const extras = model.hsr_paths === "记忆" ? ["me", "mt"] as const : model.charWeapon === "欢愉" ? ["xe"] as const : [];
     const skills = ["a", "e", "t", "q", ...extras] as const;
@@ -236,7 +239,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       measure.font = `18px ${font.body}`;
       const labelWidth = Math.min(237, measure.measureText(weapon.name).width);
       text(weapon.name, 210, 638, 18, tan, "left", false, false, 237);
-      text(`Lv.${weapon.level} 叠影${weapon.affix}阶`, 216 + labelWidth, 640, 14, white, "left", false, false, 354 - labelWidth);
+      text($t("panel-detail-skia.text_7853fdc62a", { "level": weapon.level, "affix": weapon.affix }), 216 + labelWidth, 640, 14, white, "left", false, false, 354 - labelWidth);
       let x = 210;
       for (const key of ["hp", "atk", "def"] as const) {
         measure.font = `12px ${font.body}`;
@@ -261,8 +264,8 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
     if (artisDetail.mark !== undefined) {
       box(10, summaryY, 575, 103);
       fill(ctx, dark, 10, summaryY, 185, 103);
-      text("遗器总分", 70, summaryY + 22, 12, "#ddd", "center");
-      text("遗器评级", 153, summaryY + 22, 12, "#ddd", "center");
+      text($t("panel-detail-skia.text_562b5ec995"), 70, summaryY + 22, 12, "#ddd", "center");
+      text($t("panel-detail-skia.text_f8a1198a68"), 153, summaryY + 22, 12, "#ddd", "center");
       text(artisDetail.mark, 70, summaryY + 49, 30, white, "center", true);
       text(artisDetail.markClass, 153, summaryY + 49, 30, rankColors[artisDetail.markClass ?? ""] ?? white, "center", true);
       artisDetail.allAttr.forEach((stat, index) => {
@@ -271,8 +274,8 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
         if (stat) relicStat(stat, x, y, 130, false, true);
       });
       fill(ctx, "#000b", 10, summaryY + 78, 575, 25);
-      text(`评分规则：${artisDetail.classTitle ?? ""}`, 102.5, summaryY + 91, 11, white, "center");
-      text(`使用 *${data.abbr}遗器 查看评分详情`, 390, summaryY + 91, 10, "#ddd", "center");
+      text($t("panel-detail-skia.text_8f5dcadbfa", { "value1": artisDetail.classTitle ?? "" }), 102.5, summaryY + 91, 11, white, "center");
+      text($t("panel-detail-skia.text_ee4b18328a", { "abbr": data.abbr }), 390, summaryY + 91, 10, "#ddd", "center");
       closeBox(10, summaryY, 575, 103);
     }
     artisDetail.artis.forEach((part, index) => {
@@ -291,7 +294,7 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
       rounded(ctx, x, y, 185, 190, 10);
       ctx.clip();
       text(part.abbr || part.name, x + 15, y + 25, 15, white, "left", true, false, 161);
-      if (part.markClass) text(`${part.mark}分 - ${part.markClass}`, x + 15, y + 45, 14, rankColors[part.markClass] ?? white, "left", true);
+      if (part.markClass) text($t("panel-detail-skia.text_37b08c3e12", { "mark": part.mark, "markClass": part.markClass }), x + 15, y + 45, 14, rankColors[part.markClass] ?? white, "left", true);
       fill(ctx, "#000c", x + 151, y + 38, 27, 18, 4);
       if (part.level !== "") text("+" + part.level, x + 164.5, y + 47, 12, white, "center");
       [part.main, ...part.attrs].forEach((stat, i) => {
@@ -306,8 +309,8 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
     if (damageHeight) {
       box(10, damageY, 575, damageHeight);
       fill(ctx, dark, 10, damageY, 575, 40);
-      text("伤害计算", 30, damageY + 20, 16, tan);
-      text(damageComparison ? "与换装前相比" : `使用 *${data.abbr}伤害 查看伤害详情`, 109, damageY + 20, 12, "#bbb");
+      text($t("panel-detail-skia.text_393374d45e"), 30, damageY + 20, 16, tan);
+      text(damageComparison ? $t("panel-detail-skia.text_287d1f01f4") : $t("panel-detail-skia.text_103a85f2c7", { "abbr": data.abbr }), 109, damageY + 20, 12, "#bbb");
       rows.forEach((row, index) => {
         const { lines, top, height: rowHeight } = titles.rows[index]!;
         const y = damageY + 40 + top;
@@ -328,8 +331,8 @@ export async function renderStarRailPanelDetail(model: Model, theme: string, mod
         }
       });
       fill(ctx, "#0008", 10, damageY + damageHeight - 35, 575, 35);
-      text("目标为80级弱点敌人", 25, damageY + damageHeight - 17, 12, "#bbb");
-      if (model.damageAuthor) text(`伤害计算来源：${model.damageAuthor}`, 573, damageY + damageHeight - 17, 12, tan, "right");
+      text($t("panel-detail-skia.text_f399cbc997"), 25, damageY + damageHeight - 17, 12, "#bbb");
+      if (model.damageAuthor) text($t("panel-detail-skia.text_b1cf75c193", { "damageAuthor": model.damageAuthor }), 573, damageY + damageHeight - 17, 12, tan, "right");
       closeBox(10, damageY, 575, damageHeight);
     }
     text(model.cardBrand, width / 2, height - 18, 14, white, "center");

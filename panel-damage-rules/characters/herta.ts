@@ -1,16 +1,19 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.herta.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.herta.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.herta.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
-  title: '追加攻击',
+  title: $t("panel-damage-rules.characters.herta.text_28960b911a"),
   dmg: ({ talent }, dmg) => dmg(talent.t!['技能伤害']!, 't')
 }]
 
@@ -18,41 +21,41 @@ export const defDmgIdx = 2
 export const mainAttr = 'atk,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '秘技：攻击力提高[atkPct]%',
+  title: $t("panel-damage-rules.characters.herta.text_fa30a77d67"),
   data: {
     atkPct: 40
   }
 }, {
-  title: '行迹-效率：战技伤害提高25%',
+  title: $t("panel-damage-rules.characters.herta.text_5ff5af69ad"),
   tree: 1,
   data: {
     eDmg: 25
   }
 }, {
-  title: '行迹-冰结：施放终结技时，对冻结状态下的敌人造成的伤害提高20%',
+  title: $t("panel-damage-rules.characters.herta.text_09a19d8ae9"),
   tree: 3,
   data: {
     qDmg: 20
   }
 }, {
-  title: '战技：对生命值百分比大于等于50%的目标，战技造成的伤害提高20%',
+  title: $t("panel-damage-rules.characters.herta.text_ec71b4e376"),
   data: {
     eDmg: 20
   }
 }, {
-  title: '黑塔2命：叠满5层时，暴击率提高15%',
+  title: $t("panel-damage-rules.characters.herta.text_05104f3d7a"),
   cons: 2,
   data: {
     cpct: 15
   }
 }, {
-  title: '黑塔4命：天赋追加攻击造成的伤害提高10%',
+  title: $t("panel-damage-rules.characters.herta.text_f13ca55861"),
   cons: 4,
   data: {
     tDmg: 10
   }
 }, {
-  title: '黑塔6命：施放终结技后，攻击力提高25%',
+  title: $t("panel-damage-rules.characters.herta.text_7934e2a5dd"),
   cons: 6,
   data: {
     atkPct: 25

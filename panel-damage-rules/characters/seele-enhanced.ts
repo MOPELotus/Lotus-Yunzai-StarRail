@@ -1,55 +1,58 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 export const details: DamageDetail[] = [{
-  title: '普攻伤害',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_a900baa1d0"),
   dmg: ({ talent }, dmg) => dmg(talent.a!['技能伤害']!, 'a')
 }, {
-  title: '战技伤害',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_aef3538851"),
   dmg: ({ talent }, dmg) => dmg(talent.e!['技能伤害']!, 'e')
 }, {
-  title: '终结技伤害',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_b6a5fc7f30"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']!, 'q')
 }, {
   check: ({ cons }) => cons === 6,
-  title: '6命乱蝶附加伤害',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_ea9d73ecb3"),
   dmg: ({ talent }, dmg) => dmg(talent.q!['技能伤害']! * 0.3, 'q')
 }]
 
 export const defDmgIdx = 2
 export const mainAttr = 'atk,cpct,cdmg,speed'
-export const createdBy = '欧阳青瓜'
+export const createdBy = $t("panel-damage-rules.characters.seele-enhanced.text_7ad80046cc")
 
 export const buffs: Buff[] = [{
-  title: '希儿天赋：击杀敌人增幅状态提高伤害[dmg]%',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_65d15126d6"),
   data: {
     dmg: ({ talent }) => talent.t!['伤害提高']! * 100
   }
 }, {
-  title: '希儿战技：释放战技后，速度提高25%',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_78d34729ee"),
   maxCons: 1,
   data: {
     speedPct: 25
   }
 }, {
-  title: '行迹-夜行：消灭敌方目标时，使自身造成的伤害提高50%，该效果最多叠加3层',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_1311c8a314"),
   tree: 1,
   data: {
     dmg: 50 * 3
   }
 }, {
-  title: '行迹-割裂：抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_a2fdae288e"),
   tree: 2,
   data: {
     kx: 25
   }
 }, {
-  title: '希儿1命：对生命小于80%的敌人造成伤害时，暴击率提高15%',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_e26bb5bb3d"),
   cons: 1,
   data: {
     cpct: 15
   }
 }, {
-  title: '希儿2命：释放战技后，2层Buff速度提高50%',
+  title: $t("panel-damage-rules.characters.seele-enhanced.text_56b97bf90d"),
   cons: 2,
   data: {
     speedPct: 25

@@ -1,3 +1,6 @@
+import { createTranslator as createTextTranslator } from "../../../../packages/i18n/index.ts";
+import messageCatalog from "../../i18n/zh-CN.json";
+const $t = createTextTranslator("starrail", messageCatalog.messages);
 import type { DamageDetail, Buff } from "../types.ts";
 
 import { Format } from '../format.ts'
@@ -6,16 +9,16 @@ import { Format } from '../format.ts'
 const getAtmosphere = (cons: number) => cons >= 2 ? 70 : 44
 
 export const details: DamageDetail[] = [{
-  title: '忆灵攻击伤害',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_d2239bb62d"),
   dmg: ({ talent, cons, calc, attr }, { basic }) => basic(calc(attr.hp!) * 0.7 * talent.me!['技能伤害']! * (cons >= 6 ? 2 : 1), 'me')
 }, {
-  title: '攻击力提高',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_563aceb11b"),
   dmg: ({ cons, calc, attr }) => {
     const avg = Math.round(calc(attr.hp!) * (0.16 + getAtmosphere(cons) * 0.004) * 10) / 10
     return { avg, display: String(avg), metric: 'support' }
   }
 }, {
-  title: '爆伤提高',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_685bab63c5"),
   dmg: ({ cons }) => {
     return {
       avg: Format.percent(0.4 + getAtmosphere(cons) * 0.015),
@@ -23,7 +26,7 @@ export const details: DamageDetail[] = [{
     }
   }
 }, {
-  title: '无视防御力',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_46530c3cb1"),
   dmg: ({ talent, cons }) => {
     return {
       avg: Format.percent(talent.t!['无视防御']! + getAtmosphere(cons) * 0.005),
@@ -37,31 +40,31 @@ export const defParams = { Memosprite: true }
 export const mainAttr = 'hp,speed,cpct,cdmg'
 
 export const buffs: Buff[] = [{
-  title: '行迹-重构谐乐：知更鸟•晴歌与「晴空乐手」的暴击率提高[cpct]%',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_e6a66eb69e"),
   tree: 3,
   data: {
     cpct: 50
   }
 }, {
-  title: '忆灵天赋-扑翅雀跃的和声：处于【Fever】状态时，知更鸟•晴歌与自身造成的伤害提高[dmg]%（气氛值[_atmosphere]点）',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_9cc80617c0"),
   data: {
     _atmosphere: ({ cons }) => getAtmosphere(cons),
     dmg: ({ talent, cons }) => (talent.mt!['伤害提高1']! + getAtmosphere(cons) * talent.mt!['伤害提高2']!) * 100
   }
 }, {
   check: ({ params }) => params.Memosprite === true,
-  title: '忆灵天赋-扑翅雀跃的和声：「晴空乐手」在场时，敌方全体受到的伤害提高[enemydmg]%（按3名成员计算）',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_28bc433cd7"),
   data: {
     enemydmg: ({ talent }) => talent.mt!['受到的伤害提高3']! * 100
   }
 }, {
-  title: '天赋-巡游在无界的天空：结界内我方目标造成伤害时无视敌方目标[ignore]%防御力（气氛值[_atmosphere]点）',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_e50ea80a91"),
   data: {
     _atmosphere: ({ cons }) => getAtmosphere(cons),
     ignore: ({ talent, cons }) => (talent.t!['无视防御']! + getAtmosphere(cons) * 0.005) * 100
   }
 }, {
-  title: '知更鸟•晴歌2魂：我方目标的全属性抗性穿透提高[kx]%',
+  title: $t("panel-damage-rules.characters.robin-dahlia.text_c8fecbf156"),
   cons: 2,
   data: {
     kx: 18
