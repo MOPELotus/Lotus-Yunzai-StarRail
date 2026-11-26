@@ -695,7 +695,7 @@ export function createStarRailPanel(
       for (const model of models) {
         await verify();
         const native = "damageRows" in model ? renderStarRailPanelDetail(model, theme.root, "auto", context?.inlineImageByteLimit)
-          : "chars" in model ? renderStarRailPanelList(model, theme.root)
+          : "chars" in model ? renderStarRailPanelList(model, theme.root, "auto", context?.inlineImageByteLimit)
             : renderStarRailRelicMark(model, theme.root);
         const result = await native.then(card => [card.png]).catch(() => false as const);
         if (!result) {

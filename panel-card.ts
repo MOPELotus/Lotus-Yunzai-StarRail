@@ -248,27 +248,22 @@ export async function makePanelListCards(snapshot: PanelSnapshot, theme: Metadat
     const catalog = lookup(avatar, theme);
     return { avatar, ...catalog, star: avatar.rarity ?? whole(catalog.meta?.star, 5) };
   }).sort((a, b) => (b.star ?? 0) - (a.star ?? 0) || (b.avatar.level ?? 0) - (a.avatar.level ?? 0) || Number(b.avatar.id) - Number(a.avatar.id));
-  const pages = [];
+  if (!avatars.length) return [];
+  const chars = [];
   const artSignal = localOnly ? AbortSignal.abort() : AbortSignal.any([signal, AbortSignal.timeout(6000)]);
-  const pageSize = 48;
-  for (let start = 0; start < avatars.length; start += pageSize) {
-    const chars = [];
-    const end = Math.min(start + pageSize, avatars.length);
-    for (let offset = start; offset < end; offset += 8) {
-      signal.throwIfAborted();
-      chars.push(...await Promise.all(avatars.slice(offset, Math.min(offset + 8, end)).map(async ({ avatar, name, abbr, star }) => ({
-        face: (qFace && await localArt(theme, ["character", name, "imgs", "face-q.webp"]))
-          || await localArt(theme, ["character", name, "imgs", "face.webp"]) || await remoteArt(avatar.face, artSignal),
-        abbr, star: star ?? "", cons: avatar.rank ?? "—", exCons: avatar.exCons ?? 0, isNew: updated,
-      }))));
-    }
-    pages.push(preparedModel(theme, "profile-list", {
-      chars, uid: snapshot.uid, profileSuffix: profileId === 1 ? "" : profileId, hasNew: updated,
-      msg: updated ? $t("panel-card.text_bb59489428", { "length": avatars.length }) : "",
-      updateTime: { profile: formatDate(snapshot.updatedAt) }, servName: fieldsSource(snapshot),
-    }));
+  for (let offset = 0; offset < avatars.length; offset += 8) {
+    signal.throwIfAborted();
+    chars.push(...await Promise.all(avatars.slice(offset, offset + 8).map(async ({ avatar, name, abbr, star }) => ({
+      face: (qFace && await localArt(theme, ["character", name, "imgs", "face-q.webp"]))
+        || await localArt(theme, ["character", name, "imgs", "face.webp"]) || await remoteArt(avatar.face, artSignal),
+      abbr, star: star ?? "", cons: avatar.rank ?? "—", exCons: avatar.exCons ?? 0, isNew: updated,
+    }))));
   }
-  return pages;
+  return [preparedModel(theme, "profile-list", {
+    chars, uid: snapshot.uid, profileSuffix: profileId === 1 ? "" : profileId, hasNew: updated,
+    msg: updated ? $t("panel-card.text_bb59489428", { "length": avatars.length }) : "",
+    updateTime: { profile: formatDate(snapshot.updatedAt) }, servName: fieldsSource(snapshot),
+  })];
 }
 
 const practiceSkills = ["a", "e", "q", "t"] as const;

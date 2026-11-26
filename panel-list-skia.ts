@@ -2,16 +2,15 @@ import { createTranslator as createTextTranslator } from "../../packages/i18n/in
 import messageCatalog from "./i18n/zh-CN.json";
 const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { Canvas } from "skia-canvas";
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard } from "./render-card.ts";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import type { makePanelListCards } from "./panel-card.ts";
 
 type Model = Awaited<ReturnType<typeof makePanelListCards>>[number];
 const width = 650;
-const density = 4;
 const bodyX = 10, bodyWidth = 625, columns = 8, cardWidth = 75, cardHeight = 96;
 
-export async function renderStarRailPanelList(model: Model, theme: string, mode: "auto" | "gpu" = "auto") {
+export async function renderStarRailPanelList(model: Model, theme: string, mode: "auto" | "gpu" = "auto", inlineImageByteLimit?: number) {
   const font = typography(theme);
   const [background, texture, stars, faces] = await Promise.all([
     themeArt(theme, "common/bg/bg-sr.webp"),
@@ -25,8 +24,7 @@ export async function renderStarRailPanelList(model: Model, theme: string, mode:
   const height = footerTop + 35 + 37;
   const measure = new Canvas(1, 1).getContext("2d");
 
-  return renderPng(width * density, height * density, ctx => {
-    ctx.scale(density, density);
+  return renderStarRailCard(width, height, ctx => {
     const text = styles(ctx, font);
     fill(ctx, "#242e45", 0, 0, width, height);
     picture(ctx, background, 0, 0, width, height, "cover", 0, 0);
@@ -103,5 +101,5 @@ export async function renderStarRailPanelList(model: Model, theme: string, mode:
     ctx.strokeStyle = "#ffffff40";
     ctx.stroke();
     text(model.cardBrand, width / 2, height - 18, 14, "#fff", "center");
-  }, mode, { allowHalfScale: true });
+  }, { mode, inlineImageByteLimit });
 }
