@@ -137,7 +137,7 @@ describe("Star Rail personal damage", () => {
     expect(calculateStarRailPersonalDamage({ ...avatar, cone: { ...avatar.cone!, id: "23013" } }, metadata, 3)).toBeUndefined();
     expect(calculateStarRailPersonalDamage({
       ...avatar, relics: avatar.relics.map((part, i) => i > 3 ? { ...part, id: String(i) } : part),
-    }, metadata, 3)).toBeUndefined();
+    }, { ...metadata, setForId: (id: string) => id.length === 1 ? "fixture-unknown-set" : metadata.setForId(id) }, 3)).toBeUndefined();
   });
 });
 

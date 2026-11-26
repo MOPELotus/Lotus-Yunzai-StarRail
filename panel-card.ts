@@ -638,15 +638,12 @@ export async function readPanelRankAvatar(avatar: PanelAvatar, theme: Metadata, 
   }));
 
   let damage: { title: string; value: string } | undefined;
-  if (avatar.cone && avatar.legacy?.dataComplete) {
+  if (avatar.cone) {
     const metadata = await readPanelDamageMetadata(avatar, theme);
     const result = metadata && readStarRailPersonalDamage(avatar, metadata).damage;
     const expected = result?.rows[result.selected];
     if (expected?.average && Number.isFinite(expected.average)) {
-      let title = expected.title;
-      if (title.length > 10) title = title.replace(/[ ·]/gu, "");
-      if (title.length > 10) title = title.replace(/伤害$/u, "");
-      damage = { title, value: expected.display ?? expected.percentage ??
+      damage = { title: expected.title, value: expected.display ?? expected.percentage ??
         new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 }).format(expected.average) };
     }
   }

@@ -348,4 +348,219 @@ export default {
     2: attr('speedPct', 6),
     4: { check: ({ params }) => Number(params.certifiedBanger) >= 10, title: $t("panel-damage-rules.relics.text_ad98af6126"), data: { cpct: 12 } }
   },
+  激奏雷电的乐队: {
+    2: attr('elec', 10),
+    4: {
+      title: $t("panel-damage-rules.relics.text_19e0b06704"),
+      data: {
+        atkPct: 20
+      }
+    }
+  },
+  晨昏交界的翔鹰: {
+    2: attr('wind', 10)
+  },
+  星体差分机: {
+    2: attr('cdmg', 16)
+  },
+  生命的翁瓦克: {
+    2: attr('recharge', 5)
+  },
+  折断的龙骨: {
+    2: [attr('effDef', 10), {
+      title: $t("panel-damage-rules.relics.text_3889fe59c1"),
+      check: ({ calc, attr }) => calc(attr.effDef!) >= 30,
+      data: {
+        cdmg: 10
+      }
+    }]
+  },
+  梦想之地匹诺康尼: {
+    2: [attr('recharge', 5), {
+      title: $t("panel-damage-rules.relics.text_3447662da7"),
+      data: {
+        dmg: 10
+      }
+    }]
+  },
+  无主荒星茨冈尼亚: {
+    2: [attr('cpct', 4), {
+      title: $t("panel-damage-rules.relics.text_07f26ce741"),
+      data: {
+        cdmg: 40
+      }
+    }]
+  },
+  出云显世与高天神国: {
+    2: [attr('atkPct', 12), {
+      title: $t("panel-damage-rules.relics.text_f29e1d11bb"),
+      data: {
+        cpct: 12
+      }
+    }]
+  },
+  奇想蕉乐园: {
+    2: [attr('cdmg', 16), {
+      title: $t("panel-damage-rules.relics.text_1cf9c6380b"),
+      data: {
+        cdmg: 32
+      }
+    }]
+  },
+  沉陆海域露莎卡: {
+    2: attr('recharge', 5)
+  },
+  重循苦旅的司铎: {
+    2: attr('speedPct', 6)
+  },
+  烈阳惊雷的女武神: {
+    2: attr('speedPct', 6),
+    4: {
+      title: $t("panel-damage-rules.relics.text_4f2af4ef81"),
+      data: {
+        speedPct: 6,
+        cdmg: 15
+      }
+    }
+  },
+  恶海逐波的船长: {
+    2: attr('cdmg', 16),
+    4: {
+      title: $t("panel-damage-rules.relics.text_8b0468d2d9"),
+      data: {
+        atkPct: 48
+      }
+    }
+  },
+  妖精织梦的乐园: {
+    2: {
+      title: $t("panel-damage-rules.relics.text_a522f03e05"),
+      data: {
+        dmg: 36
+      }
+    }
+  },
+  沉欢醉饮的海隅: {
+    2: [attr('atkPct', 12), {
+      check: ({ calc, attr }) => calc(attr.atk!) >= 2400,
+      title: $t("panel-damage-rules.relics.text_3c3f4a10df"),
+      data: {
+        _atk: ({ attr }) => attr.atk! < 3600 ? 2400 : 3600,
+        dotDmg: ({ attr }) => attr.atk! < 3600 ? 12 : 24
+      }
+    }]
+  },
+  自匿星芒的隐士: {
+    2: attr('shield', 10),
+    4: {
+      title: $t("panel-damage-rules.relics.text_4b1cbb4cd0"),
+      data: {
+        shield: 12
+      }
+    }
+  },
+  再创天地的救世主: {
+    2: attr('cpct', 8),
+    4: {
+      check: ({ params }) => params.Memosprite,
+      title: $t("panel-damage-rules.relics.text_e8a6871b5c"),
+      data: {
+        hpPct: 24,
+        dmg: 15
+      }
+    }
+  },
+  永恒之地翁法罗斯: {
+    2: [
+      attr('cpct', 8), {
+        check: ({ params }) => params.Memosprite,
+        title: $t("panel-damage-rules.relics.text_49fef6e6f6"),
+        data: {
+          speedPct: 8
+        }
+      }]
+  },
+  '天国@直播间': {
+    2: [attr('cdmg', 16), {
+      title: $t("panel-damage-rules.relics.text_e7db47f46f"),
+      data: {
+        cdmg: 32
+      }
+    }]
+  },
+  闪耀功勋的魔法少女: {
+    2: attr('cdmg', 16),
+    4: [attr('ignore', 10), {
+      title: $t("panel-damage-rules.relics.text_d6f59ba3ec"),
+      data: {
+        _buffCount: ({ params }) => params.tArtisBuffCount || 10,
+        xeIgnore: ({ params }) => Number(params.tArtisBuffCount || 10) * 1
+      }
+    }]
+  },
+  应天涉远的卜者: {
+    2: attr('speedPct', 6),
+    4: {
+      title: $t("panel-damage-rules.relics.text_50e55d703f"),
+      data: {
+        _speed: ({ attr, calc }) => calc(attr.staticAttr!.speed!) < 160 ? calc(attr.staticAttr!.speed!) < 120 ? 0 : 120 : 160,
+        cpct: ({ attr, calc }) => calc(attr.staticAttr!.speed!) < 160 ? calc(attr.staticAttr!.speed!) < 120 ? 0 : 10 : 18,
+        joy: 10
+      }
+    }
+  },
+  千星荟萃之城: {
+    2: [{
+      title: $t("panel-damage-rules.relics.text_943ef2420d"),
+      data: {
+        atkPct: 24,
+        cdmg: 12
+      }
+    }]
+  },
+  星如我见的领航员: {
+    2: attr('atkPct', 12),
+    4: {
+      title: $t("panel-damage-rules.relics.text_75df66ceec"),
+      data: {
+        eDmg: 54,
+        qDmg: 54
+      }
+    }
+  },
+  叩问天工的名冶: {
+    2: attr('hpPct', 12),
+    4: {
+      title: $t("panel-damage-rules.relics.text_99aa66961f"),
+      data: {
+        cdmg: 28,
+        dmg: 15
+      }
+    }
+  },
+  寰宇生研院: {
+    2: [{
+      check: ({ attr }) => attr.sp! >= 200,
+      title: $t("panel-damage-rules.relics.text_e668507e6f"),
+      data: {
+        dmg: ({attr}) => {return (attr.sp! - 200) * 0.2 > 32 ? 32 : (attr.sp! - 200) * 0.2}
+      }
+    }]
+  },
+  坠星启航地: {
+    2: [attr('cpct', 8), {
+      title: $t("panel-damage-rules.relics.text_b1aa291d7e"),
+      data: {
+        cdmg: 32
+      }
+    }]
+  },
+  亚空异容所: {
+    2: [attr('speedPct', 6), {
+      title: $t("panel-damage-rules.relics.text_73f3f7259a"),
+      sort: 9,
+      check: ({ attr, calc, params }) => Number(params.entrySpeed ?? calc(attr.speed!)) >= 145 && params.subspaceBuffAlreadyApplied !== true,
+      data: { stance: 18 }
+    }]
+  },
 } satisfies Record<string, Record<number, Buff | Buff[]>>

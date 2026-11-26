@@ -120,13 +120,26 @@ function normalizeAvatar(input: unknown, provider: ShowcaseProvider) {
     talent, trees: skillRows.length ? trees : undefined, artis: normalizeRelics(avocado ? row.relics : row.relicList, avocado) };
 }
 
+function matchesShowcaseRegion(value: unknown, expected: string) {
+  if (value === undefined) return true;
+  if (normalizeStarRailRegion(value) === expected) return true;
+  if (typeof value !== "string") return false;
+  const region = value.toUpperCase();
+  if (region === "CN") return expected === "prod_gf_cn" || expected === "prod_qd_cn";
+  const aliases: Readonly<Record<string, string>> = {
+    USA: "prod_official_usa", US: "prod_official_usa", EU: "prod_official_eur",
+    EUR: "prod_official_eur", ASIA: "prod_official_asia", CHT: "prod_official_cht",
+  };
+  return aliases[region] === expected;
+}
+
 function normalizeShowcase(input: unknown, { uid, region, provider }: ReturnType<typeof showcaseTarget>, started: Date): PanelSnapshot {
   const root = object(input), avocado = provider === "avocado";
   const profile = object(avocado ? root?.playerDetailInfo : root?.detailInfo);
   const claimed = [root?.uid, profile?.uid].filter(value => value !== undefined);
   if (!profile) throw new ShowcaseError($t("panel-showcase.text_d96b3bfb80"), true);
   const regions = [root?.region, profile.region, root?.server, profile.server];
-  if (!claimed.length || claimed.some(value => id(value) !== uid) || regions.some(value => value !== undefined && normalizeStarRailRegion(value) !== region)) {
+  if (!claimed.length || claimed.some(value => id(value) !== uid) || regions.some(value => !matchesShowcaseRegion(value, region))) {
     throw new ShowcaseError($t("panel-showcase.text_eda86548e9"));
   }
   const assist = avocado ? (profile.assistAvatar ? [profile.assistAvatar] : [])

@@ -1,3 +1,5 @@
+import { loadGroupRankQqAvatars } from "../../lib/group-rank-qq-avatars.ts";
+import { loadImage } from "skia-canvas";
 import { rankLabelLayout } from "../../lib/rank-label-layout.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
@@ -14,6 +16,7 @@ export const relicRankLabels = { damage: $t("group-relic-rank-card.text_30e11968
 export type RelicRankMetric = keyof typeof relicRankLabels;
 
 export interface RelicRankRow {
+  readonly qq?: string;
   readonly uid: string;
   readonly characterId: string;
   readonly characterName?: string;
@@ -96,7 +99,7 @@ function divider(ctx: Context, x: number, y: number) {
 export async function renderStarRailRelicRank(
   character: Character | undefined, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
   coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark", aggregate?: { readonly title: string; readonly summary: string },
-  publicRanking?: { readonly filters: string; readonly count: number },
+  publicRanking?: { readonly filters: string; readonly count: number }, signal?: AbortSignal,
 ) {
   const maximum = publicRanking ? 50 : maxGroupPanelRankLimit;
   if (!rows.length || rows.length > maximum) throw new RangeError($t("group-relic-rank-card.text_35cabeaebc", { "maximum": maximum }));
@@ -115,12 +118,13 @@ export async function renderStarRailRelicRank(
   const element = aggregate ? "hydro" : elementArt[text(meta?.elem) || rows[0]?.presentation?.element || ""] || "sr";
   const art = (relative: string) => themeArt(theme.root, relative);
   const font = typography(theme.root);
+  const qqFaces = await loadGroupRankQqAvatars(rows.map(row => row.qq), signal);
   const [background, texture, badge, first, talentRing, crown, emptyRelics, rarityFrames, rowImages] = await Promise.all([
     art(`common/bg/bg-${element}.webp`), art("common/cont/card-bg.png"),
     art("character/imgs/mark-icon.png"), art("character/imgs/mark-icon2.png"), art(`common/bg/talent-${element}.webp`),
     art("character/imgs/crown-sr.webp"), art("common/item/artifact-icon.webp"),
     Promise.all([1, 2, 3, 4, 5].map(star => art(`common/item/bg${star}.png`))),
-    Promise.all(rows.map(async ({ characterId, characterName, presentation }) => {
+    Promise.all(rows.map(async ({ qq, characterId, characterName, presentation }) => {
       const name = text(object(theme.characters[characterId])?.name) || characterName || character?.name;
       const fallback = name && !/[\\/\p{Cc}]/u.test(name) && name !== "." && name !== ".."
         ? art(`meta-sr/character/${name}/imgs/face.webp`) : undefined;
@@ -130,7 +134,8 @@ export async function renderStarRailRelicRank(
         Promise.all((presentation?.talents ?? []).map(talent => image(talent.icon))),
         Promise.all((presentation?.sets ?? []).map(set => image(set.icon))),
       ]);
-      return { face, weapon, talents, sets };
+      const qqFace = qq && qqFaces.has(qq) ? await loadImage(qqFaces.get(qq)!).catch(() => undefined) : undefined;
+      return { face, qqFace, weapon, talents, sets };
     })),
   ]);
   const extra = coverage ? 20 : 0;
@@ -216,7 +221,7 @@ export async function renderStarRailRelicRank(
     rows.forEach((row, index) => {
       const y = rowStart + index * 65;
       const known = row.presentation;
-      const { face, weapon, talents, sets } = rowImages[index]!;
+      const { face, qqFace, weapon, talents, sets } = rowImages[index]!;
       const lightCone = known?.lightCone;
       const rowMetric = row.metric ?? metric;
       const badgeVariant = rowMetric === "damage" ? "damage" : "mark";
@@ -229,7 +234,7 @@ export async function renderStarRailRelicRank(
           badgeArt(ctx, badge, badgeVariant, 27, y + 18, 24, 24);
           write(index + 1, 39, y + 30, 12, white, "center");
         }
-        framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, face, true);
+        framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, qqFace ?? face, true);
         if (known?.rank !== undefined) pill(known.rank, soulColors[known.rank] ?? "#666", layout.nameX, y + 13, 16, (known.exCons ?? 0) > 0);
         write(known?.name || row.characterName || character?.name || "", layout.nameX + (known?.rank === undefined ? 0 : 18), y + 21, 18, gold,
           "left", true, false, layout.talentX - layout.nameX - 19);

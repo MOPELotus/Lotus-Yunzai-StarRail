@@ -68,6 +68,12 @@ export function recoverStarRailSkillLevel(skill: string, effective: number, oldR
 const elements: Readonly<Record<string, string>> = {
   Physical: $t("panel-model.text_a454f17872"), Fire: $t("panel-model.text_d4cfe8c82c"), Ice: $t("panel-model.text_ce1b850700"), Thunder: $t("panel-model.text_5de1b913e7"), Wind: $t("panel-model.text_be65bd5518"), Quantum: $t("panel-model.text_14ed0de6a1"), Imaginary: $t("panel-model.text_8908281fc3"),
 };
+export function normalizeStarRailPanelElement(value: string): string {
+  const key = value.toLowerCase();
+  if (key === "lightning" || key === "electric") return elements.Thunder!;
+  const match = Object.keys(elements).find(name => name.toLowerCase() === key);
+  return match ? elements[match]! : value;
+}
 export const officialArtHosts = new Set(["act-webstatic.mihoyo.com", "upload-bbs.mihoyo.com", "fastcdn.mihoyo.com"]);
 const mappedNames: Readonly<Record<string, string>> = names;
 
@@ -323,7 +329,7 @@ function officialAvatar(row: Json): PanelAvatar | undefined {
   const seen = new Set();
   return {
     id: avatarId, name, level, rank: whole(row.rank, 6), exCons: readStarRailExtraEidolon(row, avatarId), rarity: whole(row.rarity, 5),
-    element: elements[rawElement] ?? rawElement, path: text(row.avatar_path ?? row.path), face: safeArt(row.icon ?? row.image),
+    element: normalizeStarRailPanelElement(rawElement), path: text(row.avatar_path ?? row.path), face: safeArt(row.icon ?? row.image),
     splash: safeArt(row.large_icon ?? row.image), stats: array(row.properties).slice(0, 45).flatMap(row => property(row, true) ?? []),
     skills: allSkills.flatMap(row => readOfficialPanelSkill(row) ?? []).filter(row => !seen.has(row.key) && Boolean(seen.add(row.key))),
     traces: allSkills.filter(row => row.point_type !== 2 && !remakeMap[text(row.remake)]).slice(0, 24).map(row => ({
@@ -382,7 +388,7 @@ export function readLegacyPanel(uid: string, source: unknown): PanelSnapshot {
     const stamp = typeof row._time === "string" ? Date.parse(row._time)
       : typeof row._time === "number" && Number.isSafeInteger(row._time) && row._time >= 1e9 && row._time <= 9_999_999_999_999
         ? (row._time < 1e11 ? row._time * 1000 : row._time) : NaN;
-    parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), exCons: readStarRailExtraEidolon(row, avatarId), element: text(row.elem), path: "", face: "", splash: "",
+    parsed.push({ id: avatarId, name, level, rank: whole(row.cons, 6), exCons: readStarRailExtraEidolon(row, avatarId), element: normalizeStarRailPanelElement(text(row.elem)), path: "", face: "", splash: "",
       skills, traces, stars: [], stats: [], legacy: { source, promote: whole(row.promote, 6), updatedAt: Number.isFinite(stamp) ? new Date(stamp).toISOString() : undefined,
         dataComplete: Array.isArray(row.trees) && relics.length === legacyParts.length }, cone: gear && coneId ? { id: coneId, name: text(gear.name), image: "", description: "",
         rank: whole(gear.affix, 5), level: whole(gear.level, 80), promote: whole(gear.promote, 6) } : undefined, relics });

@@ -3708,7 +3708,29 @@
     "personal-roster-card.text_00dfd4ad2c": "Lotus-Yunzai · StarRail",
     "simulation.card.text_00dfd4ad2c": "Lotus-Yunzai · StarRail",
     "team-damage-card.text_00dfd4ad2c": "Lotus-Yunzai · StarRail",
-    "group-rank.refreshing": "正在刷新本群 {count} 个星铁 UID 的完整面板，稍后生成排行。"
+    "group-rank.refreshing": "正在刷新本群 {count} 个星铁 UID 的完整面板，稍后生成排行。",
+    "panel-damage-rules.relics.text_19e0b06704": "释放战技时，攻击力提高20%",
+    "panel-damage-rules.relics.text_3889fe59c1": "效果抵抗大于等于30%时，暴击伤害提高10%",
+    "panel-damage-rules.relics.text_3447662da7": "同属性角色伤害提高10%",
+    "panel-damage-rules.relics.text_07f26ce741": "敌方目标被消灭提高暴击伤害，至多提高[cdmg]%",
+    "panel-damage-rules.relics.text_f29e1d11bb": "存在一名与装备者命途相同的队友时，暴击率提高[cpct]%",
+    "panel-damage-rules.relics.text_1cf9c6380b": "存在装备者召唤的目标时，暴击伤害额外提高[cdmg]%",
+    "panel-damage-rules.relics.text_4f2af4ef81": "当装备者及其忆灵为装备者及其忆灵以外的我方目标提供治疗后，速度提高[speedPct]%，我方全体暴击伤害提高[cdmg]%",
+    "panel-damage-rules.relics.text_8b0468d2d9": "消耗2层【助力】，使装备者攻击力提高[atkPct]%",
+    "panel-damage-rules.relics.text_a522f03e05": "造成的伤害提高[dmg]%",
+    "panel-damage-rules.relics.text_3c3f4a10df": "装备者攻击力大于等于[_atk]时，持续伤害额外提高[dotDmg]%",
+    "panel-damage-rules.relics.text_4b1cbb4cd0": "护盾量提高[shield]%",
+    "panel-damage-rules.relics.text_e8a6871b5c": "若装备者的忆灵在场，使装备者及其忆灵生命上限提高[hpPct]% ，我方全体造成的伤害提高[dmg]]%",
+    "panel-damage-rules.relics.text_49fef6e6f6": "装备者的忆灵在场时，我方全体速度提高[speedPct]%",
+    "panel-damage-rules.relics.text_e7db47f46f": "暴击伤害额外提高[cdmg]%",
+    "panel-damage-rules.relics.text_d6f59ba3ec": "计算[_buffCount]层，造成的欢愉伤害额外无视目标[xeIgnore]%的防御力",
+    "panel-damage-rules.relics.text_50e55d703f": "进入战斗前，若装备者的速度大于等于[_speed]，使装备者的暴击率提高[cpct]%。装备者施放欢愉技时，使我方全体欢愉度提高[joy]%",
+    "panel-damage-rules.relics.text_943ef2420d": "装备者施放追加攻击时，攻击力提高[atkPct]%。当敌方目标被消灭时，我方全体在本场战斗中暴击伤害提高[cdmg]%",
+    "panel-damage-rules.relics.text_75df66ceec": "3层Buff使战技造成的伤害提高[eDmg]%，终结技造成的伤害提高[qDmg]%",
+    "panel-damage-rules.relics.text_99aa66961f": "装备者对防御力降低状态的敌方目标造成的暴击伤害提高[cdmg]% ，持有【助燃】的我方目标造成的伤害提高[dmg]%",
+    "panel-damage-rules.relics.text_e668507e6f": "装备者能量上限大于等于200点，使装备者造成的伤害提高[dmg]%。",
+    "panel-damage-rules.relics.text_b1aa291d7e": "使装备者的暴击伤害提高[cdmg]%",
+    "panel-damage-rules.relics.text_73f3f7259a": "进场速度达到145，全队击破特攻提高[stance]%（同套效果不叠加）"
   },
   "parameters": {
     "account-report-renderer.text_47c5c11c00": {
@@ -4967,6 +4989,28 @@
     },
     "team-engine.native.worker-build.text_d1bdfdb47a": {
       "id": "光锥标识"
-    }
+    },
+    "panel-damage-rules.relics.text_19e0b06704": {},
+    "panel-damage-rules.relics.text_3889fe59c1": {},
+    "panel-damage-rules.relics.text_3447662da7": {},
+    "panel-damage-rules.relics.text_07f26ce741": {},
+    "panel-damage-rules.relics.text_f29e1d11bb": {},
+    "panel-damage-rules.relics.text_1cf9c6380b": {},
+    "panel-damage-rules.relics.text_4f2af4ef81": {},
+    "panel-damage-rules.relics.text_8b0468d2d9": {},
+    "panel-damage-rules.relics.text_a522f03e05": {},
+    "panel-damage-rules.relics.text_3c3f4a10df": {},
+    "panel-damage-rules.relics.text_4b1cbb4cd0": {},
+    "panel-damage-rules.relics.text_e8a6871b5c": {},
+    "panel-damage-rules.relics.text_49fef6e6f6": {},
+    "panel-damage-rules.relics.text_e7db47f46f": {},
+    "panel-damage-rules.relics.text_d6f59ba3ec": {},
+    "panel-damage-rules.relics.text_50e55d703f": {},
+    "panel-damage-rules.relics.text_943ef2420d": {},
+    "panel-damage-rules.relics.text_75df66ceec": {},
+    "panel-damage-rules.relics.text_99aa66961f": {},
+    "panel-damage-rules.relics.text_e668507e6f": {},
+    "panel-damage-rules.relics.text_b1aa291d7e": {},
+    "panel-damage-rules.relics.text_73f3f7259a": {}
   }
 }

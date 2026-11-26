@@ -1,7 +1,7 @@
 import type { TrialTitleMode } from "../../lib/panel-trial-display.ts";
 import { calculateLegacyPanelAttributeRows, calculateManagedElation, damageAttribute, type PanelAttributeRows } from "./panel-attributes.ts";
 import type { readPanelDamageMetadata } from "./panel-card.ts";
-import { object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
+import { normalizeStarRailPanelElement, object, starRailLegacySkillLevel, type PanelAvatar } from "./panel-model.ts";
 import DmgAttr from "./panel-damage-rules/DmgAttr.ts";
 import DmgCalc from "./panel-damage-rules/DmgCalc.ts";
 import { attrMap } from "./panel-damage-rules/relic-attributes.ts";
@@ -690,7 +690,7 @@ function originalDamage(
   character: Character, rows: PanelAttributeRows | undefined, skillPreview: boolean, includeSwaps = true,
 ) {
   if (!avatar.level || avatar.rank === undefined || metadata.character.elem !== character.element ||
-      (avatar.element && avatar.element !== character.element)) throw new MissingDamageData("缺少角色等级、星魂或元素资料");
+      (avatar.element && normalizeStarRailPanelElement(avatar.element) !== character.element)) throw new MissingDamageData("缺少角色等级、星魂或元素资料");
   const { rule } = character;
   const energy = metadata.character.sp;
   if (character.requiresEnergy && (typeof energy !== "number" || !Number.isFinite(energy) || energy <= 0)) {

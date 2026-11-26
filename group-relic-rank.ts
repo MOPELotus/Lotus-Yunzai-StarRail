@@ -474,9 +474,9 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const images = [];
           for (let index = 0; index < ranked.length; index += limit) {
             active.throwIfAborted();
-            const rows = await Promise.all(ranked.slice(index, index + limit).map(({ value, selectedMetric }) => displayRow(value, selectedMetric)));
+            const rows = await Promise.all(ranked.slice(index, index + limit).map(async ({ value, selectedMetric, entry }) => ({ ...await displayRow(value, selectedMetric), qq: String(entry.profiles[0]!.qq) })));
             const pageTitle = ranked.length > limit ? `${heading} · ${index / limit + 1}/${Math.ceil(ranked.length / limit)}` : heading;
-            const image = await render(undefined, rows, undefined, context.inlineImageByteLimit, coverage, metric, { title: pageTitle, summary }).catch(() => undefined);
+            const image = await render(undefined, rows, undefined, context.inlineImageByteLimit, coverage, metric, { title: pageTitle, summary }, undefined, active).catch(() => undefined);
             if (!image?.png) break;
             images.push({ type: "image" as const, file: image.png });
           }
@@ -529,11 +529,11 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           return card ? [heading, { type: "image" as const, file: card.png }] : $t("group-relic-rank.text_18ae85a8bc", { "heading": heading });
         }
         const ranked = scored.slice(0, await readLimit("sr", defaultLimit));
-        const rows = await Promise.all(ranked.map(({ value }) => displayRow(value, metric)));
+        const rows = await Promise.all(ranked.map(async ({ value, entry }) => ({ ...await displayRow(value, metric), qq: String(entry.profiles[0]!.qq) })));
         if (!rows.length) return $t("group-relic-rank.text_cfae2312a8", { "name": character.name, "label": label, "value3": relicRankCoverageText(coverage) });
         let png: Uint8Array | undefined;
         try {
-          png = (await render(character, rows, undefined, context.inlineImageByteLimit, coverage, metric))?.png;
+          png = (await render(character, rows, undefined, context.inlineImageByteLimit, coverage, metric, undefined, undefined, active))?.png;
         } catch {}
         const afterRender = await changed(ranked.map(row => row.entry));
         if (afterRender) return afterRender;

@@ -234,3 +234,16 @@ test("显式备用源使用自己的固定域和字段，失败不改换其他�
     .rejects.toThrow("过于频繁");
   expect(requests).toBe(7);
 });
+
+
+test("星铁欧服展板统一两种区服写法，并拒绝其他区服的回包", async () => {
+  for (const [role, region] of [[cn, "CN"], [os, "ASIA"], [{ uid: "700000123", region: "prod_official_eur", gameBiz: "hkrpg_global" }, "EU"]] as const) {
+    const target = showcaseTarget(role, "4");
+    const reply = { uid: role.uid, region, detailInfo: { uid: role.uid, avatarDetailList: [character] } };
+    expect(await fetchStarRailShowcase(target, signal, async () => Response.json(reply))).toMatchObject({ uid: role.uid, source: "enka" });
+    await expect(fetchStarRailShowcase(target, signal, async () => Response.json({ ...reply, region: region === "CN" ? "ASIA" : "CN" })))
+      .rejects.toThrow("UID 或区服不匹配");
+    await expect(fetchStarRailShowcase(target, signal, async () => Response.json({ ...reply, uid: "100000999" })))
+      .rejects.toThrow("UID 或区服不匹配");
+  }
+});
