@@ -308,7 +308,7 @@ export function createStarRailPanel(
       const groupPanel = type === "relics" || (type === "detail" && !explicitUid && !("equipment" in command));
       const registerList = !explicitUid && (type === "list" || type === "update" || type === "reload" ||
         (type === "showcase" && !command.name));
-      const observedAt = (groupPanel || registerList) && account && await groupRank?.allows(context) ? Date.now() : undefined;
+      const observedAt = (groupPanel || registerList) && account && context?.user_id?.toString() === qq && await groupRank?.allows(context) ? Date.now() : undefined;
       const key = `${qq}:${uid}`;
       const initialPanel = await store.read(qq, uid);
       const discardedAt = panelDiscardedAt(initialPanel);

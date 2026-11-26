@@ -1,3 +1,4 @@
+import { panelQueryUser } from "../../lib/panel-query-target.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
 const $t = createTextTranslator("starrail", messageCatalog.messages);
@@ -409,7 +410,8 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       if (relicRank !== undefined) return relicRank;
       const panelCommand = parsePanelCommand(context.normalizedMessage);
       if (panelCommand && (panelCommand.type !== "showcase" || !panelCommand.name || await resolveStarRailCharacter(panelCommand.name))) {
-        const userId = context.user_id;
+        const userId = ["list", "detail", "damage", "relics", "relic-list", "practice"].includes(panelCommand.type)
+          ? panelQueryUser(context) : context.user_id;
         if (typeof userId !== "number" || !Number.isSafeInteger(userId) || userId < 1) {
           return $t("index.text_ebb89ab276");
         }
