@@ -1,3 +1,4 @@
+import type { RankPagination } from "../../lib/rank-pages.ts";
 import { loadGroupRankQqAvatars } from "../../lib/group-rank-qq-avatars.ts";
 import { loadImage } from "skia-canvas";
 import { rankLabelLayout } from "../../lib/rank-label-layout.ts";
@@ -99,7 +100,7 @@ function divider(ctx: Context, x: number, y: number) {
 export async function renderStarRailRelicRank(
   character: Character | undefined, rows: readonly RelicRankRow[], mode: StarRailCardOptions["mode"] = "auto", inlineImageByteLimit?: number,
   coverage?: RelicRankCoverage, metric: RelicRankMetric = "mark", aggregate?: { readonly title: string; readonly summary: string },
-  publicRanking?: { readonly filters: string; readonly count: number }, signal?: AbortSignal,
+  publicRanking?: { readonly filters: string; readonly count: number }, signal?: AbortSignal, pagination?: RankPagination,
 ) {
   const maximum = publicRanking ? 50 : maxGroupPanelRankLimit;
   if (!rows.length || rows.length > maximum) throw new RangeError($t("group-relic-rank-card.text_35cabeaebc", { "maximum": maximum }));
@@ -193,7 +194,7 @@ export async function renderStarRailRelicRank(
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
     const name = character?.name.replace(/^(?:穹|星)·(毁灭|存护|同谐|记忆|欢愉)$/u, "开拓者·$1");
-    write(aggregate?.title ?? $t("group-relic-rank-card.text_9d9e52587d", { "value1": publicRanking ? $t("group-relic-rank-card.text_4eafa9e925") : "", "name": name, "value3": relicRankLabels[metric] }), 20, 63, 36, white, "left", false, true, width - 40);
+    write((aggregate?.title ?? $t("group-relic-rank-card.text_9d9e52587d", { "value1": publicRanking ? $t("group-relic-rank-card.text_4eafa9e925") : "", "name": name, "value3": relicRankLabels[metric] })) + (pagination && pagination.total > 1 ? ` · ${pagination.page}/${pagination.total}` : ""), 20, 63, 36, white, "left", false, true, width - 40);
     ctx.restore();
     box(97, 165 + extra, () => {
       fill(ctx, "#0006", 10, 97, panelWidth, 40);
@@ -229,10 +230,10 @@ export async function renderStarRailRelicRank(
       box(y, 60, () => {
         if (aggregate) {
           framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 18, y + 9, 42, 42, 21, face, true);
-        } else if (index === 0 && first && (metric === "damage" || metric === "mark")) badgeArt(ctx, first, badgeVariant, 15, y + 18, 48, 24);
+        } else if ((pagination?.offset ?? 0) + index === 0 && first && (metric === "damage" || metric === "mark")) badgeArt(ctx, first, badgeVariant, 15, y + 18, 48, 24);
         else {
           badgeArt(ctx, badge, badgeVariant, 27, y + 18, 24, 24);
-          write(index + 1, 39, y + 30, 12, white, "center");
+          write((pagination?.offset ?? 0) + index + 1, 39, y + 30, 12, white, "center");
         }
         framed(ctx, rarityFrames[(known?.rarity ?? 1) - 1], 69, y + (60 - layout.face) / 2, layout.face, layout.face, layout.face / 2, qqFace ?? face, true);
         if (known?.rank !== undefined) pill(known.rank, soulColors[known.rank] ?? "#666", layout.nameX, y + 13, 16, (known.exCons ?? 0) > 0);

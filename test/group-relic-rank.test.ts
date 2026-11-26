@@ -164,8 +164,8 @@ test("星铁全群榜按角色选冠军，同 UID 只拉一次且渲染一张聚
     await board.register({ ...group77, user_id: 45 }, 1, role(uid45), 111, verified);
     use(uid => uid === uid42 ? visible(uid, avatar(3), avatar(2, 1102)) : visible(uid, avatar(2), avatar(3, 1102)));
     const context = { ...group77, listCurrentGroupMembers: async () => [42, ...(departingMember ? [] : [43]), 99].map(id => ({ id })) };
-    expect(await board.query("*最强排行", context)).toEqual({ type: "image", file: png });
-    expect(await board.query("#星铁最高分排行", context)).toEqual({ type: "image", file: png });
+    expect(await board.query("*最强排行", context)).toEqual({ type: "forward", nodes: [{ type: "image", file: png }] });
+    expect(await board.query("#星铁最高分排行", context)).toEqual({ type: "forward", nodes: [{ type: "image", file: png }] });
     expect(asked.slice(0, 2).sort()).toEqual([uid42, uid43]);
     expect(asked.slice(2).sort()).toEqual([uid42, uid43]);
     expect(captured).toEqual([
@@ -544,16 +544,17 @@ test("folds both Trailblazer forms, excludes departing and rebound members, and 
 
 test("refreshes the whole registration list before applying the current display limit", async () => {
   const { root, rank, account, asked } = await fixture();
-  const users = Array.from({ length: 17 }, (_, index) => 50 + index);
+  const users = Array.from({ length: 41 }, (_, index) => 50 + index);
   const uidOf = (qq: number) => "1000000" + qq;
   const context = { ...group77, listCurrentGroupMembers: async () => [42, 99, ...users].map(id => ({ id })) };
   try {
     await Promise.all(users.map(qq => account(qq, uidOf(qq))));
     let configured: number | undefined;
+    const pageSizes: number[] = [];
     const board = rank(async (_character, rows, _mode, _byteLimit, coverage) => {
-      expect(rows).toHaveLength(Math.min(users.length, configured ?? 15));
-      expect(coverage).toEqual({ registered: 17, scored: 17, notListed: 0, failed: 0 });
-      return;
+      pageSizes.push(rows.length);
+      expect(coverage).toEqual({ registered: 41, scored: 41, notListed: 0, failed: 0 });
+      return { png: new Uint8Array([1]) };
     }, {
       async readLimit(game, fallback) {
         expect(game).toBe("sr");
@@ -563,8 +564,9 @@ test("refreshes the whole registration list before applying the current display 
     for (const qq of users) await board.observe({ ...context, user_id: qq }, 1, role(uidOf(qq)), shown("1001"), verified);
     for (const value of [undefined, 5, 30]) {
       configured = value;
-      asked.length = 0;
-      expect(await board.query(command, context)).toContain("17/17 已计分");
+      asked.length = 0; pageSizes.length = 0;
+      expect(await board.query(command, context)).toMatchObject({ type: "forward", nodes: [{ type: "image" }, { type: "image" }] });
+      expect(pageSizes).toEqual([30, 11]);
       expect(asked.sort()).toEqual(users.map(uidOf));
     }
   } finally { await rm(root, { recursive: true, force: true }); }
@@ -637,7 +639,7 @@ test("验证群成员通过米游社刷新面板排行及单人有效角色正�
     },
   });
   try {
-    expect(await board.query(parseStarRailRelicRank("*银枝排行")!, group77)).toMatchObject({ type: "image" });
+    expect(await board.query(parseStarRailRelicRank("*银枝排行")!, group77)).toMatchObject({ type: "forward" });
     expect(calls.sort()).toEqual([42, 43, 44]);
     expect(counts).toEqual([1]);
     expect(asked).toEqual([]);

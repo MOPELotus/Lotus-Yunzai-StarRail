@@ -1,3 +1,4 @@
+import { groupRankPageSize, renderRankPages } from "../../lib/rank-pages.ts";
 import type { OfficialGroupPanels } from "../../lib/group-panel-accounts.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
@@ -470,7 +471,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const entries = [...new Set(ranked.map(row => row.entry))];
           const beforeRender = await changed(entries);
           if (beforeRender) return beforeRender;
-          const limit = await readLimit("sr", defaultLimit);
+          const limit = groupRankPageSize;
           const images = [];
           for (let index = 0; index < ranked.length; index += limit) {
             active.throwIfAborted();
@@ -482,7 +483,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           }
           const afterRender = await changed(entries);
           if (afterRender) return afterRender;
-          if (images.length === Math.ceil(ranked.length / limit)) return images.length === 1 ? images[0] : images;
+          if (images.length === Math.ceil(ranked.length / limit)) return { type: "forward" as const, nodes: images };
           return [heading, summary, ...ranked.map(({ value, selectedMetric }) =>
             `${value.avatar.name} · UID ${value.uid} · ${relicRankLabels[selectedMetric]} ${groupPanelNumber(value.score.toFixed(1), theme.commaGroup)}`)].join("\n");
         }
@@ -528,16 +529,14 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           const heading = $t("group-relic-rank.text_335f329c23", { "name": character.name, "label": label, "uid": uid, "summary": summary });
           return card ? [heading, { type: "image" as const, file: card.png }] : $t("group-relic-rank.text_18ae85a8bc", { "heading": heading });
         }
-        const ranked = scored.slice(0, await readLimit("sr", defaultLimit));
+        const ranked = scored;
         const rows = await Promise.all(ranked.map(async ({ value, entry }) => ({ ...await displayRow(value, metric), qq: String(entry.profiles[0]!.qq) })));
         if (!rows.length) return $t("group-relic-rank.text_cfae2312a8", { "name": character.name, "label": label, "value3": relicRankCoverageText(coverage) });
-        let png: Uint8Array | undefined;
-        try {
-          png = (await render(character, rows, undefined, context.inlineImageByteLimit, coverage, metric, undefined, undefined, active))?.png;
-        } catch {}
+        const pages = await renderRankPages(rows, (page, pagination) =>
+          render(character, page, undefined, context.inlineImageByteLimit, coverage, metric, undefined, undefined, active, pagination), active);
         const afterRender = await changed(ranked.map(row => row.entry));
         if (afterRender) return afterRender;
-        if (png) return { type: "image" as const, file: png };
+        if (pages) return pages;
         return [$t("group-relic-rank.text_697e854ea9", { "name": character.name, "label": label }), relicRankCoverageText(coverage), ...rows.map(({ uid, score, grade }, index) =>
           [`${index + 1}. UID ${uid}`, groupPanelNumber(score.toFixed(1), theme.commaGroup), grade].filter(Boolean).join(" · "))].join("\n");
       } catch {
