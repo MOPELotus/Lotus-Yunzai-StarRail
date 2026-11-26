@@ -879,6 +879,10 @@
     "team-owned-panel": {
       "description": "角色持有面板与遗器数据解析",
       "source": "plugins/starrail/team-owned-panel.ts"
+    },
+    "group-rank": {
+      "description": "群聊星铁遗器与伤害排行查询及档案登记逻辑",
+      "source": "plugins/starrail/group-relic-rank.ts"
     }
   },
   "messages": {
