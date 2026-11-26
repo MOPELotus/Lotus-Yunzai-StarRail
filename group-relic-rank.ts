@@ -483,7 +483,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
           }
           const afterRender = await changed(entries);
           if (afterRender) return afterRender;
-          if (images.length === Math.ceil(ranked.length / limit)) return { type: "forward" as const, nodes: images };
+          if (images.length === Math.ceil(ranked.length / limit)) return images.length === 1 ? images[0] : { type: "forward" as const, nodes: images };
           return [heading, summary, ...ranked.map(({ value, selectedMetric }) =>
             `${value.avatar.name} · UID ${value.uid} · ${relicRankLabels[selectedMetric]} ${groupPanelNumber(value.score.toFixed(1), theme.commaGroup)}`)].join("\n");
         }

@@ -164,8 +164,8 @@ test("星铁全群榜按角色选冠军，同 UID 只拉一次且渲染一张聚
     await board.register({ ...group77, user_id: 45 }, 1, role(uid45), 111, verified);
     use(uid => uid === uid42 ? visible(uid, avatar(3), avatar(2, 1102)) : visible(uid, avatar(2), avatar(3, 1102)));
     const context = { ...group77, listCurrentGroupMembers: async () => [42, ...(departingMember ? [] : [43]), 99].map(id => ({ id })) };
-    expect(await board.query("*最强排行", context)).toEqual({ type: "forward", nodes: [{ type: "image", file: png }] });
-    expect(await board.query("#星铁最高分排行", context)).toEqual({ type: "forward", nodes: [{ type: "image", file: png }] });
+    expect(await board.query("*最强排行", context)).toEqual({ type: "image", file: png });
+    expect(await board.query("#星铁最高分排行", context)).toEqual({ type: "image", file: png });
     expect(asked.slice(0, 2).sort()).toEqual([uid42, uid43]);
     expect(asked.slice(2).sort()).toEqual([uid42, uid43]);
     expect(captured).toEqual([
@@ -639,7 +639,7 @@ test("验证群成员通过米游社刷新面板排行及单人有效角色正�
     },
   });
   try {
-    expect(await board.query(parseStarRailRelicRank("*银枝排行")!, group77)).toMatchObject({ type: "forward" });
+    expect(await board.query(parseStarRailRelicRank("*银枝排行")!, group77)).toMatchObject({ type: "image" });
     expect(calls.sort()).toEqual([42, 43, 44]);
     expect(counts).toEqual([1]);
     expect(asked).toEqual([]);
