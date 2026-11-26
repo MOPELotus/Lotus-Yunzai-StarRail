@@ -1,3 +1,4 @@
+import { createStarRailOfficialGroupPanels } from "./group-rank-official.ts";
 import { panelQueryUser } from "../../lib/panel-query-target.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
@@ -166,7 +167,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
   const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
   const publicRank = createStarRailCustomRank(signal);
   const client = createProfileHoyoClient(profiles);
-  const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal);
+  const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal, { official: createStarRailOfficialGroupPanels(profiles, client, lockFile) });
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank, undefined, undefined, undefined, { qFace: roleQFace });
   const panelArchive = createStarRailPanelArchive(lockFile);

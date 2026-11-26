@@ -1,3 +1,4 @@
+import type { OfficialGroupPanels } from "../../lib/group-panel-accounts.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
 const $t = createTextTranslator("starrail", messageCatalog.messages);
@@ -21,6 +22,7 @@ import { findStarRailRankCharacter } from "./rank-statistics.ts";
 import { starRailRelicAffixScores } from "./relic-score.ts";
 
 export interface StarRailGroupRankContext {
+  readonly reply?: (message: string) => unknown;
   readonly message_type?: string;
   readonly adapter?: string;
   readonly inlineImageByteLimit?: number;
@@ -226,8 +228,9 @@ async function rankDamage(avatar: PanelAvatar, theme: RankTheme) {
 export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: AcquireRoleArchiveLock, signal: AbortSignal, {
   directory = defaultDirectory, groups = Bun.env.LOTUS_STAR_RAIL_PANEL_RANK_GROUPS ?? "", render = renderStarRailRelicRank,
   fetchShowcase = fetchStarRailShowcase, readServer = readShowcaseServer, readRankTheme = readTheme, panelDirectory,
-  renderStrongest = bestPanel, scoreDamage = rankDamage, readEnabled = readGroupPanelRankEnabled, readLimit = readGroupPanelRankLimit,
+  official, renderStrongest = bestPanel, scoreDamage = rankDamage, readEnabled = readGroupPanelRankEnabled, readLimit = readGroupPanelRankLimit,
 }: {
+  readonly official?: OfficialGroupPanels<PanelSnapshot>;
   readonly directory?: string;
   readonly groups?: string;
   readonly render?: RenderRank;
@@ -333,7 +336,7 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
         const members = await groupMembers(scope, context);
         active.throwIfAborted();
         if (!members) return $t("group-relic-rank.text_64ba9d6e54");
-        const files = await readdir(join(folder(scope), String(scope.group))).catch((error: NodeJS.ErrnoException) => {
+        const files = official ? [] : await readdir(join(folder(scope), String(scope.group))).catch((error: NodeJS.ErrnoException) => {
           if (error.code === "ENOENT") return [];
           throw error;
         });
@@ -352,12 +355,25 @@ export function createStarRailGroupRelicRank(profiles: RankProfiles, lockFile: A
             else registered.set(role.uid, { role, profiles: [profile] });
           }
         }
+        if (official) {
+          registered.clear();
+          for (const owner of await official.list(new Set([...members].filter(id => id !== scope.bot)), active)) {
+            if (owner.qq === scope.bot) continue;
+            const previous = registered.get(owner.role.uid);
+            if (previous) previous.profiles.push(owner);
+            else registered.set(owner.role.uid, { role: owner.role, profiles: [owner] });
+          }
+        }
         active.throwIfAborted();
         if (!registered.size) return $t("group-relic-rank.text_8afccbc83c");
-        const [provider, theme] = await Promise.all([readServer(), readRankTheme()]);
+        if (official) await Promise.resolve().then(() => context.reply?.($t("group-rank.refreshing", { count: registered.size }))).catch(() => {});
+        const [provider, theme] = await Promise.all([official ? "" : readServer(), readRankTheme()]);
         const requestShowcase = async (entry: Candidate, requestSignal: AbortSignal) => {
-          if (!await remainsRegistered(entry, members)) return;
+          if (!await remainsRegistered(entry, members)) throw new Error("group-panel-account-changed");
           requestSignal.throwIfAborted();
+          if (official) return official.read(entry.profiles[0]!, requestSignal, async () => {
+            if (!await remainsRegistered(entry, members) || !await groupEnabled(scope)) throw new Error("group-panel-account-changed");
+          }, undefined);
           const target = showcaseTarget(entry.role, provider);
           try {
             const snapshot = await fetchShowcase(target, requestSignal);

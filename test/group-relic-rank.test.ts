@@ -124,7 +124,7 @@ async function fixture() {
   let selector = "0";
   const setProvider = (value: string) => { selector = value; };
   type Options = NonNullable<Parameters<typeof createStarRailGroupRelicRank>[3]>;
-  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage" | "readEnabled" | "readLimit"> = {}) =>
+  const rank = (render: Options["render"] = async () => undefined, extra: Pick<Options, "renderStrongest" | "scoreDamage" | "readEnabled" | "readLimit" | "official"> = {}) =>
     createStarRailGroupRelicRank(createProfileStore(accounts), lockFile, new AbortController().signal, {
       directory, panelDirectory, groups: "77, 78, 80", render, readServer: async () => selector, readRankTheme: () => readTheme(join(root, "theme")),
       readEnabled: async (_game, _group, defaultEnabled) => defaultEnabled,
@@ -196,13 +196,13 @@ test("群内查看本人星铁角色面板会登记当场刷新所需的 UID", a
       async () => visible(uid42, avatar(3)));
     await panelStore.update({ qq: "42", uid: uid42 }, verified,
       () => ({ document: { ...snapshot, source: "miyoushe" }, result: undefined }));
-    expect(await board.query(command, group77)).toContain("查看本人的角色面板或遗器");
+    expect(await board.query(command, group77)).toContain("暂无已绑定");
     const detail = parsePanelCommand("*银枝面板")!;
     expect(await panel("42", detail, { ...group77, isDelegated: true })).toMatchObject({ type: "image" });
-    expect(await board.query(command, group77)).toContain("暂无已登记");
+    expect(await board.query(command, group77)).toContain("暂无已绑定");
     expect(asked).toEqual([]);
     expect(await panel("42", detail, group77)).toMatchObject({ type: "image" });
-    expect(await board.query(command, group77)).toContain("本轮公开展板 1/1 已计分");
+    expect(await board.query(command, group77)).toContain("本轮完整面板 1/1 已计分");
     expect(asked).toEqual([uid42]);
   } finally {
     if (previousTheme === undefined) delete Bun.env.LOTUS_STAR_RAIL_PANEL_THEME_DIR;
@@ -240,21 +240,21 @@ test("星铁本人面板列表和两路全量更新登记各自群，手工 UID 
     const panel = createStarRailPanel(profiles, createProfileHoyoClient(profiles), lockFile, signal,
       board, join(root, "panels"), undefined, join(root, "showcases"));
     const run = (msg: string, context = group77) => panel("42", parsePanelCommand(msg)!, context);
-    expect(await board.query(command, group77)).toContain("暂无已登记");
+    expect(await board.query(command, group77)).toContain("暂无已绑定");
     expect(await run(`*展板更新面板${uid42}`)).toMatchObject({ type: "image" });
-    expect(await board.query(command, group77)).toContain("暂无已登记");
+    expect(await board.query(command, group77)).toContain("暂无已绑定");
     expect(await panel("42", parsePanelCommand("*展板更新面板")!, { ...group77, isDelegated: true })).toContain("本人");
     expect(await run("*更新面板")).toMatchObject({ type: "image" });
-    expect(await board.query(command, group77)).toContain("本轮公开展板 1/1 已计分");
+    expect(await board.query(command, group77)).toContain("本轮完整面板 1/1 已计分");
     expect(asked).toEqual([uid42]);
     const group78 = { ...group77, group_id: 78 };
-    expect(await board.query(command, group78)).toContain("暂无已登记");
+    expect(await board.query(command, group78)).toContain("暂无已绑定");
     expect(await run("*展板更新面板", group78)).toMatchObject({ type: "image" });
-    expect(await board.query(command, group78)).toContain("本轮公开展板 1/1 已计分");
+    expect(await board.query(command, group78)).toContain("本轮完整面板 1/1 已计分");
     const group80 = { ...group77, group_id: 80 };
-    expect(await board.query(command, group80)).toContain("暂无已登记");
+    expect(await board.query(command, group80)).toContain("暂无已绑定");
     expect(await run("*面板", group80)).toMatchObject({ type: "image" });
-    expect(await board.query(command, group80)).toContain("本轮公开展板 1/1 已计分");
+    expect(await board.query(command, group80)).toContain("本轮完整面板 1/1 已计分");
     expect(asked).toEqual([uid42, uid42, uid42]);
     expect(requests).toEqual([
       { path: `/sr_info/${uid42}`, cookie: null },
@@ -338,7 +338,7 @@ test("普通星铁角色排行对本轮全名单一致使用伤害，无规则�
     await board.observe({ ...group77, user_id: 43 }, 1, role(uid43), shown("1001"), verified);
 
     use(uid => visible(uid, avatar(uid === uid42 ? 2 : 3, 1102)));
-    expect(await board.query("*希儿排名", group77)).toContain(`希儿 · 本群伤害排行\n本轮公开展板 2/2 已计分\n1. UID ${uid42} · 500.0`);
+    expect(await board.query("*希儿排名", group77)).toContain(`希儿 · 本群伤害排行\n本轮完整面板 2/2 已计分\n1. UID ${uid42} · 500.0`);
     expect(lists[0]).toEqual({ metric: "damage", scores: [[uid42, 500], [uid43, 200]] });
     expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
 
@@ -347,7 +347,7 @@ test("普通星铁角色排行对本轮全名单一致使用伤害，无规则�
     expect(asked.splice(0).sort()).toEqual([uid42, uid43]);
 
     use(uid => visible(uid, avatar(uid === uid42 ? 2 : 3, 1317)));
-    expect(await board.query("*乱破排名", group77)).toContain(`乱破 · 本群遗器评分排行\n本轮公开展板 2/2 已计分\n1. UID ${uid43}`);
+    expect(await board.query("*乱破排名", group77)).toContain(`乱破 · 本群遗器评分排行\n本轮完整面板 2/2 已计分\n1. UID ${uid43}`);
     expect(lists[2]?.metric).toBe("mark");
     expect(lists[2]?.scores.every(([, score]) => score > 0 && score <= 420)).toBe(true);
     expect(strongest).toEqual([]);
@@ -385,7 +385,7 @@ test("面板范围实时优先，关闭后停止登记并丢弃在途排行榜",
     expect(asked).toEqual([]);
     enabled = true;
     expect(await board.allows(target)).toBe(true);
-    expect(await board.query(command, target)).toContain("暂无已登记");
+    expect(await board.query(command, target)).toContain("暂无已绑定");
     await board.observe(target, 1, role(uid42), shown("1302"), verified);
     expect(await board.query(command, target)).toContain("未启用");
     expect(asked).toEqual([uid42]);
@@ -415,7 +415,7 @@ test("双暴与有效词条现刷并独立计分，删除边界只注销此前�
 
     await panelStore.update({ qq: "42", uid: uid42 }, verified, () => ({ document: discardedStarRailPanel(uid42, 200), result: undefined }));
     await board.observe(group77, 1, role(uid42), shown("1302", 399.9, 199), verified);
-    expect(await board.query(crit, group77)).toContain("暂无已登记");
+    expect(await board.query(crit, group77)).toContain("暂无已绑定");
     expect(asked).toEqual([]);
     await board.observe(group77, 1, role(uid42), shown("1302", 399.9, 201), verified);
     expect(await board.query(crit, group77)).toContain(uid42);
@@ -493,7 +493,7 @@ test("separates missing characters, mismatched responses and transport failure f
     expect(mixed).toContain(`1. UID ${uid42}`);
     for (const uid of [uid43, uid44, uid45]) expect(mixed).not.toContain(uid);
     expect(mixed).toContain("1/4 已计分");
-    expect(mixed).toContain("未展示或词条不全 1");
+    expect(mixed).toContain("未获取到或词条不全 1");
     expect(mixed).toContain("读取失败 2");
     expect(asked.splice(0).sort()).toEqual([uid42, uid43, uid44, uid45]);
     setProvider("1");
@@ -619,5 +619,27 @@ test("奇缘星魂随群榜投影保留，普通星魂数字不叠加", async ()
         expect(row.exCons).toBe(exCons ?? 0);
       }
     }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("验证群成员通过米游社刷新面板排行及单人有效角色正常出图", async () => {
+  const { root, rank, asked } = await fixture();
+  const calls: number[] = [], counts: number[] = [];
+  const board = rank(async (_name, rows) => { counts.push(rows.length); return { png: new Uint8Array([1]) }; }, {
+    scoreDamage: async () => 1234,
+    official: {
+      async list(members) { expect(members).toEqual(new Set([42, 43, 44, 45])); return [42, 43, 44].map(qq => ({ qq, profileId: 1, role: role(String(100000000 + qq)), observedAt: Date.now() })); },
+      async read(entry, _signal, verify) {
+        await verify(); calls.push(entry.qq);
+        if (entry.qq === 44) throw Error("fixture refresh failed");
+        return normalizePanel(entry.role.uid, entry.qq === 42 ? [{ id: "1302", name: "银枝", level: 80 }] : []);
+      },
+    },
+  });
+  try {
+    expect(await board.query(parseStarRailRelicRank("*银枝排行")!, group77)).toMatchObject({ type: "image" });
+    expect(calls.sort()).toEqual([42, 43, 44]);
+    expect(counts).toEqual([1]);
+    expect(asked).toEqual([]);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
