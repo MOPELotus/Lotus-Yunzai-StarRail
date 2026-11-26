@@ -3708,7 +3708,7 @@
     "personal-roster-card.text_00dfd4ad2c": "Lotus-Yunzai · StarRail",
     "simulation.card.text_00dfd4ad2c": "Lotus-Yunzai · StarRail",
     "team-damage-card.text_00dfd4ad2c": "Lotus-Yunzai · StarRail",
-    "group-rank.refreshing": "正在刷新本群 {count} 个星铁 UID 的完整面板，稍后生成排行。",
+    "group-rank.refreshing": "正在读取本群{count}个星铁UID的缓存面板，之后生成排行...",
     "panel-damage-rules.relics.text_19e0b06704": "释放战技时，攻击力提高20%",
     "panel-damage-rules.relics.text_3889fe59c1": "效果抵抗大于等于30%时，暴击伤害提高10%",
     "panel-damage-rules.relics.text_3447662da7": "同属性角色伤害提高10%",

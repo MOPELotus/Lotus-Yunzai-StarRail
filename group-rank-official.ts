@@ -1,3 +1,4 @@
+import { cachedGroupPanels } from "../../lib/group-panel-cache.ts";
 import type { createProfileStore } from "@lotus-yunzai/account";
 import type { createProfileHoyoClient } from "@lotus-yunzai/hoyo-client";
 import type { AcquireRoleArchiveLock } from "@lotus-yunzai/storage";
@@ -24,4 +25,14 @@ export function createStarRailOfficialGroupPanels(profiles: ReturnType<typeof cr
       });
       return snapshot;
     });
+}
+
+export function createStarRailCachedGroupPanels(profiles: ReturnType<typeof createProfileStore>,
+  client: ReturnType<typeof createProfileHoyoClient>, lock: AcquireRoleArchiveLock, directory?: string) {
+  const archive = createStarRailPanelArchive(lock, directory);
+  return cachedGroupPanels(profiles, "sr", createStarRailOfficialGroupPanels(profiles, client, lock, directory), async entry => {
+    const snapshot = await archive.read(String(entry.qq), entry.role.uid) as import("./panel-model.ts").PanelSnapshot | null;
+    if (!snapshot || snapshot.uid !== entry.role.uid || !Array.isArray(snapshot.avatars)) throw new Error("group-panel-cache-missing");
+    return snapshot;
+  });
 }

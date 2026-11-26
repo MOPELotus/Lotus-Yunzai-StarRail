@@ -1,4 +1,6 @@
-import { createStarRailOfficialGroupPanels } from "./group-rank-official.ts";
+import { fileURLToPath as panelCacheFilePath } from "node:url";
+import { createGroupPanelCacheRefresh, type PanelCacheRuntime } from "../../lib/group-panel-cache.ts";
+import { createStarRailOfficialGroupPanels, createStarRailCachedGroupPanels } from "./group-rank-official.ts";
 import { panelQueryUser } from "../../lib/panel-query-target.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
@@ -157,17 +159,18 @@ function matchGachaCommand(input: string) {
   if (profileId <= MAX_PROFILE_ID) return { profileId, query: view, recordArchive: recordArchive || !!legacy };
 }
 
-export function createModule({ signal, lockFile, runtimeVersion, roleQFace = true }: {
+export function createModule({ signal, lockFile, runtimeVersion, roleQFace = true, panelCacheRuntime }: {
   signal: AbortSignal;
   lockFile: Parameters<typeof createStarRailGachaHistoryStore>[1];
   runtimeVersion?: { readonly version?: string; readonly revision?: string };
   roleQFace?: boolean;
+  panelCacheRuntime?: PanelCacheRuntime;
 }) {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
   const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
   const publicRank = createStarRailCustomRank(signal);
   const client = createProfileHoyoClient(profiles);
-  const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal, { official: createStarRailOfficialGroupPanels(profiles, client, lockFile) });
+  const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal, { official: createStarRailCachedGroupPanels(profiles, client, lockFile) });
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank, undefined, undefined, undefined, { qFace: roleQFace });
   const panelArchive = createStarRailPanelArchive(lockFile);
@@ -310,8 +313,15 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     }
   }
 
+  const cacheSignal = panelCacheRuntime ? AbortSignal.any([signal, panelCacheRuntime.disconnect]) : signal;
+  const refreshPanelCache = createGroupPanelCacheRefresh(profiles, createStarRailOfficialGroupPanels(profiles, client, lockFile),
+    lockFile, cacheSignal, panelCacheFilePath(new URL("../../data/starrail-panel-refresh/", import.meta.url)),
+    async () => undefined);
+  const stopPanelCache = panelCacheRuntime?.register("sr", refreshPanelCache);
+
   return {
     commands: {},
+    async dispose() { await stopPanelCache?.(); },
     panelRebuild: panel.rebuild,
     async gachaUpdate(qq: string, profileId: number, notify?: () => unknown, _isDelegated?: boolean, workflow?: AbortSignal) {
       try {
