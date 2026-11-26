@@ -509,7 +509,7 @@ export function createStarRailPanel(
         const title = $t("panel.text_6e81d0d44a", { "uid": uid, "total": first.total });
         const nodes = [];
         for (const model of models) {
-          const files = await renderStarRailPanelPractice(model, theme.root).then(card => [card.png]).catch(() => false as const);
+          const files = await renderStarRailPanelPractice(model, theme.root, "auto", context?.inlineImageByteLimit).then(card => [card.png]).catch(() => false as const);
           await verify();
           if (files && files.length) nodes.push(...files.map(file => ({ type: "image" as const, file })));
           else {

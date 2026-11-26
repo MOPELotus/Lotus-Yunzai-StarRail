@@ -1,3 +1,4 @@
+import { rankLabelLayout } from "../../lib/rank-label-layout.ts";
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
 const $t = createTextTranslator("starrail", messageCatalog.messages);
@@ -106,7 +107,10 @@ export async function renderStarRailRelicRank(
       rows.some(row => row.presentation?.path === "欢愉") ? $t("group-relic-rank-card.text_17f4b35418") : undefined
     : text(meta?.weapon) || rows[0]?.presentation?.path;
   const slotCount = path === "记忆" ? 6 : path === "欢愉" ? 5 : 4;
-  const layout = path === "记忆" ? geometry.remembrance : path === "欢愉" ? geometry.elation : geometry.normal;
+  const baseLayout = path === "记忆" ? geometry.remembrance : path === "欢愉" ? geometry.elation : geometry.normal;
+  const setX = baseLayout.coneX + 300;
+  const dmgX = setX + 150;
+  const layout = { ...baseLayout, setX, dmgX, secondX: dmgX + 260, width: dmgX + 285 };
   const { width } = layout;
   const element = aggregate ? "hydro" : elementArt[text(meta?.elem) || rows[0]?.presentation?.element || ""] || "sr";
   const art = (relative: string) => themeArt(theme.root, relative);
@@ -248,10 +252,10 @@ export async function renderStarRailRelicRank(
           framed(ctx, rarityFrames[(lightCone.rarity ?? 1) - 1], layout.coneX, y + 12, 36, 36, 6);
           picture(ctx, weapon, layout.coneX - 5, y + 2, 46, 56);
           const coneTextX = layout.coneX + 46;
-          cell(lightCone.name || "—", coneTextX, y + 22, 13, gold, layout.setX - coneTextX - 3);
+          cell(lightCone.name || "—", coneTextX, y + 30, 13, gold, 145);
           const affix = lightCone.affix;
-          if (affix !== undefined) pill($t("group-relic-rank-card.text_8f16cda3b9", { "affix": affix }), soulColors[affix + 1] ?? "#666", coneTextX, y + 33, 25);
-          if (lightCone.level !== undefined) write(`Lv.${lightCone.level}`, coneTextX, y + (affix === undefined ? 41 : 54), 12);
+          if (affix !== undefined) pill($t("group-relic-rank-card.text_8f16cda3b9", { "affix": affix }), soulColors[affix + 1] ?? "#666", layout.coneX + 200, y + 22, 25);
+          if (lightCone.level !== undefined) write(`Lv.${lightCone.level}`, layout.coneX + 240, y + 30, 13);
         } else {
           rounded(ctx, layout.coneX, y + 12, 36, 36, 6);
           ctx.strokeStyle = "#ffffffb3";
@@ -270,7 +274,9 @@ export async function renderStarRailRelicRank(
         cell(groupPanelNumber(relicMark?.score.toFixed(1) ?? "—", theme.commaGroup),
           layout.setX + 73, y + 42, 16, white, layout.dmgX - layout.setX - 92);
         divider(ctx, layout.dmgX - 15, y + 10);
-        cell(known?.damage?.title || $t("group-relic-rank-card.text_d5f4617e07"), layout.dmgX, y + 19, 12, "#aaa", layout.secondX - layout.dmgX - 20);
+        ctx.font = `12px ${font.body}`;
+        const damageName = rankLabelLayout(known?.damage?.title || $t("group-relic-rank-card.text_d5f4617e07"), 240, value => ctx.measureText(value).width, 12);
+        damageName.lines.forEach((line, index) => write(line, layout.dmgX, y + 12 + index * 13, damageName.size, "#aaa"));
         const damageValue = known?.damage?.value ?? (rowMetric === "damage" && !publicRanking ? row.score.toFixed(1) : "—");
         cell(groupPanelNumber(damageValue, theme.commaGroup), layout.dmgX, y + 42, 18, white, layout.secondX - layout.dmgX - 20);
         divider(ctx, layout.secondX - 15, y + 10);

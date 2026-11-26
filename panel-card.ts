@@ -353,13 +353,10 @@ export async function makePanelPracticeCards(snapshot: PanelSnapshot, theme: Met
   const path = (filename: string) => join(theme.root, "character", "imgs", filename);
   const art = async (filename: string) => await Bun.file(path(filename)).exists() ? cssFile(path(filename)) : "";
   const [background, main] = await Promise.all([art("bg-02.jpg"), art("main-02.png")]);
-  const pages = [];
-  for (let start = 0; start < rows.length; start += 30) {
-    pages.push(preparedModel(theme, "profile-stat", {
-      uid: snapshot.uid, total: rows.length, avatars: rows.slice(start, start + 30), start, background, main, updateTime,
-    }));
-  }
-  return pages;
+  if (!rows.length) return [];
+  return [preparedModel(theme, "profile-stat", {
+    uid: snapshot.uid, total: rows.length, avatars: rows, start: 0, background, main, updateTime,
+  })];
 }
 
 function fieldsSource(snapshot: PanelSnapshot) {

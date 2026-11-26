@@ -2,12 +2,12 @@ import { createTranslator as createTextTranslator } from "../../packages/i18n/in
 import messageCatalog from "./i18n/zh-CN.json";
 const $t = createTextTranslator("starrail", messageCatalog.messages);
 import { Canvas } from "skia-canvas";
-import { renderPng } from "@lotus-yunzai/skia";
+import { renderStarRailCard } from "./render-card.ts";
 import { fill, image, picture, rounded, soulColors, styles, themeArt, typography } from "./panel-skia-theme.ts";
 import type { makePanelPracticeCards } from "./panel-card.ts";
 
 type Model = Awaited<ReturnType<typeof makePanelPracticeCards>>[number];
-const width = 600, density = 4;
+const width = 600;
 const tableX = 10, tableY = 107, tableWidth = 575, rowHeight = 36;
 const columns = [23, 94, 29, 35, 26, 28, 28, 28, 176, 108];
 const headers = ["#", $t("panel-practice-skia.text_c47b54e84e"), "Lv", $t("panel-practice-skia.text_9bd2d5af77"), "A", "E", "Q", "T", $t("panel-practice-skia.text_e733238b28"), $t("panel-practice-skia.text_2f2b17beb4")];
@@ -24,7 +24,7 @@ function gradeColors(grade: string | undefined) {
   return ["#ababab80", "#aaa"] as const;
 }
 
-export async function renderStarRailPanelPractice(model: Model, theme: string, mode: "auto" | "gpu" = "auto") {
+export async function renderStarRailPanelPractice(model: Model, theme: string, mode: "auto" | "gpu" = "auto", inlineImageByteLimit?: number) {
   const font = typography(theme);
   const [background, banner, crown, emptyRelic, relicBg, rows] = await Promise.all([
     themeArt(theme, "common/bg/bg-sr.webp"), image(model.main),
@@ -38,8 +38,7 @@ export async function renderStarRailPanelPractice(model: Model, theme: string, m
   const height = footerY + 83;
   const measure = new Canvas(1, 1).getContext("2d");
 
-  return renderPng(width * density, height * density, ctx => {
-    ctx.scale(density, density);
+  return renderStarRailCard(width, height, ctx => {
     const text = styles(ctx, font);
     fill(ctx, "#242e45", 0, 0, width, height);
     if (background) {
@@ -132,5 +131,5 @@ export async function renderStarRailPanelPractice(model: Model, theme: string, m
     ctx.strokeStyle = "#fff5";
     ctx.stroke();
     text(model.cardBrand, width / 2, height - 28, 14, "#fff", "center");
-  }, mode, { allowHalfScale: true });
+  }, { mode, inlineImageByteLimit });
 }

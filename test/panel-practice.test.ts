@@ -81,7 +81,7 @@ test("本地练度模型沿用基础等级排序、星魂加级、光锥及遗�
   }
 });
 
-test("新版练度输入使用已有效等级，档案缺项和多页仍保留角色计数", async () => {
+test("练度长图输出、头像展示及群榜武器名称完整分行显示", async () => {
   const rows = Array.from({ length: 31 }, (_, index) => ({
     id: index + 1000, name: `角色${index}`, level: 80, rarity: 4, rank: 0,
     skills: [{ remake: "普攻", level: 4 }, { remake: "战技", level: 7 }, { remake: "终结技", level: 9 }],
@@ -89,7 +89,7 @@ test("新版练度输入使用已有效等级，档案缺项和多页仍保留�
   const snapshot = normalizePanel(uid, rows, new Date(profileAt));
   const theme = await readTheme("/dev/null");
   const pages = await makePanelPracticeCards(snapshot, theme, active, 4);
-  expect(pages.map(page => [page.total, page.start, page.avatars.length])).toEqual([[31, 0, 30], [31, 30, 1]]);
+  expect(pages.map(page => [page.total, page.start, page.avatars.length])).toEqual([[31, 0, 31]]);
   expect(pages[0]?.avatars[0]).toMatchObject({ id: "1030", talentSum: 4, talent: [{ level: 4 }, { level: 7 }, { level: 9 }, { level: "—" }] });
   expect(await makePanelPracticeCards(snapshot, theme, active, 5)).toEqual([]);
   expect(await makePanelPracticeCards({ ...snapshot, avatars: [] }, theme, active, undefined)).toEqual([]);
