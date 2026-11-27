@@ -15,7 +15,7 @@ export async function renderStarRailCard(width: number, height: number, draw: (c
   const render = (scale: 2 | 4) => renderPng(width * scale, height * scale, ctx => {
     ctx.scale(scale, scale);
     draw(ctx);
-  }, mode, { allowHalfScale: standard && scale === 4 });
+  }, mode, { renderScale: scale, allowHalfScale: standard && scale === 4 });
   const full = await render(4);
   if (inlineImageByteLimit === undefined || full.png.byteLength <= inlineImageByteLimit) return full;
   if (standard && !full.reducedScaleReason) {
