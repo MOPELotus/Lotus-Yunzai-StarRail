@@ -43,11 +43,11 @@ async function readArtwork(model: GridFightCard, directory: string, signal: Abor
   const urls = [model.division.background, model.division.icon];
   const rows = model.recent?.map(entry => entry.battle) ?? (model.battle ? [model.battle] : []);
   for (const row of rows) {
-    const { front, back, traits, portals, augments, damage } = row;
+    const { front, back, traits, portals, augments, spotlights, damage } = row;
     urls.push(row.division.icon, ...[...front, ...back].map(item => item.icon));
     if (model.index !== undefined || model.recent) {
-      urls.push(...[...traits, ...portals, ...augments, ...damage.map(hit => hit.entity)].map(item => item.icon),
-        ...[...front, ...back].flatMap(role => role.equipment.map(item => item.icon)));
+      urls.push(...[...traits, ...portals, ...augments, ...spotlights, ...damage.map(hit => hit.entity)].map(item => item.icon),
+        ...[...front, ...back].flatMap(role => role.equipment.map(item => item.icon)), ...spotlights.map(spot => spot.roleIcon));
     }
   }
   const local = new Map<StaticArt, Image>();
@@ -113,6 +113,7 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
     const groups = expanded ? [
       { title: $t("grid-fight-card.text_20f83b4f3b"), values: row.traits, kind: "trait", columns: 3 },
       { title: $t("grid-fight-card.text_d55cc07694"), values: row.portals, kind: "environment", columns: 1 },
+      ...(row.spotlights.length ? [{ title: $t("grid-fight-card.spotlights-title"), values: row.spotlights, kind: "spotlight", columns: 3 } as const] : []),
       { title: $t("grid-fight-card.text_0dc8ed00c7"), values: row.augments, kind: "strategy", columns: 3 },
     ] as const : [];
     const extras = groups.reduce((sum, group) => sum + 69 + groupRows(group.values.length, group.columns) * 80, 0);
@@ -252,10 +253,14 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
           const tileW = columns === 1 ? 720 : 222;
           const x = 50 + i % columns * 245, y = top + 54 + Math.floor(i / columns) * 80;
           const background = kind === "trait" ? traitBackground(value.quality)
-            : kind === "environment" ? "environment" : strategyBackground(value.quality);
+            : kind === "environment" ? "environment" : kind === "spotlight" ? undefined : strategyBackground(value.quality);
           fill(ctx, "#ffffff0d", x, y, tileW, 68, 5);
-          picture(ctx, media.fixed(background), x + 6, y + 10, 48, 48);
+          if (background) picture(ctx, media.fixed(background), x + 6, y + 10, 48, 48);
           picture(ctx, media.get(value.icon), x + 12, y + 16, 36, 36);
+          if (kind === "spotlight" && value.roleIcon) {
+            fill(ctx, "#1b2339", x + 34, y + 36, 26, 26, 13);
+            picture(ctx, media.get(value.roleIcon), x + 36, y + 38, 22, 22, "cover");
+          }
           text(value.name ?? $t("grid-fight-card.text_3e12cc8126"), x + 64, y + 34, 15, "#fff", "left", false, false, tileW - 70);
           if (value.count !== undefined) {
             fill(ctx, "#121212", x + 42, y + 41, 17, 17, 7);
@@ -276,6 +281,10 @@ export async function renderGridFight(model: GridFightCard, fontTheme: string, s
               : kind === "environment" ? "environment" : undefined;
             if (background) picture(ctx, media.fixed(background), 52, y, 64, 64);
             picture(ctx, media.get(entity.icon), 60, y + 8, 48, 48);
+            if (kind === "spotlight" && "roleIcon" in entity && entity.roleIcon) {
+              fill(ctx, "#1b2339", 88, y + 40, 28, 28, 14);
+              picture(ctx, media.get(entity.roleIcon), 90, y + 42, 24, 24, "cover");
+            }
             if ("count" in entity && entity.count !== undefined) {
               fill(ctx, "#121212", 102, y + 53, 17, 17, 7);
               text(entity.count, 110.5, y + 62, 11, "#fff", "center");

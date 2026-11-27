@@ -195,3 +195,32 @@ test("upstream archive damage resolves avatar aliases and portal IDs without cro
   } }], 1);
   expect(alias.battle?.damage[0]?.entity.name).toBe("角色甲");
 });
+
+
+test("spotlight damage uses its own IDs and preserves safe associated role art", () => {
+  const fixture = { ...record, lineup: { ...record.lineup,
+    spot_light_list: [null, { spot_light_id: "1220", name: "渐冻寒潮", icon: "https://fastcdn.mihoyo.com/aura.png?private=ignored", role_icon: "https://fastcdn.mihoyo.com/role.png" },
+      { spot_light_id: "99", name: "另一个光环", role_icon: "http://127.0.0.1/private" }],
+    damage_list: [
+      { id: "1220", damage: "100", damage_type: "DamageTypeSpotLight" },
+      { id: "1220", damage: "90", damage_type: "DamageTypeTrait" },
+      { id: "1220", damage: "80", damage_type: "DamageTypeRole" },
+      { id: "400", damage: "70", damage_type: "DamageTypeSpotLight" },
+    ],
+  } };
+  const model = makeGridFightCard(source.role.uid, brief, [fixture], 1);
+  expect(model.battle?.spotlights).toMatchObject([
+    { id: "1220", name: "渐冻寒潮", icon: "https://fastcdn.mihoyo.com/aura.png", roleIcon: "https://fastcdn.mihoyo.com/role.png" },
+    { id: "99", name: "另一个光环", roleIcon: undefined },
+  ]);
+  expect(model.battle?.damage.map(hit => [hit.entity.name, hit.kind])).toEqual([
+    ["渐冻寒潮", "spotlight"], ["巡猎", "trait"], ["飞霄", "role"], ["未知伤害来源", "spotlight"],
+  ]);
+  expect(gridFightText(model)).toContain("主角光环：渐冻寒潮、另一个光环");
+  const recent = makeGridFightCard(source.role.uid, brief, [fixture], undefined, 2);
+  expect(recent.recent?.[0]?.battle.spotlights).toEqual(model.battle?.spotlights);
+  expect(gridFightText(recent)).toContain("主角光环：渐冻寒潮、另一个光环");
+  const legacy = makeGridFightCard(source.role.uid, brief, [record], 1);
+  expect(legacy.battle?.spotlights).toEqual([]);
+  expect(gridFightText(legacy)).not.toContain("主角光环");
+});

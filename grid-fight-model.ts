@@ -1,3 +1,4 @@
+// Source: TsukinaKasumi/StarRail-plugin@45f3740b6b505b8b0c5ffbf849c9d39b9fd19136 (Apache-2.0), spot_light_list / DamageTypeSpotLight.
 import { createTranslator as createTextTranslator } from "../../packages/i18n/index.ts";
 import messageCatalog from "./i18n/zh-CN.json";
 const $t = createTextTranslator("starrail", messageCatalog.messages);
@@ -32,14 +33,14 @@ export const gridFightHistoryMax = 10;
 
 type Row = Record<string, unknown>;
 export type GridArt = { name?: string; icon?: string };
-type Item = GridArt & { id?: string; quality?: number; count?: number };
+type Item = GridArt & { id?: string; quality?: number; count?: number; roleIcon?: string };
 export type GridMember = GridArt & { id?: string; rarity?: number; stars?: number; trial: boolean; equipment: GridArt[] };
 type Division = { level?: number; icon?: string; background?: string; name?: string };
 type Battle = {
   division: Division; mode?: string; rank?: string; time?: string;
   health?: number; coin?: number; value?: number; front: GridMember[]; back: GridMember[];
-  traits: Item[]; portals: Item[]; augments: Item[];
-  damage: { entity: GridMember | Item | GridArt; kind: "role" | "trait" | "strategy" | "environment" | undefined; amount: number; ratio: number; label: string }[];
+  traits: Item[]; portals: Item[]; augments: Item[]; spotlights: Item[];
+  damage: { entity: GridMember | Item | GridArt; kind: "role" | "trait" | "strategy" | "environment" | "spotlight" | undefined; amount: number; ratio: number; label: string }[];
 };
 export type GridFightCard = {
   uid: string; season?: number; points?: number; pointsMax?: number;
@@ -81,8 +82,8 @@ function division(raw: unknown): Division {
 }
 
 function item(row: Row): Item {
-  return { id: key(row.trait_id ?? row.augment_id ?? row.portal_id ?? row.id), name: text(row.trait_name ?? row.name),
-    icon: icons(row.icon), quality: num(row.quality, 9), count: num(row.trait_count, 99) };
+  return { id: key(row.trait_id ?? row.augment_id ?? row.portal_id ?? row.spot_light_id ?? row.id), name: text(row.trait_name ?? row.name),
+    icon: icons(row.icon), roleIcon: icons(row.role_icon), quality: num(row.quality, 9), count: num(row.trait_count, 99) };
 }
 
 function member(row: Row, equipmentLimit: number): GridMember {
@@ -105,6 +106,8 @@ function battle(raw: Row, recent = false): Battle | undefined {
   const traits = list(lineup.trait_list, 24).map(item);
   const portals = list(lineup.portal_list, 12).map(item);
   const augments = list(lineup.augment_list, 24).map(item);
+  const spotlights = list(lineup.spot_light_list, 24).map(item);
+  const spotlightsById = new Map(spotlights.map(spot => [spot.id, spot] as const));
   const rolesById = new Map([...front, ...back].map(role => [role.id, role] as const));
   const roles = [...front, ...back];
   [...frontSources, ...backSources].forEach((role, index) => {
@@ -120,10 +123,10 @@ function battle(raw: Row, recent = false): Battle | undefined {
     const id = key(row.id);
     const kind: Battle["damage"][number]["kind"] = row.damage_type === "DamageTypeRole" ? "role"
       : row.damage_type === "DamageTypeTrait" ? "trait" : row.damage_type === "DamageTypeAugment" ? "strategy"
-      : row.damage_type === "DamageTypePortal" ? "environment" : undefined;
+      : row.damage_type === "DamageTypePortal" ? "environment" : row.damage_type === "DamageTypeSpotLight" ? "spotlight" : undefined;
     const entity = id === undefined ? undefined : kind === "role" ? rolesById.get(id)
       : kind === "trait" ? traitsById.get(id) : kind === "strategy" ? augmentsById.get(id)
-        : kind === "environment" ? portalsById.get(id) : undefined;
+        : kind === "environment" ? portalsById.get(id) : kind === "spotlight" ? spotlightsById.get(id) : undefined;
     return [{ amount, kind, entity: entity ?? { name: $t("grid-fight-model.text_061d060aeb") } }];
   });
   if (!recent) hits.sort((left, right) => right.amount - left.amount);
@@ -139,7 +142,7 @@ function battle(raw: Row, recent = false): Battle | undefined {
   const unix = num(brief.archive_time_ts, 9_999_999_999);
   const time = text(brief.archive_time) ?? (unix ? new Date((unix + 8 * 3600) * 1000).toISOString().slice(0, 16).replace("T", " ") : undefined);
   return { division: division(brief.division), mode, rank, time, health: num(brief.remain_hp), coin: num(brief.total_coin),
-    value: num(brief.lineup_coin), front, back, traits, portals, augments, damage };
+    value: num(brief.lineup_coin), front, back, traits, portals, augments, spotlights, damage };
 }
 
 export function makeGridFightCard(uid: string, brief: Row, source: readonly Row[], index?: number, recent?: GridFightRecentCount): GridFightCard {
@@ -194,6 +197,7 @@ export function gridFightText(model: GridFightCard) {
       $t("grid-fight-model.text_f2cd4ae167", { "value1": row.health ?? missing, "value2": row.coin ?? missing, "value3": row.value ?? missing }),
       $t("grid-fight-model.text_f1b240541f", { "value1": artLabels(row.front, !!model.recent) }), $t("grid-fight-model.text_f986abe894", { "value1": artLabels(row.back, !!model.recent) }));
     if (model.index !== undefined || model.recent) lines.push($t("grid-fight-model.text_372183d526", { "value1": artLabels(row.traits) }), $t("grid-fight-model.text_05cebdcca8", { "value1": artLabels(row.portals) }), $t("grid-fight-model.text_633ee35f35", { "value1": artLabels(row.augments) }),
+      ...(row.spotlights.length ? [$t("grid-fight-model.spotlights-line", { names: artLabels(row.spotlights) })] : []),
       ...row.damage.map(hit => `${hit.entity.name ?? $t("grid-fight-model.text_3e12cc8126")} ${hit.label}`));
   }
   if (model.historyCount > 0) lines.push($t("grid-fight-model.text_f0f06f53e4", { "historyCount": model.historyCount }));

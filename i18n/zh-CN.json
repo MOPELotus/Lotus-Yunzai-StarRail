@@ -1301,6 +1301,8 @@
     "gacha-version.text_d0cf5ec4c8": "常驻池",
     "gacha-version.text_d325e3a87b": "星铁抽卡历史列表无效。",
     "gacha-version.text_d6f76465a2": "星铁抽卡统计卡池无效。",
+    "grid-fight-card.spotlights-title": "主角光环",
+    "grid-fight-model.spotlights-line": "主角光环：{names}",
     "grid-fight-card.text_0dc8ed00c7": "投资策略",
     "grid-fight-card.text_14480a16f5": "伤害统计",
     "grid-fight-card.text_1a99187c5a": "挑战记录 {ordinal} / {historyCount}",
@@ -4004,6 +4006,9 @@
     },
     "grid-fight-model.text_05cebdcca8": {
       "value1": "格式化后的投资环境名称列表文本"
+    },
+    "grid-fight-model.spotlights-line": {
+      "names": "同步货币战争战绩中的主角光环、关联角色头像及主角光环伤害来源"
     },
     "grid-fight-model.text_633ee35f35": {
       "value1": "投资策略名称列表文本"
