@@ -883,7 +883,8 @@
     "group-rank": {
       "description": "群聊星铁遗器与伤害排行查询及档案登记逻辑",
       "source": "plugins/starrail/group-relic-rank.ts"
-    }
+    },
+    "hoyolab-gacha-sync": {"description": "校验海外authkey版本与sign_type，明确星铁自动授权拒绝时的官方链接录入提示", "source": "hoyolab-gacha-sync.ts"}
   },
   "messages": {
     "account-report-renderer.text_03d531c062": "本月星琼收入",
@@ -3732,7 +3733,8 @@
     "panel-damage-rules.relics.text_99aa66961f": "装备者对防御力降低状态的敌方目标造成的暴击伤害提高[cdmg]% ，持有【助燃】的我方目标造成的伤害提高[dmg]%",
     "panel-damage-rules.relics.text_e668507e6f": "装备者能量上限大于等于200点，使装备者造成的伤害提高[dmg]%。",
     "panel-damage-rules.relics.text_b1aa291d7e": "使装备者的暴击伤害提高[cdmg]%",
-    "panel-damage-rules.relics.text_73f3f7259a": "进场速度达到145，全队击破特攻提高[stance]%（同套效果不叠加）"
+    "panel-damage-rules.relics.text_73f3f7259a": "进场速度达到145，全队击破特攻提高[stance]%（同套效果不叠加）",
+    "hoyolab-gacha-sync.authkey-rejected": "国际服自动授权暂不可用，请好友私聊先发*抽卡链接，再于2分钟内发游戏内官方跃迁链接，已有记录保留。"
   },
   "parameters": {
     "account-report-renderer.text_47c5c11c00": {

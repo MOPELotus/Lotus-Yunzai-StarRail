@@ -41,7 +41,7 @@ import { buildStarRailGachaSpecial, type StarRailGachaSpecialOptions } from "./g
 import { renderStarRailGachaSpecial } from "./gacha-special-card.ts";
 import { createStarRailGachaHistoryStore } from "./gacha-store.ts";
 import { createStarRailGachaLinkCommand } from "./gacha-link-command.ts";
-import { syncHoYoLabStarRailGacha } from "./hoyolab-gacha-sync.ts";
+import { syncHoYoLabStarRailGacha, HoYoLabStarRailAuthKeyRejected } from "./hoyolab-gacha-sync.ts";
 import { createStarRailGachaSync, StarRailGachaUpdateBusy } from "./gacha-sync.ts";
 import { buildStarRailGachaVersion, type StarRailGachaVersionOptions } from "./gacha-version.ts";
 import { renderStarRailGachaVersion } from "./gacha-version-card.ts";
@@ -484,6 +484,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
       } catch (error) {
         if (signal.aborted) return;
         if (error instanceof StarRailGachaUpdateBusy) return error.message;
+        if (error instanceof HoYoLabStarRailAuthKeyRejected) return error.message;
         if (error instanceof ProfileError) {
           if (error.code === "missing" || error.code === "login-required") {
             return $t("index.text_76720712c8", { "profileId": profileId });

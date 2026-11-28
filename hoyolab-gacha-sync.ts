@@ -3,8 +3,12 @@ import catalog from "./i18n/zh-CN.json";
 import { ProfileError, type ProfileRequestContext, type createProfileStore } from "@lotus-yunzai/account";
 import { starRailGachaPools, type createHoyoClient, type StarRailGachaOptions } from "@lotus-yunzai/hoyo-client";
 import type { createStarRailGachaRecordArchive } from "./gacha-record-archive.ts";
-import { checkedStarRailLinkRole, readStarRailGachaLink } from "./gacha-link-source.ts";
+import { checkedStarRailLinkRole, readStarRailGachaLink, StarRailGachaLinkError } from "./gacha-link-source.ts";
 const $t = createTranslator("starrail", catalog.messages);
+
+export class HoYoLabStarRailAuthKeyRejected extends Error {
+  constructor() { super($t('hoyolab-gacha-sync.authkey-rejected')); }
+}
 
 export async function syncHoYoLabStarRailGacha(original: ProfileRequestContext,
   profiles: Pick<ReturnType<typeof createProfileStore>, "requestContext">,
@@ -22,7 +26,12 @@ export async function syncHoYoLabStarRailGacha(original: ProfileRequestContext,
     }
   };
   const incoming = await readStarRailGachaLink(latest.url.href, checkedStarRailLinkRole(original.role), signal, verify,
-    { transport: transport, intervalMs: options.intervalMs });
+    { transport: transport, intervalMs: options.intervalMs }).catch(error => {
+      if (error instanceof StarRailGachaLinkError && error.reason === 'authkey-rejected') {
+        throw new HoYoLabStarRailAuthKeyRejected();
+      }
+      throw error;
+    });
   const old = await archive.read({ qq, uid: latest.uid }, { legacyTimezone: incoming.timezone });
   const known = new Set(old.status === "available" ? old.archive.records.map(row => row.id) : []);
   const result = await archive.merge({ qq, uid: latest.uid }, incoming, verify, { legacyTimezone: incoming.timezone });

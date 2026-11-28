@@ -23,7 +23,9 @@ type Region = keyof typeof regions;
 type LinkRole = { readonly uid: string; readonly region: Region; readonly gameBiz: keyof typeof origin };
 type Transport = (url: URL, init: RequestInit) => Promise<Response>;
 
-export class StarRailGachaLinkError extends Error {}
+export class StarRailGachaLinkError extends Error {
+  constructor(message: string, readonly reason?: 'authkey-rejected') { super(message); }
+}
 
 export function checkedStarRailLinkRole(role: GameRole): LinkRole {
   const { uid, gameBiz } = role;
@@ -140,7 +142,7 @@ export async function readStarRailGachaLink(input: string, role: LinkRole, signa
       }
       const payload = await responseJson(response, requestSignal).catch(badResponse);
       if (!object(payload)) badResponse();
-      if (payload.retcode === -100 || payload.retcode === -101) throw new StarRailGachaLinkError($t("gacha-link-source.text_6bcee8aad8"));
+      if (payload.retcode === -100 || payload.retcode === -101) throw new StarRailGachaLinkError($t("gacha-link-source.text_6bcee8aad8"), 'authkey-rejected');
       if (payload.retcode === -110) throw new StarRailGachaLinkError($t("gacha-link-source.text_a58a328844"));
       if ([1034, 10035, 10041].some(code => code === payload.retcode)) {
         throw new StarRailGachaLinkError($t("gacha-link-source.text_7d48b9a0c5"));
