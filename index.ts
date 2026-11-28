@@ -41,6 +41,7 @@ import { buildStarRailGachaSpecial, type StarRailGachaSpecialOptions } from "./g
 import { renderStarRailGachaSpecial } from "./gacha-special-card.ts";
 import { createStarRailGachaHistoryStore } from "./gacha-store.ts";
 import { createStarRailGachaLinkCommand } from "./gacha-link-command.ts";
+import { syncHoYoLabStarRailGacha } from "./hoyolab-gacha-sync.ts";
 import { createStarRailGachaSync, StarRailGachaUpdateBusy } from "./gacha-sync.ts";
 import { buildStarRailGachaVersion, type StarRailGachaVersionOptions } from "./gacha-version.ts";
 import { renderStarRailGachaVersion } from "./gacha-version-card.ts";
@@ -161,17 +162,18 @@ function matchGachaCommand(input: string) {
   if (profileId <= MAX_PROFILE_ID) return { profileId, query: view, recordArchive: recordArchive || !!legacy };
 }
 
-export function createModule({ signal, lockFile, runtimeVersion, roleQFace = true, panelCacheRuntime }: {
+export function createModule({ signal, lockFile, runtimeVersion, roleQFace = true, panelCacheRuntime, hoyoTransport }: {
   signal: AbortSignal;
   lockFile: Parameters<typeof createStarRailGachaHistoryStore>[1];
   runtimeVersion?: { readonly version?: string; readonly revision?: string };
   roleQFace?: boolean;
   panelCacheRuntime?: PanelCacheRuntime;
+  hoyoTransport?: Parameters<typeof createProfileHoyoClient>[1];
 }) {
   const profiles = createProfileStore(Bun.env.LOTUS_PROFILE_DIR || undefined);
   const characterAliases = createGameCharacterAliasCommands(lockFile, signal);
   const publicRank = createStarRailCustomRank(signal);
-  const client = createProfileHoyoClient(profiles);
+  const client = createProfileHoyoClient(profiles, hoyoTransport);
   const groupRank = createStarRailGroupRelicRank(profiles, lockFile, signal, { official: createStarRailCachedGroupPanels(profiles, client, lockFile) });
   const groupRankMatches = new WeakMap<StarRailGachaFileContext, Awaited<ReturnType<typeof resolveStarRailRelicRank>>>();
   const panel = createStarRailPanel(profiles, client, lockFile, signal, groupRank, undefined, undefined, undefined, { qFace: roleQFace });
@@ -209,8 +211,12 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
     hasDisplayHistory);
   const gachaLink = createStarRailGachaLinkCommand(profiles, archive, signal);
   const service = createStarRailGachaSync(profiles, client, history);
-  const updateGacha = createGachaUpdater((qq, profileId, workflow?: AbortSignal) =>
-    service.sync(qq, profileId, { signal: workflow ? AbortSignal.any([signal, workflow]) : signal }));
+  const updateGacha = createGachaUpdater(async (qq, profileId, workflow?: AbortSignal) => {
+    const active = workflow ? AbortSignal.any([signal, workflow]) : signal;
+    const source = await profiles.requestContext(qq, profileId, "sr");
+    return source.international ? syncHoYoLabStarRailGacha(source, profiles, client, archive, { signal: active }, hoyoTransport)
+      : service.sync(qq, profileId, { signal: active });
+  });
 
   async function query(qq: string, { profileId, view, all }: NonNullable<ReturnType<typeof matchGachaQuery>>, recordArchive: boolean, context: Pick<MessageEvent, "inlineImageByteLimit" | "forward">) {
     if (!recordArchive && "special" in view && view.statistics) return $t("index.text_9a649c9544");

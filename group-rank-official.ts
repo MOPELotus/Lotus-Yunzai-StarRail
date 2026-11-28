@@ -15,6 +15,7 @@ export function createStarRailOfficialGroupPanels(profiles: ReturnType<typeof cr
       const boundary = panelDiscardedAt(await archive.read(qq, uid));
       if (boundary > entry.observedAt) throw new Error("group-panel-discarded");
       const snapshot = normalizePanel(uid, result.avatars, new Date(Math.max(startedAt, boundary + 1)));
+      if (entry.role.gameBiz === "hkrpg_global") snapshot.source = "hoyolab";
       await archive.update({ qq, uid }, async () => {
         await verify();
         if (panelDiscardedAt(await archive.read(qq, uid)) !== boundary) throw new Error("group-panel-discarded");
