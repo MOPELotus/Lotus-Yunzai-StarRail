@@ -1,4 +1,4 @@
-import { splitGachaPoolPages, subdivideGachaPage } from "../../lib/gacha-pool-pages.ts";
+import { splitGachaPoolPages } from "../../lib/gacha-pool-pages.ts";
 import { fileURLToPath as panelCacheFilePath } from "node:url";
 import { createGroupPanelCacheRefresh, type PanelCacheRuntime } from "../../lib/group-panel-cache.ts";
 import { createStarRailOfficialGroupPanels, createStarRailCachedGroupPanels } from "./group-rank-official.ts";
@@ -262,7 +262,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
             return model && { kind: "detail" as const, model: { ...model, recordArchive: true as const } };
           }
           if ("special" in view) {
-            const model = buildStarRailRecordSpecial({ ...records, pool: view.special });
+            const model = buildStarRailRecordSpecial({ ...records, pool: view.special, maxRows: Number.MAX_SAFE_INTEGER });
             return model && { kind: "record-special" as const, model };
           }
           const model = buildStarRailRecordVersion({ ...records, type: view.version, maxRows: display?.versionRows, schedule });
@@ -273,7 +273,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           return model && { kind: "detail" as const, model };
         }
         if ("special" in view) {
-          const model = buildStarRailGachaSpecial({ ...options, pool: view.special, page });
+          const model = buildStarRailGachaSpecial({ ...options, pool: view.special, maxRows: Number.MAX_SAFE_INTEGER });
           return model && { kind: "special" as const, model };
         }
         const model = buildStarRailGachaVersion({ ...options, type: view.version, maxRows: display?.versionRows, schedule, page });
@@ -305,8 +305,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           : $t("index.text_30a67bb7fc", { "value1": first.model.poolName === "全部" ? $t("index.text_5017bac5a2") : $t("index.text_d17cfde3c6", { "poolName": first.model.poolName }), "fiveNum": first.model.fiveNum });
         return await gachaImageReply({
           total, title: $t("index.text_f87fdb63c4", { "uid": uid, "title": title, "total": total }), signal,
-          inlineImageByteLimit: context.inlineImageByteLimit, forward: context.forward,
-          splitPage: page => subdivideGachaPage(planned, page, "pools", "fiveLog"),
+          forward: context.forward,
           async verifyRole() { return (await profiles.savedRole(qq, profileId, "sr").catch(() => undefined))?.uid === uid; },
           changedRoleMessage: $t("index.text_0026c8033d"),
           render(page, scale) {
