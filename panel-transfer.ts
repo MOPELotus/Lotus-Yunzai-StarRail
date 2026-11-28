@@ -115,7 +115,7 @@ export function createStarRailPanelTransfer(profiles: Profiles, lockFile: Acquir
           const incoming = object(input);
           imported = object(incoming?.panel);
           if (incoming?.version !== 1 || incoming.game !== "sr" || imported?.uid !== uid ||
-              (imported.source !== "legacy" && imported.source !== "miyoushe") ||
+              (imported.source !== "legacy" && imported.source !== "miyoushe" && imported.source !== "hoyolab") ||
               !Array.isArray(imported.avatars) || imported.avatars.length > 256) return { state: "invalid" };
         } catch {
           return { state: "invalid" };
@@ -137,7 +137,8 @@ export function createStarRailPanelTransfer(profiles: Profiles, lockFile: Acquir
           if ((saved?.avatars.length ?? 0) + additions.length > 256) return { result: { state: "invalid" } };
           if (!additions.length) return { result: { state: "unchanged", added: 0 } };
           const document: PanelSnapshot = { version: 1, uid,
-            source: saved?.avatars.length && saved.source === "miyoushe" ? "miyoushe" : imported.source === "miyoushe" ? "miyoushe" : "legacy",
+            source: saved?.avatars.length && (saved.source === "miyoushe" || saved.source === "hoyolab") ? saved.source
+              : imported.source === "miyoushe" || imported.source === "hoyolab" ? imported.source : "legacy",
             updatedAt: saved?.updatedAt ?? importedOn ?? new Date(now()).toISOString(),
             avatars: [...saved?.avatars ?? [], ...additions] };
           return { document: retainPanelDiscardBoundary(document, boundary), result: { state: "saved", added: additions.length } };

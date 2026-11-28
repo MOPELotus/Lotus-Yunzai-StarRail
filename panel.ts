@@ -471,7 +471,7 @@ export function createStarRailPanel(
         await verify();
       }
       if (account && context?.user_id?.toString() === qq && !context.isDelegated &&
-          (type === "detail" || type === "damage" || type === "export" || type === "practice") && (snapshot.source === "legacy" || snapshot.source === "miyoushe")) {
+          (type === "detail" || type === "damage" || type === "export" || type === "practice") && (snapshot.source === "legacy" || snapshot.source === "miyoushe" || snapshot.source === "hoyolab")) {
         const selectedRole = await profiles.savedRole(qq, profileId, "sr").catch(() => undefined);
         const owner = selectedRole && starRailTraceOwner(account, selectedRole);
         if (owner) {

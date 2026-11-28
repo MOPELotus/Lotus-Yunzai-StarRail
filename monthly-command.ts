@@ -39,6 +39,8 @@ const shortcuts = (profileId: number) => {
 
 function identity(source: ProfileRequestContext, qq: string): StarRailMonthlyIdentity | undefined {
   const { uid, region, gameBiz } = source.role;
+  if (source.international && gameBiz === "hkrpg_global" && /^[1-9]\d{8,9}$/u.test(uid) &&
+      /^prod_official_(?:usa|eur|asia|cht)$/u.test(region)) return { qq, accountId: source.international.accountId, uid, region, gameBiz };
   const accountId = source.account?.stuid || source.account?.ltuid;
   if (!accountId || previewRedeemIdentity(source) !== accountId || gameBiz !== "hkrpg_cn" || !/^[1-5]\d{8}$/u.test(uid) ||
       region !== (uid.startsWith("5") ? "prod_qd_cn" : "prod_gf_cn")) return;
@@ -119,7 +121,7 @@ export function createStarRailMonthlyQuery(profiles: Profiles, client: Client, l
           for (const account of roles) {
             const who = identity(account, slot.qq);
             const key = who && `${who.qq}/${who.accountId}/${who.uid}`;
-            if (!who || !key || seen.has(key) || !account.device.id || !account.device.fp) continue;
+            if (!who || !key || seen.has(key) || (!account.international && (!account.device.id || !account.device.fp))) continue;
             seen.add(key);
             targets.push({ qq: slot.qq, account, who, profileId: slot.profileId });
           }

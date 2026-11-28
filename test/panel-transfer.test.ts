@@ -80,3 +80,23 @@ test("星铁旧数据合并后可从正常角色面板读取，回执不覆盖�
     await rm(folder, { recursive: true, force: true });
   }
 });
+
+test('overseas official panels retain the HoYoLAB source across export and import',async()=>{
+ const folder=await mkdtemp(join(tmpdir(),'lotus-sr-os-transfer-'));const controller=new AbortController(),signal=controller.signal;
+ try{
+  const profiles=createProfileStore(join(folder,'users')),overseasUid='800000001';
+  await profiles.saveInternationalLogin(await profiles.openLoginSlot('42'),{accountId:'4202',realm:'SG',mid:'fixture-mid',stoken:'v2_fixture-token',deviceId:'fixture-device',cookie:'account_id_v2=4202; cookie_token_v2=fixture-cookie; account_mid_v2=fixture-mid',activityCookie:'ltuid_v2=4202; ltoken_v2=fixture-ltoken; ltmid_v2=fixture-mid'},
+   {gs:[],sr:[{uid:overseasUid,region:'prod_official_asia',gameBiz:'hkrpg_global',nickname:'',chosen:true}],zzz:[]});
+  const origin='https://panel-transfer.example.invalid',source=createPanelTransferSource({publicOrigin:origin,signal});
+  const receive=createPanelTransferReceiver({peers:[origin],async transport(url,init){return source.serve(new Request(url,init))!;}});
+  const sourceRoom=join(folder,'source'),targetRoom=join(folder,'target');
+  const snapshot=readLegacyPanel(overseasUid,{uid:overseasUid,_profile:oldTime,avatars:{1102:past}})!;
+  await createStarRailPanelArchive(lockFile,sourceRoom).update({qq:'42',uid:overseasUid},async()=>{},()=>({document:{...snapshot,source:'hoyolab'},result:undefined}));
+  let code='';const context={message_type:'private',privateCredentialSignal:signal,self_id:99,user_id:42,panelTransfer:{exportLevel:1,importLevel:1,source,receive},reply(message){code=message.split(' ').at(-1)!;return true;}}satisfies TransferContext;
+  const outgoing=createStarRailPanelTransfer(profiles,lockFile,signal,{archiveDirectory:sourceRoom,legacy:async()=>undefined});
+  const incoming=createStarRailPanelTransfer(profiles,lockFile,signal,{archiveDirectory:targetRoom,legacy:async()=>undefined});
+  await outgoing(matchPanelTransferCommand('*导出面板数据')!,context);
+  expect(await incoming(matchPanelTransferCommand(`#星铁导入面板数据 ${code}`)!,context)).toContain('已导入 1 名星铁');
+  expect((await createStarRailPersonalPanelReader(lockFile,targetRoom)('42',overseasUid))?.source).toBe('hoyolab');
+ }finally{controller.abort();await rm(folder,{recursive:true,force:true});}
+});

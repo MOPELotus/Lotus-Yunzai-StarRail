@@ -24,9 +24,10 @@ export interface StarRailTraceOwner {
 
 export function starRailTraceOwner(source: ProfileRequestContext, role: GameRole): StarRailTraceOwner | undefined {
   const { uid, region, gameBiz } = role;
-  const accountId = source.account.stuid || source.account.ltuid;
+  const accountId = source.international ? `os:${source.international.realm}:${source.international.accountId}` : source.account.stuid || source.account.ltuid;
+  const verified = source.international ? accountId : previewRedeemIdentity(source);
   if (source.game !== "sr" || !region || !gameBiz || source.role.uid !== uid || source.role.region !== region ||
-      source.role.gameBiz !== gameBiz || !accountId || previewRedeemIdentity(source) !== accountId) return;
+      source.role.gameBiz !== gameBiz || !accountId || verified !== accountId) return;
   return { qq: source.qq, uid, region, gameBiz, accountId };
 }
 

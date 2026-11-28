@@ -33,8 +33,9 @@ function object(raw: unknown) {
 }
 
 function identityValid({ qq, accountId, uid, gameBiz, region }: StarRailMonthlyIdentity) {
-  return /^[1-9]\d{0,19}$/u.test(qq) && /^[1-9]\d{0,19}$/u.test(accountId) && /^[1-5]\d{8}$/u.test(uid) &&
-    gameBiz === "hkrpg_cn" && region === (uid.startsWith("5") ? "prod_qd_cn" : "prod_gf_cn");
+  return /^[1-9]\d{0,19}$/u.test(qq) && /^[1-9]\d{0,19}$/u.test(accountId) &&
+    ((gameBiz === "hkrpg_cn" && /^[1-5]\d{8}$/u.test(uid) && region === (uid.startsWith("5") ? "prod_qd_cn" : "prod_gf_cn")) ||
+      (gameBiz === "hkrpg_global" && /^[1-9]\d{8,9}$/u.test(uid) && /^prod_official_(?:usa|eur|asia|cht)$/u.test(region)));
 }
 
 function wire({ monthly, today, yesterday, groups }: StarRailMonthlySnapshot, key: string) {
