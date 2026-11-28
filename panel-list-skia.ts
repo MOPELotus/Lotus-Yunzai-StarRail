@@ -76,14 +76,20 @@ export async function renderStarRailPanelList(model: Model, theme: string, mode:
       const badgeWidth = measure.measureText(cons).width * .8 + 7;
       measure.font = `14px ${font.body}`;
       const showNew = character.isNew && model.hasNew;
-      const nameWidth = Math.min(cardWidth - badgeWidth - (showNew ? 14 : 4), measure.measureText(character.abbr).width);
+      const fullNameWidth = measure.measureText(character.abbr).width;
+      const nameWidth = Math.min(cardWidth - badgeWidth - (showNew ? 14 : 4), fullNameWidth);
       const total = nameWidth + badgeWidth + (showNew ? 13 : 2);
       let textX = x + (cardWidth - total) / 2;
       if (showNew) {
         fill(ctx, "#90e800", textX, y + 73, 8, 8, 4);
         textX += 11;
       }
-      text(character.abbr, textX, y + 77, 14, "#fff", "left", false, false, nameWidth);
+      // Skia's maxWidth clips the suffix; scale the full name into its allotted space.
+      ctx.save();
+      ctx.translate(textX, y + 77);
+      ctx.scale(fullNameWidth > 0 ? nameWidth / fullNameWidth : 1, 1);
+      text(character.abbr, 0, 0, 14, "#fff");
+      ctx.restore();
       const badgeX = textX + nameWidth + 2;
       fill(ctx, soulColors[Number(character.cons)] ?? soulColors[0], badgeX, y + 70.5, badgeWidth, 13, 3);
       text(cons, badgeX + badgeWidth / 2, y + 77, 10, "#fff", "center");
