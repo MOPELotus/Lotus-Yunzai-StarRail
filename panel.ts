@@ -64,7 +64,7 @@ export function managedSnapshot(uid: string, raw: unknown, showcase = false, all
   if (raw === null) return;
   const stored = object(raw);
   const source = stored?.source;
-  const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe" || source === "legacy";
+  const allowedSource = showcase ? typeof source === "string" && Object.hasOwn(showcaseProviderNames, source) : source === "miyoushe" || source === "hoyolab" || source === "legacy";
   if (stored?.version !== 1 || stored.uid !== uid || !allowedSource || typeof stored.updatedAt !== "string" ||
       !Number.isFinite(Date.parse(stored.updatedAt)) || !Array.isArray(stored.avatars) || (!allowEmpty && !stored.avatars.length && !panelDiscardedAt(raw)) ||
       stored.avatars.length > 256 || stored.avatars.some(row => !object(row) || !readId(row.id) || typeof row.name !== "string" ||
@@ -155,6 +155,7 @@ export function createStarRailPanel(
       if (result instanceof HoyoRequestError) return { status: "unavailable", error: result } as const;
       await verify(result.revision);
       const next = normalizePanel(uid, result.avatars, startedAt);
+      if (account.international) next.source = "hoyolab";
       if (!next.avatars.length) return { status: "empty" } as const;
       let updated = false;
       const snapshot = await store.update({ qq, uid }, verify, current => {
@@ -708,7 +709,7 @@ export function createStarRailPanel(
             const damage = previewDamage?.damage;
             return [`UID ${uid}`, equipmentLabel, visible, ...(damage ? panelDamageText(damage, theme.commaGroup) : [])].filter(Boolean).join("\n");
           }
-          const label = snapshot.source === "miyoushe" || snapshot.source === "legacy"
+          const label = snapshot.source === "hoyolab" ? "HoYoLAB" : snapshot.source === "miyoushe" || snapshot.source === "legacy"
             ? $t("panel.text_6ce5363a7d") : $t("panel.text_3b2f86a1cd", { "value1": showcaseProviderNames[snapshot.source] });
           return $t("panel.text_2dcd381edd", { "uid": uid, "label": label, "length": snapshot.avatars.length, "value4": snapshot.avatars.map(avatar => avatar.name).join("、") });
         }

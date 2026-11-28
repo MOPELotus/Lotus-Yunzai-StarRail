@@ -159,7 +159,7 @@ export type ShowcaseProvider = "mihomo" | "avocado" | "enka";
 export interface PanelSnapshot {
   version: 1;
   uid: string;
-  source: "miyoushe" | "legacy" | ShowcaseProvider;
+  source: "miyoushe" | "hoyolab" | "legacy" | ShowcaseProvider;
   showcaseTtl?: number;
   updatedAt?: string;
   avatars: PanelAvatar[];

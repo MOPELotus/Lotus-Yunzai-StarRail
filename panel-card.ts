@@ -355,6 +355,7 @@ export async function makePanelPracticeCards(snapshot: PanelSnapshot, theme: Met
 }
 
 function fieldsSource(snapshot: PanelSnapshot) {
+  if (snapshot.source === "hoyolab") return "HoYoLAB";
   if (snapshot.source === "miyoushe") return $t("panel-card.text_6ca05b2485");
   if (snapshot.source === "legacy") return $t("panel-card.text_2115cf9237");
   return $t("panel-card.text_b810a62afc", { "value1": showcaseProviderNames[snapshot.source] });
