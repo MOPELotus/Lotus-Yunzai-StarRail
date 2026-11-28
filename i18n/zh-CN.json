@@ -1451,7 +1451,7 @@
     "import-independent-gacha-cli.text_c1abe47be7": "已生成 {count} 条星铁逐抽记录。请先私聊发送 *导入记录，再上传生成的 JSON。",
     "import-independent-gacha-cli.text_cefe5c224f": "用法：bun plugins/starrail/import-independent-gacha-cli.ts <旧 data/gatcha 根目录> <UID> <时区偏移> <新 UIGF .json 路径>",
     "index.text_0026c8033d": "星铁档案角色已变化，请重新查询。",
-    "index.text_0091326249": "*抽卡记录、*光锥记录、*常驻记录、*新手记录、*角色联动记录、*光锥联动记录 可查看指定卡池。",
+    "index.text_0091326249": "*抽卡记录 / *全部记录：分别渲染并展示全部卡池\n*角色记录 / *光锥记录 / *常驻记录 / *新手记录：查看对应卡池\n*角色联动记录（*联动角色记录）：联动角色池；*光锥联动记录（*联动光锥记录）：联动光锥池；*联动记录：全部联动池\n单图直发，多图合并转发；末尾加数字可指定档案",
     "index.text_02d44306fd": "抽卡",
     "index.text_044e9e1792": "请从登录档案对应的 QQ 会话使用星铁抽卡记录。",
     "index.text_127ecc1fee": "星铁抽卡记录读取失败，请检查本地历史文件。",
