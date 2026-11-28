@@ -1,3 +1,4 @@
+import { splitGachaPoolPages, subdivideGachaPage } from "../../lib/gacha-pool-pages.ts";
 import { fileURLToPath as panelCacheFilePath } from "node:url";
 import { createGroupPanelCacheRefresh, type PanelCacheRuntime } from "../../lib/group-panel-cache.ts";
 import { createStarRailOfficialGroupPanels, createStarRailCachedGroupPanels } from "./group-rank-official.ts";
@@ -77,7 +78,7 @@ const recordDefault = /^(?:记录|祈愿|分析|统计)(?:[1-9]\d{0,2})?$/u;
 const poolCommand = /^#星铁(全部)?(抽卡|抽奖|角色|光锥|武器|常驻|up)池?(全部)?(记录|祈愿|分析|统计)([1-9]\d{0,2})?$/u;
 const versionCommand = /^#星铁(版本|全部)(全部)?统计([1-9]\d{0,2})?$/u;
 const legacyRecordCommand = /^#星铁(角色联动|光锥联动|武器联动|角色|光锥|武器|常驻|新手|联动)?(?:跃迁|抽卡)?(记录|分析|统计)([1-9]\d{0,2})?$/u;
-const specialCommand = /^#星铁(?:(全部)?(角色联动|光锥联动|武器联动|新手)池?(全部)?(记录|祈愿|分析|统计)|全部(?:记录|祈愿|分析))([1-9]\d{0,2})?$/u;
+const specialCommand = /^#星铁(?:(全部)?(角色联动|光锥联动|武器联动|联动角色|联动光锥|联动武器|联动|新手)池?(全部)?(记录|祈愿|分析|统计)|全部(?:记录|祈愿|分析))([1-9]\d{0,2})?$/u;
 const detailPools = new Map<string, StarRailGachaDetailPool>([
   ["光锥", "GachaType_EquipmentUp"], ["武器", "GachaType_EquipmentUp"], ["常驻", "GachaType_Standard"],
 ]);
@@ -87,7 +88,7 @@ const versionPools = new Map<string, VersionPool>([
 ]);
 type SpecialPool = StarRailGachaSpecialOptions["pool"];
 const specialPools = new Map<string, SpecialPool>([
-  ["角色联动", "GachaType_CollabAvatarUp"], ["光锥联动", "GachaType_CollabEquipmentUp"],
+  ["角色联动", "GachaType_CollabAvatarUp"], ["联动角色", "GachaType_CollabAvatarUp"], ["光锥联动", "GachaType_CollabEquipmentUp"], ["联动光锥", "GachaType_CollabEquipmentUp"], ["联动武器", "GachaType_CollabEquipmentUp"],
   ["武器联动", "GachaType_CollabEquipmentUp"], ["新手", "GachaType_Newbie"],
 ]);
 const historyRoot = fileURLToPath(new URL("../../data/starRailGachaJson/", import.meta.url));
@@ -110,15 +111,15 @@ const help = [
 ].join("\n");
 
 type GachaView = { readonly detail: StarRailGachaDetailPool } | { readonly version: VersionPool }
-  | { readonly special: SpecialPool; readonly statistics: boolean };
+  | { readonly special: SpecialPool; readonly statistics: boolean; readonly onlyCollab?: boolean };
 
 function matchGachaQuery(message: string): { profileId: number; view: GachaView; all: boolean } | undefined {
   const special = specialCommand.exec(message);
   if (special) {
     return {
       profileId: gameCommandProfileId("sr", special[5]),
-      view: { special: specialPools.get(special[2] ?? "") ?? "all", statistics: special[4] === "统计" },
-      all: !special[2] || !!(special[1] || special[3]),
+      view: { special: specialPools.get(special[2] ?? "") ?? "all", statistics: special[4] === "统计", ...(special[2] === "联动" ? { onlyCollab: true } : {}) },
+      all: !special[2] || special[2] === "联动" || !!(special[1] || special[3]),
     };
   }
   const version = versionCommand.exec(message);
@@ -128,6 +129,7 @@ function matchGachaQuery(message: string): { profileId: number; view: GachaView;
   const pool = poolCommand.exec(message);
   if (!pool) return;
   const name = pool[2]!;
+  if ((name === "抽卡" || name === "抽奖") && pool[4] !== "统计") return { profileId: gameCommandProfileId("sr", pool[5]), view: { special: "all", statistics: false }, all: true };
   const view = pool[4] === "统计" ? { version: versionPools.get(name) ?? "up" }
     : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
   return { profileId: gameCommandProfileId("sr", pool[5]), view, all: !!(pool[1] || pool[3]) };
@@ -140,9 +142,9 @@ function legacyGachaQuery(message: string): ReturnType<typeof matchGachaQuery> {
   const name = match[2] === "统计" ? "" : match[1] ?? "";
   const special = name === "联动" ? "GachaType_CollabAvatarUp" : specialPools.get(name);
   const view: GachaView = special || !name
-    ? { special: special ?? "all", statistics: false }
+    ? name === "联动" ? { special: "all", statistics: false, onlyCollab: true } : { special: special ?? "all", statistics: false }
     : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
-  return { profileId: gameCommandProfileId("sr", match[3]), view, all: !name };
+  return { profileId: gameCommandProfileId("sr", match[3]), view, all: !name || name === "联动" };
 }
 
 function matchGachaCommand(input: string) {
@@ -277,20 +279,38 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         const model = buildStarRailGachaVersion({ ...options, type: view.version, maxRows: display?.versionRows, schedule, page });
         return model && { kind: "version" as const, model };
       }
-      const first = buildPage(all ? 1 : undefined);
-      if (!first) return $t("index.text_ff6d96492f", { "uid": uid });
+      const initial = buildPage(all ? 1 : undefined);
+      if (!initial) return $t("index.text_ff6d96492f", { "uid": uid });
+      type Page = NonNullable<ReturnType<typeof buildPage>>;
+      const planned: Page[] = [];
+      for (let page = 1; page <= (all ? ("pageInfo" in initial.model ? initial.model.pageInfo?.total ?? 1 : 1) : 1); page++) {
+        let result = page === 1 ? initial : buildPage(page);
+        if (!result) continue;
+        if ("special" in view && view.onlyCollab && (result.kind === "special" || result.kind === "record-special")) {
+          const pools = result.model.pools.filter(pool => pool.type === 21 || pool.type === 22);
+          result = { ...result, model: { ...result.model, pools } } as typeof result;
+        }
+        if (result.kind === "special") {
+          for (const model of splitGachaPoolPages(result.model, "pools", "fiveLog")) planned.push({ ...result, model });
+        } else if (result.kind === "record-special") {
+          for (const model of splitGachaPoolPages(result.model, "pools", "fiveLog")) planned.push({ ...result, model });
+        } else planned.push(result);
+      }
+      if (!planned.length) return $t("index.text_ff6d96492f", { uid });
+      const first = planned[0]!;
       try {
-        const total = first.model.pageInfo?.total ?? 1;
+        const total = planned.length;
         const title = first.kind === "version" ? $t("index.text_acbebaddd8", { "poolName": first.model.poolName, "count": first.model.pageInfo?.count })
           : first.kind === "detail" ? $t("index.text_2eefd98a1a", { "poolName": first.model.poolName, "fiveNum": first.model.gacha.stat.fiveNum })
           : $t("index.text_30a67bb7fc", { "value1": first.model.poolName === "全部" ? $t("index.text_5017bac5a2") : $t("index.text_d17cfde3c6", { "poolName": first.model.poolName }), "fiveNum": first.model.fiveNum });
         return await gachaImageReply({
           total, title: $t("index.text_f87fdb63c4", { "uid": uid, "title": title, "total": total }), signal,
           inlineImageByteLimit: context.inlineImageByteLimit, forward: context.forward,
+          splitPage: page => subdivideGachaPage(planned, page, "pools", "fiveLog"),
           async verifyRole() { return (await profiles.savedRole(qq, profileId, "sr").catch(() => undefined))?.uid === uid; },
           changedRoleMessage: $t("index.text_0026c8033d"),
           render(page, scale) {
-            const result = page === 1 ? first : buildPage(page);
+            const result = planned[page - 1];
             if (!result) throw new Error($t("index.text_7750ce8a1f"));
             const options = { themeDirectory, scale, avatar, qFace: roleQFace };
             return result.kind === "record-special" ? renderStarRailRecordSpecial(result.model, options)

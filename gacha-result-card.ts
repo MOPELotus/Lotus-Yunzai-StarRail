@@ -30,7 +30,7 @@ interface GachaCardFailure {
 
 export function renderStarRailGachaResult({ log, pools }: GachaCardResult, options: StatusCardOptions = {}) {
   const lead = $t("gacha-result-card.text_e747eddef9", { "qq": log.qq, "profileId": log.profileId, "uid": log.uid });
-  const visiblePools = pools.filter(({ total, totalDraws }) => total || totalDraws);
+  const visiblePools = pools;
   const contents = visiblePools.length ? visiblePools.map(({ name, total, added, totalDraws, pity }) =>
     $t("gacha-result-card.text_baee777c76", { "name": name, "total": total, "added": added, "totalDraws": totalDraws, "pity": pity })) : [$t("gacha-result-card.text_d9233de22e")];
   return renderStatusCard(title, lead, contents, new Date(log.updatedAt), options);

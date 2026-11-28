@@ -5,7 +5,7 @@ import { createModule } from "../index.ts";
 test("star rail routes unbranded gacha queries and help through the gacha feature", async () => {
   const { fallback, fallbackFeatures } = createModule({ signal: new AbortController().signal, lockFile });
   const context = (normalizedMessage: string) => ({ normalizedMessage, reply() {} });
-  const commands = ["光锥记录2", "版本统计2", "新手记录2"];
+  const commands = ["光锥记录2", "版本统计2", "新手记录2", "抽卡记录2", "全部记录2", "联动角色记录2", "联动光锥记录2", "角色联动记录2", "光锥联动记录2", "联动记录2"];
   for (const command of commands) {
     const current = `#星铁${command}`;
     expect(await fallbackFeatures(context(current))).toEqual(["[gacha] 抽卡记录"]);
