@@ -77,6 +77,9 @@ export interface StarRailGachaDetailOptions {
 const pityItem = 888;
 const unknownPull = 403;
 export const detailPools = {
+  GachaType_CollabAvatarUp: { legacy: 21, name: $t("gacha-record-special.text_957dff2ffa"), base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0.5 },
+  GachaType_CollabEquipmentUp: { legacy: 22, name: $t("gacha-record-special.text_7085c8362b"), base: 0.008, soft: 66, step: 0.07, hard: 80, upRate: 0.75 },
+  GachaType_Newbie: { legacy: 2, name: $t("gacha-record-special.text_dcfce30c45"), base: 0.006, soft: 50, step: 0, hard: 50, upRate: 0 },
   GachaType_AvatarUp: { legacy: 11, name: $t("gacha-detail.text_c47b54e84e"), base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0.5 },
   GachaType_EquipmentUp: { legacy: 12, name: $t("gacha-detail.text_e733238b28"), base: 0.008, soft: 66, step: 0.07, hard: 80, upRate: 0.75 },
   GachaType_Standard: { legacy: 1, name: $t("gacha-detail.text_300b6634fe"), base: 0.006, soft: 74, step: 0.06, hard: 90, upRate: 0 },
@@ -153,7 +156,7 @@ export function buildStarRailGachaDetail({
   const isvalidNum = upNum ? (upUsed / upNum).toFixed(2) : 0;
   const upYs = Number(isvalidNum) * 160;
   const state = applyGachaGuarantees(model.upRate ? five : []);
-  const luck = gachaLuckFor(
+  const luck = pool === "GachaType_Newbie" ? undefined : gachaLuckFor(
     gachaProbabilityFor("sr", model.legacy, model, display), fiveNum, fiveUsed, upNum, upUsed,
     state, five.some(({ isNewPool }) => isNewPool), display?.luck,
   );

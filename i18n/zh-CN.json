@@ -1498,7 +1498,7 @@
     "index.text_ebb89ab276": "请从登录档案对应的 QQ 会话使用星铁面板。",
     "index.text_f3dedd9220": "[starrail] 队伍伤害",
     "index.text_f3ec7dfdd7": "[starrail] 宇宙战绩",
-    "index.text_f87fdb63c4": "UID:{uid} {title}，分{total}张图",
+    "index.text_f87fdb63c4": "UID:{uid} {title}",
     "index.text_fc8b7031ff": "旧显示镜像",
     "index.text_ff6d96492f": "UID:{uid} 本地暂无该卡池抽卡记录。",
     "ledger-command.text_2c4e19033b": "古老梦华",
@@ -4132,8 +4132,7 @@
     },
     "index.text_f87fdb63c4": {
       "uid": "角色 UID",
-      "title": "统计图表标题",
-      "total": "分页图片总数"
+      "title": "统计图表标题"
     },
     "index.text_76720712c8": {
       "profileId": "档案编号"

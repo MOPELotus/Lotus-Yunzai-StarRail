@@ -104,7 +104,7 @@ export function buildStarRailRecordDetail({
   const upYs = Number(isvalidNum) * 160;
   const initialUp = fiveLog.at(-1)?.isUp;
   const state = applyGachaGuarantees(!unclassified && model.upRate ? closedFive : [], initialUp === undefined ? null : !initialUp);
-  const luck = unclassified ? undefined
+  const luck = unclassified || pool === "GachaType_Newbie" ? undefined
     : gachaLuckFor(
       gachaProbabilityFor("sr", model.legacy, model, display), closedFive.length, fiveUsed, upNum, upUsed,
       state, closedFive.some(({ isNewPool }) => isNewPool), display?.luck,

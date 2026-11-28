@@ -88,7 +88,7 @@ const versionPools = new Map<string, VersionPool>([
   ["角色", "char"], ["光锥", "weapon"], ["武器", "weapon"], ["常驻", "normal"], ["全部", "all"],
 ]);
 type SpecialPool = StarRailGachaSpecialOptions["pool"];
-const specialPools = new Map<string, SpecialPool>([
+const specialPools = new Map<string, StarRailGachaDetailPool>([
   ["角色联动", "GachaType_CollabAvatarUp"], ["联动角色", "GachaType_CollabAvatarUp"], ["光锥联动", "GachaType_CollabEquipmentUp"], ["联动光锥", "GachaType_CollabEquipmentUp"], ["联动武器", "GachaType_CollabEquipmentUp"],
   ["武器联动", "GachaType_CollabEquipmentUp"], ["新手", "GachaType_Newbie"],
 ]);
@@ -111,17 +111,20 @@ const help = [
   $t("index.text_1629f8ef03"),
 ].join("\n");
 
-type GachaView = { readonly detail: StarRailGachaDetailPool } | { readonly version: VersionPool }
+type GachaView = { readonly detail: StarRailGachaDetailPool; readonly allPools?: true; readonly collabOnly?: true } | { readonly version: VersionPool }
   | { readonly special: SpecialPool; readonly statistics: boolean; readonly onlyCollab?: boolean };
 
 function matchGachaQuery(message: string): { profileId: number; view: GachaView; all: boolean } | undefined {
   const special = specialCommand.exec(message);
   if (special) {
-    return {
-      profileId: gameCommandProfileId("sr", special[5]),
-      view: { special: specialPools.get(special[2] ?? "") ?? "all", statistics: special[4] === "统计", ...(special[2] === "联动" ? { onlyCollab: true } : {}) },
-      all: !special[2] || special[2] === "联动" || !!(special[1] || special[3]),
-    };
+    const name = special[2];
+    const view: GachaView = special[4] === "统计"
+      ? { special: specialPools.get(name ?? "") ?? "all", statistics: true, ...(name === "联动" && { onlyCollab: true }) }
+      : !name ? { detail: "GachaType_AvatarUp", allPools: true }
+      : name === "联动" ? { detail: "GachaType_CollabAvatarUp", allPools: true, collabOnly: true }
+      : { detail: specialPools.get(name) ?? "GachaType_AvatarUp" };
+    return { profileId: gameCommandProfileId("sr", special[5]), view,
+      all: !name || name === "联动" || !!(special[1] || special[3]) };
   }
   const version = versionCommand.exec(message);
   if (version && !(version[1] === "全部" && version[2])) {
@@ -130,7 +133,7 @@ function matchGachaQuery(message: string): { profileId: number; view: GachaView;
   const pool = poolCommand.exec(message);
   if (!pool) return;
   const name = pool[2]!;
-  if ((name === "抽卡" || name === "抽奖") && pool[4] !== "统计") return { profileId: gameCommandProfileId("sr", pool[5]), view: { special: "all", statistics: false }, all: true };
+  if ((name === "抽卡" || name === "抽奖") && pool[4] !== "统计") return { profileId: gameCommandProfileId("sr", pool[5]), view: { detail: "GachaType_AvatarUp", allPools: true }, all: true };
   const view = pool[4] === "统计" ? { version: versionPools.get(name) ?? "up" }
     : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
   return { profileId: gameCommandProfileId("sr", pool[5]), view, all: !!(pool[1] || pool[3]) };
@@ -142,9 +145,9 @@ function legacyGachaQuery(message: string): ReturnType<typeof matchGachaQuery> {
   // Old 统计 fell through to the local overview even when a pool name preceded it.
   const name = match[2] === "统计" ? "" : match[1] ?? "";
   const special = name === "联动" ? "GachaType_CollabAvatarUp" : specialPools.get(name);
-  const view: GachaView = special || !name
-    ? name === "联动" ? { special: "all", statistics: false, onlyCollab: true } : { special: special ?? "all", statistics: false }
-    : { detail: detailPools.get(name) ?? "GachaType_AvatarUp" };
+  const view: GachaView = !name ? { detail: "GachaType_AvatarUp", allPools: true }
+    : name === "联动" ? { detail: "GachaType_CollabAvatarUp", allPools: true, collabOnly: true }
+    : { detail: special ?? detailPools.get(name) ?? "GachaType_AvatarUp" };
   return { profileId: gameCommandProfileId("sr", match[3]), view, all: !name || name === "联动" };
 }
 
@@ -255,16 +258,17 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         rawArchive || !("special" in view) ? readStarRailGachaSchedule(themeDirectory) : [],
         rawArchive && readStarRailRecordItems(themeDirectory, catalog).then((resolver) => starRailRecordDraws(rawArchive, resolver)),
       ]);
+      const allPools = "detail" in view && view.allPools;
       const shared = { uid, face, now: new Date() };
       const options = { ...shared, history: snapshot, resolveItem, face: nickname ? face : { ...face, name: $t("index.text_4bf6868aa0") } };
       const resolvePool = resolveStarRailDetailPool(schedule);
       const resolveRecordPool = draws && resolveStarRailRecordPool(schedule);
       const display = !("special" in view) ? await readGachaDisplaySettings(new URL("../../", import.meta.url)) : undefined;
-      function buildPage(page?: number) {
+      function buildPage(page?: number, pool?: StarRailGachaDetailPool) {
         if (draws) {
           const records = { ...shared, draws, resolvePool: resolveRecordPool, page };
           if ("detail" in view) {
-            const model = buildStarRailRecordDetail({ ...records, pool: view.detail, display });
+            const model = buildStarRailRecordDetail({ ...records, pool: pool ?? view.detail, display, ...(allPools && { maxRows: 0 }) });
             return model && { kind: "detail" as const, model: { ...model, recordArchive: true as const } };
           }
           if ("special" in view) {
@@ -275,7 +279,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           return model && { kind: "version" as const, model };
         }
         if ("detail" in view) {
-          const model = buildStarRailGachaDetail({ ...options, pool: view.detail, display, resolvePool, page });
+          const model = buildStarRailGachaDetail({ ...options, pool: pool ?? view.detail, display, resolvePool, page, ...(allPools && { maxRows: 0 }) });
           return model && { kind: "detail" as const, model };
         }
         if ("special" in view) {
@@ -285,11 +289,15 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
         const model = buildStarRailGachaVersion({ ...options, type: view.version, maxRows: display?.versionRows, schedule, page });
         return model && { kind: "version" as const, model };
       }
-      const initial = buildPage(all ? 1 : undefined);
+      const poolPages = allPools ? (["GachaType_AvatarUp", "GachaType_CollabAvatarUp", "GachaType_EquipmentUp", "GachaType_CollabEquipmentUp", "GachaType_Standard", "GachaType_Newbie"] as const).flatMap(pool => {
+        if ("detail" in view && view.collabOnly && pool !== "GachaType_CollabAvatarUp" && pool !== "GachaType_CollabEquipmentUp") return [];
+        const result = buildPage(undefined, pool); return result ? [result] : [];
+      }) : undefined;
+      const initial = poolPages ? poolPages[0] : buildPage(all ? 1 : undefined);
       if (!initial) return $t("index.text_ff6d96492f", { "uid": uid });
       type Page = NonNullable<ReturnType<typeof buildPage>>;
-      const planned: Page[] = [];
-      for (let page = 1; page <= (all ? ("pageInfo" in initial.model ? initial.model.pageInfo?.total ?? 1 : 1) : 1); page++) {
+      const planned: Page[] = poolPages ?? [];
+      if (!poolPages) for (let page = 1; page <= (all ? ("pageInfo" in initial.model ? initial.model.pageInfo?.total ?? 1 : 1) : 1); page++) {
         let result = page === 1 ? initial : buildPage(page);
         if (!result) continue;
         if ("special" in view && view.onlyCollab && (result.kind === "special" || result.kind === "record-special")) {
@@ -310,7 +318,7 @@ export function createModule({ signal, lockFile, runtimeVersion, roleQFace = tru
           : first.kind === "detail" ? $t("index.text_2eefd98a1a", { "poolName": first.model.poolName, "fiveNum": first.model.gacha.stat.fiveNum })
           : $t("index.text_30a67bb7fc", { "value1": first.model.poolName === "全部" ? $t("index.text_5017bac5a2") : $t("index.text_d17cfde3c6", { "poolName": first.model.poolName }), "fiveNum": first.model.fiveNum });
         return await gachaImageReply({
-          total, title: $t("index.text_f87fdb63c4", { "uid": uid, "title": title, "total": total }), signal,
+          total, title: $t("index.text_f87fdb63c4", { "uid": uid, "title": allPools ? "" : title }).trim(), signal,
           forward: context.forward,
           async verifyRole() { return (await profiles.savedRole(qq, profileId, "sr").catch(() => undefined))?.uid === uid; },
           changedRoleMessage: $t("index.text_0026c8033d"),
